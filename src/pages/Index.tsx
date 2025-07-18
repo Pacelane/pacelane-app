@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Sidebar } from '@/components/Sidebar';
+import { AppSidebar } from '@/components/app-sidebar';
 import { MainContent } from '@/components/MainContent';
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 
 interface Template {
   id: string;
@@ -129,27 +130,34 @@ const Index = () => {
   };
 
   return (
-    <div className="flex items-stretch flex-wrap min-h-screen">
-      <Sidebar
-        userName="Simon Alt"
-        userAvatar="https://api.builder.io/api/v1/image/assets/33e5c0ee54254724b25b444ecf442f35/75fe1b108c00417d7dc855be81d3b2879bf7e2f0?placeholderIfAbsent=true"
-        navigationItems={navigationItems}
-        onCreateNew={handleCreateNew}
-        onUserMenuClick={handleUserMenuClick}
-        onNavigationClick={handleNavigationClick}
-        onFinishOnboarding={handleFinishOnboarding}
-        onHelpClick={handleHelpClick}
-      />
-      
-      <MainContent
-        templates={templates}
-        onSearch={handleSearch}
-        onTemplateSelect={handleTemplateSelect}
-        onStartFromScratch={handleStartFromScratch}
-        onNotificationClick={handleNotificationClick}
-        onSettingsClick={handleSettingsClick}
-      />
-    </div>
+    <SidebarProvider>
+      <div className="flex min-h-screen w-full">
+        <AppSidebar
+          userName="Simon Alt"
+          userAvatar="https://api.builder.io/api/v1/image/assets/33e5c0ee54254724b25b444ecf442f35/75fe1b108c00417d7dc855be81d3b2879bf7e2f0?placeholderIfAbsent=true"
+          navigationItems={navigationItems}
+          onCreateNew={handleCreateNew}
+          onUserMenuClick={handleUserMenuClick}
+          onNavigationClick={handleNavigationClick}
+          onFinishOnboarding={handleFinishOnboarding}
+          onHelpClick={handleHelpClick}
+        />
+        
+        <SidebarInset>
+          <header className="flex h-16 items-center gap-4 border-b bg-neutral-50 px-4">
+            <SidebarTrigger />
+          </header>
+          <MainContent
+            templates={templates}
+            onSearch={handleSearch}
+            onTemplateSelect={handleTemplateSelect}
+            onStartFromScratch={handleStartFromScratch}
+            onNotificationClick={handleNotificationClick}
+            onSettingsClick={handleSettingsClick}
+          />
+        </SidebarInset>
+      </div>
+    </SidebarProvider>
   );
 };
 

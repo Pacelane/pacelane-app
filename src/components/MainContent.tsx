@@ -27,8 +27,8 @@ export const MainContent: React.FC<MainContentProps> = ({
   onSettingsClick
 }) => {
   return (
-    <main className="min-w-60 grow shrink w-[1104px] max-md:max-w-full">
-      <header className="justify-between items-center flex min-h-16 w-full gap-[40px_100px] flex-wrap bg-neutral-50 px-10 py-4 max-md:max-w-full max-md:px-5">
+    <main className="flex-1 bg-neutral-50">
+      <div className="justify-between items-center flex min-h-16 w-full gap-[40px_100px] flex-wrap bg-neutral-50 px-10 py-4 max-md:max-w-full max-md:px-5">
         <SearchBar onSearch={onSearch} />
         <div className="items-center self-stretch flex gap-2 my-auto">
           <button
@@ -54,7 +54,7 @@ export const MainContent: React.FC<MainContentProps> = ({
             />
           </button>
         </div>
-      </header>
+      </div>
       
       <div className="justify-center items-stretch flex w-full flex-col flex-1 gap-9 bg-neutral-50 px-40 py-0 max-md:max-w-full max-md:px-5">
         <div className="gap-3 max-md:max-w-full">
