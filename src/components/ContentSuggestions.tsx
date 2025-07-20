@@ -30,6 +30,12 @@ export const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({ onWriteC
 
   return (
     <div className="w-full max-w-2xl mx-auto p-4">
+      {/* Title Section */}
+      <div className="text-center mb-8">
+        <h1 className="text-4xl font-bold text-gray-900 mb-2 font-playfair">or if you have a better idea...</h1>
+        <p className="text-gray-600">Start with a simple idea and get a first draft</p>
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-sm font-medium text-gray-700">Our suggestion for today</h2>
