@@ -29,42 +29,42 @@ export const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({ onWriteC
   ];
 
   return (
-    <div className="w-full max-w-2xl mx-auto p-6">
+    <div className="w-full max-w-2xl mx-auto p-4">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-lg font-medium text-gray-700">Our suggestion for today</h2>
-        <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900">
-          <Calendar className="h-4 w-4 mr-2" />
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-sm font-medium text-gray-700">Our suggestion for today</h2>
+        <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900 text-xs">
+          <Calendar className="h-3 w-3 mr-1" />
           See Calendar
         </Button>
       </div>
 
       {/* Content Card */}
-      <Card className="border border-gray-200 shadow-sm">
+      <Card className="border border-gray-200 shadow-sm rounded-lg">
         <CardContent className="p-0">
           {/* Card Header */}
-          <div className="flex items-center gap-3 p-4 border-b border-gray-100">
-            <div className="flex items-center justify-center w-8 h-8 bg-purple-600 rounded-full">
-              <Sparkles className="h-4 w-4 text-white" />
+          <div className="flex items-center gap-2 p-3 border-b border-gray-100">
+            <div className="flex items-center justify-center w-6 h-6 bg-purple-600 rounded-full">
+              <Sparkles className="h-3 w-3 text-white" />
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900">For Today</h3>
-              <p className="text-sm text-gray-500">Content Suggestions</p>
+              <h3 className="font-semibold text-gray-900 text-sm">For Today</h3>
+              <p className="text-xs text-gray-500">Content Suggestions</p>
             </div>
           </div>
 
           {/* Suggestions List */}
           <div className="divide-y divide-gray-100">
             {suggestions.map((suggestion) => (
-              <div key={suggestion.id} className="flex items-center justify-between p-4 hover:bg-gray-50">
-                <p className="text-gray-800 font-medium flex-1 pr-4">
+              <div key={suggestion.id} className="flex items-center justify-between p-3 hover:bg-gray-50 transition-colors">
+                <p className="text-gray-800 font-medium flex-1 pr-3 text-sm">
                   "{suggestion.title}"
                 </p>
                 <Button 
                   variant="outline" 
                   size="sm"
                   onClick={() => onWriteContent(suggestion)}
-                  className="shrink-0 text-gray-700 border-gray-300 hover:bg-gray-100"
+                  className="shrink-0 text-gray-700 border-gray-300 hover:bg-gray-100 text-xs h-7 px-2"
                 >
                   Write This
                 </Button>
