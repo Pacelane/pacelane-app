@@ -24,22 +24,20 @@ const SignIn = () => {
       {/* Left Side - Sign In Form */}
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-md">
+          {/* Logo */}
+          <div className="mb-8">
+            <div className="w-8 h-8 bg-primary rounded-full mb-4"></div>
+          </div>
+
           {/* Sign In Form */}
-          <Card className="bg-white shadow-xl border-0 rounded-3xl">
+          <Card className="bg-white shadow-lg">
             <CardContent className="p-8">
-              {/* Logo */}
-              <div className="flex justify-center mb-6">
-                <div className="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center">
-                  <div className="w-6 h-6 bg-white rounded-full"></div>
-                </div>
-              </div>
+              <h1 className="text-2xl font-semibold text-gray-900 mb-2">Sign in</h1>
+              <p className="text-gray-600 mb-6">Welcome back! Please enter your details.</p>
 
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Sign in</h1>
-              <p className="text-gray-500 mb-8">Welcome back! Please enter your details.</p>
-
-              <div className="space-y-6">
+              <div className="space-y-4">
                 <div>
-                  <label htmlFor="email" className="block text-sm font-semibold text-gray-900 mb-3">
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                     Email address
                   </label>
                   <Input
@@ -47,41 +45,36 @@ const SignIn = () => {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full h-12 px-4 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                    placeholder=""
+                    className="w-full"
+                    placeholder="Enter your email"
                   />
                 </div>
 
                 <Button 
                   onClick={handleContinue}
-                  className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl"
+                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-3"
                 >
                   Continue
                 </Button>
 
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-gray-200"></div>
-                  </div>
-                  <div className="relative flex justify-center text-sm">
-                    <span className="bg-white px-4 text-gray-500">or</span>
-                  </div>
+                <div className="text-center">
+                  <span className="text-gray-500">or</span>
                 </div>
 
                 <Button
                   variant="outline"
                   onClick={handleGoogleSignIn}
-                  className="w-full h-12 border border-gray-200 hover:bg-gray-50 font-medium rounded-xl"
+                  className="w-full border-gray-300 py-3"
                 >
-                  <Chrome className="mr-3 h-5 w-5" />
+                  <Chrome className="mr-2 h-4 w-4" />
                   Sign in with Google
                 </Button>
 
-                <div className="text-center pt-4">
-                  <span className="text-gray-500">Don't have an account? </span>
+                <div className="text-center">
+                  <span className="text-gray-600">Don't have an account? </span>
                   <button
                     onClick={handleSignUp}
-                    className="text-blue-600 hover:text-blue-700 font-semibold"
+                    className="text-primary hover:underline font-medium"
                   >
                     Sign up
                   </button>
@@ -89,6 +82,25 @@ const SignIn = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Testimonial */}
+          <div className="mt-8 flex items-start gap-4">
+            <div className="w-12 h-12 bg-gray-200 rounded-full overflow-hidden">
+              <img
+                src="https://api.builder.io/api/v1/image/assets/33e5c0ee54254724b25b444ecf442f35/75fe1b108c00417d7dc855be81d3b2879bf7e2f0?placeholderIfAbsent=true"
+                alt="Johanna Doe"
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div>
+              <p className="text-gray-900 font-medium mb-1">
+                "By far, the best investment I made to my career this year!"
+              </p>
+              <p className="text-gray-600 text-sm">
+                Johanna Doe • Investor
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
