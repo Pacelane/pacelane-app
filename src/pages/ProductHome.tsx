@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AppSidebar } from '@/components/app-sidebar';
 import { ChatInterface } from '@/components/ChatInterface';
+import { ContentSuggestions } from '@/components/ContentSuggestions';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -78,6 +79,11 @@ const ProductHome = () => {
     // Here you would typically send the message to your backend
   };
 
+  const handleWriteContent = (suggestion: any) => {
+    console.log('Write content:', suggestion);
+    // Here you would typically populate the chat input with the suggestion
+  };
+
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
@@ -136,7 +142,14 @@ const ProductHome = () => {
           </header>
           
           <div className="flex-1 bg-gray-50">
-            <ChatInterface onSendMessage={handleSendMessage} />
+            <div className="flex flex-col min-h-[calc(100vh-4rem)]">
+              <div className="pt-8">
+                <ContentSuggestions onWriteContent={handleWriteContent} />
+              </div>
+              <div className="flex-1">
+                <ChatInterface onSendMessage={handleSendMessage} />
+              </div>
+            </div>
           </div>
         </SidebarInset>
       </div>

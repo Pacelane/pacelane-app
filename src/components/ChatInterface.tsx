@@ -19,7 +19,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ onSendMessage }) =
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] p-8">
+    <div className="flex flex-col items-center justify-center p-8">
       <div className="w-full max-w-2xl">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2 font-playfair">
