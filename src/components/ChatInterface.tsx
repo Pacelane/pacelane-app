@@ -19,7 +19,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   return <div className="flex flex-col items-center justify-center p-8">
       <div className="w-full max-w-2xl">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2 font-playfair">or if you have a better idea...</h1>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2 font-playfair">or if you are felling creative...</h1>
           <p className="text-gray-600">Start with a simple idea and get a first draft</p>
         </div>
         
