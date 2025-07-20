@@ -26,7 +26,7 @@ export const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({
       {/* Title Section */}
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold text-gray-900 mb-2 font-playfair">Welcome back Paul!</h1>
-        <p className="text-gray-600">Our suggestions for today are</p>
+        
       </div>
 
       {/* Header */}
