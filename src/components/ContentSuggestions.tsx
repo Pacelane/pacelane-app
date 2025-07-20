@@ -56,7 +56,7 @@ export const ContentSuggestions: React.FC<ContentSuggestionsProps> = ({ onWriteC
           {/* Suggestions List */}
           <div className="divide-y divide-gray-100">
             {suggestions.map((suggestion) => (
-              <div key={suggestion.id} className="flex items-center justify-between p-4 hover:bg-gray-50">
+              <div key={suggestion.id} className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 rounded-lg mx-2 transition-colors duration-200">
                 <p className="text-gray-800 font-medium flex-1 pr-4">
                   "{suggestion.title}"
                 </p>
