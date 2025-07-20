@@ -26,7 +26,11 @@ const SignIn = () => {
         <div className="w-full max-w-md">
           {/* Logo */}
           <div className="mb-8">
-            <div className="w-8 h-8 bg-primary rounded-full mb-4"></div>
+            <img 
+              src="/lovable-uploads/fe97b466-2c78-4c2a-baeb-f2e13105460d.png" 
+              alt="Logo" 
+              className="w-8 h-8 mb-4"
+            />
           </div>
 
           {/* Sign In Form */}
