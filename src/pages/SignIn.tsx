@@ -105,12 +105,12 @@ const SignIn = () => {
       </div>
 
       {/* Right Side - Blue Character */}
-      <div className="flex-1 bg-gradient-to-br from-blue-200 to-blue-300 flex items-center justify-center">
+      <div className="flex-1 bg-muted flex items-center justify-center">
         <div className="relative">
           <img
             src="/lovable-uploads/039537f1-a082-4fd3-b40f-6c1366b7de40.png"
             alt="Blue character mascot"
-            className="w-80 h-auto"
+            className="w-96 h-auto"
           />
         </div>
       </div>
