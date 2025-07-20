@@ -17,7 +17,7 @@ interface NavigationItem {
   isActive?: boolean;
 }
 
-const Index = () => {
+const Home = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeNavItem, setActiveNavItem] = useState('home');
 
@@ -161,4 +161,4 @@ const Index = () => {
   );
 };
 
-export default Index;
+export default Home;
