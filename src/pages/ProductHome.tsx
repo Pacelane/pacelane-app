@@ -2,10 +2,18 @@ import React, { useState } from 'react';
 import { AppSidebar } from '@/components/app-sidebar';
 import { ChatInterface } from '@/components/ChatInterface';
 import { ContentSuggestions } from '@/components/ContentSuggestions';
+import { TemplateGrid } from '@/components/TemplateGrid';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Bell, Settings, Search } from 'lucide-react';
+
+interface Template {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+}
 
 interface NavigationItem {
   id: string;
@@ -42,6 +50,45 @@ const ProductHome = () => {
       label: 'Calendar',
       icon: 'https://api.builder.io/api/v1/image/assets/33e5c0ee54254724b25b444ecf442f35/54893a5cd62f99839478ff82093b736496144b3f?placeholderIfAbsent=true',
       isActive: activeNavItem === 'calendar'
+    }
+  ];
+
+  const templates: Template[] = [
+    {
+      id: 'personal-story-1',
+      title: 'Personal Story',
+      description: 'Create connection with your audience telling a story about your personal life',
+      icon: 'https://api.builder.io/api/v1/image/assets/33e5c0ee54254724b25b444ecf442f35/03bdf692d22293308983a6affc1ce250d82f8ebf?placeholderIfAbsent=true'
+    },
+    {
+      id: 'personal-story-2',
+      title: 'Personal Story',
+      description: 'Create connection with your audience telling a story about your personal life',
+      icon: 'https://api.builder.io/api/v1/image/assets/33e5c0ee54254724b25b444ecf442f35/29cecf9aeb93adfc682992d12fc2eacdfa96ffd5?placeholderIfAbsent=true'
+    },
+    {
+      id: 'challenge-week-1',
+      title: 'Challenge of The Week',
+      description: 'Tell about what was the most challenging thing you did this week and what you did to overcome it',
+      icon: 'https://api.builder.io/api/v1/image/assets/33e5c0ee54254724b25b444ecf442f35/8c9ca2642ebaffcc8667925dfc334dedfe589f65?placeholderIfAbsent=true'
+    },
+    {
+      id: 'personal-story-3',
+      title: 'Personal Story',
+      description: 'Create connection with your audience telling a story about your personal life',
+      icon: 'https://api.builder.io/api/v1/image/assets/33e5c0ee54254724b25b444ecf442f35/9aa0ba25748d53cebcb3b92152c392efc324056d?placeholderIfAbsent=true'
+    },
+    {
+      id: 'personal-story-4',
+      title: 'Personal Story',
+      description: 'Create connection with your audience telling a story about your personal life',
+      icon: 'https://api.builder.io/api/v1/image/assets/33e5c0ee54254724b25b444ecf442f35/26bc652ac3f23f23c6c4f0858bf491e86b046b94?placeholderIfAbsent=true'
+    },
+    {
+      id: 'challenge-week-2',
+      title: 'Challenge of The Week',
+      description: 'Tell about what was the most challenging thing you did this week and what you did to overcome it',
+      icon: 'https://api.builder.io/api/v1/image/assets/33e5c0ee54254724b25b444ecf442f35/5f3092ff4e0e76087438a7c421ee41482b395ad4?placeholderIfAbsent=true'
     }
   ];
 
@@ -82,6 +129,14 @@ const ProductHome = () => {
   const handleWriteContent = (suggestion: any) => {
     console.log('Write content:', suggestion);
     // Here you would typically populate the chat input with the suggestion
+  };
+
+  const handleTemplateSelect = (templateId: string) => {
+    console.log('Selected template:', templateId);
+  };
+
+  const handleStartFromScratch = () => {
+    console.log('Starting from scratch');
   };
 
   return (
@@ -148,6 +203,17 @@ const ProductHome = () => {
               </div>
               <div className="flex-1">
                 <ChatInterface onSendMessage={handleSendMessage} />
+              </div>
+              <div className="w-full max-w-2xl mx-auto p-4 pb-8">
+                <div className="text-center mb-6">
+                  <h2 className="text-2xl font-normal text-gray-900 mb-2 font-playfair">or choose from templates</h2>
+                  <p className="text-gray-600">Get started quickly with our pre-designed templates</p>
+                </div>
+                <TemplateGrid
+                  templates={templates}
+                  onTemplateSelect={handleTemplateSelect}
+                  onStartFromScratch={handleStartFromScratch}
+                />
               </div>
             </div>
           </div>
