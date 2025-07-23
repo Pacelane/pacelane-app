@@ -19,7 +19,7 @@ export const TemplateCard: React.FC<TemplateCardProps> = ({
     return (
       <button
         onClick={onClick}
-        className="justify-center items-center border flex min-h-[180px] w-[272px] max-w-full flex-col text-sm text-[#4E4E55] font-medium leading-none gap-4 bg-white mt-3 px-2.5 py-12 rounded-2xl border-dashed border-[rgba(39,39,42,0.15)] hover:bg-gray-50 transition-colors"
+        className="justify-center items-center border flex min-h-[140px] w-48 flex-col text-sm text-[#4E4E55] font-medium leading-none gap-3 bg-white px-2.5 py-8 rounded-2xl border-dashed border-[rgba(39,39,42,0.15)] hover:bg-gray-50 transition-colors"
       >
         <img
           src={icon}
@@ -35,7 +35,7 @@ export const TemplateCard: React.FC<TemplateCardProps> = ({
 
   return (
     <article
-      className="border shadow-[0px_-1px_0px_0px_rgba(0,0,0,0.10)_inset,0px_1px_2px_0px_rgba(0,0,0,0.05)] min-w-60 min-h-[180px] flex-1 shrink basis-[0%] gap-3 bg-white p-4 rounded-2xl border-solid border-[rgba(39,39,42,0.10)] cursor-pointer hover:shadow-lg transition-shadow"
+      className="border shadow-[0px_-1px_0px_0px_rgba(0,0,0,0.10)_inset,0px_1px_2px_0px_rgba(0,0,0,0.05)] w-48 min-h-[140px] gap-3 bg-white p-4 rounded-2xl border-solid border-[rgba(39,39,42,0.10)] cursor-pointer hover:shadow-lg transition-shadow"
       onClick={onClick}
       role="button"
       tabIndex={0}
