@@ -19,14 +19,14 @@ export const TemplateCard: React.FC<TemplateCardProps> = ({
     return (
       <button
         onClick={onClick}
-        className="justify-center items-center border flex min-h-[140px] w-48 flex-col text-sm text-[#4E4E55] font-medium leading-none gap-3 bg-white px-2.5 py-8 rounded-2xl border-dashed border-[rgba(39,39,42,0.15)] hover:bg-gray-50 transition-colors"
+        className="justify-center items-center border flex min-h-[120px] w-40 flex-col text-sm text-[#4E4E55] font-medium leading-none gap-2 bg-white px-2 py-6 rounded-2xl border-dashed border-[rgba(39,39,42,0.15)] hover:bg-gray-50 transition-colors"
       >
         <img
           src={icon}
           alt=""
-          className="aspect-[1] object-contain w-12"
+          className="aspect-[1] object-contain w-10"
         />
-        <div className="text-[#4E4E55] text-sm font-medium leading-5 mt-4">
+        <div className="text-[#4E4E55] text-xs font-medium leading-4 mt-2">
           {title}
         </div>
       </button>
@@ -35,7 +35,7 @@ export const TemplateCard: React.FC<TemplateCardProps> = ({
 
   return (
     <article
-      className="border shadow-[0px_-1px_0px_0px_rgba(0,0,0,0.10)_inset,0px_1px_2px_0px_rgba(0,0,0,0.05)] w-48 min-h-[140px] gap-3 bg-white p-4 rounded-2xl border-solid border-[rgba(39,39,42,0.10)] cursor-pointer hover:shadow-lg transition-shadow"
+      className="border shadow-[0px_-1px_0px_0px_rgba(0,0,0,0.10)_inset,0px_1px_2px_0px_rgba(0,0,0,0.05)] w-40 min-h-[120px] gap-2 bg-white p-3 rounded-2xl border-solid border-[rgba(39,39,42,0.10)] cursor-pointer hover:shadow-lg transition-shadow"
       onClick={onClick}
       role="button"
       tabIndex={0}
@@ -49,13 +49,13 @@ export const TemplateCard: React.FC<TemplateCardProps> = ({
       <img
         src={icon}
         alt=""
-        className="aspect-[1] object-contain w-7"
+        className="aspect-[1] object-contain w-6"
       />
-      <div className="w-full gap-2 mt-3">
-        <h3 className="text-[#111115] text-xl font-medium leading-7">
+      <div className="w-full gap-1 mt-2">
+        <h3 className="text-[#111115] text-lg font-medium leading-6">
           {title}
         </h3>
-        <p className="text-[#4E4E55] text-sm font-normal leading-5 mt-2">
+        <p className="text-[#4E4E55] text-xs font-normal leading-4 mt-1">
           {description}
         </p>
       </div>
