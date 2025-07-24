@@ -76,7 +76,14 @@ export type Database = {
           created_at: string | null
           display_name: string | null
           id: string
+          linkedin_about: string | null
+          linkedin_company: string | null
+          linkedin_data: Json | null
+          linkedin_headline: string | null
+          linkedin_location: string | null
+          linkedin_name: string | null
           linkedin_profile: string | null
+          linkedin_scraped_at: string | null
           onboarding_completed: boolean | null
           updated_at: string | null
           user_id: string
@@ -86,7 +93,14 @@ export type Database = {
           created_at?: string | null
           display_name?: string | null
           id?: string
+          linkedin_about?: string | null
+          linkedin_company?: string | null
+          linkedin_data?: Json | null
+          linkedin_headline?: string | null
+          linkedin_location?: string | null
+          linkedin_name?: string | null
           linkedin_profile?: string | null
+          linkedin_scraped_at?: string | null
           onboarding_completed?: boolean | null
           updated_at?: string | null
           user_id: string
@@ -96,7 +110,14 @@ export type Database = {
           created_at?: string | null
           display_name?: string | null
           id?: string
+          linkedin_about?: string | null
+          linkedin_company?: string | null
+          linkedin_data?: Json | null
+          linkedin_headline?: string | null
+          linkedin_location?: string | null
+          linkedin_name?: string | null
           linkedin_profile?: string | null
+          linkedin_scraped_at?: string | null
           onboarding_completed?: boolean | null
           updated_at?: string | null
           user_id?: string

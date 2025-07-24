@@ -27,6 +27,11 @@ const FirstThingsFirst = () => {
       return;
     }
 
+    if (!user) {
+      toast.error('Please sign in to continue');
+      return;
+    }
+
     setScraping(true);
     setScrapingComplete(false);
     
@@ -43,8 +48,29 @@ const FirstThingsFirst = () => {
 
       if (data.success && data.profileData) {
         setProfileData(data.profileData);
+        
+        // Save LinkedIn data to database
+        const { error: saveError } = await supabase
+          .from('profiles')
+          .update({
+            linkedin_data: data.profileData,
+            linkedin_name: data.profileData.fullName || null,
+            linkedin_company: data.profileData.company || null,
+            linkedin_about: data.profileData.about || null,
+            linkedin_location: data.profileData.location || null,
+            linkedin_headline: data.profileData.headline || null,
+            linkedin_scraped_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id);
+
+        if (saveError) {
+          console.error('Error saving LinkedIn data:', saveError);
+          toast.error('Failed to save LinkedIn data');
+          return;
+        }
+
         setScrapingComplete(true);
-        toast.success('LinkedIn profile scraped successfully!');
+        toast.success('LinkedIn profile scraped and saved successfully!');
       } else {
         throw new Error('No profile data found');
       }
