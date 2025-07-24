@@ -38,6 +38,51 @@ export type Database = {
         }
         Relationships: []
       }
+      inspirations: {
+        Row: {
+          about: string | null
+          company: string | null
+          created_at: string
+          headline: string | null
+          id: string
+          linkedin_data: Json | null
+          linkedin_url: string
+          location: string | null
+          name: string | null
+          scraped_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          about?: string | null
+          company?: string | null
+          created_at?: string
+          headline?: string | null
+          id?: string
+          linkedin_data?: Json | null
+          linkedin_url: string
+          location?: string | null
+          name?: string | null
+          scraped_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          about?: string | null
+          company?: string | null
+          created_at?: string
+          headline?: string | null
+          id?: string
+          linkedin_data?: Json | null
+          linkedin_url?: string
+          location?: string | null
+          name?: string | null
+          scraped_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
