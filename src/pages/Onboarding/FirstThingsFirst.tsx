@@ -13,74 +13,11 @@ const FirstThingsFirst = () => {
   const { user, refreshProfile } = useAuth();
   const [linkedinProfile, setLinkedinProfile] = useState('');
   const [loading, setLoading] = useState(false);
-  const [scraping, setScraping] = useState(false);
-  const [scrapingComplete, setScrapingComplete] = useState(false);
-  const [profileData, setProfileData] = useState(null);
 
   const handleGoBack = () => {
     navigate('/onboarding/welcome');
   };
 
-  const handleScrapeProfile = async () => {
-    if (!linkedinProfile.trim()) {
-      toast.error('Please enter your LinkedIn profile URL');
-      return;
-    }
-
-    if (!user) {
-      toast.error('Please sign in to continue');
-      return;
-    }
-
-    setScraping(true);
-    setScrapingComplete(false);
-    
-    try {
-      const fullUrl = linkedinProfile.startsWith('http') 
-        ? linkedinProfile 
-        : `https://${linkedinProfile}`;
-
-      const { data, error } = await supabase.functions.invoke('scrape-linkedin-profile', {
-        body: { linkedinUrl: fullUrl }
-      });
-
-      if (error) throw error;
-
-      if (data.success && data.profileData) {
-        setProfileData(data.profileData);
-        
-        // Save LinkedIn data to database
-        const { error: saveError } = await supabase
-          .from('profiles')
-          .update({
-            linkedin_data: data.profileData,
-            linkedin_name: data.profileData.fullName || null,
-            linkedin_company: data.profileData.company || null,
-            linkedin_about: data.profileData.about || null,
-            linkedin_location: data.profileData.location || null,
-            linkedin_headline: data.profileData.headline || null,
-            linkedin_scraped_at: new Date().toISOString()
-          })
-          .eq('user_id', user.id);
-
-        if (saveError) {
-          console.error('Error saving LinkedIn data:', saveError);
-          toast.error('Failed to save LinkedIn data');
-          return;
-        }
-
-        setScrapingComplete(true);
-        toast.success('LinkedIn profile scraped and saved successfully!');
-      } else {
-        throw new Error('No profile data found');
-      }
-    } catch (error: any) {
-      console.error('Error scraping LinkedIn profile:', error);
-      toast.error(error.message || 'Failed to scrape LinkedIn profile');
-    } finally {
-      setScraping(false);
-    }
-  };
 
   const handleContinue = async () => {
     if (!user) {
@@ -88,15 +25,49 @@ const FirstThingsFirst = () => {
       return;
     }
 
+    if (!linkedinProfile.trim()) {
+      toast.error('Please enter your LinkedIn profile URL');
+      return;
+    }
+
     setLoading(true);
     try {
-      // Update the user's profile with onboarding data
+      // First, scrape the LinkedIn profile
+      const fullUrl = linkedinProfile.startsWith('http') 
+        ? linkedinProfile 
+        : `https://${linkedinProfile}`;
+
+      const { data, error: scrapeError } = await supabase.functions.invoke('scrape-linkedin-profile', {
+        body: { linkedinUrl: fullUrl }
+      });
+
+      let profileData = null;
+      if (!scrapeError && data?.success && data?.profileData) {
+        profileData = data.profileData;
+        toast.success('LinkedIn profile analyzed successfully!');
+      } else {
+        console.warn('LinkedIn scraping failed, continuing without profile data:', scrapeError);
+        toast.warning('Could not analyze LinkedIn profile, but continuing with setup');
+      }
+
+      // Update the user's profile with onboarding data and scraped data
+      const updateData = {
+        linkedin_profile: linkedinProfile.trim(),
+        onboarding_completed: true,
+        ...(profileData && {
+          linkedin_data: profileData,
+          linkedin_name: profileData.fullName || null,
+          linkedin_company: profileData.company || null,
+          linkedin_about: profileData.about || null,
+          linkedin_location: profileData.location || null,
+          linkedin_headline: profileData.headline || null,
+          linkedin_scraped_at: new Date().toISOString()
+        })
+      };
+
       const { error } = await supabase
         .from('profiles')
-        .update({
-          linkedin_profile: linkedinProfile.trim(),
-          onboarding_completed: true
-        })
+        .update(updateData)
         .eq('user_id', user.id);
 
       if (error) throw error;
@@ -104,10 +75,10 @@ const FirstThingsFirst = () => {
       // Refresh the profile in context
       await refreshProfile();
       
-      toast.success('Profile updated successfully!');
+      toast.success('Profile setup completed!');
       navigate('/product-home');
     } catch (error: any) {
-      toast.error(error.message || 'Failed to update profile');
+      toast.error(error.message || 'Failed to complete setup');
     } finally {
       setLoading(false);
     }
@@ -165,45 +136,6 @@ const FirstThingsFirst = () => {
               </div>
             </div>
 
-            {/* Scrape Profile Button */}
-            <div className="pt-4">
-              <Button 
-                onClick={handleScrapeProfile}
-                disabled={!linkedinProfile.trim() || scraping}
-                variant="outline"
-                className="w-full border-blue-600 text-blue-600 hover:bg-blue-50"
-              >
-                {scraping ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Scraping Profile...
-                  </>
-                ) : (
-                  'Analyze LinkedIn Profile'
-                )}
-              </Button>
-            </div>
-
-            {/* Profile Data Preview */}
-            {scrapingComplete && profileData && (
-              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                <h3 className="text-sm font-medium text-[#111115] mb-3">Profile Preview:</h3>
-                <div className="space-y-2 text-sm">
-                  {profileData.fullName && (
-                    <p><span className="font-medium">Name:</span> {profileData.fullName}</p>
-                  )}
-                  {profileData.headline && (
-                    <p><span className="font-medium">Headline:</span> {profileData.headline}</p>
-                  )}
-                  {profileData.location && (
-                    <p><span className="font-medium">Location:</span> {profileData.location}</p>
-                  )}
-                  {profileData.about && (
-                    <p><span className="font-medium">About:</span> {profileData.about.substring(0, 150)}...</p>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
 
           <p className="text-[#4E4E55] text-sm text-center mt-8 mb-8">
@@ -215,7 +147,14 @@ const FirstThingsFirst = () => {
             disabled={!linkedinProfile.trim() || loading}
             className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium py-3 rounded-lg"
           >
-            {loading ? 'Saving...' : 'Continue'}
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Analyzing LinkedIn Profile...
+              </>
+            ) : (
+              'Continue'
+            )}
           </Button>
         </div>
       </div>
