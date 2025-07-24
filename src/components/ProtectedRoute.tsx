@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { OnboardingGuard } from './OnboardingGuard';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -21,7 +22,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     return <Navigate to="/signin" replace />;
   }
 
-  return <>{children}</>;
+  return (
+    <OnboardingGuard>
+      {children}
+    </OnboardingGuard>
+  );
 };
 
 export default ProtectedRoute;

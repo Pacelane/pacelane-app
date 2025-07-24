@@ -4,20 +4,51 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 const FirstThingsFirst = () => {
   const navigate = useNavigate();
+  const { user, refreshProfile } = useAuth();
   const [linkedinProfile, setLinkedinProfile] = useState('');
   const [companyLinkedin, setCompanyLinkedin] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleGoBack = () => {
     navigate('/onboarding/welcome');
   };
 
-  const handleContinue = () => {
-    // For now, navigate to the main app
-    // Later this can be expanded to more onboarding steps
-    navigate('/product-home');
+  const handleContinue = async () => {
+    if (!user) {
+      toast.error('Please sign in to continue');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Update the user's profile with onboarding data
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          linkedin_profile: linkedinProfile.trim(),
+          company_linkedin: companyLinkedin.trim() || null,
+          onboarding_completed: true
+        })
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      // Refresh the profile in context
+      await refreshProfile();
+      
+      toast.success('Profile updated successfully!');
+      navigate('/product-home');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update profile');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -101,10 +132,10 @@ const FirstThingsFirst = () => {
 
           <Button 
             onClick={handleContinue}
-            disabled={!linkedinProfile.trim()}
+            disabled={!linkedinProfile.trim() || loading}
             className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium py-3 rounded-lg"
           >
-            Continue
+            {loading ? 'Saving...' : 'Continue'}
           </Button>
         </div>
       </div>
