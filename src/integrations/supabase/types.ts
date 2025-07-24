@@ -70,6 +70,39 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          company_linkedin: string | null
+          created_at: string | null
+          display_name: string | null
+          id: string
+          linkedin_profile: string | null
+          onboarding_completed: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          company_linkedin?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          id?: string
+          linkedin_profile?: string | null
+          onboarding_completed?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          company_linkedin?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          id?: string
+          linkedin_profile?: string | null
+          onboarding_completed?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
