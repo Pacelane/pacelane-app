@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -13,9 +13,47 @@ const FirstThingsFirst = () => {
   const { user, refreshProfile } = useAuth();
   const [linkedinProfile, setLinkedinProfile] = useState('');
   const [loading, setLoading] = useState(false);
+  const [scraping, setScraping] = useState(false);
+  const [scrapingComplete, setScrapingComplete] = useState(false);
+  const [profileData, setProfileData] = useState(null);
 
   const handleGoBack = () => {
     navigate('/onboarding/welcome');
+  };
+
+  const handleScrapeProfile = async () => {
+    if (!linkedinProfile.trim()) {
+      toast.error('Please enter your LinkedIn profile URL');
+      return;
+    }
+
+    setScraping(true);
+    setScrapingComplete(false);
+    
+    try {
+      const fullUrl = linkedinProfile.startsWith('http') 
+        ? linkedinProfile 
+        : `https://${linkedinProfile}`;
+
+      const { data, error } = await supabase.functions.invoke('scrape-linkedin-profile', {
+        body: { linkedinUrl: fullUrl }
+      });
+
+      if (error) throw error;
+
+      if (data.success && data.profileData) {
+        setProfileData(data.profileData);
+        setScrapingComplete(true);
+        toast.success('LinkedIn profile scraped successfully!');
+      } else {
+        throw new Error('No profile data found');
+      }
+    } catch (error: any) {
+      console.error('Error scraping LinkedIn profile:', error);
+      toast.error(error.message || 'Failed to scrape LinkedIn profile');
+    } finally {
+      setScraping(false);
+    }
   };
 
   const handleContinue = async () => {
@@ -100,6 +138,46 @@ const FirstThingsFirst = () => {
                 </span>
               </div>
             </div>
+
+            {/* Scrape Profile Button */}
+            <div className="pt-4">
+              <Button 
+                onClick={handleScrapeProfile}
+                disabled={!linkedinProfile.trim() || scraping}
+                variant="outline"
+                className="w-full border-blue-600 text-blue-600 hover:bg-blue-50"
+              >
+                {scraping ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Scraping Profile...
+                  </>
+                ) : (
+                  'Analyze LinkedIn Profile'
+                )}
+              </Button>
+            </div>
+
+            {/* Profile Data Preview */}
+            {scrapingComplete && profileData && (
+              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                <h3 className="text-sm font-medium text-[#111115] mb-3">Profile Preview:</h3>
+                <div className="space-y-2 text-sm">
+                  {profileData.fullName && (
+                    <p><span className="font-medium">Name:</span> {profileData.fullName}</p>
+                  )}
+                  {profileData.headline && (
+                    <p><span className="font-medium">Headline:</span> {profileData.headline}</p>
+                  )}
+                  {profileData.location && (
+                    <p><span className="font-medium">Location:</span> {profileData.location}</p>
+                  )}
+                  {profileData.about && (
+                    <p><span className="font-medium">About:</span> {profileData.about.substring(0, 150)}...</p>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           <p className="text-[#4E4E55] text-sm text-center mt-8 mb-8">
