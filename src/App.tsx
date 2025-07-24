@@ -17,6 +17,9 @@ import Inspirations from "./pages/Onboarding/Inspirations";
 import Goals from "./pages/Onboarding/Goals";
 import Guides from "./pages/Onboarding/Guides";
 import ContentPillars from "./pages/Onboarding/ContentPillars";
+import Pacing from "./pages/Onboarding/Pacing";
+import Contact from "./pages/Onboarding/Contact";
+import Ready from "./pages/Onboarding/Ready";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +40,9 @@ const App = () => (
             <Route path="/onboarding/goals" element={<Goals />} />
             <Route path="/onboarding/guides" element={<Guides />} />
             <Route path="/onboarding/content-pillars" element={<ContentPillars />} />
+            <Route path="/onboarding/pacing" element={<Pacing />} />
+            <Route path="/onboarding/contact" element={<Contact />} />
+            <Route path="/onboarding/ready" element={<Ready />} />
             <Route
               path="/product-home" 
               element={

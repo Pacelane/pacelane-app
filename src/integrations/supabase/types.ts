@@ -118,8 +118,10 @@ export type Database = {
       profiles: {
         Row: {
           company_linkedin: string | null
+          content_guides: Json | null
           created_at: string | null
           display_name: string | null
+          goals: Json | null
           id: string
           linkedin_about: string | null
           linkedin_company: string | null
@@ -130,13 +132,17 @@ export type Database = {
           linkedin_profile: string | null
           linkedin_scraped_at: string | null
           onboarding_completed: boolean | null
+          pacing_preferences: Json | null
+          phone_number: string | null
           updated_at: string | null
           user_id: string
         }
         Insert: {
           company_linkedin?: string | null
+          content_guides?: Json | null
           created_at?: string | null
           display_name?: string | null
+          goals?: Json | null
           id?: string
           linkedin_about?: string | null
           linkedin_company?: string | null
@@ -147,13 +153,17 @@ export type Database = {
           linkedin_profile?: string | null
           linkedin_scraped_at?: string | null
           onboarding_completed?: boolean | null
+          pacing_preferences?: Json | null
+          phone_number?: string | null
           updated_at?: string | null
           user_id: string
         }
         Update: {
           company_linkedin?: string | null
+          content_guides?: Json | null
           created_at?: string | null
           display_name?: string | null
+          goals?: Json | null
           id?: string
           linkedin_about?: string | null
           linkedin_company?: string | null
@@ -164,6 +174,8 @@ export type Database = {
           linkedin_profile?: string | null
           linkedin_scraped_at?: string | null
           onboarding_completed?: boolean | null
+          pacing_preferences?: Json | null
+          phone_number?: string | null
           updated_at?: string | null
           user_id?: string
         }

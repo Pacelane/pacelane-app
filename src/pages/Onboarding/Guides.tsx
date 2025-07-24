@@ -2,16 +2,22 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/components/ui/use-toast';
 import { ChevronLeft, Trash2 } from 'lucide-react';
 
 const Guides = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [guides, setGuides] = useState<string[]>([
     'Be Honest About Challenges',
     'Promote Ideas, Not Just Myself',
     'Avoid buzzwords and empty phrases'
   ]);
   const [newGuide, setNewGuide] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleGoBack = () => {
     navigate('/onboarding/goals');
@@ -28,8 +34,30 @@ const Guides = () => {
     setGuides(guides.filter((_, i) => i !== index));
   };
 
-  const handleContinue = () => {
-    navigate('/onboarding/content-pillars');
+  const handleContinue = async () => {
+    if (!user) return;
+    
+    setIsLoading(true);
+    
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ content_guides: guides })
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      navigate('/onboarding/content-pillars');
+    } catch (error) {
+      console.error('Error saving guides:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save guides. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -123,14 +151,17 @@ const Guides = () => {
             <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
             <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
             <div className="w-8 h-1 bg-gray-300 rounded-full"></div>
+            <div className="w-8 h-1 bg-gray-300 rounded-full"></div>
+            <div className="w-8 h-1 bg-gray-300 rounded-full"></div>
+            <div className="w-8 h-1 bg-gray-300 rounded-full"></div>
           </div>
 
           <Button 
             onClick={handleContinue}
-            disabled={guides.length === 0}
+            disabled={guides.length === 0 || isLoading}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg disabled:opacity-50"
           >
-            Continue
+            {isLoading ? "Saving..." : "Continue"}
           </Button>
         </div>
       </div>

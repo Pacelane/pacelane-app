@@ -40,11 +40,10 @@ const ContentPillars = () => {
     setIsLoading(true);
     
     try {
-      // Update the profile to mark onboarding as completed
+      // Save content pillars data
       const { error } = await supabase
         .from('profiles')
         .update({ 
-          onboarding_completed: true,
           linkedin_data: {
             ...{}, // Keep existing linkedin_data if any
             content_pillars: selectedPillars
@@ -54,20 +53,12 @@ const ContentPillars = () => {
 
       if (error) throw error;
 
-      // Refresh the profile in context
-      await refreshProfile();
-
-      toast({
-        title: "Onboarding completed!",
-        description: "Welcome to your product dashboard.",
-      });
-
-      navigate('/product-home');
+      navigate('/onboarding/pacing');
     } catch (error) {
-      console.error('Error completing onboarding:', error);
+      console.error('Error saving content pillars:', error);
       toast({
         title: "Error",
-        description: "Failed to complete onboarding. Please try again.",
+        description: "Failed to save content pillars. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -140,6 +131,9 @@ const ContentPillars = () => {
             <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
             <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
             <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
+            <div className="w-8 h-1 bg-gray-300 rounded-full"></div>
+            <div className="w-8 h-1 bg-gray-300 rounded-full"></div>
+            <div className="w-8 h-1 bg-gray-300 rounded-full"></div>
           </div>
 
           <Button 
@@ -147,7 +141,7 @@ const ContentPillars = () => {
             disabled={selectedPillars.length === 0 || isLoading}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg disabled:opacity-50"
           >
-            {isLoading ? "Completing..." : "Continue"}
+            {isLoading ? "Saving..." : "Continue"}
           </Button>
         </div>
       </div>

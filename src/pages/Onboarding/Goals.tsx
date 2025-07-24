@@ -1,11 +1,17 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/components/ui/use-toast';
 import { ChevronLeft } from 'lucide-react';
 
 const Goals = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const goals = [
     'Build Authority',
@@ -31,7 +37,29 @@ const Goals = () => {
   };
 
   const handleContinue = async () => {
-    navigate('/onboarding/guides');
+    if (!user) return;
+    
+    setIsLoading(true);
+    
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ goals: selectedGoals })
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      navigate('/onboarding/guides');
+    } catch (error) {
+      console.error('Error saving goals:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save goals. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -101,14 +129,17 @@ const Goals = () => {
             <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
             <div className="w-8 h-1 bg-gray-300 rounded-full"></div>
             <div className="w-8 h-1 bg-gray-300 rounded-full"></div>
+            <div className="w-8 h-1 bg-gray-300 rounded-full"></div>
+            <div className="w-8 h-1 bg-gray-300 rounded-full"></div>
+            <div className="w-8 h-1 bg-gray-300 rounded-full"></div>
           </div>
 
           <Button 
             onClick={handleContinue}
-            disabled={selectedGoals.length === 0}
+            disabled={selectedGoals.length === 0 || isLoading}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg disabled:opacity-50"
           >
-            Continue
+            {isLoading ? "Saving..." : "Continue"}
           </Button>
         </div>
       </div>
