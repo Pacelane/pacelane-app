@@ -167,7 +167,6 @@ List relevant skills and actively seek endorsements from colleagues and clients.
       };
 
       setChatMessages(prev => [...prev, assistantMessage]);
-      toast.success('AI response received');
 
     } catch (error: any) {
       console.error('Error sending message:', error);
