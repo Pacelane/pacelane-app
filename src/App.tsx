@@ -15,6 +15,8 @@ import Welcome from "./pages/Onboarding/Welcome";
 import FirstThingsFirst from "./pages/Onboarding/FirstThingsFirst";
 import Inspirations from "./pages/Onboarding/Inspirations";
 import Goals from "./pages/Onboarding/Goals";
+import Guides from "./pages/Onboarding/Guides";
+import ContentPillars from "./pages/Onboarding/ContentPillars";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +35,8 @@ const App = () => (
             <Route path="/onboarding/first-things-first" element={<FirstThingsFirst />} />
             <Route path="/onboarding/inspirations" element={<Inspirations />} />
             <Route path="/onboarding/goals" element={<Goals />} />
+            <Route path="/onboarding/guides" element={<Guides />} />
+            <Route path="/onboarding/content-pillars" element={<ContentPillars />} />
             <Route
               path="/product-home" 
               element={

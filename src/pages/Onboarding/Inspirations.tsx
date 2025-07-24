@@ -263,6 +263,8 @@ const Inspirations = () => {
           <div className="flex justify-center gap-2 mb-8">
             <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
             <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
+            <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
+            <div className="w-8 h-1 bg-gray-300 rounded-full"></div>
             <div className="w-8 h-1 bg-gray-300 rounded-full"></div>
             <div className="w-8 h-1 bg-gray-300 rounded-full"></div>
           </div>
