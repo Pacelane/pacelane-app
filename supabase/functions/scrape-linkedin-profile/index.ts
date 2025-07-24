@@ -89,9 +89,9 @@ serve(async (req) => {
     const runId = runData.data.id;
     console.log('Actor run started with ID:', runId);
 
-    // Wait for the run to complete
+    // Wait for the run to complete (reduced timeout for edge functions)
     let attempts = 0;
-    const maxAttempts = 30; // 5 minutes max (30 * 10 seconds)
+    const maxAttempts = 12; // 2 minutes max (12 * 5 seconds avg)
     
     while (attempts < maxAttempts) {
       const statusResponse = await fetch(`https://api.apify.com/v2/acts/5fajYOBUfeb6fgKlB/runs/${runId}`, {
@@ -145,12 +145,12 @@ serve(async (req) => {
           }
         );
       } else if (statusData.status === 'RUNNING') {
-        // Wait 10 seconds before checking again
-        await new Promise(resolve => setTimeout(resolve, 10000));
+        // Wait 5 seconds before checking again
+        await new Promise(resolve => setTimeout(resolve, 5000));
         attempts++;
       } else {
-        // Wait 5 seconds for other statuses
-        await new Promise(resolve => setTimeout(resolve, 5000));
+        // Wait 3 seconds for other statuses
+        await new Promise(resolve => setTimeout(resolve, 3000));
         attempts++;
       }
     }
