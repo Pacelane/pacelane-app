@@ -21,7 +21,7 @@ export const TemplateGrid: React.FC<TemplateGridProps> = ({
 }) => {
   return (
     <section className="w-full mt-6">
-      <div className="flex justify-center gap-4 max-w-lg mx-auto">
+      <div className="flex justify-center gap-4 max-w-3xl mx-auto">
         {templates.slice(0, 2).map((template) => (
           <TemplateCard
             key={template.id}
@@ -31,8 +31,6 @@ export const TemplateGrid: React.FC<TemplateGridProps> = ({
             onClick={() => onTemplateSelect(template.id)}
           />
         ))}
-      </div>
-      <div className="flex justify-center mt-4">
         <TemplateCard
           title="Start from scratch"
           description=""
