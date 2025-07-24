@@ -13,6 +13,8 @@ import Profile from "./pages/Profile";
 import ContentEditor from "./pages/ContentEditor";
 import Welcome from "./pages/Onboarding/Welcome";
 import FirstThingsFirst from "./pages/Onboarding/FirstThingsFirst";
+import Inspirations from "./pages/Onboarding/Inspirations";
+import Goals from "./pages/Onboarding/Goals";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,7 +31,9 @@ const App = () => (
             <Route path="/signin" element={<SignIn />} />
             <Route path="/onboarding/welcome" element={<Welcome />} />
             <Route path="/onboarding/first-things-first" element={<FirstThingsFirst />} />
-            <Route 
+            <Route path="/onboarding/inspirations" element={<Inspirations />} />
+            <Route path="/onboarding/goals" element={<Goals />} />
+            <Route
               path="/product-home" 
               element={
                 <ProtectedRoute>

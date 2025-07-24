@@ -53,7 +53,6 @@ const FirstThingsFirst = () => {
       // Update the user's profile with onboarding data and scraped data
       const updateData = {
         linkedin_profile: linkedinProfile.trim(),
-        onboarding_completed: true,
         ...(profileData && {
           linkedin_data: profileData,
           linkedin_name: profileData.fullName || null,
@@ -76,7 +75,7 @@ const FirstThingsFirst = () => {
       await refreshProfile();
       
       toast.success('Profile setup completed!');
-      navigate('/product-home');
+      navigate('/onboarding/inspirations');
     } catch (error: any) {
       toast.error(error.message || 'Failed to complete setup');
     } finally {
