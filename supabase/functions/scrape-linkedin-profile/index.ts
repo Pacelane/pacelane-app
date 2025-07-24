@@ -73,14 +73,28 @@ serve(async (req) => {
     }
 
     const runData = await runResponse.json();
-    console.log('Actor run started:', runData.id);
+    console.log('Full runData response:', JSON.stringify(runData, null, 2));
+    
+    if (!runData.data || !runData.data.id) {
+      console.error('Invalid response from Apify API:', runData);
+      return new Response(
+        JSON.stringify({ error: 'Failed to start LinkedIn scraping - invalid API response' }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+    
+    const runId = runData.data.id;
+    console.log('Actor run started with ID:', runId);
 
     // Wait for the run to complete
     let attempts = 0;
     const maxAttempts = 30; // 5 minutes max (30 * 10 seconds)
     
     while (attempts < maxAttempts) {
-      const statusResponse = await fetch(`https://api.apify.com/v2/acts/5fajYOBUfeb6fgKlB/runs/${runData.id}`, {
+      const statusResponse = await fetch(`https://api.apify.com/v2/acts/5fajYOBUfeb6fgKlB/runs/${runId}`, {
         headers: {
           'Authorization': `Bearer ${apifyApiKey}`,
         },
