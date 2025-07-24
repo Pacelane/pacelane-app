@@ -41,6 +41,37 @@ const KnowledgeBase = () => {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
 
+  // Helper function to determine file type from filename
+  const getFileTypeFromName = (filename: string): 'file' | 'image' | 'audio' | 'video' | 'link' => {
+    const extension = filename.toLowerCase().split('.').pop();
+    
+    if (!extension) return 'file';
+    
+    if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(extension)) {
+      return 'image';
+    }
+    if (['mp4', 'avi', 'mov', 'webm', 'mkv'].includes(extension)) {
+      return 'video';
+    }
+    if (['mp3', 'wav', 'ogg', 'm4a', 'flac'].includes(extension)) {
+      return 'audio';
+    }
+    
+    return 'file';
+  };
+
+  // Helper function to check if file type is allowed
+  const isFileTypeAllowed = (file: File): boolean => {
+    const allowedTypes = [
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/msword',
+      'image/png'
+    ];
+    
+    return allowedTypes.includes(file.type);
+  };
+
   const navigationItems: NavigationItem[] = [
     {
       id: 'home',
@@ -76,11 +107,31 @@ const KnowledgeBase = () => {
   }, [user]);
 
   const loadKnowledgeItems = async () => {
+    if (!user) return;
+    
     try {
       setLoading(true);
-      // For now, we'll simulate loading from database
-      // In the future, this will connect to a real database table
-      setKnowledgeItems([]);
+      const { data: files, error } = await supabase.storage
+        .from('knowledge-base')
+        .list(user.id, {
+          limit: 100,
+          offset: 0
+        });
+
+      if (error) throw error;
+
+      const knowledgeFiles: KnowledgeItem[] = files?.map(file => ({
+        id: file.id || file.name,
+        name: file.name,
+        type: getFileTypeFromName(file.name),
+        size: file.metadata?.size,
+        user_id: user.id,
+        created_at: file.created_at || new Date().toISOString(),
+        updated_at: file.updated_at || new Date().toISOString(),
+        url: `https://plbgeabtrkdhbrnjonje.supabase.co/storage/v1/object/knowledge-base/${user.id}/${file.name}`
+      })) || [];
+
+      setKnowledgeItems(knowledgeFiles);
     } catch (error) {
       console.error('Error loading knowledge items:', error);
       toast.error('Failed to load files');
@@ -145,10 +196,22 @@ const KnowledgeBase = () => {
   };
 
   const uploadFile = async (file: File) => {
-    // For now, this is a placeholder for file upload functionality
-    // In the future, this will handle actual file uploads to Supabase storage
-    console.log('Uploading file:', file.name);
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate upload
+    if (!user) throw new Error('User not authenticated');
+    
+    // Check if file type is allowed
+    if (!isFileTypeAllowed(file)) {
+      throw new Error(`File type not supported. Only PDF, Word documents (.docx), and PNG images are allowed.`);
+    }
+
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+    const filePath = `${user.id}/${fileName}`;
+
+    const { error } = await supabase.storage
+      .from('knowledge-base')
+      .upload(filePath, file);
+
+    if (error) throw error;
   };
 
   const handleLinkSubmit = async () => {
@@ -168,13 +231,25 @@ const KnowledgeBase = () => {
   };
 
   const handleDeleteItem = async (itemId: string) => {
+    if (!user) return;
+    
     try {
-      // For now, this is a placeholder for delete functionality
+      const item = knowledgeItems.find(item => item.id === itemId);
+      if (!item) return;
+
+      const filePath = `${user.id}/${item.name}`;
+      
+      const { error } = await supabase.storage
+        .from('knowledge-base')
+        .remove([filePath]);
+
+      if (error) throw error;
+
       setKnowledgeItems(prev => prev.filter(item => item.id !== itemId));
-      toast.success('Item deleted successfully');
+      toast.success('File deleted successfully');
     } catch (error) {
-      console.error('Error deleting item:', error);
-      toast.error('Failed to delete item');
+      console.error('Error deleting file:', error);
+      toast.error('Failed to delete file');
     }
   };
 
@@ -243,7 +318,7 @@ const KnowledgeBase = () => {
                   ref={fileInputRef}
                   onChange={handleFileChange}
                   multiple
-                  accept="*/*"
+                  accept=".pdf,.docx,.doc,.png"
                   className="hidden"
                 />
                 
@@ -263,7 +338,7 @@ const KnowledgeBase = () => {
                       </button>
                     )}
                   </p>
-                  <p className="text-sm text-gray-400">Support for all file types</p>
+                  <p className="text-sm text-gray-400">Support for PDF, Word (.docx), and PNG files</p>
                 </div>
 
                 <div className="flex items-center justify-center my-6">
