@@ -12,7 +12,6 @@ const FirstThingsFirst = () => {
   const navigate = useNavigate();
   const { user, refreshProfile } = useAuth();
   const [linkedinProfile, setLinkedinProfile] = useState('');
-  const [companyLinkedin, setCompanyLinkedin] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleGoBack = () => {
@@ -32,7 +31,6 @@ const FirstThingsFirst = () => {
         .from('profiles')
         .update({
           linkedin_profile: linkedinProfile.trim(),
-          company_linkedin: companyLinkedin.trim() || null,
           onboarding_completed: true
         })
         .eq('user_id', user.id);
@@ -95,28 +93,6 @@ const FirstThingsFirst = () => {
                   placeholder="www.linkedin.com/in/"
                   value={linkedinProfile}
                   onChange={(e) => setLinkedinProfile(e.target.value)}
-                  className="flex-1 rounded-l-none border-l-0"
-                />
-                <span className="inline-flex items-center px-3 text-sm text-[#4E4E55] bg-gray-50 border border-l-0 border-gray-200 rounded-r-md">
-                  .com
-                </span>
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="company-linkedin" className="text-[#111115] text-sm font-medium mb-2 block">
-                Your Company's LinkedIn
-              </Label>
-              <div className="flex">
-                <span className="inline-flex items-center px-3 text-sm text-[#4E4E55] bg-gray-50 border border-r-0 border-gray-200 rounded-l-md">
-                  https://
-                </span>
-                <Input
-                  id="company-linkedin"
-                  type="text"
-                  placeholder="www.linkedin.com/in/"
-                  value={companyLinkedin}
-                  onChange={(e) => setCompanyLinkedin(e.target.value)}
                   className="flex-1 rounded-l-none border-l-0"
                 />
                 <span className="inline-flex items-center px-3 text-sm text-[#4E4E55] bg-gray-50 border border-l-0 border-gray-200 rounded-r-md">
