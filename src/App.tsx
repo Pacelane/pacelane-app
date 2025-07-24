@@ -11,6 +11,8 @@ import KnowledgeBase from "./pages/KnowledgeBase";
 import SignIn from "./pages/SignIn";
 import Profile from "./pages/Profile";
 import ContentEditor from "./pages/ContentEditor";
+import Welcome from "./pages/Onboarding/Welcome";
+import FirstThingsFirst from "./pages/Onboarding/FirstThingsFirst";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,6 +27,8 @@ const App = () => (
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/signin" element={<SignIn />} />
+            <Route path="/onboarding/welcome" element={<Welcome />} />
+            <Route path="/onboarding/first-things-first" element={<FirstThingsFirst />} />
             <Route 
               path="/product-home" 
               element={
