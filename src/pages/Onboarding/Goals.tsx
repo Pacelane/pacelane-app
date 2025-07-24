@@ -90,12 +90,19 @@ const Goals = () => {
             Go Back
           </button>
 
-          {/* Blue blob icon */}
+          {/* Blue blob icon with eyes */}
           <div className="flex justify-center mb-6">
-            <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center relative">
-              <div className="w-8 h-8 bg-blue-600 rounded-full"></div>
-              <div className="absolute top-3 left-3 w-2 h-2 bg-blue-300 rounded-full"></div>
-              <div className="absolute bottom-2 right-2 w-3 h-3 bg-blue-400 rounded-full"></div>
+            <div className="w-16 h-16 bg-blue-400 rounded-full flex items-center justify-center relative overflow-hidden">
+              {/* Main blob shape */}
+              <div className="w-12 h-12 bg-blue-400 rounded-full relative">
+                {/* Eyes */}
+                <div className="absolute top-3 left-2 w-1.5 h-1.5 bg-white rounded-full"></div>
+                <div className="absolute top-3 right-2 w-1.5 h-1.5 bg-white rounded-full"></div>
+              </div>
+              {/* Side protrusions */}
+              <div className="absolute -top-2 -left-1 w-6 h-6 bg-blue-400 rounded-full"></div>
+              <div className="absolute -bottom-1 -right-2 w-4 h-4 bg-blue-400 rounded-full"></div>
+              <div className="absolute top-1 -right-1 w-5 h-5 bg-blue-400 rounded-full"></div>
             </div>
           </div>
 
@@ -109,18 +116,18 @@ const Goals = () => {
           </p>
 
           {/* Goals Selection */}
-          <div className="space-y-3 mb-8">
+          <div className="grid grid-cols-2 gap-3 mb-8">
             {goals.map((goal) => (
               <button
                 key={goal}
                 onClick={() => toggleGoal(goal)}
-                className={`w-full text-left px-4 py-3 rounded-lg border transition-all ${
+                className={`px-4 py-3 rounded-full border text-center text-sm font-medium transition-all ${
                   selectedGoals.includes(goal)
-                    ? 'bg-blue-50 border-blue-200 text-blue-700'
-                    : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300'
+                    ? 'bg-blue-600 border-blue-600 text-white'
+                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400'
                 }`}
               >
-                <span className="text-sm font-medium">{goal}</span>
+                {goal}
               </button>
             ))}
           </div>
