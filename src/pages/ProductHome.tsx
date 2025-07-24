@@ -7,6 +7,7 @@ import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/s
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Bell, Settings, Search } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface Template {
   id: string;
@@ -23,6 +24,7 @@ interface NavigationItem {
 }
 
 const ProductHome = () => {
+  const navigate = useNavigate();
   const [activeNavItem, setActiveNavItem] = useState('home');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -69,16 +71,20 @@ const ProductHome = () => {
   ];
 
   const handleCreateNew = () => {
-    console.log('Create new clicked');
+    navigate('/content-editor');
   };
 
   const handleUserMenuClick = () => {
-    console.log('User menu clicked');
+    navigate('/profile');
   };
 
   const handleNavigationClick = (itemId: string) => {
     setActiveNavItem(itemId);
-    console.log('Navigation clicked:', itemId);
+    if (itemId === 'profile') {
+      navigate('/profile');
+    } else if (itemId === 'knowledge') {
+      navigate('/knowledge');
+    }
   };
 
   const handleFinishOnboarding = () => {
@@ -103,16 +109,15 @@ const ProductHome = () => {
   };
 
   const handleWriteContent = (suggestion: any) => {
-    console.log('Write content:', suggestion);
-    // Here you would typically populate the chat input with the suggestion
+    navigate('/content-editor');
   };
 
   const handleTemplateSelect = (templateId: string) => {
-    console.log('Selected template:', templateId);
+    navigate('/content-editor');
   };
 
   const handleStartFromScratch = () => {
-    console.log('Starting from scratch');
+    navigate('/content-editor');
   };
 
   return (
