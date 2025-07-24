@@ -100,19 +100,47 @@ serve(async (req) => {
         },
       });
 
-      const statusData = await statusResponse.json();
-      console.log(`Run status (attempt ${attempts + 1}):`, statusData.status);
+      if (!statusResponse.ok) {
+        console.error('Error checking run status:', statusResponse.status);
+        return new Response(
+          JSON.stringify({ error: 'Failed to check scraping status' }),
+          { 
+            status: 500, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
 
-      if (statusData.status === 'SUCCEEDED') {
+      const statusData = await statusResponse.json();
+      console.log(`Run status response (attempt ${attempts + 1}):`, JSON.stringify(statusData, null, 2));
+      
+      // Fix: Access nested status from statusData.data.status
+      const runStatus = statusData.data?.status;
+      console.log(`Run status (attempt ${attempts + 1}):`, runStatus);
+
+      if (runStatus === 'SUCCEEDED') {
+        // Fix: Access nested defaultDatasetId from statusData.data.defaultDatasetId
+        const datasetId = statusData.data?.defaultDatasetId;
+        if (!datasetId) {
+          console.error('No dataset ID found in successful run');
+          return new Response(
+            JSON.stringify({ error: 'No dataset found for scraping results' }),
+            { 
+              status: 500, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          );
+        }
+
         // Fetch results from the dataset
-        const datasetResponse = await fetch(`https://api.apify.com/v2/datasets/${statusData.defaultDatasetId}/items`, {
+        const datasetResponse = await fetch(`https://api.apify.com/v2/datasets/${datasetId}/items`, {
           headers: {
             'Authorization': `Bearer ${apifyApiKey}`,
           },
         });
 
         if (!datasetResponse.ok) {
-          console.error('Error fetching dataset results');
+          console.error('Error fetching dataset results:', datasetResponse.status);
           return new Response(
             JSON.stringify({ error: 'Failed to fetch scraping results' }),
             { 
@@ -124,6 +152,7 @@ serve(async (req) => {
 
         const results = await datasetResponse.json();
         console.log('Scraping completed successfully, items found:', results.length);
+        console.log('First result:', JSON.stringify(results[0], null, 2));
 
         return new Response(
           JSON.stringify({ 
@@ -135,7 +164,7 @@ serve(async (req) => {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
           }
         );
-      } else if (statusData.status === 'FAILED') {
+      } else if (runStatus === 'FAILED') {
         console.error('Actor run failed');
         return new Response(
           JSON.stringify({ error: 'LinkedIn profile scraping failed' }),
@@ -144,12 +173,13 @@ serve(async (req) => {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
           }
         );
-      } else if (statusData.status === 'RUNNING') {
+      } else if (runStatus === 'RUNNING') {
         // Wait 5 seconds before checking again
         await new Promise(resolve => setTimeout(resolve, 5000));
         attempts++;
       } else {
         // Wait 3 seconds for other statuses
+        console.log(`Waiting for status: ${runStatus}`);
         await new Promise(resolve => setTimeout(resolve, 3000));
         attempts++;
       }
