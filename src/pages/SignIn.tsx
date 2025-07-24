@@ -37,7 +37,7 @@ const SignIn = () => {
             email,
             password,
             options: {
-              emailRedirectTo: `${window.location.origin}/product-home`
+              emailRedirectTo: `${window.location.origin}/onboarding/welcome`
             }
           });
           
@@ -65,7 +65,7 @@ const SignIn = () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/product-home`
+          redirectTo: `${window.location.origin}/onboarding/welcome`
         }
       });
       
