@@ -26,7 +26,7 @@ const Profile = () => {
     const getUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        navigate('/auth');
+        navigate('/signin');
         return;
       }
       setUser(session.user);
@@ -39,7 +39,7 @@ const Profile = () => {
   const handleSignOut = async () => {
     try {
       await supabase.auth.signOut();
-      navigate('/auth');
+      navigate('/signin');
       toast.success('Signed out successfully');
     } catch (error: any) {
       toast.error('Error signing out');
