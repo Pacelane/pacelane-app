@@ -14,41 +14,9 @@ const FirstThingsFirst = () => {
   const [linkedinProfile, setLinkedinProfile] = useState('');
   const [companyLinkedin, setCompanyLinkedin] = useState('');
   const [loading, setLoading] = useState(false);
-  const [fetchingProfile, setFetchingProfile] = useState(false);
-  const [profileData, setProfileData] = useState<any>(null);
 
   const handleGoBack = () => {
     navigate('/onboarding/welcome');
-  };
-
-  const handleFetchProfile = async () => {
-    if (!linkedinProfile.trim()) {
-      toast.error('Please enter a LinkedIn profile URL first');
-      return;
-    }
-
-    setFetchingProfile(true);
-    try {
-      const fullUrl = `https://${linkedinProfile.trim()}`;
-      
-      const { data, error } = await supabase.functions.invoke('fetch-linkedin-profile', {
-        body: { linkedinUrl: fullUrl }
-      });
-
-      if (error) throw error;
-
-      if (data.success && data.data) {
-        setProfileData(data.data);
-        toast.success('LinkedIn profile data fetched successfully!');
-      } else {
-        throw new Error(data.error || 'Failed to fetch profile data');
-      }
-    } catch (error: any) {
-      console.error('Error fetching LinkedIn profile:', error);
-      toast.error(error.message || 'Failed to fetch LinkedIn profile');
-    } finally {
-      setFetchingProfile(false);
-    }
   };
 
   const handleContinue = async () => {
@@ -157,33 +125,6 @@ const FirstThingsFirst = () => {
               </div>
             </div>
           </div>
-
-          {/* Fetch Profile Button */}
-          <div className="mt-6">
-            <Button 
-              onClick={handleFetchProfile}
-              disabled={!linkedinProfile.trim() || fetchingProfile}
-              variant="outline"
-              className="w-full border-blue-600 text-blue-600 hover:bg-blue-50 disabled:bg-gray-50 disabled:cursor-not-allowed font-medium py-3 rounded-lg"
-            >
-              {fetchingProfile ? 'Fetching Profile Data...' : 'Fetch LinkedIn Profile Data'}
-            </Button>
-          </div>
-
-          {/* Profile Data Display */}
-          {profileData && (
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-              <h3 className="text-sm font-semibold text-[#111115] mb-2">Profile Data Preview:</h3>
-              <div className="text-xs text-[#4E4E55] space-y-1">
-                <p><strong>Name:</strong> {profileData.fullName || 'N/A'}</p>
-                <p><strong>Headline:</strong> {profileData.headline || 'N/A'}</p>
-                <p><strong>Location:</strong> {profileData.location || 'N/A'}</p>
-                {profileData.experience && profileData.experience.length > 0 && (
-                  <p><strong>Current Position:</strong> {profileData.experience[0]?.title} at {profileData.experience[0]?.company}</p>
-                )}
-              </div>
-            </div>
-          )}
 
           <p className="text-[#4E4E55] text-sm text-center mt-8 mb-8">
             We'll ask a few questions to tailor your strategy.
