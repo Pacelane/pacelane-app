@@ -19,9 +19,22 @@ export const OnboardingGuard: React.FC<OnboardingGuardProps> = ({ children }) =>
     }
   }, [user, profile, loading, navigate]);
 
-  // Show loading or let children render
-  if (loading) {
-    return <div>Loading...</div>;
+  // Show loading while checking auth and profile
+  if (loading || !profile) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-lg text-gray-600">Loading...</div>
+      </div>
+    );
+  }
+
+  // Don't render children if onboarding isn't completed
+  if (!profile.onboarding_completed) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-lg text-gray-600">Redirecting to onboarding...</div>
+      </div>
+    );
   }
 
   return <>{children}</>;
