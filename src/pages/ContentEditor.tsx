@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -15,6 +15,9 @@ import {
   Save
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 interface FileItem {
   id: string;
@@ -34,8 +37,11 @@ interface ChatMessage {
 
 const ContentEditor = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [chatInput, setChatInput] = useState('');
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [editorContent, setEditorContent] = useState(`# 5 Steps to a good LinkedIn profile
 
 Medium is a home for human stories and ideas. Here, anyone can share knowledge and wisdom with the world—without having to build a mailing list or a following first. The internet thrives when it gets rid of gatekeepers and its democratized. It's simple, beautiful, collaborative, and helps you find the right reader for whatever you have to say.
@@ -92,50 +98,86 @@ List relevant skills and actively seek endorsements from colleagues and clients.
     { id: 'workout', name: 'Workout plan at home', type: '' }
   ]);
 
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
-    {
-      id: '1',
-      role: 'user',
-      content: 'Help me with this text.',
-      timestamp: new Date()
-    },
-    {
-      id: '2',
-      role: 'assistant',
-      content: 'I think it sounds too cliché and unauthentic.',
-      timestamp: new Date()
-    },
-    {
-      id: '3',
-      role: 'user',
-      content: 'Give me three ideas of content based on things I\'ve done this week, please.',
-      timestamp: new Date()
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+
+  // Load conversations on component mount
+  useEffect(() => {
+    if (user) {
+      loadRecentConversations();
     }
-  ]);
+  }, [user]);
 
-  const handleSendMessage = () => {
-    if (!chatInput.trim()) return;
+  const loadRecentConversations = async () => {
+    try {
+      const { data: conversations, error } = await supabase
+        .from('conversations')
+        .select('id, title, updated_at')
+        .eq('user_id', user?.id)
+        .order('updated_at', { ascending: false })
+        .limit(5);
 
-    const newMessage: ChatMessage = {
+      if (error) {
+        console.error('Error loading conversations:', error);
+        return;
+      }
+
+      // Update recent items with actual conversations
+      // This could be implemented to show recent conversations in the sidebar
+    } catch (error) {
+      console.error('Error loading conversations:', error);
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!chatInput.trim() || isLoading) return;
+
+    const userMessage: ChatMessage = {
       id: Date.now().toString(),
       role: 'user',
       content: chatInput,
       timestamp: new Date()
     };
 
-    setChatMessages([...chatMessages, newMessage]);
+    setChatMessages(prev => [...prev, userMessage]);
     setChatInput('');
+    setIsLoading(true);
 
-    // Simulate AI response
-    setTimeout(() => {
-      const aiResponse: ChatMessage = {
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-assistant', {
+        body: {
+          message: chatInput,
+          conversationId: currentConversationId
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      // Update conversation ID if this was the first message
+      if (!currentConversationId && data.conversationId) {
+        setCurrentConversationId(data.conversationId);
+      }
+
+      const assistantMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: 'I can help you with that! Let me analyze your content and provide suggestions.',
+        content: data.message,
         timestamp: new Date()
       };
-      setChatMessages(prev => [...prev, aiResponse]);
-    }, 1000);
+
+      setChatMessages(prev => [...prev, assistantMessage]);
+      toast.success('AI response received');
+
+    } catch (error: any) {
+      console.error('Error sending message:', error);
+      toast.error(error.message || 'Failed to send message');
+      
+      // Remove the user message that failed
+      setChatMessages(prev => prev.filter(msg => msg.id !== userMessage.id));
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const toggleFolder = (folderId: string) => {
@@ -277,23 +319,41 @@ List relevant skills and actively seek endorsements from colleagues and clients.
 
         {/* Chat Messages */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {chatMessages.map(message => (
-            <div key={message.id} className="space-y-2">
-              {message.role === 'user' ? (
-                <div className="flex justify-end">
-                  <div className="bg-blue-600 text-white px-3 py-2 rounded-lg max-w-[80%] text-sm">
-                    {message.content}
-                  </div>
-                </div>
-              ) : (
-                <div className="flex justify-start">
-                  <div className="bg-gray-100 text-gray-900 px-3 py-2 rounded-lg max-w-[80%] text-sm">
-                    {message.content}
-                  </div>
-                </div>
-              )}
+          {chatMessages.length === 0 ? (
+            <div className="text-center text-gray-500 mt-8">
+              <p className="mb-2">👋 Hello! I'm your AI content assistant.</p>
+              <p className="text-sm">Ask me anything about your content, writing tips, or ideas!</p>
             </div>
-          ))}
+          ) : (
+            chatMessages.map(message => (
+              <div key={message.id} className="space-y-2">
+                {message.role === 'user' ? (
+                  <div className="flex justify-end">
+                    <div className="bg-blue-600 text-white px-3 py-2 rounded-lg max-w-[80%] text-sm">
+                      {message.content}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex justify-start">
+                    <div className="bg-gray-100 text-gray-900 px-3 py-2 rounded-lg max-w-[80%] text-sm">
+                      {message.content}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+          {isLoading && (
+            <div className="flex justify-start">
+              <div className="bg-gray-100 text-gray-900 px-3 py-2 rounded-lg text-sm">
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Chat Input */}
@@ -304,11 +364,13 @@ List relevant skills and actively seek endorsements from colleagues and clients.
               onChange={(e) => setChatInput(e.target.value)}
               placeholder="Ask AI anything"
               className="flex-1"
-              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+              disabled={isLoading}
+              onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
             />
             <Button
               size="icon"
               onClick={handleSendMessage}
+              disabled={isLoading || !chatInput.trim()}
               className="bg-blue-600 hover:bg-blue-700"
             >
               <Send className="h-4 w-4" />
