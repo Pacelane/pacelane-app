@@ -6,6 +6,7 @@ import { Chrome } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 const SignIn = () => {
   const [email, setEmail] = useState('');
@@ -13,26 +14,14 @@ const SignIn = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
-  // Check if user is already authenticated
+  // Redirect if already authenticated
   useEffect(() => {
-    const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        navigate('/');
-      }
-    };
-    checkUser();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
-        navigate('/');
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
+    if (user) {
+      navigate('/product-home');
+    }
+  }, [user, navigate]);
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,14 +44,15 @@ const SignIn = () => {
           if (error) throw error;
           toast.success('Check your email for the confirmation link!');
         } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        
-        if (error) throw error;
-        toast.success('Welcome back!');
-      }
+          const { error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+          
+          if (error) throw error;
+          toast.success('Welcome back!');
+          navigate('/product-home');
+        }
     } catch (error: any) {
       toast.error(error.message || 'Authentication failed');
     } finally {
@@ -75,7 +65,7 @@ const SignIn = () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/`
+          redirectTo: `${window.location.origin}/product-home`
         }
       });
       
