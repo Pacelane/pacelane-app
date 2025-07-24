@@ -4,6 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ConversationSelector } from '@/components/ConversationSelector';
 import { 
   ArrowLeft, 
   Search, 
@@ -12,12 +14,25 @@ import {
   FolderOpen,
   Plus,
   Send,
-  Save
+  Save,
+  File,
+  Image
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+
+interface KnowledgeFile {
+  id: string;
+  name: string;
+  type: 'file' | 'image' | 'audio' | 'video' | 'link';
+  size?: number;
+  url?: string;
+  user_id: string;
+  created_at: string;
+  selected?: boolean;
+}
 
 interface FileItem {
   id: string;
@@ -63,6 +78,10 @@ Don't just list job duties. Focus on achievements and quantify your impact with 
 ## Step 5: Skills and Endorsements
 List relevant skills and actively seek endorsements from colleagues and clients.`);
 
+  const [knowledgeFiles, setKnowledgeFiles] = useState<KnowledgeFile[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
+  const [loadingFiles, setLoadingFiles] = useState(false);
+
   const [fileStructure, setFileStructure] = useState<FileItem[]>([
     {
       id: 'new-content',
@@ -76,55 +95,114 @@ List relevant skills and actively seek endorsements from colleagues and clients.
       name: 'Knowledge Base',
       type: 'folder',
       isOpen: true,
-      children: [
-        { id: 'linkedin-pdf', name: 'filename.pdf', type: 'file' },
-        { id: 'resume-pdf', name: 'filename.pdf', type: 'file' },
-        { id: 'guide-mov', name: 'filename.mov', type: 'file' },
-        { id: 'template-pdf', name: 'filename.pdf', type: 'file' },
-        { id: 'example-gif', name: 'filename.gif', type: 'file' },
-        { id: 'sample-jpg', name: 'filename.jpg', type: 'file' },
-        { id: 'doc-pdf', name: 'filename.pdf', type: 'file' }
-      ]
+      children: []
     }
-  ]);
-
-  const [recentItems] = useState([
-    { id: 'linkedin-pro', name: '5 Steps to a good LinkedIn pro...', type: 'Quick healthy recipes' },
-    { id: 'french-basics', name: 'Learn French basics', type: 'Meditation techniques' }
-  ]);
-
-  const [yesterdayItems] = useState([
-    { id: 'ai-tools', name: 'Exploring AI tools', type: '' },
-    { id: 'workout', name: 'Workout plan at home', type: '' }
   ]);
 
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
 
-  // Load conversations on component mount
+  // Load data on component mount
   useEffect(() => {
     if (user) {
-      loadRecentConversations();
+      loadKnowledgeFiles();
     }
   }, [user]);
 
-  const loadRecentConversations = async () => {
+  const loadKnowledgeFiles = async () => {
+    if (!user) return;
+    
     try {
-      const { data: conversations, error } = await supabase
-        .from('conversations')
-        .select('id, title, updated_at')
-        .eq('user_id', user?.id)
-        .order('updated_at', { ascending: false })
-        .limit(5);
+      setLoadingFiles(true);
+      const { data: files, error } = await supabase.storage
+        .from('knowledge-base')
+        .list(user.id, {
+          limit: 100,
+          offset: 0
+        });
 
-      if (error) {
-        console.error('Error loading conversations:', error);
-        return;
-      }
+      if (error) throw error;
 
-      // Update recent items with actual conversations
-      // This could be implemented to show recent conversations in the sidebar
+      const knowledgeFiles: KnowledgeFile[] = files?.map(file => ({
+        id: file.id || file.name,
+        name: file.name,
+        type: getFileTypeFromName(file.name),
+        size: file.metadata?.size,
+        user_id: user.id,
+        created_at: file.created_at || new Date().toISOString(),
+        url: `https://plbgeabtrkdhbrnjonje.supabase.co/storage/v1/object/knowledge-base/${user.id}/${file.name}`,
+        selected: false
+      })) || [];
+
+      setKnowledgeFiles(knowledgeFiles);
     } catch (error) {
-      console.error('Error loading conversations:', error);
+      console.error('Error loading knowledge files:', error);
+      toast.error('Failed to load knowledge files');
+    } finally {
+      setLoadingFiles(false);
+    }
+  };
+
+  const getFileTypeFromName = (filename: string): 'file' | 'image' | 'audio' | 'video' | 'link' => {
+    const extension = filename.toLowerCase().split('.').pop();
+    
+    if (!extension) return 'file';
+    
+    if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(extension)) {
+      return 'image';
+    }
+    if (['mp4', 'avi', 'mov', 'webm', 'mkv'].includes(extension)) {
+      return 'video';
+    }
+    if (['mp3', 'wav', 'ogg', 'm4a', 'flac'].includes(extension)) {
+      return 'audio';
+    }
+    
+    return 'file';
+  };
+
+  const loadMessagesForConversation = async (conversationId: string) => {
+    try {
+      const { data: messages, error } = await supabase
+        .from('messages')
+        .select('id, role, content, created_at')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      const formattedMessages: ChatMessage[] = messages?.map(msg => ({
+        id: msg.id,
+        role: msg.role as 'user' | 'assistant',
+        content: msg.content,
+        timestamp: new Date(msg.created_at)
+      })) || [];
+
+      setChatMessages(formattedMessages);
+    } catch (error) {
+      console.error('Error loading messages:', error);
+      toast.error('Failed to load conversation');
+    }
+  };
+
+  const handleConversationChange = (conversationId: string | null) => {
+    setCurrentConversationId(conversationId);
+    if (conversationId) {
+      loadMessagesForConversation(conversationId);
+    } else {
+      setChatMessages([]);
+    }
+  };
+
+  const handleNewConversation = () => {
+    setCurrentConversationId(null);
+    setChatMessages([]);
+  };
+
+  const handleFileSelection = (fileId: string, selected: boolean) => {
+    if (selected) {
+      setSelectedFiles(prev => [...prev, fileId]);
+    } else {
+      setSelectedFiles(prev => prev.filter(id => id !== fileId));
     }
   };
 
@@ -143,10 +221,20 @@ List relevant skills and actively seek endorsements from colleagues and clients.
     setIsLoading(true);
 
     try {
+      // Get selected file contexts
+      const selectedFileContexts = knowledgeFiles
+        .filter(file => selectedFiles.includes(file.id))
+        .map(file => ({
+          name: file.name,
+          type: file.type,
+          url: file.url
+        }));
+
       const { data, error } = await supabase.functions.invoke('ai-assistant', {
         body: {
           message: chatInput,
-          conversationId: currentConversationId
+          conversationId: currentConversationId,
+          fileContexts: selectedFileContexts
         }
       });
 
@@ -250,38 +338,44 @@ List relevant skills and actively seek endorsements from colleagues and clients.
             </Button>
             
             {renderFileTree(fileStructure)}
-          </div>
-
-          <Separator className="my-4" />
-
-          {/* Recent Section */}
-          <div className="px-4 pb-2">
-            <h4 className="text-sm font-medium text-gray-900 mb-2">Today</h4>
-            {recentItems.map(item => (
-              <div key={item.id} className="flex items-center gap-2 py-1 px-2 hover:bg-gray-100 cursor-pointer">
-                <div className="w-6 h-6 bg-purple-600 rounded-full flex items-center justify-center">
-                  <FileText className="h-3 w-3 text-white" />
+            {/* Show knowledge base files */}
+            {fileStructure.find(item => item.id === 'knowledge-base')?.isOpen && (
+              <div className="px-4 pb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-sm font-medium text-gray-900">Knowledge Files</h4>
+                  <span className="text-xs text-gray-500">
+                    {selectedFiles.length} selected
+                  </span>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-900 truncate">{item.name}</p>
-                  <p className="text-xs text-gray-500">{item.type}</p>
-                </div>
+                {loadingFiles ? (
+                  <div className="text-center py-4">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mx-auto"></div>
+                  </div>
+                ) : knowledgeFiles.length === 0 ? (
+                  <p className="text-xs text-gray-500 text-center py-2">
+                    No files found. Upload files in Knowledge Base.
+                  </p>
+                ) : (
+                  knowledgeFiles.map(file => {
+                    const Icon = file.type === 'image' ? Image : 
+                                file.type === 'file' ? FileText : File;
+                    return (
+                      <div key={file.id} className="flex items-center gap-2 py-1 px-2 hover:bg-gray-100">
+                        <Checkbox
+                          checked={selectedFiles.includes(file.id)}
+                          onCheckedChange={(checked) => handleFileSelection(file.id, checked as boolean)}
+                          className="h-3 w-3"
+                        />
+                        <Icon className="h-3 w-3 text-gray-600" />
+                        <span className="text-xs text-gray-700 truncate flex-1">
+                          {file.name}
+                        </span>
+                      </div>
+                    );
+                  })
+                )}
               </div>
-            ))}
-          </div>
-
-          <div className="px-4 pb-4">
-            <h4 className="text-sm font-medium text-gray-900 mb-2">Yesterday</h4>
-            {yesterdayItems.map(item => (
-              <div key={item.id} className="flex items-center gap-2 py-1 px-2 hover:bg-gray-100 cursor-pointer">
-                <div className="w-6 h-6 bg-gray-400 rounded-full flex items-center justify-center">
-                  <FileText className="h-3 w-3 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-900 truncate">{item.name}</p>
-                </div>
-              </div>
-            ))}
+            )}
           </div>
         </div>
       </div>
@@ -312,8 +406,19 @@ List relevant skills and actively seek endorsements from colleagues and clients.
       <div className="w-80 bg-white border-l border-gray-200 flex flex-col">
         {/* Chat Header */}
         <div className="p-4 border-b border-gray-200">
-          <h3 className="font-semibold text-gray-900">AI Assistant</h3>
-          <p className="text-sm text-gray-600">Get help with your content</p>
+          <h3 className="font-semibold text-gray-900 mb-3">AI Assistant</h3>
+          <ConversationSelector
+            currentConversationId={currentConversationId}
+            onConversationChange={handleConversationChange}
+            onNewConversation={handleNewConversation}
+          />
+          {selectedFiles.length > 0 && (
+            <div className="mt-2 p-2 bg-blue-50 rounded-md">
+              <p className="text-xs text-blue-700">
+                {selectedFiles.length} file{selectedFiles.length > 1 ? 's' : ''} selected as context
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Chat Messages */}

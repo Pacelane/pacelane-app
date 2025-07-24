@@ -40,9 +40,14 @@ serve(async (req) => {
       throw new Error('Invalid authorization token');
     }
 
-    const { message, conversationId } = await req.json();
+    const { message, conversationId, fileContexts = [] } = await req.json();
 
-    console.log('Processing request:', { userId: user.id, conversationId, messageLength: message?.length });
+    console.log('Processing request:', { 
+      userId: user.id, 
+      conversationId, 
+      messageLength: message?.length,
+      fileContextsCount: fileContexts.length 
+    });
 
     if (!message) {
       throw new Error('Message is required');
@@ -96,11 +101,20 @@ serve(async (req) => {
       throw new Error('Failed to fetch conversation history');
     }
 
+    // Prepare file context information
+    let fileContextInfo = '';
+    if (fileContexts && fileContexts.length > 0) {
+      fileContextInfo = `\n\nAdditional Context: The user has selected the following files as reference for this conversation:
+${fileContexts.map((file: any) => `- ${file.name} (${file.type})`).join('\n')}
+
+Please consider these files when providing your response and refer to them if relevant to the user's question.`;
+    }
+
     // Prepare messages for OpenAI API
     const messages = [
       {
         role: 'system',
-        content: 'You are a helpful AI assistant specializing in content creation. You help users write, edit, and improve their content. Be creative, supportive, and provide actionable suggestions. Keep your responses concise but helpful.'
+        content: `You are a helpful AI assistant specializing in content creation. You help users write, edit, and improve their content. Be creative, supportive, and provide actionable suggestions. Keep your responses concise but helpful.${fileContextInfo}`
       },
       ...conversationHistory.map(msg => ({
         role: msg.role,
