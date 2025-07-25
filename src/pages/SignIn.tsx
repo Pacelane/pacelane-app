@@ -7,14 +7,33 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { signInSchema, signUpSchema, type SignInFormData, type SignUpFormData } from '@/lib/validationSchemas';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
 const SignIn = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
-  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  const signInForm = useForm<SignInFormData>({
+    resolver: zodResolver(signInSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
+
+  const signUpForm = useForm<SignUpFormData>({
+    resolver: zodResolver(signUpSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
+
+  const form = isSignUp ? signUpForm : signInForm;
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -23,40 +42,31 @@ const SignIn = () => {
     }
   }, [user, navigate]);
 
-  const handleEmailAuth = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !password) {
-      toast.error('Please fill in all fields');
-      return;
-    }
-
-    setLoading(true);
+  const onSubmit = async (data: SignInFormData | SignUpFormData) => {
     try {
-        if (isSignUp) {
-          const { error } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-              emailRedirectTo: `${window.location.origin}/onboarding/welcome`
-            }
-          });
-          
-          if (error) throw error;
-          toast.success('Check your email for the confirmation link!');
-        } else {
-          const { error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-          });
-          
-          if (error) throw error;
-          toast.success('Welcome back!');
-          navigate('/product-home');
-        }
+      if (isSignUp) {
+        const { error } = await supabase.auth.signUp({
+          email: data.email,
+          password: data.password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/onboarding/welcome`
+          }
+        });
+        
+        if (error) throw error;
+        toast.success('Check your email for the confirmation link!');
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: data.email,
+          password: data.password,
+        });
+        
+        if (error) throw error;
+        toast.success('Welcome back!');
+        navigate('/product-home');
+      }
     } catch (error: any) {
       toast.error(error.message || 'Authentication failed');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -77,7 +87,7 @@ const SignIn = () => {
 
   const toggleAuthMode = () => {
     setIsSignUp(!isSignUp);
-    setPassword('');
+    form.reset({ email: '', password: '' });
   };
 
   return (
@@ -104,72 +114,86 @@ const SignIn = () => {
                 {isSignUp ? 'Get started with your free account' : 'Welcome back! Please enter your details.'}
               </p>
 
-              <form onSubmit={handleEmailAuth} className="space-y-4">
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                    Email address
-                  </label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full"
-                    placeholder="Enter your email"
-                    required
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="block text-sm font-medium text-gray-700">
+                          Email address
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            type="email"
+                            placeholder="Enter your email"
+                            className="w-full"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
 
-                <div>
-                  <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                    Password
-                  </label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full"
-                    placeholder="Enter your password"
-                    required
+                  <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="block text-sm font-medium text-gray-700">
+                          Password
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            type="password"
+                            placeholder="Enter your password"
+                            className="w-full"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
 
-                <Button 
-                  type="submit"
-                  disabled={loading}
-                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-3"
-                >
-                  {loading ? 'Loading...' : (isSignUp ? 'Create account' : 'Sign in')}
-                </Button>
-
-                <div className="text-center">
-                  <span className="text-gray-500">or</span>
-                </div>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleGoogleSignIn}
-                  className="w-full border-gray-300 py-3"
-                >
-                  <Chrome className="mr-2 h-4 w-4" />
-                  {isSignUp ? 'Sign up' : 'Sign in'} with Google
-                </Button>
-
-                <div className="text-center">
-                  <span className="text-gray-600">
-                    {isSignUp ? 'Already have an account? ' : "Don't have an account? "}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={toggleAuthMode}
-                    className="text-primary hover:underline font-medium"
+                  <Button 
+                    type="submit"
+                    disabled={form.formState.isSubmitting}
+                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-3"
                   >
-                    {isSignUp ? 'Sign in' : 'Sign up'}
-                  </button>
-                </div>
-              </form>
+                    {form.formState.isSubmitting ? 'Loading...' : (isSignUp ? 'Create account' : 'Sign in')}
+                  </Button>
+                </form>
+              </Form>
+
+              <div className="text-center mt-4">
+                <span className="text-gray-500">or</span>
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleGoogleSignIn}
+                className="w-full border-gray-300 py-3 mt-4"
+              >
+                <Chrome className="mr-2 h-4 w-4" />
+                {isSignUp ? 'Sign up' : 'Sign in'} with Google
+              </Button>
+
+              <div className="text-center mt-4">
+                <span className="text-gray-600">
+                  {isSignUp ? 'Already have an account? ' : "Don't have an account? "}
+                </span>
+                <button
+                  type="button"
+                  onClick={toggleAuthMode}
+                  className="text-primary hover:underline font-medium"
+                >
+                  {isSignUp ? 'Sign in' : 'Sign up'}
+                </button>
+              </div>
             </CardContent>
           </Card>
 

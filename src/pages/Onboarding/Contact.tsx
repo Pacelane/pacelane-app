@@ -6,26 +6,34 @@ import { ChevronLeft, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { contactSchema, type ContactFormData } from '@/lib/validationSchemas';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const Contact = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
-  const [countryCode, setCountryCode] = useState('+55');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+
+  const form = useForm<ContactFormData>({
+    resolver: zodResolver(contactSchema),
+    defaultValues: {
+      countryCode: '+55',
+      phoneNumber: '',
+    },
+  });
 
   const handleGoBack = () => {
     navigate('/onboarding/pacing');
   };
 
-  const handleContinue = async () => {
+  const onSubmit = async (data: ContactFormData) => {
     if (!user) return;
     
-    setIsLoading(true);
-    
     try {
-      const fullPhoneNumber = `${countryCode}${phoneNumber}`;
+      const fullPhoneNumber = `${data.countryCode}${data.phoneNumber}`;
       
       const { error } = await supabase
         .from('profiles')
@@ -42,8 +50,6 @@ const Contact = () => {
         description: "Failed to save phone number. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -83,64 +89,83 @@ const Contact = () => {
             you updates and reminders.
           </p>
 
-          {/* Phone Number Input */}
-          <div className="mb-8">
-            <div className="flex gap-2">
-              {/* Country Code Selector */}
-              <div className="relative">
-                <select 
-                  value={countryCode}
-                  onChange={(e) => setCountryCode(e.target.value)}
-                  className="appearance-none w-20 px-3 py-3 border border-gray-300 rounded-lg bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-8"
-                >
-                  <option value="+55">🇧🇷 +55</option>
-                  <option value="+1">🇺🇸 +1</option>
-                  <option value="+44">🇬🇧 +44</option>
-                  <option value="+49">🇩🇪 +49</option>
-                  <option value="+33">🇫🇷 +33</option>
-                  <option value="+34">🇪🇸 +34</option>
-                  <option value="+39">🇮🇹 +39</option>
-                  <option value="+52">🇲🇽 +52</option>
-                  <option value="+54">🇦🇷 +54</option>
-                </select>
-                <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {/* Phone Number Input */}
+              <div className="flex gap-2">
+                <FormField
+                  control={form.control}
+                  name="countryCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <SelectTrigger className="w-24">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="+55">🇧🇷 +55</SelectItem>
+                            <SelectItem value="+1">🇺🇸 +1</SelectItem>
+                            <SelectItem value="+44">🇬🇧 +44</SelectItem>
+                            <SelectItem value="+49">🇩🇪 +49</SelectItem>
+                            <SelectItem value="+33">🇫🇷 +33</SelectItem>
+                            <SelectItem value="+34">🇪🇸 +34</SelectItem>
+                            <SelectItem value="+39">🇮🇹 +39</SelectItem>
+                            <SelectItem value="+52">🇲🇽 +52</SelectItem>
+                            <SelectItem value="+54">🇦🇷 +54</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="phoneNumber"
+                  render={({ field }) => (
+                    <FormItem className="flex-1">
+                      <FormControl>
+                        <Input
+                          type="tel"
+                          placeholder="Enter your phone number"
+                          className="border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
 
-              {/* Phone Number Input */}
-              <Input
-                type="tel"
-                placeholder="Enter your phone number"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                className="flex-1 border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-          </div>
+              <p className="text-[#4E4E55] text-sm text-center mb-8">
+                We'll ask a few questions to tailor your strategy.
+              </p>
 
-          <p className="text-[#4E4E55] text-sm text-center mb-8">
-            We'll ask a few questions to tailor your strategy.
-          </p>
+              {/* Progress indicator */}
+              <div className="flex justify-center gap-2 mb-8">
+                <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
+                <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
+                <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
+                <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
+                <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
+                <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
+                <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
+                <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
+                <div className="w-8 h-1 bg-gray-300 rounded-full"></div>
+              </div>
 
-          {/* Progress indicator */}
-          <div className="flex justify-center gap-2 mb-8">
-            <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
-            <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
-            <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
-            <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
-            <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
-            <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
-            <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
-            <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
-            <div className="w-8 h-1 bg-gray-300 rounded-full"></div>
-          </div>
-
-          <Button 
-            onClick={handleContinue}
-            disabled={phoneNumber.trim() === '' || isLoading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg disabled:opacity-50"
-          >
-            {isLoading ? "Saving..." : "Continue"}
-          </Button>
+              <Button 
+                type="submit"
+                disabled={form.formState.isSubmitting}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg disabled:opacity-50"
+              >
+                {form.formState.isSubmitting ? "Saving..." : "Continue"}
+              </Button>
+            </form>
+          </Form>
         </div>
       </div>
     </div>

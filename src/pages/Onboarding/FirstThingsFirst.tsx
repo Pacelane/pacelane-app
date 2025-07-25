@@ -7,43 +7,41 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { linkedInProfileSchema, type LinkedInProfileFormData } from '@/lib/validationSchemas';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
 const FirstThingsFirst = () => {
   const navigate = useNavigate();
   const { user, refreshProfile } = useAuth();
-  const [linkedinProfile, setLinkedinProfile] = useState('');
-  const [loading, setLoading] = useState(false);
+
+  const form = useForm<LinkedInProfileFormData>({
+    resolver: zodResolver(linkedInProfileSchema),
+    defaultValues: {
+      profileUrl: '',
+    },
+  });
 
   const handleGoBack = () => {
     navigate('/onboarding/welcome');
   };
 
-
-  const handleContinue = async () => {
+  const onSubmit = async (data: LinkedInProfileFormData) => {
     if (!user) {
       toast.error('Please sign in to continue');
       return;
     }
 
-    if (!linkedinProfile.trim()) {
-      toast.error('Please enter your LinkedIn profile URL');
-      return;
-    }
-
-    setLoading(true);
     try {
       // First, scrape the LinkedIn profile
-      const fullUrl = linkedinProfile.startsWith('http') 
-        ? linkedinProfile 
-        : `https://${linkedinProfile}`;
-
-      const { data, error: scrapeError } = await supabase.functions.invoke('scrape-linkedin-profile', {
-        body: { linkedinUrl: fullUrl }
+      const { data: scrapeData, error: scrapeError } = await supabase.functions.invoke('scrape-linkedin-profile', {
+        body: { linkedinUrl: data.profileUrl }
       });
 
       let profileData = null;
-      if (!scrapeError && data?.success && data?.profileData) {
-        profileData = data.profileData;
+      if (!scrapeError && scrapeData?.success && scrapeData?.profileData) {
+        profileData = scrapeData.profileData;
         toast.success('LinkedIn profile analyzed successfully!');
       } else {
         console.warn('LinkedIn scraping failed, continuing without profile data:', scrapeError);
@@ -52,7 +50,7 @@ const FirstThingsFirst = () => {
 
       // Update the user's profile with onboarding data and scraped data
       const updateData = {
-        linkedin_profile: linkedinProfile.trim(),
+        linkedin_profile: data.profileUrl.trim(),
         ...(profileData && {
           linkedin_data: profileData,
           linkedin_name: profileData.fullName || null,
@@ -78,8 +76,6 @@ const FirstThingsFirst = () => {
       navigate('/onboarding/inspirations');
     } catch (error: any) {
       toast.error(error.message || 'Failed to complete setup');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -112,49 +108,49 @@ const FirstThingsFirst = () => {
             LinkedIn and match your style.
           </p>
 
-          <div className="space-y-6">
-            <div>
-              <Label htmlFor="linkedin-profile" className="text-[#111115] text-sm font-medium mb-2 block">
-                Your LinkedIn Profile <span className="text-red-500">*</span>
-              </Label>
-              <div className="flex">
-                <span className="inline-flex items-center px-3 text-sm text-[#4E4E55] bg-gray-50 border border-r-0 border-gray-200 rounded-l-md">
-                  https://
-                </span>
-                <Input
-                  id="linkedin-profile"
-                  type="text"
-                  placeholder="www.linkedin.com/in/"
-                  value={linkedinProfile}
-                  onChange={(e) => setLinkedinProfile(e.target.value)}
-                  className="flex-1 rounded-l-none border-l-0"
-                />
-                <span className="inline-flex items-center px-3 text-sm text-[#4E4E55] bg-gray-50 border border-l-0 border-gray-200 rounded-r-md">
-                  .com
-                </span>
-              </div>
-            </div>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <FormField
+                control={form.control}
+                name="profileUrl"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-[#111115] text-sm font-medium">
+                      Your LinkedIn Profile <span className="text-red-500">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        type="url"
+                        placeholder="https://www.linkedin.com/in/your-profile"
+                        className="w-full"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-          </div>
+              <p className="text-[#4E4E55] text-sm text-center mt-8 mb-8">
+                We'll ask a few questions to tailor your strategy.
+              </p>
 
-          <p className="text-[#4E4E55] text-sm text-center mt-8 mb-8">
-            We'll ask a few questions to tailor your strategy.
-          </p>
-
-          <Button 
-            onClick={handleContinue}
-            disabled={!linkedinProfile.trim() || loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium py-3 rounded-lg"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Analyzing LinkedIn Profile...
-              </>
-            ) : (
-              'Continue'
-            )}
-          </Button>
+              <Button 
+                type="submit"
+                disabled={form.formState.isSubmitting}
+                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium py-3 rounded-lg"
+              >
+                {form.formState.isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Analyzing LinkedIn Profile...
+                  </>
+                ) : (
+                  'Continue'
+                )}
+              </Button>
+            </form>
+          </Form>
         </div>
       </div>
     </div>
