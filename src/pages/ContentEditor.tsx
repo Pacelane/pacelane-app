@@ -16,7 +16,8 @@ import {
   Send,
   Save,
   File,
-  Image
+  Image,
+  MessageCircle
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -54,30 +55,19 @@ const ContentEditor = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  
+  // Extract data from location state
+  const draftData = location.state;
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [chatInput, setChatInput] = useState('');
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [editorContent, setEditorContent] = useState(`# 5 Steps to a good LinkedIn profile
-
-Medium is a home for human stories and ideas. Here, anyone can share knowledge and wisdom with the world—without having to build a mailing list or a following first. The internet thrives when it gets rid of gatekeepers and its democratized. It's simple, beautiful, collaborative, and helps you find the right reader for whatever you have to say.
-
-![LinkedIn Profile Image](/lovable-uploads/48fbddaa-87e8-4da2-9ec7-f9972c3db63f.png)
-
-## Step 1: Professional Headline
-Your headline should be more than just your job title. Make it compelling and show your value proposition.
-
-## Step 2: Profile Photo
-Use a professional, high-quality headshot where you're looking directly at the camera with a genuine smile.
-
-## Step 3: Summary Section
-Write a compelling summary that tells your professional story and highlights your key achievements.
-
-## Step 4: Experience Details
-Don't just list job duties. Focus on achievements and quantify your impact with specific numbers and results.
-
-## Step 5: Skills and Endorsements
-List relevant skills and actively seek endorsements from colleagues and clients.`);
+  const [editorContent, setEditorContent] = useState(draftData?.content || '');
+  const [title, setTitle] = useState(draftData?.title || 'Untitled Draft');
+  const [currentDraftId, setCurrentDraftId] = useState(draftData?.draftId || null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
   const [knowledgeFiles, setKnowledgeFiles] = useState<KnowledgeFile[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
@@ -100,54 +90,63 @@ List relevant skills and actively seek endorsements from colleagues and clients.
     }
   ]);
 
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
 
-  // Load data on component mount
   useEffect(() => {
     if (user) {
       loadKnowledgeFiles();
     }
   }, [user]);
 
-  // Handle content suggestions from ProductHome
+  // Auto-save functionality
   useEffect(() => {
-    if (location.state?.suggestion) {
-      const suggestion = location.state.suggestion;
-      setEditorContent(suggestion.suggested_outline || `# ${suggestion.title}\n\n${suggestion.description || ''}\n\n`);
-      
-      // Clear the state to prevent re-applying on navigation
-      window.history.replaceState({}, document.title);
-      
-      toast.success(`"${suggestion.title}" has been loaded into the editor`);
+    if (editorContent && title && user) {
+      const autoSaveTimer = setTimeout(() => {
+        saveDraft(false);
+      }, 30000); // Auto-save every 30 seconds
+
+      return () => clearTimeout(autoSaveTimer);
     }
-  }, [location.state]);
+  }, [editorContent, title, user]);
 
   const loadKnowledgeFiles = async () => {
     if (!user) return;
     
+    setLoadingFiles(true);
     try {
-      setLoadingFiles(true);
-      const { data: files, error } = await supabase.storage
+      const { data, error } = await supabase.storage
         .from('knowledge-base')
         .list(user.id, {
           limit: 100,
-          offset: 0
+          offset: 0,
         });
 
       if (error) throw error;
 
-      const knowledgeFiles: KnowledgeFile[] = files?.map(file => ({
-        id: file.id || file.name,
+      const files: KnowledgeFile[] = data.map(file => ({
+        id: file.id || crypto.randomUUID(),
         name: file.name,
-        type: getFileTypeFromName(file.name),
+        type: 'file',
         size: file.metadata?.size,
         user_id: user.id,
         created_at: file.created_at || new Date().toISOString(),
-        url: `https://plbgeabtrkdhbrnjonje.supabase.co/storage/v1/object/knowledge-base/${user.id}/${file.name}`,
         selected: false
-      })) || [];
+      }));
 
-      setKnowledgeFiles(knowledgeFiles);
+      setKnowledgeFiles(files);
+
+      // Update file structure
+      setFileStructure(prev => [
+        prev[0], // Keep "New Content" folder
+        {
+          ...prev[1],
+          children: files.map(file => ({
+            id: file.id,
+            name: file.name,
+            type: 'file' as const
+          }))
+        }
+      ]);
     } catch (error) {
       console.error('Error loading knowledge files:', error);
       toast.error('Failed to load knowledge files');
@@ -156,155 +155,182 @@ List relevant skills and actively seek endorsements from colleagues and clients.
     }
   };
 
-  const getFileTypeFromName = (filename: string): 'file' | 'image' | 'audio' | 'video' | 'link' => {
-    const extension = filename.toLowerCase().split('.').pop();
-    
-    if (!extension) return 'file';
-    
-    if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(extension)) {
-      return 'image';
-    }
-    if (['mp4', 'avi', 'mov', 'webm', 'mkv'].includes(extension)) {
-      return 'video';
-    }
-    if (['mp3', 'wav', 'ogg', 'm4a', 'flac'].includes(extension)) {
-      return 'audio';
-    }
-    
-    return 'file';
-  };
+  const saveDraft = async (showToast = true) => {
+    if (!user || !title.trim()) return;
 
-  const loadMessagesForConversation = async (conversationId: string) => {
+    setIsSaving(true);
     try {
-      const { data: messages, error } = await supabase
-        .from('messages')
-        .select('id, role, content, created_at')
-        .eq('conversation_id', conversationId)
-        .order('created_at', { ascending: true });
+      const draftPayload = {
+        user_id: user.id,
+        title: title.trim(),
+        content: editorContent,
+        status: 'draft',
+        suggestion_id: draftData?.suggestionId || null
+      };
 
-      if (error) throw error;
+      let result;
+      if (currentDraftId) {
+        // Update existing draft
+        result = await supabase
+          .from('saved_drafts')
+          .update(draftPayload)
+          .eq('id', currentDraftId)
+          .select()
+          .single();
+      } else {
+        // Create new draft
+        result = await supabase
+          .from('saved_drafts')
+          .insert([draftPayload])
+          .select()
+          .single();
+        
+        if (result.data) {
+          setCurrentDraftId(result.data.id);
+        }
+      }
 
-      const formattedMessages: ChatMessage[] = messages?.map(msg => ({
-        id: msg.id,
-        role: msg.role as 'user' | 'assistant',
-        content: msg.content,
-        timestamp: new Date(msg.created_at)
-      })) || [];
+      if (result.error) throw result.error;
 
-      setChatMessages(formattedMessages);
+      setLastSaved(new Date());
+      if (showToast) {
+        toast.success('Draft saved successfully');
+      }
+
+      // Mark suggestion as used if this draft was created from a suggestion
+      if (draftData?.suggestionId && !currentDraftId) {
+        await supabase
+          .from('content_suggestions')
+          .update({ used_at: new Date().toISOString() })
+          .eq('id', draftData.suggestionId);
+      }
     } catch (error) {
-      console.error('Error loading messages:', error);
-      toast.error('Failed to load conversation');
+      console.error('Error saving draft:', error);
+      if (showToast) {
+        toast.error('Failed to save draft');
+      }
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const handleConversationChange = (conversationId: string | null) => {
-    setCurrentConversationId(conversationId);
-    if (conversationId) {
-      loadMessagesForConversation(conversationId);
-    } else {
-      setChatMessages([]);
-    }
+  const toggleFile = (fileId: string) => {
+    setKnowledgeFiles(prev => 
+      prev.map(file => 
+        file.id === fileId 
+          ? { ...file, selected: !file.selected }
+          : file
+      )
+    );
   };
 
-  const handleNewConversation = () => {
-    setCurrentConversationId(null);
-    setChatMessages([]);
-  };
-
-  const handleFileSelection = (fileId: string, selected: boolean) => {
-    if (selected) {
-      setSelectedFiles(prev => [...prev, fileId]);
-    } else {
-      setSelectedFiles(prev => prev.filter(id => id !== fileId));
-    }
-  };
-
-  const handleSendMessage = async () => {
-    if (!chatInput.trim() || isLoading) return;
+  const sendMessage = async () => {
+    if (!chatInput.trim() || !user || isLoading) return;
 
     const userMessage: ChatMessage = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       role: 'user',
       content: chatInput,
       timestamp: new Date()
     };
 
-    setChatMessages(prev => [...prev, userMessage]);
+    setMessages(prev => [...prev, userMessage]);
     setChatInput('');
     setIsLoading(true);
 
     try {
-      // Get selected file contexts
-      const selectedFileContexts = knowledgeFiles
-        .filter(file => selectedFiles.includes(file.id))
-        .map(file => ({
-          name: file.name,
-          type: file.type,
-          url: file.url
-        }));
+      // Get selected files for context
+      const selectedKnowledgeFiles = knowledgeFiles.filter(file => file.selected);
+      const fileContexts = await Promise.all(
+        selectedKnowledgeFiles.map(async (file) => {
+          try {
+            const { data } = await supabase.storage
+              .from('knowledge-base')
+              .download(`${user.id}/${file.name}`);
+            
+            if (data) {
+              const text = await data.text();
+              return { filename: file.name, content: text };
+            }
+          } catch (error) {
+            console.error('Error reading file:', error);
+          }
+          return null;
+        })
+      );
 
-      const { data, error } = await supabase.functions.invoke('ai-assistant', {
+      const validContexts = fileContexts.filter(Boolean);
+
+      const response = await supabase.functions.invoke('ai-assistant', {
         body: {
           message: chatInput,
           conversationId: currentConversationId,
-          fileContexts: selectedFileContexts
+          fileContexts: validContexts,
+          userId: user.id
         }
       });
 
-      if (error) {
-        throw error;
-      }
+      if (response.error) throw response.error;
 
-      // Update conversation ID if this was the first message
-      if (!currentConversationId && data.conversationId) {
-        setCurrentConversationId(data.conversationId);
-      }
-
-      const assistantMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
+      const aiMessage: ChatMessage = {
+        id: crypto.randomUUID(),
         role: 'assistant',
-        content: data.message,
+        content: response.data.response,
         timestamp: new Date()
       };
 
-      setChatMessages(prev => [...prev, assistantMessage]);
-
-    } catch (error: any) {
-      console.error('Error sending message:', error);
-      toast.error(error.message || 'Failed to send message');
+      setMessages(prev => [...prev, aiMessage]);
       
-      // Remove the user message that failed
-      setChatMessages(prev => prev.filter(msg => msg.id !== userMessage.id));
+      if (response.data.conversationId) {
+        setCurrentConversationId(response.data.conversationId);
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast.error('Failed to send message');
     } finally {
       setIsLoading(false);
     }
   };
 
   const toggleFolder = (folderId: string) => {
-    setFileStructure(prev => prev.map(item => 
-      item.id === folderId ? { ...item, isOpen: !item.isOpen } : item
-    ));
+    setFileStructure(prev =>
+      prev.map(item =>
+        item.id === folderId
+          ? { ...item, isOpen: !item.isOpen }
+          : item
+      )
+    );
   };
 
-  const renderFileTree = (items: FileItem[], depth = 0) => {
-    return items.map(item => (
-      <div key={item.id}>
-        <div 
-          className={`flex items-center gap-2 py-1 px-2 hover:bg-gray-100 cursor-pointer`}
-          style={{ paddingLeft: `${depth * 12 + 8}px` }}
+  const renderFileTree = (items: FileItem[], level = 0) => {
+    return items.map((item) => (
+      <div key={item.id} className="text-sm">
+        <div
+          className={`flex items-center gap-2 py-1 px-2 hover:bg-gray-50 cursor-pointer ${
+            level > 0 ? 'ml-4' : ''
+          }`}
           onClick={() => item.type === 'folder' ? toggleFolder(item.id) : null}
         >
           {item.type === 'folder' ? (
-            item.isOpen ? <FolderOpen className="h-4 w-4 text-blue-600" /> : <Folder className="h-4 w-4 text-blue-600" />
+            item.isOpen ? (
+              <FolderOpen className="h-4 w-4 text-blue-500" />
+            ) : (
+              <Folder className="h-4 w-4 text-blue-500" />
+            )
           ) : (
-            <FileText className="h-4 w-4 text-gray-600" />
+            <div className="flex items-center gap-2 flex-1">
+              <Checkbox
+                checked={knowledgeFiles.find(f => f.id === item.id)?.selected || false}
+                onCheckedChange={() => toggleFile(item.id)}
+              />
+              <File className="h-4 w-4 text-gray-500" />
+            </div>
           )}
-          <span className="text-sm text-gray-700 truncate">{item.name}</span>
+          <span className="text-gray-700">{item.name}</span>
         </div>
         {item.type === 'folder' && item.isOpen && item.children && (
           <div>
-            {renderFileTree(item.children, depth + 1)}
+            {renderFileTree(item.children, level + 1)}
           </div>
         )}
       </div>
@@ -314,185 +340,182 @@ List relevant skills and actively seek endorsements from colleagues and clients.
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Left Sidebar - File Explorer */}
-      <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
-        {/* Header */}
+      <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
         <div className="p-4 border-b border-gray-200">
           <Button
             variant="ghost"
-            size="sm"
             onClick={() => navigate('/product-home')}
-            className="mb-3 text-gray-600 hover:text-gray-900"
+            className="mb-4 p-0 h-auto text-gray-600 hover:text-gray-900"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Go Back
+            Back to Product Home
           </Button>
           
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
               type="text"
-              placeholder="Find content..."
+              placeholder="Search files..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 text-sm"
+              className="pl-10 bg-gray-50 border-gray-200"
             />
           </div>
         </div>
-
-        {/* File Tree */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="p-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full justify-start mb-2 text-gray-600"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              New Content
-            </Button>
-            
-            {renderFileTree(fileStructure)}
-            {/* Show knowledge base files */}
-            {fileStructure.find(item => item.id === 'knowledge-base')?.isOpen && (
-              <div className="px-4 pb-4">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="text-sm font-medium text-gray-900">Knowledge Files</h4>
-                  <span className="text-xs text-gray-500">
-                    {selectedFiles.length} selected
-                  </span>
-                </div>
-                {loadingFiles ? (
-                  <div className="text-center py-4">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mx-auto"></div>
-                  </div>
-                ) : knowledgeFiles.length === 0 ? (
-                  <p className="text-xs text-gray-500 text-center py-2">
-                    No files found. Upload files in Knowledge Base.
-                  </p>
-                ) : (
-                  knowledgeFiles.map(file => {
-                    const Icon = file.type === 'image' ? Image : 
-                                file.type === 'file' ? FileText : File;
-                    return (
-                      <div key={file.id} className="flex items-center gap-2 py-1 px-2 hover:bg-gray-100">
-                        <Checkbox
-                          checked={selectedFiles.includes(file.id)}
-                          onCheckedChange={(checked) => handleFileSelection(file.id, checked as boolean)}
-                          className="h-3 w-3"
-                        />
-                        <Icon className="h-3 w-3 text-gray-600" />
-                        <span className="text-xs text-gray-700 truncate flex-1">
-                          {file.name}
-                        </span>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
+        
+        <div className="flex-1 p-4 overflow-y-auto">
+          <div className="space-y-2">
+            {loadingFiles ? (
+              <div className="text-center text-gray-500">Loading files...</div>
+            ) : (
+              renderFileTree(fileStructure)
             )}
           </div>
         </div>
       </div>
 
-      {/* Main Editor Area */}
-      <div className="flex-1 flex flex-col">
-        {/* Editor Header */}
-        <div className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
-          <h1 className="text-xl font-semibold text-gray-900">5 Steps to a good LinkedIn profile</h1>
-          <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
-            <Save className="h-4 w-4 mr-2" />
-            Save Draft
-          </Button>
-        </div>
-
-        {/* Editor Content */}
-        <div className="flex-1 p-6">
-          <Textarea
-            value={editorContent}
-            onChange={(e) => setEditorContent(e.target.value)}
-            className="w-full h-full resize-none border-0 focus-visible:ring-0 text-base leading-relaxed"
-            placeholder="Start writing your content..."
-          />
-        </div>
-      </div>
-
-      {/* Right Sidebar - AI Chat */}
-      <div className="w-80 bg-white border-l border-gray-200 flex flex-col">
-        {/* Chat Header */}
-        <div className="p-4 border-b border-gray-200">
-          <h3 className="font-semibold text-gray-900 mb-3">AI Assistant</h3>
-          <ConversationSelector
-            currentConversationId={currentConversationId}
-            onConversationChange={handleConversationChange}
-            onNewConversation={handleNewConversation}
-          />
-          {selectedFiles.length > 0 && (
-            <div className="mt-2 p-2 bg-blue-50 rounded-md">
-              <p className="text-xs text-blue-700">
-                {selectedFiles.length} file{selectedFiles.length > 1 ? 's' : ''} selected as context
-              </p>
+      {/* Main Content Area */}
+      <div className="flex-1 flex">
+        {/* Editor Section */}
+        <div className="flex-1 flex flex-col border-r border-gray-200">
+          <div className="border-b border-gray-200 p-4 flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-gray-900">Content Editor</h2>
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              {lastSaved && (
+                <span>Last saved: {lastSaved.toLocaleTimeString()}</span>
+              )}
             </div>
-          )}
-        </div>
-
-        {/* Chat Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {chatMessages.length === 0 ? (
-            <div className="text-center text-gray-500 mt-8">
-              <p className="mb-2">👋 Hello! I'm your AI content assistant.</p>
-              <p className="text-sm">Ask me anything about your content, writing tips, or ideas!</p>
-            </div>
-          ) : (
-            chatMessages.map(message => (
-              <div key={message.id} className="space-y-2">
-                {message.role === 'user' ? (
-                  <div className="flex justify-end">
-                    <div className="bg-blue-600 text-white px-3 py-2 rounded-lg max-w-[80%] text-sm">
-                      {message.content}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex justify-start">
-                    <div className="bg-gray-100 text-gray-900 px-3 py-2 rounded-lg max-w-[80%] text-sm">
-                      {message.content}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))
-          )}
-          {isLoading && (
-            <div className="flex justify-start">
-              <div className="bg-gray-100 text-gray-900 px-3 py-2 rounded-lg text-sm">
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                </div>
+          </div>
+          
+          <div className="flex-1 p-6">
+            <div className="space-y-4">
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Enter title..."
+                className="text-xl font-semibold border-0 border-b border-gray-200 rounded-none px-0 focus:border-blue-500"
+              />
+              
+              <Textarea
+                value={editorContent}
+                onChange={(e) => setEditorContent(e.target.value)}
+                placeholder="Start writing your content here..."
+                className="min-h-[400px] resize-none border-gray-200 focus:border-blue-500"
+              />
+              
+              <div className="flex justify-end gap-2">
+                <Button 
+                  variant="outline"
+                  onClick={() => navigate('/posts')}
+                >
+                  View All Posts
+                </Button>
+                <Button 
+                  onClick={() => saveDraft(true)}
+                  disabled={isSaving || !title.trim()}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  {isSaving ? 'Saving...' : 'Save Draft'}
+                </Button>
               </div>
             </div>
-          )}
+          </div>
         </div>
 
-        {/* Chat Input */}
-        <div className="p-4 border-t border-gray-200">
-          <div className="flex gap-2">
-            <Input
-              value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
-              placeholder="Ask AI anything"
-              className="flex-1"
-              disabled={isLoading}
-              onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
+        {/* Right Sidebar - AI Assistant */}
+        <div className="w-80 bg-white flex flex-col">
+          <div className="border-b border-gray-200 p-4">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                <div className="w-4 h-4 bg-blue-600 rounded-full"></div>
+              </div>
+              <span className="font-semibold text-gray-900">AI Assistant</span>
+            </div>
+            
+            <ConversationSelector
+              currentConversationId={currentConversationId}
+              onConversationChange={setCurrentConversationId}
+              onNewConversation={() => setCurrentConversationId(null)}
             />
-            <Button
-              size="icon"
-              onClick={handleSendMessage}
-              disabled={isLoading || !chatInput.trim()}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              <Send className="h-4 w-4" />
-            </Button>
+          </div>
+          
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex-1 p-4 overflow-y-auto">
+              {messages.length === 0 ? (
+                <div className="text-center text-gray-500 mt-8">
+                  <MessageCircle className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                  <p>Start a conversation with your AI assistant</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {messages.map((message) => (
+                    <div
+                      key={message.id}
+                      className={`p-3 rounded-lg ${
+                        message.role === 'user'
+                          ? 'bg-blue-100 ml-8'
+                          : 'bg-gray-100 mr-8'
+                      }`}
+                    >
+                      <div className="flex items-start gap-2">
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                          message.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-500 text-white'
+                        }`}>
+                          {message.role === 'user' ? 'U' : 'AI'}
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm text-gray-900">{message.content}</p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {message.timestamp.toLocaleTimeString()}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {isLoading && (
+                    <div className="bg-gray-100 mr-8 p-3 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-gray-500 flex items-center justify-center text-xs font-bold text-white">
+                          AI
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex space-x-1">
+                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            
+            <div className="border-t border-gray-200 p-4">
+              <div className="flex gap-2">
+                <Input
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  placeholder="Ask your AI assistant..."
+                  className="flex-1"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      sendMessage();
+                    }
+                  }}
+                />
+                <Button
+                  onClick={sendMessage}
+                  disabled={!chatInput.trim() || isLoading}
+                  size="icon"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
