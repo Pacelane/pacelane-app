@@ -68,6 +68,8 @@ const ContentEditor = () => {
   const [knowledgeFiles, setKnowledgeFiles] = useState<KnowledgeFile[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
   const [loadingFiles, setLoadingFiles] = useState(false);
+  const [savedDrafts, setSavedDrafts] = useState<any[]>([]);
+  const [loadingDrafts, setLoadingDrafts] = useState(false);
 
   const [fileStructure, setFileStructure] = useState<FileItem[]>([
     {
@@ -92,6 +94,7 @@ const ContentEditor = () => {
   useEffect(() => {
     if (user) {
       loadKnowledgeFiles();
+      loadSavedDrafts();
     }
   }, [user]);
 
@@ -165,6 +168,28 @@ const ContentEditor = () => {
     }
   };
 
+  const loadSavedDrafts = async () => {
+    if (!user) return;
+    
+    try {
+      setLoadingDrafts(true);
+      const { data: drafts, error } = await supabase
+        .from('saved_drafts' as any)
+        .select('*')
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+
+      setSavedDrafts(drafts || []);
+    } catch (error) {
+      console.error('Error loading drafts:', error);
+    } finally {
+      setLoadingDrafts(false);
+    }
+  };
+
   const getFileTypeFromName = (filename: string): 'file' | 'image' | 'audio' | 'video' | 'link' => {
     const extension = filename.toLowerCase().split('.').pop();
     
@@ -229,6 +254,15 @@ const ContentEditor = () => {
     }
   };
 
+  const handleLoadDraft = async (draft: any) => {
+    setDraftId(draft.id);
+    setDraftTitle(draft.title);
+    setEditorContent(draft.content);
+    setLastSaved(new Date(draft.updated_at));
+    
+    toast.success(`"${draft.title}" has been loaded for editing.`);
+  };
+
   const handleSaveDraft = async (silent = false) => {
     if (!user || !editorContent.trim()) return;
     
@@ -265,6 +299,9 @@ const ContentEditor = () => {
       }
       
       setLastSaved(new Date());
+      
+      // Reload drafts list after saving
+      loadSavedDrafts();
       
       if (!silent) {
         toast.success('Draft saved successfully');
@@ -459,6 +496,52 @@ const ContentEditor = () => {
                 )}
               </div>
             )}
+          </div>
+        </div>
+
+        {/* Posts Section */}
+        <div className="border-t border-gray-200 bg-gray-50">
+          <div className="p-3">
+            <h4 className="text-sm font-medium text-gray-900 mb-2 flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Recent Posts
+            </h4>
+            {loadingDrafts ? (
+              <div className="text-center py-2">
+                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600 mx-auto"></div>
+              </div>
+            ) : savedDrafts.length === 0 ? (
+              <p className="text-xs text-gray-500 text-center py-2">
+                No saved drafts yet
+              </p>
+            ) : (
+              <div className="space-y-1 max-h-32 overflow-y-auto">
+                {savedDrafts.slice(0, 5).map(draft => (
+                  <button
+                    key={draft.id}
+                    onClick={() => handleLoadDraft(draft)}
+                    className={`w-full text-left p-2 rounded hover:bg-gray-100 transition-colors ${
+                      draftId === draft.id ? 'bg-blue-50 border border-blue-200' : ''
+                    }`}
+                  >
+                    <div className="text-xs font-medium text-gray-900 truncate">
+                      {draft.title || 'Untitled'}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-0.5">
+                      {new Date(draft.updated_at).toLocaleDateString()}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/posts')}
+              className="w-full justify-start mt-2 text-xs text-gray-600 hover:text-gray-900"
+            >
+              View all posts →
+            </Button>
           </div>
         </div>
       </div>
