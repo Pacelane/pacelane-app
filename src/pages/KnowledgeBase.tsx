@@ -76,25 +76,31 @@ const KnowledgeBase = () => {
     {
       id: 'home',
       label: 'Home',
-      icon: 'https://api.builder.io/api/v1/image/assets/33e5c0ee54254724b25b444ecf442f35/0c1bb78985544c9ca924ecccb7d81902f1371722?placeholderIfAbsent=true',
+      icon: 'home',
       isActive: activeNavItem === 'home'
+    },
+    {
+      id: 'posts',
+      label: 'Posts',
+      icon: 'file-text',
+      isActive: activeNavItem === 'posts'
     },
     {
       id: 'profile',
       label: 'Profile',
-      icon: 'https://api.builder.io/api/v1/image/assets/33e5c0ee54254724b25b444ecf442f35/d8364849850f2a2fc435e11f52d1453ebc7def9b?placeholderIfAbsent=true',
+      icon: 'profile',
       isActive: activeNavItem === 'profile'
     },
     {
       id: 'knowledge',
       label: 'Knowledge',
-      icon: 'https://api.builder.io/api/v1/image/assets/33e5c0ee54254724b25b444ecf442f35/37597e47a501549c19c0227f7570a0090e8eefde?placeholderIfAbsent=true',
+      icon: 'knowledge',
       isActive: activeNavItem === 'knowledge'
     },
     {
       id: 'calendar',
       label: 'Calendar',
-      icon: 'https://api.builder.io/api/v1/image/assets/33e5c0ee54254724b25b444ecf442f35/54893a5cd62f99839478ff82093b736496144b3f?placeholderIfAbsent=true',
+      icon: 'calendar',
       isActive: activeNavItem === 'calendar'
     }
   ];
@@ -159,8 +165,12 @@ const KnowledgeBase = () => {
 
   const handleNavigationClick = (itemId: string) => {
     setActiveNavItem(itemId);
-    if (itemId === 'home' || itemId === 'profile') {
-      navigate(`/${itemId === 'home' ? 'product-home' : itemId}`);
+    if (itemId === 'home') {
+      navigate('/product-home');
+    } else if (itemId === 'profile') {
+      navigate('/profile');
+    } else if (itemId === 'posts') {
+      navigate('/posts');
     }
   };
 
