@@ -245,7 +245,7 @@ const ContentEditor = () => {
       if (draftId) {
         // Update existing draft
         const { error } = await supabase
-          .from('saved_drafts')
+          .from('saved_drafts' as any)
           .update(draftData)
           .eq('id', draftId);
         
@@ -253,13 +253,15 @@ const ContentEditor = () => {
       } else {
         // Create new draft
         const { data, error } = await supabase
-          .from('saved_drafts')
+          .from('saved_drafts' as any)
           .insert(draftData)
-          .select()
+          .select('id')
           .single();
         
         if (error) throw error;
-        setDraftId(data.id);
+        if (data) {
+          setDraftId((data as any).id);
+        }
       }
       
       setLastSaved(new Date());
@@ -465,11 +467,30 @@ const ContentEditor = () => {
       <div className="flex-1 flex flex-col">
         {/* Editor Header */}
         <div className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
-          <h1 className="text-xl font-semibold text-gray-900">5 Steps to a good LinkedIn profile</h1>
-          <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
-            <Save className="h-4 w-4 mr-2" />
-            Save Draft
-          </Button>
+          <div className="flex-1">
+            <Input
+              value={draftTitle}
+              onChange={(e) => setDraftTitle(e.target.value)}
+              className="text-xl font-semibold text-gray-900 border-0 p-0 focus-visible:ring-0 bg-transparent"
+              placeholder="Enter title..."
+            />
+          </div>
+          <div className="flex items-center gap-3">
+            {lastSaved && (
+              <span className="text-xs text-gray-500">
+                Saved {lastSaved.toLocaleTimeString()}
+              </span>
+            )}
+            <Button 
+              size="sm" 
+              onClick={() => handleSaveDraft(false)}
+              disabled={isSaving}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              {isSaving ? 'Saving...' : 'Save Draft'}
+            </Button>
+          </div>
         </div>
 
         {/* Editor Content */}

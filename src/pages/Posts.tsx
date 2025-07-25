@@ -9,6 +9,7 @@ import { Search, Edit, Trash2, Bell, Settings, FileText, Plus } from 'lucide-rea
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 interface SavedDraft {
   id: string;
@@ -49,9 +50,15 @@ const Posts = () => {
     try {
       setIsLoading(true);
       
-      // Note: saved_drafts table needs to be created first
-      // For now, we'll use mock data
-      setSavedDrafts([]);
+      // Fetch saved drafts
+      const { data: drafts, error: draftsError } = await supabase
+        .from('saved_drafts' as any)
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('updated_at', { ascending: false });
+
+      if (draftsError) throw draftsError;
+      setSavedDrafts((drafts as any) || []);
 
       // Fetch unused content suggestions
       const { data: suggestions, error: suggestionsError } = await supabase
@@ -89,8 +96,20 @@ const Posts = () => {
   };
 
   const handleDeleteDraft = async (draftId: string) => {
-    // Note: This will be implemented when saved_drafts table is created
-    setSavedDrafts(prev => prev.filter(draft => draft.id !== draftId));
+    try {
+      const { error } = await supabase
+        .from('saved_drafts' as any)
+        .delete()
+        .eq('id', draftId);
+      
+      if (error) throw error;
+      
+      setSavedDrafts(prev => prev.filter(draft => draft.id !== draftId));
+      toast.success('Draft deleted successfully');
+    } catch (error) {
+      console.error('Error deleting draft:', error);
+      toast.error('Failed to delete draft');
+    }
   };
 
   const handleCreateFromSuggestion = (suggestion: ContentSuggestion) => {
