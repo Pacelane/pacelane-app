@@ -2,11 +2,19 @@ import React, { useState } from 'react';
 import { AppSidebar } from '@/components/app-sidebar';
 import { ChatInterface } from '@/components/ChatInterface';
 import { ContentSuggestions } from '@/components/ContentSuggestions';
+import { TemplateGrid } from '@/components/TemplateGrid';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Bell, Settings, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+
+interface Template {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+}
 
 interface NavigationItem {
   id: string;
@@ -16,7 +24,6 @@ interface NavigationItem {
 }
 
 const ProductHome = () => {
-  // Force rebuild to clear cache
   const navigate = useNavigate();
   const [activeNavItem, setActiveNavItem] = useState('home');
   const [searchQuery, setSearchQuery] = useState('');
@@ -48,6 +55,20 @@ const ProductHome = () => {
     }
   ];
 
+  const templates: Template[] = [
+    {
+      id: 'personal-story-1',
+      title: 'Personal Story',
+      description: 'Create connection with your audience telling a story about your personal life',
+      icon: 'https://api.builder.io/api/v1/image/assets/33e5c0ee54254724b25b444ecf442f35/03bdf692d22293308983a6affc1ce250d82f8ebf?placeholderIfAbsent=true'
+    },
+    {
+      id: 'challenge-week-1',
+      title: 'Challenge of The Week',
+      description: 'Tell about what was the most challenging thing you did this week and what you did to overcome it',
+      icon: 'https://api.builder.io/api/v1/image/assets/33e5c0ee54254724b25b444ecf442f35/8c9ca2642ebaffcc8667925dfc334dedfe589f65?placeholderIfAbsent=true'
+    }
+  ];
 
   const handleCreateNew = () => {
     navigate('/content-editor');
@@ -91,6 +112,13 @@ const ProductHome = () => {
     navigate('/content-editor');
   };
 
+  const handleTemplateSelect = (templateId: string) => {
+    navigate('/content-editor');
+  };
+
+  const handleStartFromScratch = () => {
+    navigate('/content-editor');
+  };
 
   return (
     <SidebarProvider>
@@ -156,6 +184,17 @@ const ProductHome = () => {
               </div>
               <div className="flex-1">
                 <ChatInterface onSendMessage={handleSendMessage} />
+              </div>
+              <div className="w-full max-w-2xl mx-auto p-4 pb-8">
+                <div className="text-center mb-6">
+                  <h2 className="text-2xl font-normal text-gray-900 mb-2 font-playfair">or choose from templates</h2>
+                  <p className="text-gray-600">Get started quickly with our pre-designed templates</p>
+                </div>
+                <TemplateGrid
+                  templates={templates}
+                  onTemplateSelect={handleTemplateSelect}
+                  onStartFromScratch={handleStartFromScratch}
+                />
               </div>
             </div>
           </div>
