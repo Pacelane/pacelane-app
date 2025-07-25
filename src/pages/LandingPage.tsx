@@ -14,6 +14,14 @@ const LandingPage = () => {
     navigate('/product-home');
   };
 
+  const handleSignIn = () => {
+    navigate('/signin');
+  };
+
+  const handleGetStarted = () => {
+    navigate('/signin'); // Navigate to sign up flow on signin page
+  };
+
   return (
     <div className="min-h-screen bg-muted">
       {/* Navigation */}
@@ -34,9 +42,11 @@ const LandingPage = () => {
                   Home
                 </Button>
               ) : (
-                <Button variant="outline">Sign In</Button>
+                <Button variant="outline" onClick={handleSignIn}>Sign In</Button>
               )}
-              <Button className="bg-primary hover:bg-primary/90">Get Started</Button>
+              <Button className="bg-primary hover:bg-primary/90" onClick={user ? handleNavigateHome : handleGetStarted}>
+                {user ? 'Go to App' : 'Get Started'}
+              </Button>
             </div>
           </div>
         </div>
@@ -61,8 +71,8 @@ const LandingPage = () => {
               into professional posts in minutes, not hours.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-              <Button size="lg" className="bg-primary hover:bg-primary/90 text-lg px-8 py-3">
-                Start Creating Content
+              <Button size="lg" className="bg-primary hover:bg-primary/90 text-lg px-8 py-3" onClick={user ? handleNavigateHome : handleGetStarted}>
+                {user ? 'Go to App' : 'Start Creating Content'}
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
               <Button size="lg" variant="outline" className="text-lg px-8 py-3">
