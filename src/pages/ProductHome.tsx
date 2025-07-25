@@ -16,6 +16,7 @@ interface NavigationItem {
 }
 
 const ProductHome = () => {
+  // Force rebuild to clear cache
   const navigate = useNavigate();
   const [activeNavItem, setActiveNavItem] = useState('home');
   const [searchQuery, setSearchQuery] = useState('');
