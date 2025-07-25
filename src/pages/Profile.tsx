@@ -70,7 +70,7 @@ const Profile = () => {
           userAvatar="/lovable-uploads/fe97b466-2c78-4c2a-baeb-f2e13105460d.png"
           navigationItems={[
             { id: 'home', label: 'Home', icon: 'home', isActive: false },
-            { id: 'posts', label: 'Posts', icon: 'file-text', isActive: false },
+            { id: 'posts', label: 'Posts', icon: 'knowledge', isActive: false },
             { id: 'profile', label: 'Profile', icon: 'profile', isActive: true },
             { id: 'knowledge', label: 'Knowledge', icon: 'knowledge', isActive: false },
             { id: 'calendar', label: 'Calendar', icon: 'calendar', isActive: false },

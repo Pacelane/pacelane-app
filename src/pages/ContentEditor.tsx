@@ -16,7 +16,8 @@ import {
   Send,
   Save,
   File,
-  Image
+  Image,
+  Book
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -325,6 +326,16 @@ List relevant skills and actively seek endorsements from colleagues and clients.
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Go Back
+          </Button>
+          
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/posts')}
+            className="mb-3 text-gray-600 hover:text-gray-900 w-full justify-start"
+          >
+            <Book className="h-4 w-4 mr-2" />
+            Posts
           </Button>
           
           <div className="relative">

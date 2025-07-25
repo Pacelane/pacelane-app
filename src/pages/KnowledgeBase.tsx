@@ -82,7 +82,7 @@ const KnowledgeBase = () => {
     {
       id: 'posts',
       label: 'Posts',
-      icon: 'file-text',
+      icon: 'knowledge',
       isActive: activeNavItem === 'posts'
     },
     {
