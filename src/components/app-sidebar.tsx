@@ -87,9 +87,7 @@ export function AppSidebar({
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup className="mt-auto">
-          
-        </SidebarGroup>
+        
       </SidebarContent>
 
       <SidebarFooter className="p-4 border-t border-[rgba(39,39,42,0.10)]">
