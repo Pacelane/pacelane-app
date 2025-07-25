@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Home, User, Book, Calendar, HelpCircle } from 'lucide-react';
+import { Plus, Home, User, Book, Calendar, HelpCircle, FileText } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 
 import {
@@ -39,6 +39,7 @@ const iconMap = {
   profile: User,
   knowledge: Book,
   calendar: Calendar,
+  'file-text': FileText,
 };
 
 export function AppSidebar({

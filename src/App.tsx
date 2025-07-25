@@ -11,6 +11,7 @@ import KnowledgeBase from "./pages/KnowledgeBase";
 import SignIn from "./pages/SignIn";
 import Profile from "./pages/Profile";
 import ContentEditor from "./pages/ContentEditor";
+import Posts from "./pages/Posts";
 import Welcome from "./pages/Onboarding/Welcome";
 import FirstThingsFirst from "./pages/Onboarding/FirstThingsFirst";
 import Inspirations from "./pages/Onboarding/Inspirations";
@@ -72,6 +73,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <ContentEditor />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/posts" 
+              element={
+                <ProtectedRoute>
+                  <Posts />
                 </ProtectedRoute>
               } 
             />
