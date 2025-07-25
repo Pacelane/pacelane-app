@@ -59,26 +59,11 @@ const ContentEditor = () => {
   const [chatInput, setChatInput] = useState('');
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [editorContent, setEditorContent] = useState(`# 5 Steps to a good LinkedIn profile
-
-Medium is a home for human stories and ideas. Here, anyone can share knowledge and wisdom with the world—without having to build a mailing list or a following first. The internet thrives when it gets rid of gatekeepers and its democratized. It's simple, beautiful, collaborative, and helps you find the right reader for whatever you have to say.
-
-![LinkedIn Profile Image](/lovable-uploads/48fbddaa-87e8-4da2-9ec7-f9972c3db63f.png)
-
-## Step 1: Professional Headline
-Your headline should be more than just your job title. Make it compelling and show your value proposition.
-
-## Step 2: Profile Photo
-Use a professional, high-quality headshot where you're looking directly at the camera with a genuine smile.
-
-## Step 3: Summary Section
-Write a compelling summary that tells your professional story and highlights your key achievements.
-
-## Step 4: Experience Details
-Don't just list job duties. Focus on achievements and quantify your impact with specific numbers and results.
-
-## Step 5: Skills and Endorsements
-List relevant skills and actively seek endorsements from colleagues and clients.`);
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const [draftTitle, setDraftTitle] = useState('New Post');
+  const [isSaving, setIsSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [editorContent, setEditorContent] = useState('# New Post\n\nStart writing your content here...');
 
   const [knowledgeFiles, setKnowledgeFiles] = useState<KnowledgeFile[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
@@ -110,18 +95,41 @@ List relevant skills and actively seek endorsements from colleagues and clients.
     }
   }, [user]);
 
-  // Handle content suggestions from ProductHome
+  // Handle content suggestions from ProductHome and draft editing
   useEffect(() => {
     if (location.state?.suggestion) {
       const suggestion = location.state.suggestion;
+      setDraftTitle(suggestion.title);
       setEditorContent(suggestion.suggested_outline || `# ${suggestion.title}\n\n${suggestion.description || ''}\n\n`);
       
       // Clear the state to prevent re-applying on navigation
       window.history.replaceState({}, document.title);
       
       toast.success(`"${suggestion.title}" has been loaded into the editor`);
+    } else if (location.state?.draftId) {
+      // Load existing draft
+      const { draftId, title, content } = location.state;
+      setDraftId(draftId);
+      setDraftTitle(title || 'Untitled');
+      setEditorContent(content || '');
+      
+      // Clear the state to prevent re-applying on navigation
+      window.history.replaceState({}, document.title);
+      
+      toast.success('Draft loaded successfully');
     }
   }, [location.state]);
+
+  // Auto-save functionality
+  useEffect(() => {
+    if (!user || !editorContent.trim()) return;
+    
+    const autoSaveTimer = setTimeout(() => {
+      handleSaveDraft(true); // silent save
+    }, 30000); // Auto-save every 30 seconds
+
+    return () => clearTimeout(autoSaveTimer);
+  }, [editorContent, user]);
 
   const loadKnowledgeFiles = async () => {
     if (!user) return;
@@ -218,6 +226,54 @@ List relevant skills and actively seek endorsements from colleagues and clients.
       setSelectedFiles(prev => [...prev, fileId]);
     } else {
       setSelectedFiles(prev => prev.filter(id => id !== fileId));
+    }
+  };
+
+  const handleSaveDraft = async (silent = false) => {
+    if (!user || !editorContent.trim()) return;
+    
+    try {
+      setIsSaving(true);
+      
+      const draftData = {
+        title: draftTitle,
+        content: editorContent,
+        user_id: user.id,
+        status: 'draft' as const
+      };
+
+      if (draftId) {
+        // Update existing draft
+        const { error } = await supabase
+          .from('saved_drafts')
+          .update(draftData)
+          .eq('id', draftId);
+        
+        if (error) throw error;
+      } else {
+        // Create new draft
+        const { data, error } = await supabase
+          .from('saved_drafts')
+          .insert(draftData)
+          .select()
+          .single();
+        
+        if (error) throw error;
+        setDraftId(data.id);
+      }
+      
+      setLastSaved(new Date());
+      
+      if (!silent) {
+        toast.success('Draft saved successfully');
+      }
+    } catch (error) {
+      console.error('Error saving draft:', error);
+      if (!silent) {
+        toast.error('Failed to save draft');
+      }
+    } finally {
+      setIsSaving(false);
     }
   };
 
