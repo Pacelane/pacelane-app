@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Edit, Search } from 'lucide-react';
+import { Edit, Search, LogOut } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -197,6 +197,18 @@ const Profile = () => {
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Sign Out Section */}
+                <div className="pt-8 border-t border-gray-200">
+                  <Button 
+                    variant="destructive" 
+                    onClick={handleSignOut}
+                    className="w-full"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sign Out
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
