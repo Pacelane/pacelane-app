@@ -2,9 +2,18 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowRight, Mic, Brain, Zap, Database, Rocket, CheckCircle, Play, Star } from 'lucide-react';
+import { ArrowRight, Mic, Brain, Zap, Database, Rocket, CheckCircle, Play, Star, Home } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const LandingPage = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const handleNavigateHome = () => {
+    navigate('/product-home');
+  };
+
   return (
     <div className="min-h-screen bg-muted">
       {/* Navigation */}
@@ -19,7 +28,14 @@ const LandingPage = () => {
             <div className="flex items-center gap-4">
               <Button variant="ghost">Features</Button>
               <Button variant="ghost">Pricing</Button>
-              <Button variant="outline">Sign In</Button>
+              {user ? (
+                <Button variant="outline" onClick={handleNavigateHome}>
+                  <Home className="mr-2 h-4 w-4" />
+                  Home
+                </Button>
+              ) : (
+                <Button variant="outline">Sign In</Button>
+              )}
               <Button className="bg-primary hover:bg-primary/90">Get Started</Button>
             </div>
           </div>
