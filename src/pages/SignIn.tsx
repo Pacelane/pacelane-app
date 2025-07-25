@@ -17,23 +17,14 @@ const SignIn = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const signInForm = useForm<SignInFormData>({
-    resolver: zodResolver(signInSchema),
+  // Use a single form instance with dynamic schema
+  const form = useForm<SignInFormData | SignUpFormData>({
+    resolver: zodResolver(isSignUp ? signUpSchema : signInSchema),
     defaultValues: {
       email: '',
       password: '',
     },
   });
-
-  const signUpForm = useForm<SignUpFormData>({
-    resolver: zodResolver(signUpSchema),
-    defaultValues: {
-      email: '',
-      password: '',
-    },
-  });
-
-  const form = isSignUp ? signUpForm : signInForm;
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -41,6 +32,11 @@ const SignIn = () => {
       navigate('/product-home');
     }
   }, [user, navigate]);
+
+  // Update form validation when switching modes
+  useEffect(() => {
+    form.clearErrors();
+  }, [isSignUp, form]);
 
   const onSubmit = async (data: SignInFormData | SignUpFormData) => {
     try {
@@ -55,6 +51,10 @@ const SignIn = () => {
         
         if (error) throw error;
         toast.success('Check your email for the confirmation link!');
+        
+        // Reset form and switch to sign-in mode
+        form.reset({ email: '', password: '' });
+        setIsSignUp(false);
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email: data.email,
@@ -66,7 +66,9 @@ const SignIn = () => {
         navigate('/product-home');
       }
     } catch (error: any) {
+      console.error('Authentication error:', error);
       toast.error(error.message || 'Authentication failed');
+      // Form state will automatically reset loading state when catch block executes
     }
   };
 
@@ -87,7 +89,8 @@ const SignIn = () => {
 
   const toggleAuthMode = () => {
     setIsSignUp(!isSignUp);
-    form.reset({ email: '', password: '' });
+    // Keep the current values but clear errors
+    form.clearErrors();
   };
 
   return (
@@ -153,6 +156,11 @@ const SignIn = () => {
                             {...field}
                           />
                         </FormControl>
+                        {isSignUp && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            Must be 8+ characters with uppercase, lowercase, and number
+                          </p>
+                        )}
                         <FormMessage />
                       </FormItem>
                     )}
