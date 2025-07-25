@@ -31,33 +31,21 @@ const ProductHome = () => {
   const navigationItems: NavigationItem[] = [
     {
       id: 'home',
-      label: 'Product Home',
-      icon: 'home',
+      label: 'Home',
+      icon: 'https://api.builder.io/api/v1/image/assets/33e5c0ee54254724b25b444ecf442f35/0c1bb78985544c9ca924ecccb7d81902f1371722?placeholderIfAbsent=true',
       isActive: activeNavItem === 'home'
-    },
-    {
-      id: 'posts',
-      label: 'Posts',
-      icon: 'file-text',
-      isActive: activeNavItem === 'posts'
-    },
-    {
-      id: 'content-editor',
-      label: 'Content Editor',
-      icon: 'edit',
-      isActive: activeNavItem === 'content-editor'
-    },
-    {
-      id: 'knowledge-base',
-      label: 'Knowledge Base',
-      icon: 'book',
-      isActive: activeNavItem === 'knowledge-base'
     },
     {
       id: 'profile',
       label: 'Profile',
-      icon: 'user',
+      icon: 'https://api.builder.io/api/v1/image/assets/33e5c0ee54254724b25b444ecf442f35/d8364849850f2a2fc435e11f52d1453ebc7def9b?placeholderIfAbsent=true',
       isActive: activeNavItem === 'profile'
+    },
+    {
+      id: 'knowledge',
+      label: 'Knowledge',
+      icon: 'https://api.builder.io/api/v1/image/assets/33e5c0ee54254724b25b444ecf442f35/37597e47a501549c19c0227f7570a0090e8eefde?placeholderIfAbsent=true',
+      isActive: activeNavItem === 'knowledge'
     },
     {
       id: 'calendar',
@@ -92,14 +80,11 @@ const ProductHome = () => {
 
   const handleNavigationClick = (itemId: string) => {
     setActiveNavItem(itemId);
-    const routeMap: Record<string, string> = {
-      'home': '/product-home',
-      'posts': '/posts',
-      'content-editor': '/content-editor',
-      'knowledge-base': '/knowledge-base',
-      'profile': '/profile'
-    };
-    if (routeMap[itemId]) navigate(routeMap[itemId]);
+    if (itemId === 'profile') {
+      navigate('/profile');
+    } else if (itemId === 'knowledge') {
+      navigate('/knowledge');
+    }
   };
 
   const handleFinishOnboarding = () => {

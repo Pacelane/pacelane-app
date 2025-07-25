@@ -36,10 +36,6 @@ interface AppSidebarProps {
 
 const iconMap = {
   home: Home,
-  'file-text': Book,
-  edit: User,
-  book: Book,
-  user: User,
   profile: User,
   knowledge: Book,
   calendar: Calendar,

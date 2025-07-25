@@ -7,7 +7,6 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import LandingPage from "./pages/LandingPage";
 import ProductHome from "./pages/ProductHome";
-import Posts from "./pages/Posts";
 import KnowledgeBase from "./pages/KnowledgeBase";
 import SignIn from "./pages/SignIn";
 import Profile from "./pages/Profile";
@@ -53,15 +52,7 @@ const App = () => (
               } 
             />
             <Route 
-              path="/posts" 
-              element={
-                <ProtectedRoute>
-                  <Posts />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/knowledge-base" 
+              path="/knowledge" 
               element={
                 <ProtectedRoute>
                   <KnowledgeBase />
