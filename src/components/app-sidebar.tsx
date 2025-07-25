@@ -107,7 +107,7 @@ export function AppSidebar({
           <SidebarGroupContent className="px-4 pt-4">
             <SidebarMenu>
               {navigationItems.map((item) => {
-                const IconComponent = iconMap[item.id as keyof typeof iconMap];
+                const IconComponent = iconMap[item.icon as keyof typeof iconMap];
                 return (
                   <SidebarMenuItem key={item.id}>
                     <SidebarMenuButton
