@@ -11,7 +11,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import type { User } from '@supabase/supabase-js';
-
 const Profile = () => {
   const [user, setUser] = useState<User | null>(null);
   const [whatsapp, setWhatsapp] = useState('');
@@ -21,10 +20,13 @@ const Profile = () => {
   const [country, setCountry] = useState('');
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-
   useEffect(() => {
     const getUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: {
+          session
+        }
+      } = await supabase.auth.getSession();
       if (!session) {
         navigate('/signin');
         return;
@@ -32,10 +34,8 @@ const Profile = () => {
       setUser(session.user);
       setLoading(false);
     };
-
     getUser();
   }, [navigate]);
-
   const handleSignOut = async () => {
     try {
       await supabase.auth.signOut();
@@ -45,75 +45,54 @@ const Profile = () => {
       toast.error('Error signing out');
     }
   };
-
   const handleSaveProfile = async () => {
     toast.success('Profile updated successfully');
   };
-
   const handleSaveBio = async () => {
     toast.success('Bio updated successfully');
   };
-
   const handleSaveAddress = async () => {
     toast.success('Address updated successfully');
   };
-
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
-
-  return (
-    <SidebarProvider>
+  return <SidebarProvider>
       <div className="flex min-h-screen w-full">
-        <AppSidebar 
-          userName={user?.email?.split('@')[0] || 'User'}
-          userAvatar="/lovable-uploads/fe97b466-2c78-4c2a-baeb-f2e13105460d.png"
-          navigationItems={[
-            { id: 'home', label: 'Home', icon: 'home', isActive: false },
-            { id: 'posts', label: 'Posts', icon: 'knowledge', isActive: false },
-            { id: 'profile', label: 'Profile', icon: 'profile', isActive: true },
-            { id: 'knowledge', label: 'Knowledge', icon: 'knowledge', isActive: false },
-            { id: 'calendar', label: 'Calendar', icon: 'calendar', isActive: false },
-          ]}
-          onCreateNew={() => {}}
-          onUserMenuClick={() => {}}
-          onNavigationClick={(itemId) => {
-            if (itemId === 'home') navigate('/product-home');
-            if (itemId === 'knowledge') navigate('/knowledge');
-            if (itemId === 'profile') navigate('/profile');
-            if (itemId === 'posts') navigate('/posts');
-          }}
-          onFinishOnboarding={() => {}}
-          onHelpClick={() => {}}
-        />
+        <AppSidebar userName={user?.email?.split('@')[0] || 'User'} userAvatar="/lovable-uploads/fe97b466-2c78-4c2a-baeb-f2e13105460d.png" navigationItems={[{
+        id: 'home',
+        label: 'Home',
+        icon: 'home',
+        isActive: false
+      }, {
+        id: 'posts',
+        label: 'Posts',
+        icon: 'knowledge',
+        isActive: false
+      }, {
+        id: 'profile',
+        label: 'Profile',
+        icon: 'profile',
+        isActive: true
+      }, {
+        id: 'knowledge',
+        label: 'Knowledge',
+        icon: 'knowledge',
+        isActive: false
+      }, {
+        id: 'calendar',
+        label: 'Calendar',
+        icon: 'calendar',
+        isActive: false
+      }]} onCreateNew={() => {}} onUserMenuClick={() => {}} onNavigationClick={itemId => {
+        if (itemId === 'home') navigate('/product-home');
+        if (itemId === 'knowledge') navigate('/knowledge');
+        if (itemId === 'profile') navigate('/profile');
+        if (itemId === 'posts') navigate('/posts');
+      }} onFinishOnboarding={() => {}} onHelpClick={() => {}} />
         
         <SidebarInset>
-          <header className="flex h-16 items-center gap-4 border-b bg-neutral-50 px-4">
-            <SidebarTrigger />
-            <div className="flex-1 flex items-center justify-between">
-              <div className="relative max-w-sm">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  type="text"
-                  placeholder="Search"
-                  className="pl-10 bg-white border-gray-200"
-                />
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm">
-                  /
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-4">
-                <Button
-                  variant="outline"
-                  onClick={handleSignOut}
-                  className="text-sm"
-                >
-                  Sign Out
-                </Button>
-              </div>
-            </div>
-          </header>
+          
           
           <div className="flex-1 bg-gray-50">
             <div className="w-full max-w-4xl mx-auto p-8">
@@ -159,18 +138,9 @@ const Profile = () => {
                               <span className="text-sm text-gray-600">🇧🇷</span>
                               <span className="text-sm text-gray-600">+55</span>
                             </div>
-                            <Input
-                              type="text"
-                              value={whatsapp}
-                              onChange={(e) => setWhatsapp(e.target.value)}
-                              placeholder="(00) 0 0000-0000"
-                              className="flex-1"
-                            />
+                            <Input type="text" value={whatsapp} onChange={e => setWhatsapp(e.target.value)} placeholder="(00) 0 0000-0000" className="flex-1" />
                           </div>
-                          <Button 
-                            className="mt-3 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2"
-                            onClick={handleSaveProfile}
-                          >
+                          <Button className="mt-3 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2" onClick={handleSaveProfile}>
                             Save
                           </Button>
                         </div>
@@ -187,16 +157,8 @@ const Profile = () => {
                     </div>
                     
                     <div className="p-6">
-                      <Textarea
-                        value={bio}
-                        onChange={(e) => setBio(e.target.value)}
-                        placeholder="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc vulputate libero et velit interdum, ac aliquet odio mattis. Cras tellus lacus consequetur lacinia hrisque mauris. Rhoncus ut erat nec venenatis vulputate per inceptor lorem."
-                        className="min-h-[120px] resize-none"
-                      />
-                      <Button 
-                        className="mt-3 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2"
-                        onClick={handleSaveBio}
-                      >
+                      <Textarea value={bio} onChange={e => setBio(e.target.value)} placeholder="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc vulputate libero et velit interdum, ac aliquet odio mattis. Cras tellus lacus consequetur lacinia hrisque mauris. Rhoncus ut erat nec venenatis vulputate per inceptor lorem." className="min-h-[120px] resize-none" />
+                      <Button className="mt-3 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2" onClick={handleSaveBio}>
                         Save
                       </Button>
                     </div>
@@ -219,30 +181,17 @@ const Profile = () => {
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           City
                         </label>
-                        <Input
-                          type="text"
-                          value={city}
-                          onChange={(e) => setCity(e.target.value)}
-                          placeholder="Curitiba"
-                        />
+                        <Input type="text" value={city} onChange={e => setCity(e.target.value)} placeholder="Curitiba" />
                       </div>
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Country
                         </label>
-                        <Input
-                          type="text"
-                          value={country}
-                          onChange={(e) => setCountry(e.target.value)}
-                          placeholder="Brazil"
-                        />
+                        <Input type="text" value={country} onChange={e => setCountry(e.target.value)} placeholder="Brazil" />
                       </div>
 
-                      <Button 
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2"
-                        onClick={handleSaveAddress}
-                      >
+                      <Button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2" onClick={handleSaveAddress}>
                         Save
                       </Button>
                     </div>
@@ -253,8 +202,6 @@ const Profile = () => {
           </div>
         </SidebarInset>
       </div>
-    </SidebarProvider>
-  );
+    </SidebarProvider>;
 };
-
 export default Profile;
