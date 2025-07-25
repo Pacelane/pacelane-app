@@ -108,8 +108,10 @@ const ProductHome = () => {
     // Here you would typically send the message to your backend
   };
 
-  const handleWriteContent = (suggestion: any) => {
-    navigate('/content-editor');
+  const handleWriteContent = (suggestion: { id: string; title: string; description?: string; suggested_outline?: string }) => {
+    navigate('/content-editor', { 
+      state: { suggestion } 
+    });
   };
 
   const handleTemplateSelect = (templateId: string) => {

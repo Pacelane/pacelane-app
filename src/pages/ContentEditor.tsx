@@ -18,7 +18,7 @@ import {
   File,
   Image
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -52,6 +52,7 @@ interface ChatMessage {
 
 const ContentEditor = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [chatInput, setChatInput] = useState('');
@@ -107,6 +108,19 @@ List relevant skills and actively seek endorsements from colleagues and clients.
       loadKnowledgeFiles();
     }
   }, [user]);
+
+  // Handle content suggestions from ProductHome
+  useEffect(() => {
+    if (location.state?.suggestion) {
+      const suggestion = location.state.suggestion;
+      setEditorContent(suggestion.suggested_outline || `# ${suggestion.title}\n\n${suggestion.description || ''}\n\n`);
+      
+      // Clear the state to prevent re-applying on navigation
+      window.history.replaceState({}, document.title);
+      
+      toast.success(`"${suggestion.title}" has been loaded into the editor`);
+    }
+  }, [location.state]);
 
   const loadKnowledgeFiles = async () => {
     if (!user) return;

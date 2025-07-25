@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      content_suggestions: {
+        Row: {
+          context_used: Json | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          suggested_outline: string | null
+          title: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          context_used?: Json | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          suggested_outline?: string | null
+          title: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          context_used?: Json | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          suggested_outline?: string | null
+          title?: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       conversations: {
         Row: {
           created_at: string
