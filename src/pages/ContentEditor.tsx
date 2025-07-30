@@ -155,7 +155,7 @@ const ContentEditor = () => {
         size: file.metadata?.size,
         user_id: user.id,
         created_at: file.created_at || new Date().toISOString(),
-        url: `https://plbgeabtrkdhbrnjonje.supabase.co/storage/v1/object/knowledge-base/${user.id}/${file.name}`,
+        url: `${import.meta.env.VITE_SUPABASE_URL || 'https://plbgeabtrkdhbrnjonje.supabase.co'}/storage/v1/object/knowledge-base/${user.id}/${file.name}`,
         selected: false
       })) || [];
 

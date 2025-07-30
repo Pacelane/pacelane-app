@@ -134,7 +134,7 @@ const KnowledgeBase = () => {
         user_id: user.id,
         created_at: file.created_at || new Date().toISOString(),
         updated_at: file.updated_at || new Date().toISOString(),
-        url: `https://plbgeabtrkdhbrnjonje.supabase.co/storage/v1/object/knowledge-base/${user.id}/${file.name}`
+        url: `${import.meta.env.VITE_SUPABASE_URL || 'https://plbgeabtrkdhbrnjonje.supabase.co'}/storage/v1/object/knowledge-base/${user.id}/${file.name}`
       })) || [];
 
       setKnowledgeItems(knowledgeFiles);
