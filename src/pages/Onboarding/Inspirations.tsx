@@ -1,51 +1,29 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Plus, X, Loader2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useInspirations } from '@/hooks/api/useInspirations';
 import { toast } from 'sonner';
-
-interface Inspiration {
-  id: string;
-  linkedin_url: string;
-  name?: string;
-  company?: string;
-  headline?: string;
-  linkedin_data?: any;
-}
 
 const Inspirations = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { 
+    inspirations, 
+    loading, 
+    adding, 
+    error,
+    addInspiration, 
+    removeInspiration,
+    validateLinkedInUrl,
+    clearError
+  } = useInspirations();
+  
   const [linkedinUrl, setLinkedinUrl] = useState('');
-  const [inspirations, setInspirations] = useState<Inspiration[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [addingInspiration, setAddingInspiration] = useState(false);
 
-  // Load existing inspirations on component mount
-  useEffect(() => {
-    loadInspirations();
-  }, [user]);
-
-  const loadInspirations = async () => {
-    if (!user) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('inspirations')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setInspirations(data || []);
-    } catch (error: any) {
-      console.error('Error loading inspirations:', error);
-      toast.error('Failed to load inspirations');
-    }
-  };
+  // loadInspirations is now handled automatically by useInspirations hook
 
   const handleGoBack = () => {
     navigate('/onboarding/first-things-first');
@@ -54,88 +32,55 @@ const Inspirations = () => {
   const handleAddBenchmark = async () => {
     if (!user || !linkedinUrl.trim()) return;
 
-    // Check if URL already exists
-    const urlExists = inspirations.some(
-      inspiration => inspiration.linkedin_url === linkedinUrl.trim()
-    );
-    
-    if (urlExists) {
-      toast.error('This LinkedIn profile is already added');
+    // Clear any previous errors
+    clearError();
+
+    // Frontend validation using our clean API
+    const validation = validateLinkedInUrl(linkedinUrl);
+    if (!validation.valid) {
+      toast.error(validation.error);
       return;
     }
 
-    setAddingInspiration(true);
     try {
-      const fullUrl = linkedinUrl.startsWith('http') 
-        ? linkedinUrl.trim() 
-        : `https://${linkedinUrl.trim()}`;
+      // Use our clean add inspiration API
+      const result = await addInspiration(linkedinUrl);
 
-      // First scrape the LinkedIn profile
-      const { data: scrapeData, error: scrapeError } = await supabase.functions.invoke('scrape-linkedin-profile', {
-        body: { linkedinUrl: fullUrl }
-      });
-
-      let profileData = null;
-      let name = null;
-      let company = null;
-      let headline = null;
-
-      if (!scrapeError && scrapeData?.success && scrapeData?.profileData) {
-        profileData = scrapeData.profileData;
-        name = profileData.basic_info?.fullname || null;
-        company = profileData.basic_info?.current_company || null;
-        headline = profileData.basic_info?.headline || null;
-        toast.success('LinkedIn profile analyzed successfully!');
-      } else {
-        console.warn('LinkedIn scraping failed, saving URL only:', scrapeError);
-        toast.warning('Could not analyze LinkedIn profile, but saved the URL');
+      if (result.error) {
+        toast.error(result.error);
+        return;
       }
 
-      // Save to database
-      const { data: insertData, error: insertError } = await supabase
-        .from('inspirations')
-        .insert({
-          user_id: user.id,
-          linkedin_url: fullUrl,
-          linkedin_data: profileData,
-          name,
-          company,
-          headline,
-          scraped_at: profileData ? new Date().toISOString() : null
-        })
-        .select()
-        .single();
-
-      if (insertError) throw insertError;
-
-      setInspirations([insertData, ...inspirations]);
+      // Success! Clear the input and show success message
       setLinkedinUrl('');
       toast.success('Inspiration added successfully!');
+      
+      // Check if LinkedIn scraping worked (if data has profile info)
+      if (result.data?.name) {
+        toast.success('LinkedIn profile analyzed successfully!');
+      } else if (result.data) {
+        toast.warning('Could not analyze LinkedIn profile, but saved the URL');
+      }
     } catch (error: any) {
-      console.error('Error adding inspiration:', error);
       toast.error(error.message || 'Failed to add inspiration');
-    } finally {
-      setAddingInspiration(false);
     }
   };
 
-  const handleRemoveInspiration = async (inspiration: Inspiration) => {
+  const handleRemoveInspiration = async (inspiration: any) => {
     if (!user) return;
 
     try {
-      const { error } = await supabase
-        .from('inspirations')
-        .delete()
-        .eq('id', inspiration.id)
-        .eq('user_id', user.id);
+      // Use our clean remove inspiration API
+      const result = await removeInspiration(inspiration.id);
 
-      if (error) throw error;
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
 
-      setInspirations(inspirations.filter(i => i.id !== inspiration.id));
       toast.success('Inspiration removed');
     } catch (error: any) {
-      console.error('Error removing inspiration:', error);
-      toast.error('Failed to remove inspiration');
+      toast.error(error.message || 'Failed to remove inspiration');
     }
   };
 
@@ -144,7 +89,7 @@ const Inspirations = () => {
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !addingInspiration) {
+    if (e.key === 'Enter' && !adding) {
       handleAddBenchmark();
     }
   };
@@ -201,9 +146,9 @@ const Inspirations = () => {
             onClick={handleAddBenchmark}
             variant="outline"
             className="w-full mb-6 border-dashed border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400"
-            disabled={!linkedinUrl.trim() || addingInspiration}
+            disabled={!linkedinUrl.trim() || adding}
           >
-            {addingInspiration ? (
+            {adding ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 Analyzing Profile...

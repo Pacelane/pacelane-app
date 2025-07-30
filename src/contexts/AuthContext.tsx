@@ -1,34 +1,21 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
+// AUTH CONTEXT - SIMPLIFIED VERSION
+// This file now just wraps our custom useAuth hook
+// All the complex logic has been moved to src/hooks/api/useAuth.ts
 
-interface Profile {
-  id: string;
-  user_id: string;
-  display_name?: string;
-  linkedin_profile?: string;
-  company_linkedin?: string;
-  onboarding_completed: boolean;
-  created_at: string;
-  updated_at: string;
-}
+import React, { createContext, useContext } from 'react';
+import { useAuth as useAuthHook } from '@/hooks/api/useAuth';
+import type { AuthState, AuthActions } from '@/types/auth';
 
-interface AuthContextType {
-  user: User | null;
-  session: Session | null;
-  profile: Profile | null;
-  loading: boolean;
-  refreshProfile: () => Promise<void>;
-}
+// Context type = our auth state + actions
+type AuthContextType = AuthState & AuthActions;
 
-const AuthContext = createContext<AuthContextType>({
-  user: null,
-  session: null,
-  profile: null,
-  loading: true,
-  refreshProfile: async () => {},
-});
+// Create context with default values
+const AuthContext = createContext<AuthContextType | null>(null);
 
+/**
+ * Hook to access auth context
+ * Components use this to get auth state and functions
+ */
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -37,71 +24,16 @@ export const useAuth = () => {
   return context;
 };
 
+/**
+ * Auth Provider Component
+ * Wraps the app and provides auth context to all child components
+ */
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const fetchProfile = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
-      
-      if (error) throw error;
-      setProfile(data);
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-      setProfile(null);
-    }
-  };
-
-  const refreshProfile = async () => {
-    if (user) {
-      await fetchProfile(user.id);
-    }
-  };
-
-  useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          // Defer profile fetching to avoid blocking auth state updates
-          setTimeout(() => {
-            fetchProfile(session.user.id);
-          }, 0);
-        } else {
-          setProfile(null);
-        }
-        
-        setLoading(false);
-      }
-    );
-
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      }
-      
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
+  // Get all auth state and functions from our custom hook
+  const auth = useAuthHook();
+  
   return (
-    <AuthContext.Provider value={{ user, session, profile, loading, refreshProfile }}>
+    <AuthContext.Provider value={auth}>
       {children}
     </AuthContext.Provider>
   );

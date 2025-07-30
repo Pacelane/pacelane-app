@@ -3,14 +3,14 @@ import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
+import { useProfile } from '@/hooks/api/useProfile';
 import { useToast } from '@/components/ui/use-toast';
 
 const Ready = () => {
   const navigate = useNavigate();
-  const { user, refreshProfile } = useAuth();
+  const { user } = useAuth();
+  const { completeOnboarding, saving } = useProfile();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
 
   const handleGoBack = () => {
     navigate('/onboarding/contact');
@@ -19,19 +19,13 @@ const Ready = () => {
   const handleStart = async () => {
     if (!user) return;
     
-    setIsLoading(true);
-    
     try {
-      // Mark onboarding as completed
-      const { error } = await supabase
-        .from('profiles')
-        .update({ onboarding_completed: true })
-        .eq('user_id', user.id);
+      // Use our clean onboarding completion API
+      const result = await completeOnboarding();
 
-      if (error) throw error;
-
-      // Refresh the profile in context
-      await refreshProfile();
+      if (result.error) {
+        throw new Error(result.error);
+      }
 
       toast({
         title: "Onboarding completed!",
@@ -39,15 +33,13 @@ const Ready = () => {
       });
 
       navigate('/product-home');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error completing onboarding:', error);
       toast({
         title: "Error",
-        description: "Failed to complete onboarding. Please try again.",
+        description: error.message || "Failed to complete onboarding. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -132,10 +124,10 @@ const Ready = () => {
 
           <Button 
             onClick={handleStart}
-            disabled={isLoading}
+            disabled={saving}
             className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 rounded-lg disabled:opacity-50 shadow-lg transform transition-transform hover:scale-105"
           >
-            {isLoading ? "Getting Started..." : "Let's Start! 🚀"}
+            {saving ? "Getting Started..." : "Let's Start! 🚀"}
           </Button>
         </div>
       </div>

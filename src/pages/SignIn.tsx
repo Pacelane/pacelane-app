@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Chrome } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,7 +14,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 const SignIn = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, signIn, signUp, signInWithGoogle } = useAuth();
 
   // Use a single form instance with dynamic schema
   const form = useForm<SignInFormData | SignUpFormData>({
@@ -41,47 +40,43 @@ const SignIn = () => {
   const onSubmit = async (data: SignInFormData | SignUpFormData) => {
     try {
       if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
+        // Use our new clean signUp function
+        const result = await signUp({
           email: data.email,
           password: data.password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/onboarding/welcome`
-          }
         });
         
-        if (error) throw error;
+        if (result.error) throw new Error(result.error);
+        
         toast.success('Check your email for the confirmation link!');
         
         // Reset form and switch to sign-in mode
         form.reset({ email: '', password: '' });
         setIsSignUp(false);
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
+        // Use our new clean signIn function
+        const result = await signIn({
           email: data.email,
           password: data.password,
         });
         
-        if (error) throw error;
+        if (result.error) throw new Error(result.error);
+        
         toast.success('Welcome back!');
         navigate('/product-home');
       }
     } catch (error: any) {
       console.error('Authentication error:', error);
       toast.error(error.message || 'Authentication failed');
-      // Form state will automatically reset loading state when catch block executes
     }
   };
 
   const handleGoogleSignIn = async () => {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/onboarding/welcome`
-        }
-      });
+      // Use our new clean Google sign-in function
+      const result = await signInWithGoogle();
       
-      if (error) throw error;
+      if (result.error) throw new Error(result.error);
     } catch (error: any) {
       toast.error(error.message || 'Google sign in failed');
     }

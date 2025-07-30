@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
+import { useProfile } from '@/hooks/api/useProfile';
 import { useToast } from '@/components/ui/use-toast';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 const Contact = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { saveContactInfo, saving } = useProfile();
   const { toast } = useToast();
 
   const form = useForm<ContactFormData>({
@@ -33,21 +34,22 @@ const Contact = () => {
     if (!user) return;
     
     try {
-      const fullPhoneNumber = `${data.countryCode}${data.phoneNumber}`;
-      
-      const { error } = await supabase
-        .from('profiles')
-        .update({ phone_number: fullPhoneNumber })
-        .eq('user_id', user.id);
+      // Use our clean contact info API
+      const result = await saveContactInfo({
+        countryCode: data.countryCode,
+        phoneNumber: data.phoneNumber
+      });
 
-      if (error) throw error;
+      if (result.error) {
+        throw new Error(result.error);
+      }
 
       navigate('/onboarding/ready');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving phone number:', error);
       toast({
         title: "Error",
-        description: "Failed to save phone number. Please try again.",
+        description: error.message || "Failed to save phone number. Please try again.",
         variant: "destructive",
       });
     }
@@ -159,10 +161,10 @@ const Contact = () => {
 
               <Button 
                 type="submit"
-                disabled={form.formState.isSubmitting}
+                disabled={saving}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg disabled:opacity-50"
               >
-                {form.formState.isSubmitting ? "Saving..." : "Continue"}
+                {saving ? "Saving..." : "Continue"}
               </Button>
             </form>
           </Form>

@@ -7,55 +7,63 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Edit, Search, LogOut } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import type { User } from '@supabase/supabase-js';
+import { useAuth } from '@/contexts/AuthContext';
+import { useProfile } from '@/hooks/api/useProfile';
 const Profile = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [whatsapp, setWhatsapp] = useState('');
-  const [bio, setBio] = useState('');
-  const [address, setAddress] = useState('');
-  const [city, setCity] = useState('');
-  const [country, setCountry] = useState('');
-  const [loading, setLoading] = useState(true);
+  // Use our clean auth and profile hooks
+  const { user, loading: authLoading, signOut } = useAuth();
+  const { profile, saving, updateBasicProfile, error } = useProfile();
+  
+  // Local state for form inputs (only fields that exist in DB)
+  const [displayName, setDisplayName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  
   const navigate = useNavigate();
+
+  // Load profile data into form when profile loads
   useEffect(() => {
-    const getUser = async () => {
-      const {
-        data: {
-          session
-        }
-      } = await supabase.auth.getSession();
-      if (!session) {
-        navigate('/signin');
-        return;
-      }
-      setUser(session.user);
-      setLoading(false);
-    };
-    getUser();
-  }, [navigate]);
+    if (profile) {
+      setDisplayName(profile.display_name || '');
+      setPhoneNumber(profile.phone_number || '');
+    }
+  }, [profile]);
+
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/signin');
+    }
+  }, [user, authLoading, navigate]);
   const handleSignOut = async () => {
-    try {
-      await supabase.auth.signOut();
+    const result = await signOut();
+    if (result.error) {
+      toast.error('Error signing out');
+    } else {
       navigate('/signin');
       toast.success('Signed out successfully');
-    } catch (error: any) {
-      toast.error('Error signing out');
     }
   };
+
   const handleSaveProfile = async () => {
-    toast.success('Profile updated successfully');
+    const result = await updateBasicProfile({
+      display_name: displayName,
+      phone_number: phoneNumber
+    });
+    
+    if (result.error) {
+      toast.error(result.error);
+    } else {
+      toast.success('Profile updated successfully');
+    }
   };
-  const handleSaveBio = async () => {
-    toast.success('Bio updated successfully');
-  };
-  const handleSaveAddress = async () => {
-    toast.success('Address updated successfully');
-  };
-  if (loading) {
+  if (authLoading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+  }
+
+  if (!user) {
+    return null; // Will redirect to signin
   }
   return <SidebarProvider>
       <div className="flex min-h-screen w-full">
@@ -120,8 +128,12 @@ const Profile = () => {
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <h4 className="font-semibold text-gray-900">{user?.email?.split('@')[0]}</h4>
-                          <p className="text-sm text-gray-500">User Designer @ Acme Inc</p>
+                          <h4 className="font-semibold text-gray-900">
+                            {profile?.display_name || user?.email?.split('@')[0] || 'User'}
+                          </h4>
+                          <p className="text-sm text-gray-500">
+                            {profile?.linkedin_headline || 'User @ Pacelane'}
+                          </p>
                         </div>
                         <Button variant="ghost" size="icon" className="ml-auto">
                           <Edit className="h-4 w-4" />
@@ -131,17 +143,34 @@ const Profile = () => {
                       <div className="space-y-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Whatsapp
+                            Display Name
                           </label>
-                          <div className="flex gap-2">
-                            <div className="flex items-center gap-2 px-3 py-2 border border-gray-200 rounded-md bg-gray-50">
-                              <span className="text-sm text-gray-600">🇧🇷</span>
-                              <span className="text-sm text-gray-600">+55</span>
-                            </div>
-                            <Input type="text" value={whatsapp} onChange={e => setWhatsapp(e.target.value)} placeholder="(00) 0 0000-0000" className="flex-1" />
-                          </div>
-                          <Button className="mt-3 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2" onClick={handleSaveProfile}>
-                            Save
+                          <Input 
+                            type="text" 
+                            value={displayName} 
+                            onChange={e => setDisplayName(e.target.value)} 
+                            placeholder="Your display name" 
+                            className="mb-4" 
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Phone Number
+                          </label>
+                          <Input 
+                            type="text" 
+                            value={phoneNumber} 
+                            onChange={e => setPhoneNumber(e.target.value)} 
+                            placeholder="+55 (11) 99999-9999" 
+                            className="w-full" 
+                          />
+                          <Button 
+                            className="mt-3 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2" 
+                            onClick={handleSaveProfile}
+                            disabled={saving}
+                          >
+                            {saving ? 'Saving...' : 'Save'}
                           </Button>
                         </div>
                       </div>
@@ -149,51 +178,38 @@ const Profile = () => {
                   </CardContent>
                 </Card>
 
-                {/* Bio */}
+                {/* LinkedIn Information */}
                 <Card className="border border-gray-200 shadow-sm rounded-lg">
                   <CardContent className="p-0">
                     <div className="flex items-center justify-between p-6 border-b border-gray-100">
-                      <h3 className="font-semibold text-gray-900 text-lg">Bio</h3>
-                    </div>
-                    
-                    <div className="p-6">
-                      <Textarea value={bio} onChange={e => setBio(e.target.value)} placeholder="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc vulputate libero et velit interdum, ac aliquet odio mattis. Cras tellus lacus consequetur lacinia hrisque mauris. Rhoncus ut erat nec venenatis vulputate per inceptor lorem." className="min-h-[120px] resize-none" />
-                      <Button className="mt-3 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2" onClick={handleSaveBio}>
-                        Save
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Address */}
-                <Card className="border border-gray-200 shadow-sm rounded-lg">
-                  <CardContent className="p-0">
-                    <div className="flex items-center justify-between p-6 border-b border-gray-100">
-                      <h3 className="font-semibold text-gray-900 text-lg">Address</h3>
+                      <h3 className="font-semibold text-gray-900 text-lg">LinkedIn Profile</h3>
                     </div>
                     
                     <div className="p-6 space-y-4">
-                      <p className="text-sm text-gray-600 mb-4">
-                        Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-                      </p>
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <p className="text-sm text-gray-600 mb-2">
+                          <strong>LinkedIn URL:</strong> {profile?.linkedin_profile || 'Not set'}
+                        </p>
+                        {profile?.linkedin_name && (
+                          <p className="text-sm text-gray-600 mb-2">
+                            <strong>Name:</strong> {profile.linkedin_name}
+                          </p>
+                        )}
+                        {profile?.linkedin_company && (
+                          <p className="text-sm text-gray-600 mb-2">
+                            <strong>Company:</strong> {profile.linkedin_company}
+                          </p>
+                        )}
+                        {profile?.linkedin_headline && (
+                          <p className="text-sm text-gray-600">
+                            <strong>Headline:</strong> {profile.linkedin_headline}
+                          </p>
+                        )}
+                      </div>
                       
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          City
-                        </label>
-                        <Input type="text" value={city} onChange={e => setCity(e.target.value)} placeholder="Curitiba" />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Country
-                        </label>
-                        <Input type="text" value={country} onChange={e => setCountry(e.target.value)} placeholder="Brazil" />
-                      </div>
-
-                      <Button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2" onClick={handleSaveAddress}>
-                        Save
-                      </Button>
+                      <p className="text-sm text-gray-500">
+                        LinkedIn information is set during onboarding and updated automatically when available.
+                      </p>
                     </div>
                   </CardContent>
                 </Card>

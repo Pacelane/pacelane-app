@@ -4,8 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useProfile } from '@/hooks/api/useProfile';
 import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,7 +14,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 
 const FirstThingsFirst = () => {
   const navigate = useNavigate();
-  const { user, refreshProfile } = useAuth();
+  const { user } = useAuth();
+  const { setupLinkedInProfile, saving } = useProfile();
 
   const form = useForm<LinkedInProfileFormData>({
     resolver: zodResolver(linkedInProfileSchema),
@@ -34,44 +35,15 @@ const FirstThingsFirst = () => {
     }
 
     try {
-      // First, scrape the LinkedIn profile
-      const { data: scrapeData, error: scrapeError } = await supabase.functions.invoke('scrape-linkedin-profile', {
-        body: { linkedinUrl: data.profileUrl }
+      // Use our clean LinkedIn setup API
+      const result = await setupLinkedInProfile({
+        profileUrl: data.profileUrl
       });
 
-      let profileData = null;
-      if (!scrapeError && scrapeData?.success && scrapeData?.profileData) {
-        profileData = scrapeData.profileData;
-        toast.success('LinkedIn profile analyzed successfully!');
-      } else {
-        console.warn('LinkedIn scraping failed, continuing without profile data:', scrapeError);
-        toast.warning('Could not analyze LinkedIn profile, but continuing with setup');
+      if (result.error) {
+        throw new Error(result.error);
       }
 
-      // Update the user's profile with onboarding data and scraped data
-      const updateData = {
-        linkedin_profile: data.profileUrl.trim(),
-        ...(profileData && {
-          linkedin_data: profileData,
-          linkedin_name: profileData.fullName || null,
-          linkedin_company: profileData.company || null,
-          linkedin_about: profileData.about || null,
-          linkedin_location: profileData.location || null,
-          linkedin_headline: profileData.headline || null,
-          linkedin_scraped_at: new Date().toISOString()
-        })
-      };
-
-      const { error } = await supabase
-        .from('profiles')
-        .update(updateData)
-        .eq('user_id', user.id);
-
-      if (error) throw error;
-
-      // Refresh the profile in context
-      await refreshProfile();
-      
       toast.success('Profile setup completed!');
       navigate('/onboarding/inspirations');
     } catch (error: any) {
@@ -137,10 +109,10 @@ const FirstThingsFirst = () => {
 
               <Button 
                 type="submit"
-                disabled={form.formState.isSubmitting}
+                disabled={saving}
                 className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium py-3 rounded-lg"
               >
-                {form.formState.isSubmitting ? (
+                {saving ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     Analyzing LinkedIn Profile...

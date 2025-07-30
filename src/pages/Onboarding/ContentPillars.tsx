@@ -3,15 +3,15 @@ import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
+import { useProfile } from '@/hooks/api/useProfile';
 import { useToast } from '@/components/ui/use-toast';
 
 const ContentPillars = () => {
   const navigate = useNavigate();
-  const { user, refreshProfile } = useAuth();
+  const { user } = useAuth();
+  const { saveContentPillars, saving } = useProfile();
   const { toast } = useToast();
   const [selectedPillars, setSelectedPillars] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
 
   const pillars = [
     'Insights', 'Trends', 'Reflections On News',
@@ -37,32 +37,24 @@ const ContentPillars = () => {
   const handleContinue = async () => {
     if (!user) return;
     
-    setIsLoading(true);
-    
     try {
-      // Save content pillars data
-      const { error } = await supabase
-        .from('profiles')
-        .update({ 
-          linkedin_data: {
-            ...{}, // Keep existing linkedin_data if any
-            content_pillars: selectedPillars
-          }
-        })
-        .eq('user_id', user.id);
+      // Use our clean content pillars API
+      const result = await saveContentPillars({
+        selectedPillars
+      });
 
-      if (error) throw error;
+      if (result.error) {
+        throw new Error(result.error);
+      }
 
       navigate('/onboarding/pacing');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving content pillars:', error);
       toast({
         title: "Error",
-        description: "Failed to save content pillars. Please try again.",
+        description: error.message || "Failed to save content pillars. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -138,10 +130,10 @@ const ContentPillars = () => {
 
           <Button 
             onClick={handleContinue}
-            disabled={selectedPillars.length === 0 || isLoading}
+                          disabled={selectedPillars.length === 0 || saving}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg disabled:opacity-50"
           >
-            {isLoading ? "Saving..." : "Continue"}
+                          {saving ? "Saving..." : "Continue"}
           </Button>
         </div>
       </div>

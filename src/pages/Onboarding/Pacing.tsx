@@ -3,14 +3,14 @@ import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
+import { useProfile } from '@/hooks/api/useProfile';
 import { useToast } from '@/components/ui/use-toast';
 
 const Pacing = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { savePacingPreferences, saving } = useProfile();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
 
   // Form state
   const [intensity, setIntensity] = useState('2-3 pieces of content per week');
@@ -39,35 +39,29 @@ const Pacing = () => {
   const handleContinue = async () => {
     if (!user) return;
     
-    setIsLoading(true);
-    
     try {
-      const pacingData = {
+      // Use our clean pacing preferences API
+      const result = await savePacingPreferences({
         intensity,
         frequency: selectedDays,
         daily_summary_time: dailySummaryTime,
         followups_frequency: followupsFrequency,
         recommendations_time: recommendationsTime,
         context_sessions_time: contextSessionsTime
-      };
+      });
 
-      const { error } = await supabase
-        .from('profiles')
-        .update({ pacing_preferences: pacingData })
-        .eq('user_id', user.id);
-
-      if (error) throw error;
+      if (result.error) {
+        throw new Error(result.error);
+      }
 
       navigate('/onboarding/contact');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving pacing preferences:', error);
       toast({
         title: "Error",
-        description: "Failed to save pacing preferences. Please try again.",
+        description: error.message || "Failed to save pacing preferences. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -225,10 +219,10 @@ const Pacing = () => {
 
           <Button 
             onClick={handleContinue}
-            disabled={selectedDays.length === 0 || isLoading}
+                            disabled={selectedDays.length === 0 || saving}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg disabled:opacity-50"
           >
-            {isLoading ? "Saving..." : "Continue"}
+                          {saving ? "Saving..." : "Continue"}
           </Button>
         </div>
       </div>
