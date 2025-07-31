@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/app-sidebar';
 import { Button } from '@/components/ui/button';
@@ -7,71 +7,29 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Search, Edit, Trash2, Bell, Settings, FileText, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useContent } from '@/hooks/api/useContent';
+import { SavedDraft, ContentSuggestion } from '@/types/content';
 import { toast } from 'sonner';
-interface SavedDraft {
-  id: string;
-  title: string;
-  content: string;
-  status: 'draft' | 'published' | 'archived';
-  created_at: string;
-  updated_at: string;
-  suggestion_id?: string;
-}
-interface ContentSuggestion {
-  id: string;
-  title: string;
-  description?: string;
-  suggested_outline?: string;
-  is_active: boolean;
-  used_at?: string;
-}
 const Posts = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  
+  // ========== CLEAN CONTENT STATE MANAGEMENT ==========
   const {
-    user
-  } = useAuth();
+    savedDrafts,
+    contentSuggestions,
+    loadingDrafts: isLoading,
+    deleteDraft,
+    error,
+    clearError
+  } = useContent();
+
+  // ========== LOCAL COMPONENT STATE ==========
   const [activeNavItem, setActiveNavItem] = useState('posts');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'draft' | 'published' | 'archived'>('all');
-  const [savedDrafts, setSavedDrafts] = useState<SavedDraft[]>([]);
-  const [contentSuggestions, setContentSuggestions] = useState<ContentSuggestion[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  useEffect(() => {
-    if (user) {
-      fetchData();
-    }
-  }, [user]);
-  const fetchData = async () => {
-    try {
-      setIsLoading(true);
-
-      // Fetch saved drafts
-      const {
-        data: drafts,
-        error: draftsError
-      } = await supabase.from('saved_drafts' as any).select('*').eq('user_id', user?.id).order('updated_at', {
-        ascending: false
-      });
-      if (draftsError) throw draftsError;
-      setSavedDrafts(drafts as any || []);
-
-      // Fetch unused content suggestions
-      const {
-        data: suggestions,
-        error: suggestionsError
-      } = await supabase.from('content_suggestions').select('*').eq('user_id', user?.id).eq('is_active', true).is('used_at', null).order('created_at', {
-        ascending: false
-      });
-      if (suggestionsError) throw suggestionsError;
-      setContentSuggestions(suggestions || []);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Data loading now handled automatically by useContent hook!
   const filteredDrafts = savedDrafts.filter(draft => {
     const matchesSearch = draft.title.toLowerCase().includes(searchQuery.toLowerCase()) || draft.content.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesFilter = selectedFilter === 'all' || draft.status === selectedFilter;
@@ -88,15 +46,17 @@ const Posts = () => {
   };
   const handleDeleteDraft = async (draftId: string) => {
     try {
-      const {
-        error
-      } = await supabase.from('saved_drafts' as any).delete().eq('id', draftId);
-      if (error) throw error;
-      setSavedDrafts(prev => prev.filter(draft => draft.id !== draftId));
+      // Use clean deleteDraft API
+      const result = await deleteDraft(draftId);
+      
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+      
       toast.success('Draft deleted successfully');
-    } catch (error) {
-      console.error('Error deleting draft:', error);
-      toast.error('Failed to delete draft');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete draft');
     }
   };
   const handleCreateFromSuggestion = (suggestion: ContentSuggestion) => {

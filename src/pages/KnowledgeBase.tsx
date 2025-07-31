@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { AppSidebar } from '@/components/app-sidebar';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
@@ -8,19 +8,8 @@ import { Search, Upload, FileText, Image, Film, Music, Link, FileSpreadsheet, Tr
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
+import { useContent } from '@/hooks/api/useContent';
 import { toast } from 'sonner';
-
-interface KnowledgeItem {
-  id: string;
-  name: string;
-  type: 'file' | 'image' | 'audio' | 'video' | 'link';
-  size?: number;
-  url?: string;
-  user_id: string;
-  created_at: string;
-  updated_at: string;
-}
 
 interface NavigationItem {
   id: string;
@@ -32,45 +21,29 @@ interface NavigationItem {
 const KnowledgeBase = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  
+  // ========== CLEAN CONTENT STATE MANAGEMENT ==========
+  const {
+    knowledgeFiles,
+    loadingFiles: loading,
+    uploading,
+    uploadFiles,
+    deleteKnowledgeFile,
+    addLink,
+    getFileTypeFromName,
+    validateFileType,
+    error,
+    clearError
+  } = useContent();
+
+  // ========== LOCAL COMPONENT STATE ==========
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [activeFilter, setActiveFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeNavItem, setActiveNavItem] = useState('knowledge');
   const [linkInput, setLinkInput] = useState('');
-  const [knowledgeItems, setKnowledgeItems] = useState<KnowledgeItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
 
-  // Helper function to determine file type from filename
-  const getFileTypeFromName = (filename: string): 'file' | 'image' | 'audio' | 'video' | 'link' => {
-    const extension = filename.toLowerCase().split('.').pop();
-    
-    if (!extension) return 'file';
-    
-    if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(extension)) {
-      return 'image';
-    }
-    if (['mp4', 'avi', 'mov', 'webm', 'mkv'].includes(extension)) {
-      return 'video';
-    }
-    if (['mp3', 'wav', 'ogg', 'm4a', 'flac'].includes(extension)) {
-      return 'audio';
-    }
-    
-    return 'file';
-  };
-
-  // Helper function to check if file type is allowed
-  const isFileTypeAllowed = (file: File): boolean => {
-    const allowedTypes = [
-      'application/pdf',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/msword',
-      'image/png'
-    ];
-    
-    return allowedTypes.includes(file.type);
-  };
+  // Helper functions now provided by useContent hook!
 
   const navigationItems: NavigationItem[] = [
     {
@@ -105,46 +78,7 @@ const KnowledgeBase = () => {
     }
   ];
 
-  // Load user's knowledge items on component mount
-  useEffect(() => {
-    if (user) {
-      loadKnowledgeItems();
-    }
-  }, [user]);
-
-  const loadKnowledgeItems = async () => {
-    if (!user) return;
-    
-    try {
-      setLoading(true);
-      const { data: files, error } = await supabase.storage
-        .from('knowledge-base')
-        .list(user.id, {
-          limit: 100,
-          offset: 0
-        });
-
-      if (error) throw error;
-
-      const knowledgeFiles: KnowledgeItem[] = files?.map(file => ({
-        id: file.id || file.name,
-        name: file.name,
-        type: getFileTypeFromName(file.name),
-        size: file.metadata?.size,
-        user_id: user.id,
-        created_at: file.created_at || new Date().toISOString(),
-        updated_at: file.updated_at || new Date().toISOString(),
-        url: `${import.meta.env.VITE_SUPABASE_URL || 'https://plbgeabtrkdhbrnjonje.supabase.co'}/storage/v1/object/knowledge-base/${user.id}/${file.name}`
-      })) || [];
-
-      setKnowledgeItems(knowledgeFiles);
-    } catch (error) {
-      console.error('Error loading knowledge items:', error);
-      toast.error('Failed to load files');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Data loading now handled automatically by useContent hook!
 
   const filterTabs = [
     { id: 'all', label: 'All' },
@@ -190,53 +124,37 @@ const KnowledgeBase = () => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
-    setUploading(true);
     try {
-      for (const file of Array.from(files)) {
-        await uploadFile(file);
+      // Use clean uploadFiles API
+      const result = await uploadFiles(Array.from(files));
+      
+      if (result.error) {
+        toast.error(result.error);
+        return;
       }
+      
       toast.success('Files uploaded successfully');
-      loadKnowledgeItems();
-    } catch (error) {
-      console.error('Error uploading files:', error);
-      toast.error('Failed to upload files');
-    } finally {
-      setUploading(false);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to upload files');
     }
-  };
-
-  const uploadFile = async (file: File) => {
-    if (!user) throw new Error('User not authenticated');
-    
-    // Check if file type is allowed
-    if (!isFileTypeAllowed(file)) {
-      throw new Error(`File type not supported. Only PDF, Word documents (.docx), and PNG images are allowed.`);
-    }
-
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
-    const filePath = `${user.id}/${fileName}`;
-
-    const { error } = await supabase.storage
-      .from('knowledge-base')
-      .upload(filePath, file);
-
-    if (error) throw error;
   };
 
   const handleLinkSubmit = async () => {
     if (!linkInput.trim()) return;
 
     try {
-      // For now, this is a placeholder for link processing
-      // In the future, this will save the link to the database
-      console.log('Processing link:', linkInput);
+      // Use clean addLink API
+      const result = await addLink({ url: linkInput });
+      
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+      
       toast.success('Link added successfully');
       setLinkInput('');
-      loadKnowledgeItems();
-    } catch (error) {
-      console.error('Error adding link:', error);
-      toast.error('Failed to add link');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to add link');
     }
   };
 
@@ -244,22 +162,17 @@ const KnowledgeBase = () => {
     if (!user) return;
     
     try {
-      const item = knowledgeItems.find(item => item.id === itemId);
-      if (!item) return;
-
-      const filePath = `${user.id}/${item.name}`;
+      // Use clean deleteKnowledgeFile API
+      const result = await deleteKnowledgeFile(itemId);
       
-      const { error } = await supabase.storage
-        .from('knowledge-base')
-        .remove([filePath]);
-
-      if (error) throw error;
-
-      setKnowledgeItems(prev => prev.filter(item => item.id !== itemId));
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+      
       toast.success('File deleted successfully');
-    } catch (error) {
-      console.error('Error deleting file:', error);
-      toast.error('Failed to delete file');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete file');
     }
   };
 
@@ -273,7 +186,7 @@ const KnowledgeBase = () => {
     }
   };
 
-  const filteredItems = knowledgeItems.filter(item => {
+  const filteredItems = knowledgeFiles.filter(item => {
     // Filter by type
     const typeMatch = activeFilter === 'all' || 
       (activeFilter === 'files' && item.type === 'file') ||
