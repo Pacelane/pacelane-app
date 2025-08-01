@@ -75,13 +75,6 @@ const ContentEditor = () => {
 
   const [fileStructure, setFileStructure] = useState<FileItem[]>([
     {
-      id: 'new-content',
-      name: 'New Content',
-      type: 'folder',
-      isOpen: true,
-      children: []
-    },
-    {
       id: 'knowledge-base',
       name: 'Knowledge Base',
       type: 'folder',
@@ -281,15 +274,6 @@ const ContentEditor = () => {
         {/* File Tree */}
         <div className="flex-1 overflow-y-auto">
           <div className="p-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full justify-start mb-2 text-gray-600"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              New Content
-            </Button>
-            
             {renderFileTree(fileStructure)}
             {/* Show knowledge base files */}
             {fileStructure.find(item => item.id === 'knowledge-base')?.isOpen && (
