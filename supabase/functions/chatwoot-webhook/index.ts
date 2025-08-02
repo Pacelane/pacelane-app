@@ -22,6 +22,7 @@ interface ChatwootWebhookPayload {
   content_type?: string; // For audio, image, video, file, text, etc.
   content_attributes?: Record<string, any>; // Additional content metadata
   source_id?: string;
+  attachments?: AudioAttachment[]; // Audio and media attachments
   sender: {
     id: number;
     name: string;
@@ -51,9 +52,32 @@ interface GCSConfig {
   privateKeyId: string;
 }
 
+interface OpenAIConfig {
+  apiKey: string;
+  model: string;
+}
+
+interface ChatwootConfig {
+  baseUrl: string;
+}
+
+interface AudioAttachment {
+  id: number;
+  message_id: number;
+  file_type: string;
+  data_url: string;
+  file_size: number;
+  meta?: {
+    is_recorded_audio?: boolean;
+  };
+  transcribed_text?: string;
+}
+
 class ChatwootWebhookProcessor {
   private supabase: any;
   private gcsConfig: GCSConfig;
+  private openaiConfig: OpenAIConfig;
+  private chatwootConfig: ChatwootConfig;
 
   constructor() {
     // Initialize Supabase client with service role key for admin access
@@ -75,6 +99,17 @@ class ChatwootWebhookProcessor {
       clientEmail: Deno.env.get('GCS_CLIENT_EMAIL') ?? '',
       privateKey: Deno.env.get('GCS_PRIVATE_KEY') ?? '',
       privateKeyId: Deno.env.get('GCS_PRIVATE_KEY_ID') ?? '',
+    };
+
+    // Initialize OpenAI configuration
+    this.openaiConfig = {
+      apiKey: Deno.env.get('OPENAI_API_KEY') ?? '',
+      model: 'whisper-1'
+    };
+
+    // Initialize Chatwoot configuration
+    this.chatwootConfig = {
+      baseUrl: Deno.env.get('CHATWOOT_BASE_URL') ?? ''
     };
   }
 
@@ -547,10 +582,318 @@ class ChatwootWebhookProcessor {
       return { success: false, message: 'Failed to store message in database' };
     }
 
+    // Process audio attachments if present
+    if (this.hasAudioAttachments(payload)) {
+      const audioSuccess = await this.processAudioAttachments(payload, bucketName, userId, contactId, gcsPath);
+      if (!audioSuccess) {
+        console.warn('Audio processing failed, but message was stored successfully');
+      }
+    }
+
     return { 
       success: true, 
       message: `WhatsApp message ${payload.id} processed and stored in bucket ${bucketName}` 
     };
+  }
+
+  /**
+   * Check if message has audio attachments
+   */
+  private hasAudioAttachments(payload: ChatwootWebhookPayload): boolean {
+    return payload.attachments && payload.attachments.some(att => att.file_type === 'audio');
+  }
+
+  /**
+   * Process all audio attachments in a message
+   */
+  private async processAudioAttachments(
+    payload: ChatwootWebhookPayload, 
+    bucketName: string, 
+    userId: string | null, 
+    contactId: string,
+    messageGcsPath: string
+  ): Promise<boolean> {
+    if (!payload.attachments) return true;
+
+    const audioAttachments = payload.attachments.filter(att => att.file_type === 'audio');
+    console.log(`Processing ${audioAttachments.length} audio attachments`);
+
+    let allSuccessful = true;
+
+    for (const attachment of audioAttachments) {
+      try {
+        const audioSuccess = await this.processSingleAudioAttachment(
+          attachment, 
+          payload, 
+          bucketName, 
+          userId, 
+          contactId,
+          messageGcsPath
+        );
+        if (!audioSuccess) {
+          allSuccessful = false;
+        }
+      } catch (error) {
+        console.error(`Error processing audio attachment ${attachment.id}:`, error);
+        allSuccessful = false;
+      }
+    }
+
+    return allSuccessful;
+  }
+
+  /**
+   * Process a single audio attachment
+   */
+  private async processSingleAudioAttachment(
+    attachment: AudioAttachment,
+    payload: ChatwootWebhookPayload,
+    bucketName: string,
+    userId: string | null,
+    contactId: string,
+    messageGcsPath: string
+  ): Promise<boolean> {
+    try {
+      console.log(`Processing audio attachment ${attachment.id} from ${attachment.data_url}`);
+
+      // Download audio file from Chatwoot
+      const audioBlob = await this.downloadAudioFile(attachment.data_url);
+      if (!audioBlob) {
+        console.error(`Failed to download audio file: ${attachment.data_url}`);
+        return false;
+      }
+
+      // Generate GCS path for audio file
+      const audioGcsPath = this.generateAudioGCSPath(payload, bucketName, attachment);
+
+      // Store audio file in GCS
+      const audioStored = await this.storeAudioInGCS(audioGcsPath, audioBlob);
+      if (!audioStored) {
+        console.error(`Failed to store audio in GCS: ${audioGcsPath}`);
+        return false;
+      }
+
+      // Transcribe audio with OpenAI
+      const transcription = await this.transcribeWithOpenAI(audioBlob);
+
+      // Store audio record in database
+      const audioRecordStored = await this.storeAudioRecord(
+        attachment,
+        payload,
+        audioGcsPath,
+        transcription,
+        userId,
+        contactId,
+        messageGcsPath
+      );
+
+      if (!audioRecordStored) {
+        console.error(`Failed to store audio record in database`);
+        return false;
+      }
+
+      console.log(`Successfully processed audio attachment ${attachment.id}`);
+      return true;
+
+    } catch (error) {
+      console.error(`Error in processSingleAudioAttachment:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Download audio file from Chatwoot URL
+   */
+  private async downloadAudioFile(dataUrl: string): Promise<Blob | null> {
+    try {
+      // Fix relative URLs from Chatwoot by prepending the base URL
+      let fullUrl = dataUrl;
+      if (dataUrl.startsWith('http:///') || dataUrl.startsWith('https:///')) {
+        // Remove the triple slash and construct full URL
+        const path = dataUrl.replace(/^https?:\/\/\//, '/');
+        fullUrl = `${this.chatwootConfig.baseUrl}${path}`;
+      }
+      
+      console.log(`Downloading audio from: ${fullUrl}`);
+      
+      const response = await fetch(fullUrl);
+      if (!response.ok) {
+        console.error(`Failed to download audio: ${response.status} ${response.statusText}`);
+        return null;
+      }
+
+      const blob = await response.blob();
+      console.log(`Downloaded audio file: ${blob.size} bytes, type: ${blob.type}`);
+      return blob;
+
+    } catch (error) {
+      console.error('Error downloading audio file:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Generate GCS path for audio file storage
+   */
+  private generateAudioGCSPath(payload: ChatwootWebhookPayload, bucketName: string, attachment: AudioAttachment): string {
+    const date = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const conversationId = payload.conversation.id;
+    const messageId = payload.id;
+    const attachmentId = attachment.id;
+    
+    return `gs://${bucketName}/whatsapp-audio/${date}/${conversationId}/${messageId}_${attachmentId}.mp3`;
+  }
+
+  /**
+   * Store audio file in Google Cloud Storage
+   */
+  private async storeAudioInGCS(gcsPath: string, audioBlob: Blob): Promise<boolean> {
+    try {
+      // Extract bucket name from gs://bucket-name/path format
+      const bucketName = gcsPath.split('/')[2];
+      
+      console.log(`Storing audio in GCS: ${gcsPath}`);
+
+      // Get access token for GCS API
+      const accessToken = await this.getGCSAccessToken();
+      if (!accessToken) {
+        console.error('Failed to get GCS access token for audio upload');
+        return false;
+      }
+
+      // Extract object name from the full path (gs://bucket/path -> path)
+      const objectName = gcsPath.replace(`gs://${bucketName}/`, '');
+
+      // Convert blob to array buffer
+      const audioBuffer = await audioBlob.arrayBuffer();
+
+      // Upload to GCS
+      const response = await fetch(`https://storage.googleapis.com/upload/storage/v1/b/${bucketName}/o?uploadType=media&name=${encodeURIComponent(objectName)}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': audioBlob.type || 'audio/mpeg',
+        },
+        body: audioBuffer,
+      });
+
+      if (response.ok) {
+        console.log(`Audio stored successfully in GCS: ${gcsPath}`);
+        return true;
+      } else {
+        const errorText = await response.text();
+        console.error(`Error storing audio in GCS: ${response.status} ${response.statusText} - ${errorText}`);
+        return false;
+      }
+
+    } catch (error) {
+      console.error('Error storing audio in GCS:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Transcribe audio using OpenAI Whisper API
+   */
+  private async transcribeWithOpenAI(audioBlob: Blob): Promise<{ text: string; error?: string } | null> {
+    try {
+      if (!this.openaiConfig.apiKey) {
+        console.error('OpenAI API key not configured');
+        return { text: '', error: 'OpenAI API key not configured' };
+      }
+
+      console.log(`Transcribing audio with OpenAI Whisper (${audioBlob.size} bytes)`);
+
+      // Prepare form data for OpenAI API
+      const formData = new FormData();
+      formData.append('file', audioBlob, 'audio.mp3');
+      formData.append('model', this.openaiConfig.model);
+
+      // Call OpenAI Whisper API
+      const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.openaiConfig.apiKey}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`OpenAI API error: ${response.status} ${response.statusText} - ${errorText}`);
+        return { text: '', error: `OpenAI API error: ${response.status} ${response.statusText}` };
+      }
+
+      const result = await response.json();
+      console.log(`Transcription completed: ${result.text?.substring(0, 100)}...`);
+      
+      return { text: result.text || '' };
+
+    } catch (error) {
+      console.error('Error transcribing audio:', error);
+      return { text: '', error: error.message };
+    }
+  }
+
+  /**
+   * Store audio record in database
+   */
+  private async storeAudioRecord(
+    attachment: AudioAttachment,
+    payload: ChatwootWebhookPayload,
+    audioGcsPath: string,
+    transcription: { text: string; error?: string } | null,
+    userId: string | null,
+    contactId: string,
+    messageGcsPath: string
+  ): Promise<boolean> {
+    try {
+      // First, get the meeting_note_id by finding the stored message
+      const { data: meetingNote, error: findError } = await this.supabase
+        .from('meeting_notes')
+        .select('id')
+        .eq('chatwoot_message_id', payload.id)
+        .eq('contact_identifier', contactId)
+        .single();
+
+      if (findError || !meetingNote) {
+        console.error('Failed to find meeting note for audio attachment:', findError);
+        return false;
+      }
+
+      const insertData = {
+        user_id: userId,
+        contact_identifier: contactId,
+        meeting_note_id: meetingNote.id,
+        chatwoot_attachment_id: attachment.id,
+        chatwoot_attachment_url: attachment.data_url,
+        file_path: audioGcsPath,
+        transcription: transcription?.text || null,
+        transcription_status: transcription?.error ? 'error' : (transcription?.text ? 'completed' : 'error'),
+        transcription_error: transcription?.error || null,
+        openai_model: this.openaiConfig.model,
+        original_file_size: attachment.file_size,
+        duration_seconds: null, // Could be extracted from audio metadata if needed
+        processed_at: new Date().toISOString(),
+      };
+
+      const { data, error } = await this.supabase
+        .from('audio_files')
+        .insert([insertData])
+        .select();
+
+      if (error) {
+        console.error('Database insert error for audio file:', error);
+        return false;
+      }
+
+      console.log('Audio record stored in database:', data?.[0]?.id);
+      return true;
+
+    } catch (error) {
+      console.error('Error storing audio record:', error);
+      return false;
+    }
   }
 }
 

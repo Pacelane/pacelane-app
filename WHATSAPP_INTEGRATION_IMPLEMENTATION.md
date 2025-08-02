@@ -19,6 +19,12 @@ GCS_BUCKET_PREFIX=pacelane-whatsapp
 GCS_CLIENT_EMAIL=pacelane-whatsapp-processor@your-project-id.iam.gserviceaccount.com
 GCS_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYour_Private_Key_Here\n-----END PRIVATE KEY-----"
 GCS_PRIVATE_KEY_ID=your_private_key_id
+
+# OpenAI Configuration (for audio transcription)
+OPENAI_API_KEY=sk-your_openai_api_key_here
+
+# Chatwoot Configuration (for downloading audio files)
+CHATWOOT_BASE_URL=https://your-chatwoot-instance.com
 ```
 
 **Supabase UI (Production Edge Functions):**
@@ -29,6 +35,8 @@ GCS_PRIVATE_KEY_ID=your_private_key_id
    - `GCS_CLIENT_EMAIL`
    - `GCS_PRIVATE_KEY`
    - `GCS_PRIVATE_KEY_ID`
+   - `OPENAI_API_KEY`
+   - `CHATWOOT_BASE_URL`
 
 **Vercel UI (if using Vercel for frontend):**
 1. Go to Project Settings → Environment Variables
