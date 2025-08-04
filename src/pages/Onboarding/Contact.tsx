@@ -206,7 +206,7 @@ const Contact = () => {
                 }}
               >
                 <Input
-                  placeholder="WhatsApp Number (Optional)"
+                  placeholder="+55 11 99999-9999"
                   value={whatsappNumber}
                   onChange={(e) => setWhatsappNumber(e.target.value)}
                   style="default"
@@ -235,6 +235,20 @@ const Contact = () => {
                     }}
                   >
                     We'll send you personalized content ideas and platform updates via WhatsApp
+                  </p>
+                  <p
+                    style={{
+                      fontFamily: typography.fontFamily.body,
+                      fontSize: typography.desktop.size.xs,
+                      fontWeight: typography.desktop.weight.normal,
+                      lineHeight: typography.desktop.lineHeight.xs,
+                      color: colors.text.muted,
+                      margin: 0,
+                      marginTop: spacing.spacing[4],
+                      textAlign: 'center',
+                    }}
+                  >
+                    Use international format: +55 11 99999-9999 (Brazil) or +1 555 123-4567 (US)
                   </p>
                 </div>
               </div>

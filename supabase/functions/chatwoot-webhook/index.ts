@@ -462,6 +462,8 @@ class ChatwootWebhookProcessor {
       // Normalize WhatsApp number for comparison
       const normalizedNumber = this.normalizeWhatsAppNumber(whatsappNumber);
       
+      console.log(`Looking for user with WhatsApp number: ${normalizedNumber}`);
+      
       // First, try to find existing mapping in whatsapp_user_mapping table
       const { data: existingMapping, error: mappingError } = await this.supabase
         .from('whatsapp_user_mapping')
@@ -488,6 +490,41 @@ class ChatwootWebhookProcessor {
         await this.createWhatsAppMapping(userProfile.user_id, normalizedNumber, payload);
         
         return { userId: userProfile.user_id, contactId };
+      }
+
+      // Try different number formats for Brazilian numbers
+      if (normalizedNumber.startsWith('+55')) {
+        // Try without country code
+        const withoutCountryCode = normalizedNumber.substring(3);
+        console.log(`Trying without country code: ${withoutCountryCode}`);
+        
+        const { data: userProfile2, error: profileError2 } = await this.supabase
+          .from('profiles')
+          .select('user_id, whatsapp_number')
+          .eq('whatsapp_number', withoutCountryCode)
+          .single();
+
+        if (!profileError2 && userProfile2) {
+          console.log(`Found user ${userProfile2.user_id} for WhatsApp number without country code: ${withoutCountryCode}`);
+          await this.createWhatsAppMapping(userProfile2.user_id, normalizedNumber, payload);
+          return { userId: userProfile2.user_id, contactId };
+        }
+
+        // Try with 0 prefix
+        const withZeroPrefix = '0' + withoutCountryCode;
+        console.log(`Trying with 0 prefix: ${withZeroPrefix}`);
+        
+        const { data: userProfile3, error: profileError3 } = await this.supabase
+          .from('profiles')
+          .select('user_id, whatsapp_number')
+          .eq('whatsapp_number', withZeroPrefix)
+          .single();
+
+        if (!profileError3 && userProfile3) {
+          console.log(`Found user ${userProfile3.user_id} for WhatsApp number with 0 prefix: ${withZeroPrefix}`);
+          await this.createWhatsAppMapping(userProfile3.user_id, normalizedNumber, payload);
+          return { userId: userProfile3.user_id, contactId };
+        }
       }
 
       // Fallback: try to find existing user mapping in meeting_notes
@@ -517,34 +554,51 @@ class ChatwootWebhookProcessor {
    * Extract WhatsApp number from Chatwoot payload
    */
   private extractWhatsAppNumber(payload: ChatwootWebhookPayload): string | null {
-    // This will depend on how Chatwoot provides the WhatsApp number
-    // Common locations to check:
+    console.log('Extracting WhatsApp number from payload:', JSON.stringify(payload, null, 2));
     
-    // 1. From sender metadata
+    // 1. From sender metadata (most common)
     if (payload.sender && payload.sender.additional_attributes) {
       const whatsappNumber = payload.sender.additional_attributes.phone_number;
-      if (whatsappNumber) return whatsappNumber;
+      if (whatsappNumber) {
+        console.log('Found WhatsApp number in sender.additional_attributes:', whatsappNumber);
+        return whatsappNumber;
+      }
     }
 
     // 2. From conversation metadata
     if (payload.conversation && payload.conversation.additional_attributes) {
       const whatsappNumber = payload.conversation.additional_attributes.phone_number;
-      if (whatsappNumber) return whatsappNumber;
+      if (whatsappNumber) {
+        console.log('Found WhatsApp number in conversation.additional_attributes:', whatsappNumber);
+        return whatsappNumber;
+      }
     }
 
     // 3. From account metadata
     if (payload.account && payload.account.additional_attributes) {
       const whatsappNumber = payload.account.additional_attributes.phone_number;
-      if (whatsappNumber) return whatsappNumber;
+      if (whatsappNumber) {
+        console.log('Found WhatsApp number in account.additional_attributes:', whatsappNumber);
+        return whatsappNumber;
+      }
     }
 
-    // 4. Try to extract from sender name or other fields
-    // This is a fallback and might need adjustment based on your Chatwoot setup
+    // 4. Try to extract from sender name (fallback)
     if (payload.sender && payload.sender.name) {
       const phoneMatch = payload.sender.name.match(/\+?[\d\s\-\(\)]+/);
-      if (phoneMatch) return phoneMatch[0];
+      if (phoneMatch) {
+        console.log('Extracted WhatsApp number from sender name:', phoneMatch[0]);
+        return phoneMatch[0];
+      }
     }
 
+    // 5. Try to extract from source_id (another common location)
+    if (payload.source_id) {
+      console.log('Found source_id:', payload.source_id);
+      return payload.source_id;
+    }
+
+    console.log('No WhatsApp number found in payload');
     return null;
   }
 
@@ -552,16 +606,33 @@ class ChatwootWebhookProcessor {
    * Normalize WhatsApp number for consistent comparison
    */
   private normalizeWhatsAppNumber(number: string): string {
+    console.log('Normalizing WhatsApp number:', number);
+    
     // Remove all non-digit characters except +
     let normalized = number.replace(/[^\d+]/g, '');
     
-    // Ensure it starts with + if it's an international number
+    console.log('After removing non-digits:', normalized);
+    
+    // Handle different formats
     if (normalized.startsWith('00')) {
+      // Convert 00 to +
       normalized = '+' + normalized.substring(2);
+      console.log('Converted 00 to +:', normalized);
     } else if (!normalized.startsWith('+') && normalized.length > 10) {
+      // Add + for international numbers
       normalized = '+' + normalized;
+      console.log('Added + for international number:', normalized);
+    } else if (!normalized.startsWith('+') && normalized.length === 10) {
+      // Brazilian number without country code, add +55
+      normalized = '+55' + normalized;
+      console.log('Added +55 for Brazilian number:', normalized);
+    } else if (!normalized.startsWith('+') && normalized.length === 11 && normalized.startsWith('0')) {
+      // Brazilian number with 0, remove 0 and add +55
+      normalized = '+55' + normalized.substring(1);
+      console.log('Converted Brazilian number with 0:', normalized);
     }
     
+    console.log('Final normalized number:', normalized);
     return normalized;
   }
 

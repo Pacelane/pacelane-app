@@ -762,11 +762,18 @@ const Profile = () => {
                       WhatsApp Number
                     </h4>
                     <Input
-                      placeholder="+1 (555) 123-4567"
+                      placeholder="+55 11 99999-9999"
                       value={personalInfo.whatsapp}
                       onChange={(e) => handlePersonalInfoChange('whatsapp', e.target.value)}
                       style="default"
                     />
+                    <p style={{
+                      ...textStyles.xs.normal,
+                      color: colors.text.muted,
+                      margin: 0,
+                    }}>
+                      Use international format: +55 11 99999-9999 (Brazil) or +1 555 123-4567 (US)
+                    </p>
                     <div style={{ alignSelf: 'flex-start' }}>
                       <Button
                         label={savedStates.whatsapp ? "Saved!" : "Save"}
