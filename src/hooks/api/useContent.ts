@@ -164,11 +164,21 @@ export const useContent = (): ContentState & ContentActions => {
   const uploadFiles = async (files: File[]) => {
     return executeContentOperation(
       async () => {
+        console.log('useContent: Starting upload for', files.length, 'files');
         const result = await contentApi.uploadFiles(user!.id, files);
         
+        console.log('useContent: Upload result:', result);
+        
         if (result.data) {
+          console.log('useContent: Adding files to state:', result.data);
           // Add all new files to the knowledge files list
-          setKnowledgeFiles(prev => [...result.data!, ...prev]);
+          setKnowledgeFiles(prev => {
+            const newState = [...result.data!, ...prev];
+            console.log('useContent: New knowledge files state:', newState);
+            return newState;
+          });
+        } else {
+          console.error('useContent: No data in upload result');
         }
         
         return result;

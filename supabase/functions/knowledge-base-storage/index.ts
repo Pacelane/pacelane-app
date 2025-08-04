@@ -270,13 +270,15 @@ class GCSKnowledgeBaseStorage {
       }
 
       // Store metadata in Supabase
-      const fileInfo: FileInfo = {
+      const fileInfo = {
+        id: fileName, // Use the generated filename as ID
         name: file.name,
+        type: this.getFileTypeFromName(file.name),
         size: file.size,
-        type: file.type,
-        gcsPath,
-        contentExtracted: false,
-        createdAt: new Date().toISOString(),
+        url: gcsPath,
+        user_id: userId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       };
 
       const { error: dbError } = await this.supabase
@@ -306,7 +308,7 @@ class GCSKnowledgeBaseStorage {
 
       return { 
         success: true, 
-        fileInfo,
+        data: fileInfo,
         gcsPath
       };
 
@@ -327,6 +329,27 @@ class GCSKnowledgeBaseStorage {
   }
 
   /**
+   * Get file type from filename
+   */
+  private getFileTypeFromName(filename: string): string {
+    const extension = filename.toLowerCase().split('.').pop();
+    
+    if (!extension) return 'file';
+    
+    if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(extension)) {
+      return 'image';
+    }
+    if (['mp4', 'avi', 'mov', 'webm', 'mkv'].includes(extension)) {
+      return 'video';
+    }
+    if (['mp3', 'wav', 'ogg', 'm4a', 'flac'].includes(extension)) {
+      return 'audio';
+    }
+    
+    return 'file';
+  }
+
+  /**
    * List knowledge base files for user
    */
   async listFiles(userId: string): Promise<FileInfo[]> {
@@ -343,13 +366,14 @@ class GCSKnowledgeBaseStorage {
       }
 
       return files.map((file: any) => ({
+        id: file.id,
         name: file.name,
-        size: file.size,
         type: file.type,
-        gcsPath: file.gcs_path,
-        contentExtracted: file.content_extracted,
-        extractedContent: file.extracted_content,
-        createdAt: file.created_at,
+        size: file.size,
+        url: file.url || file.gcs_path,
+        user_id: file.user_id,
+        created_at: file.created_at,
+        updated_at: file.updated_at,
       }));
 
     } catch (error) {
@@ -481,16 +505,16 @@ serve(async (req) => {
         const fileBuffer = Uint8Array.from(atob(fileData.content), c => c.charCodeAt(0));
         const file = new File([fileBuffer], fileData.name, { type: fileData.type });
 
-        const result = await storage.uploadFile(user.id, file, metadata);
+              const result = await storage.uploadFile(user.id, file, metadata);
 
-        return new Response(JSON.stringify(result), {
-          status: result.success ? 200 : 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+      return new Response(JSON.stringify({ data: result.fileInfo, success: result.success, error: result.error }), {
+        status: result.success ? 200 : 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
       } else if (action === 'list') {
         // Handle file listing
         const files = await storage.listFiles(user.id);
-        return new Response(JSON.stringify({ files }), {
+        return new Response(JSON.stringify({ data: files }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       } else if (action === 'delete') {
@@ -519,7 +543,7 @@ serve(async (req) => {
         }
 
         const success = await storage.deleteFile(user.id, file.id);
-        return new Response(JSON.stringify({ success }), {
+        return new Response(JSON.stringify({ data: { success } }), {
           status: success ? 200 : 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });

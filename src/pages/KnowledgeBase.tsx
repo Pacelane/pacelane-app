@@ -28,6 +28,16 @@ const KnowledgeBase = () => {
   const { user, profile } = useAuth();
   const { colors } = useTheme();
   
+  console.log('KnowledgeBase: Component rendered, user:', user?.id, 'profile:', profile?.id);
+  
+  // Track component lifecycle
+  useEffect(() => {
+    console.log('KnowledgeBase: Component mounted');
+    return () => {
+      console.log('KnowledgeBase: Component unmounting');
+    };
+  }, []);
+  
   // ========== CLEAN CONTENT STATE MANAGEMENT ==========
   const {
     knowledgeFiles,
@@ -113,6 +123,7 @@ const KnowledgeBase = () => {
 
   // Transform knowledge files to FileCard format
   const getFileCards = () => {
+    console.log('KnowledgeBase: Transforming', knowledgeFiles.length, 'files to cards');
     return knowledgeFiles.map(item => {
       // Map file type to FileCard expected types
       let cardFileType = 'default';

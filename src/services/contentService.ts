@@ -56,8 +56,8 @@ export class ContentService {
         return { error: data?.error || 'Failed to load knowledge files' };
       }
 
-      console.log('ContentService: Loaded', data.files?.length || 0, 'knowledge files from GCS');
-      return { data: data.files || [] };
+      console.log('ContentService: Loaded', data.data?.length || 0, 'knowledge files from GCS');
+      return { data: data.data || [] };
     } catch (error: any) {
       console.error('ContentService: loadUserKnowledgeFiles failed:', error);
       return { error: error.message || 'Failed to load knowledge files' };
@@ -116,7 +116,7 @@ export class ContentService {
       }
 
       console.log('ContentService: File uploaded successfully to GCS:', data);
-      return { data: data.file };
+      return { data: data.data };
     } catch (error: any) {
       console.error('ContentService: uploadFile failed:', error);
       return { error: error.message || 'Failed to upload file' };
@@ -161,7 +161,7 @@ export class ContentService {
       }
 
       console.log('ContentService: File deleted successfully from GCS');
-      return { data: undefined };
+      return { data: data.data };
     } catch (error: any) {
       console.error('ContentService: deleteKnowledgeFile failed:', error);
       return { error: error.message || 'Failed to delete file' };
