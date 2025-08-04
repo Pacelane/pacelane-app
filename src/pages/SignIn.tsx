@@ -22,6 +22,9 @@ import Divider from '@/design-system/components/Divider';
 // Icons
 import { FcGoogle } from 'react-icons/fc';
 
+// Assets
+import signinBichaurinho from '@/assets/images/signin-bichaurinho.svg';
+
 const SignIn = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const navigate = useNavigate();
@@ -329,7 +332,7 @@ const SignIn = () => {
         <div style={rightContainerStyles}>
           {/* Sign In Bichaurinho - positioned bottom right */}
           <img
-            src="/src/assets/images/signin-bichaurinho.svg"
+            src={signinBichaurinho}
             alt="Sign in illustration"
             style={{
               position: 'absolute',

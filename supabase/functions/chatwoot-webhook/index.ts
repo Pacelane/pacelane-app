@@ -27,12 +27,17 @@ interface ChatwootWebhookPayload {
     id: number;
     name: string;
     type: 'contact' | 'user';
+    phone_number?: string;
+    additional_attributes?: Record<string, any>;
   };
   conversation: {
     id: number;
     channel: string;
     status: string;
     additional_attributes?: Record<string, any>;
+    contact_inbox?: {
+      source_id?: string;
+    };
   };
   account: {
     id: number;
@@ -554,9 +559,21 @@ class ChatwootWebhookProcessor {
    * Extract WhatsApp number from Chatwoot payload
    */
   private extractWhatsAppNumber(payload: ChatwootWebhookPayload): string | null {
-    console.log('Extracting WhatsApp number from payload:', JSON.stringify(payload, null, 2));
+    console.log('Extracting WhatsApp number from payload...');
     
-    // 1. From sender metadata (most common)
+    // 1. From sender.phone_number (most common location)
+    if (payload.sender && payload.sender.phone_number) {
+      console.log('Found WhatsApp number in sender.phone_number:', payload.sender.phone_number);
+      return payload.sender.phone_number;
+    }
+
+    // 2. From conversation.contact_inbox.source_id
+    if (payload.conversation && payload.conversation.contact_inbox && payload.conversation.contact_inbox.source_id) {
+      console.log('Found WhatsApp number in conversation.contact_inbox.source_id:', payload.conversation.contact_inbox.source_id);
+      return payload.conversation.contact_inbox.source_id;
+    }
+
+    // 3. From sender metadata (fallback)
     if (payload.sender && payload.sender.additional_attributes) {
       const whatsappNumber = payload.sender.additional_attributes.phone_number;
       if (whatsappNumber) {
@@ -565,7 +582,7 @@ class ChatwootWebhookProcessor {
       }
     }
 
-    // 2. From conversation metadata
+    // 4. From conversation metadata (fallback)
     if (payload.conversation && payload.conversation.additional_attributes) {
       const whatsappNumber = payload.conversation.additional_attributes.phone_number;
       if (whatsappNumber) {
@@ -574,7 +591,7 @@ class ChatwootWebhookProcessor {
       }
     }
 
-    // 3. From account metadata
+    // 5. From account metadata (fallback)
     if (payload.account && payload.account.additional_attributes) {
       const whatsappNumber = payload.account.additional_attributes.phone_number;
       if (whatsappNumber) {
@@ -583,7 +600,7 @@ class ChatwootWebhookProcessor {
       }
     }
 
-    // 4. Try to extract from sender name (fallback)
+    // 6. Try to extract from sender name (fallback)
     if (payload.sender && payload.sender.name) {
       const phoneMatch = payload.sender.name.match(/\+?[\d\s\-\(\)]+/);
       if (phoneMatch) {
@@ -592,7 +609,7 @@ class ChatwootWebhookProcessor {
       }
     }
 
-    // 5. Try to extract from source_id (another common location)
+    // 7. Try to extract from source_id (another common location)
     if (payload.source_id) {
       console.log('Found source_id:', payload.source_id);
       return payload.source_id;
