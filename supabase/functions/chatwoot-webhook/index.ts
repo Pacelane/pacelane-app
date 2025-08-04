@@ -140,9 +140,16 @@ class ChatwootWebhookProcessor {
    */
   private generateUserBucketName(userId: string): string {
     // Bucket names must be globally unique and follow GCS naming rules
-    // Use a combination of prefix, user ID hash, and random suffix for uniqueness
+    // Use a combination of prefix, user ID hash for uniqueness
     const userHash = this.hashUserId(userId);
-    return `${this.gcsConfig.bucketPrefix}-${userHash}`.toLowerCase();
+    return `${this.gcsConfig.bucketPrefix}-user-${userHash}`.toLowerCase();
+  }
+
+  /**
+   * Generate contact-based bucket name (fallback)
+   */
+  private generateContactBucketName(contactId: string): string {
+    return `${this.gcsConfig.bucketPrefix}-contact-${contactId.replace(/[^a-z0-9-]/g, '-')}`.toLowerCase();
   }
 
   /**
@@ -438,34 +445,148 @@ class ChatwootWebhookProcessor {
   }
 
   /**
-   * Find user ID from Chatwoot contact ID or conversation
-   * For Phase 1, we'll use a consistent mapping strategy
+   * Find user by WhatsApp number from incoming message
    */
-  private async findUserIdFromContact(payload: ChatwootWebhookPayload): Promise<{ userId: string | null, contactId: string }> {
+  private async findUserByWhatsAppNumber(payload: ChatwootWebhookPayload): Promise<{ userId: string | null, contactId: string }> {
     try {
       const contactId = `contact_${payload.sender.id}_account_${payload.account.id}`;
       
-      // Try to find existing user mapping in database
-      const { data: existingMapping, error } = await this.supabase
+      // Extract WhatsApp number from sender
+      const whatsappNumber = this.extractWhatsAppNumber(payload);
+      
+      if (!whatsappNumber) {
+        console.log('No WhatsApp number found in payload, using contact-based bucket');
+        return { userId: null, contactId };
+      }
+
+      // Normalize WhatsApp number for comparison
+      const normalizedNumber = this.normalizeWhatsAppNumber(whatsappNumber);
+      
+      // First, try to find existing mapping in whatsapp_user_mapping table
+      const { data: existingMapping, error: mappingError } = await this.supabase
+        .from('whatsapp_user_mapping')
+        .select('user_id')
+        .eq('whatsapp_number', normalizedNumber)
+        .single();
+
+      if (!mappingError && existingMapping) {
+        console.log(`Found existing WhatsApp mapping: ${existingMapping.user_id}`);
+        return { userId: existingMapping.user_id, contactId };
+      }
+
+      // If no mapping exists, try to find user by WhatsApp number in profiles
+      const { data: userProfile, error: profileError } = await this.supabase
+        .from('profiles')
+        .select('user_id, whatsapp_number')
+        .eq('whatsapp_number', normalizedNumber)
+        .single();
+
+      if (!profileError && userProfile) {
+        console.log(`Found user ${userProfile.user_id} for WhatsApp number: ${normalizedNumber}`);
+        
+        // Create mapping for future use
+        await this.createWhatsAppMapping(userProfile.user_id, normalizedNumber, payload);
+        
+        return { userId: userProfile.user_id, contactId };
+      }
+
+      // Fallback: try to find existing user mapping in meeting_notes
+      const { data: existingMeetingMapping, error: meetingError } = await this.supabase
         .from('meeting_notes')
         .select('user_id')
         .eq('contact_identifier', contactId)
         .not('user_id', 'is', null)
         .limit(1);
 
-      if (!error && existingMapping && existingMapping.length > 0) {
-        console.log(`Found existing user mapping: ${existingMapping[0].user_id}`);
-        return { userId: existingMapping[0].user_id, contactId };
+      if (!meetingError && existingMeetingMapping && existingMeetingMapping.length > 0) {
+        console.log(`Found existing meeting mapping: ${existingMeetingMapping[0].user_id}`);
+        return { userId: existingMeetingMapping[0].user_id, contactId };
       }
 
-      // For Phase 1: Return null user_id but consistent contact identifier
-      console.log(`Using contact identifier for bucket: ${contactId}`);
+      console.log(`No user found for WhatsApp number: ${normalizedNumber}`);
       return { userId: null, contactId };
 
     } catch (error) {
-      console.error('User lookup error:', error);
+      console.error('Error finding user by WhatsApp number:', error);
       const contactId = `contact_${payload.sender.id}_account_${payload.account.id}`;
       return { userId: null, contactId };
+    }
+  }
+
+  /**
+   * Extract WhatsApp number from Chatwoot payload
+   */
+  private extractWhatsAppNumber(payload: ChatwootWebhookPayload): string | null {
+    // This will depend on how Chatwoot provides the WhatsApp number
+    // Common locations to check:
+    
+    // 1. From sender metadata
+    if (payload.sender && payload.sender.additional_attributes) {
+      const whatsappNumber = payload.sender.additional_attributes.phone_number;
+      if (whatsappNumber) return whatsappNumber;
+    }
+
+    // 2. From conversation metadata
+    if (payload.conversation && payload.conversation.additional_attributes) {
+      const whatsappNumber = payload.conversation.additional_attributes.phone_number;
+      if (whatsappNumber) return whatsappNumber;
+    }
+
+    // 3. From account metadata
+    if (payload.account && payload.account.additional_attributes) {
+      const whatsappNumber = payload.account.additional_attributes.phone_number;
+      if (whatsappNumber) return whatsappNumber;
+    }
+
+    // 4. Try to extract from sender name or other fields
+    // This is a fallback and might need adjustment based on your Chatwoot setup
+    if (payload.sender && payload.sender.name) {
+      const phoneMatch = payload.sender.name.match(/\+?[\d\s\-\(\)]+/);
+      if (phoneMatch) return phoneMatch[0];
+    }
+
+    return null;
+  }
+
+  /**
+   * Normalize WhatsApp number for consistent comparison
+   */
+  private normalizeWhatsAppNumber(number: string): string {
+    // Remove all non-digit characters except +
+    let normalized = number.replace(/[^\d+]/g, '');
+    
+    // Ensure it starts with + if it's an international number
+    if (normalized.startsWith('00')) {
+      normalized = '+' + normalized.substring(2);
+    } else if (!normalized.startsWith('+') && normalized.length > 10) {
+      normalized = '+' + normalized;
+    }
+    
+    return normalized;
+  }
+
+  /**
+   * Create WhatsApp mapping for future use
+   */
+  private async createWhatsAppMapping(userId: string, whatsappNumber: string, payload: ChatwootWebhookPayload): Promise<void> {
+    try {
+      const { error } = await this.supabase
+        .from('whatsapp_user_mapping')
+        .insert({
+          user_id: userId,
+          whatsapp_number: whatsappNumber,
+          chatwoot_contact_id: payload.sender.id.toString(),
+          chatwoot_account_id: payload.account.id.toString(),
+          is_verified: false
+        });
+
+      if (error) {
+        console.error('Error creating WhatsApp mapping:', error);
+      } else {
+        console.log(`Created WhatsApp mapping for user ${userId}`);
+      }
+    } catch (error) {
+      console.error('Error creating WhatsApp mapping:', error);
     }
   }
 
@@ -555,16 +676,23 @@ class ChatwootWebhookProcessor {
       return { success: true, message: 'Event not applicable for WhatsApp processing' };
     }
 
-    // Find or create user identification
-    const { userId, contactId } = await this.findUserIdFromContact(payload);
+    // Find user by WhatsApp number
+    const { userId, contactId } = await this.findUserByWhatsAppNumber(payload);
     
-    // Use contactId for bucket naming (consistent across messages from same contact)
-    const bucketName = `${this.gcsConfig.bucketPrefix}-${contactId.replace(/[^a-z0-9-]/g, '-')}`;
+    // Determine bucket name based on user identification
+    let bucketName: string;
+    if (userId) {
+      bucketName = this.generateUserBucketName(userId);
+      console.log(`Using user-specific bucket: ${bucketName} for user: ${userId}`);
+    } else {
+      bucketName = this.generateContactBucketName(contactId);
+      console.log(`Using contact-based bucket: ${bucketName} for contact: ${contactId}`);
+    }
     
-    // Ensure user bucket exists (create if necessary)
+    // Ensure bucket exists (create if necessary)
     const bucketReady = await this.ensureUserBucket(bucketName);
     if (!bucketReady) {
-      return { success: false, message: 'Failed to ensure user bucket exists' };
+      return { success: false, message: 'Failed to ensure bucket exists' };
     }
 
     // Generate GCS storage path with user bucket
@@ -592,7 +720,10 @@ class ChatwootWebhookProcessor {
 
     return { 
       success: true, 
-      message: `WhatsApp message ${payload.id} processed and stored in bucket ${bucketName}` 
+      message: `WhatsApp message ${payload.id} processed and stored in bucket ${bucketName}`,
+      userId: userId || null,
+      bucketName,
+      whatsappNumber: this.extractWhatsAppNumber(payload) || null
     };
   }
 

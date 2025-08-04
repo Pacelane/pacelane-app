@@ -22,39 +22,42 @@ export class ContentService {
   // ========== KNOWLEDGE BASE OPERATIONS ==========
 
   /**
-   * Load all knowledge files for a user from storage
+   * Load all knowledge files for a user from GCS via edge function
    * @param userId - The user's ID
    * @returns Promise with knowledge files list or error
    */
   static async loadUserKnowledgeFiles(userId: string): Promise<ApiResponse<KnowledgeFile[]>> {
     try {
-      console.log('ContentService: Loading knowledge files for user:', userId);
+      console.log('ContentService: Loading knowledge files from GCS for user:', userId);
       
-      const { data: files, error } = await supabase.storage
-        .from('knowledge-base')
-        .list(userId, {
-          limit: 100,
-          offset: 0
-        });
-
-      if (error) {
-        console.error('ContentService: Load knowledge files error:', error);
-        throw error;
+      // Get user's JWT token for authentication
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        return { error: 'User not authenticated' };
       }
 
-      const knowledgeFiles: KnowledgeFile[] = files?.map(file => ({
-        id: file.id || file.name,
-        name: file.name,
-        type: this.getFileTypeFromName(file.name),
-        size: file.metadata?.size,
-        user_id: userId,
-        created_at: file.created_at || new Date().toISOString(),
-        updated_at: file.updated_at || new Date().toISOString(),
-        url: this.generateFileUrl(userId, file.name)
-      })) || [];
+      // Call the GCS edge function to list files
+      const { data, error } = await supabase.functions.invoke('knowledge-base-storage', {
+        body: {
+          action: 'list'
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
 
-      console.log('ContentService: Loaded', knowledgeFiles.length, 'knowledge files');
-      return { data: knowledgeFiles };
+      if (error) {
+        console.error('ContentService: GCS list files error:', error);
+        return { error: error.message || 'Failed to load knowledge files' };
+      }
+
+      if (!data || data.error) {
+        console.error('ContentService: GCS list files failed:', data?.error);
+        return { error: data?.error || 'Failed to load knowledge files' };
+      }
+
+      console.log('ContentService: Loaded', data.files?.length || 0, 'knowledge files from GCS');
+      return { data: data.files || [] };
     } catch (error: any) {
       console.error('ContentService: loadUserKnowledgeFiles failed:', error);
       return { error: error.message || 'Failed to load knowledge files' };
@@ -62,13 +65,13 @@ export class ContentService {
   }
 
   /**
-   * Upload a single file to knowledge base storage
+   * Upload a single file to knowledge base storage using GCS edge function
    * @param fileData - File upload data
    * @returns Promise with upload result or error
    */
   static async uploadFile(fileData: FileUploadData): Promise<ApiResponse<KnowledgeFile>> {
     try {
-      console.log('ContentService: Uploading file:', fileData.file.name);
+      console.log('ContentService: Uploading file to GCS:', fileData.file.name);
 
       // Validate file type
       const validation = this.validateFileType(fileData.file);
@@ -76,34 +79,44 @@ export class ContentService {
         return { error: validation.error };
       }
 
-      // Generate unique filename
-      const fileExt = fileData.file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `${fileData.userId}/${fileName}`;
-
-      // Upload to storage
-      const { error: uploadError } = await supabase.storage
-        .from('knowledge-base')
-        .upload(filePath, fileData.file);
-
-      if (uploadError) {
-        console.error('ContentService: File upload error:', uploadError);
-        throw uploadError;
+      // Get user's JWT token for authentication
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        return { error: 'User not authenticated' };
       }
 
-      // Create knowledge file object
-      const knowledgeFile: KnowledgeFile = {
-        id: fileName,
-        name: fileName,
-        type: this.getFileTypeFromName(fileName),
-        size: fileData.file.size,
-        user_id: fileData.userId,
-        created_at: new Date().toISOString(),
-        url: this.generateFileUrl(fileData.userId, fileName)
-      };
+      // Call the GCS edge function
+      const { data, error } = await supabase.functions.invoke('knowledge-base-storage', {
+        body: {
+          action: 'upload',
+          file: {
+            name: fileData.file.name,
+            size: fileData.file.size,
+            type: fileData.file.type,
+            content: await this.fileToBase64(fileData.file)
+          },
+          metadata: {
+            originalName: fileData.file.name,
+            uploadedAt: new Date().toISOString()
+          }
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
 
-      console.log('ContentService: File uploaded successfully');
-      return { data: knowledgeFile };
+      if (error) {
+        console.error('ContentService: GCS upload error:', error);
+        return { error: error.message || 'Failed to upload file to GCS' };
+      }
+
+      if (!data || data.error) {
+        console.error('ContentService: GCS upload failed:', data?.error);
+        return { error: data?.error || 'Failed to upload file to GCS' };
+      }
+
+      console.log('ContentService: File uploaded successfully to GCS:', data);
+      return { data: data.file };
     } catch (error: any) {
       console.error('ContentService: uploadFile failed:', error);
       return { error: error.message || 'Failed to upload file' };
@@ -111,27 +124,43 @@ export class ContentService {
   }
 
   /**
-   * Delete a knowledge file from storage
+   * Delete a knowledge file from GCS via edge function
    * @param userId - The user's ID
    * @param fileName - Name of the file to delete
    * @returns Promise with deletion result or error
    */
   static async deleteKnowledgeFile(userId: string, fileName: string): Promise<ApiResponse<void>> {
     try {
-      console.log('ContentService: Deleting file:', fileName, 'for user:', userId);
+      console.log('ContentService: Deleting file from GCS:', fileName, 'for user:', userId);
 
-      const filePath = `${userId}/${fileName}`;
-      
-      const { error } = await supabase.storage
-        .from('knowledge-base')
-        .remove([filePath]);
-
-      if (error) {
-        console.error('ContentService: Delete file error:', error);
-        throw error;
+      // Get user's JWT token for authentication
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        return { error: 'User not authenticated' };
       }
 
-      console.log('ContentService: File deleted successfully');
+      // Call the GCS edge function to delete file
+      const { data, error } = await supabase.functions.invoke('knowledge-base-storage', {
+        body: {
+          action: 'delete',
+          fileName: fileName
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
+
+      if (error) {
+        console.error('ContentService: GCS delete file error:', error);
+        return { error: error.message || 'Failed to delete file' };
+      }
+
+      if (!data || data.error) {
+        console.error('ContentService: GCS delete file failed:', data?.error);
+        return { error: data?.error || 'Failed to delete file' };
+      }
+
+      console.log('ContentService: File deleted successfully from GCS');
       return { data: undefined };
     } catch (error: any) {
       console.error('ContentService: deleteKnowledgeFile failed:', error);
@@ -453,5 +482,24 @@ export class ContentService {
       console.error('ContentService: addLink failed:', error);
       return { error: error.message || 'Failed to add link' };
     }
+  }
+
+  /**
+   * Convert a File object to base64 string for transmission
+   * @param file - File to convert
+   * @returns Promise with base64 string
+   */
+  private static async fileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const result = reader.result as string;
+        // Remove the data URL prefix (e.g., "data:application/pdf;base64,")
+        const base64 = result.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = error => reject(error);
+    });
   }
 } 
