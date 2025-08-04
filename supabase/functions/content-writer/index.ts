@@ -178,7 +178,7 @@ Make hashtags relevant to the content and user's industry. Make the CTA engaging
         body: JSON.stringify({
           model: 'gpt-4o-mini',
           messages: [
-            { role: 'system', content: 'You are a LinkedIn optimization expert. Always respond with valid JSON only.' },
+            { role: 'system', content: 'You are a LinkedIn optimization expert. Respond ONLY with valid JSON. Do not include markdown formatting, code blocks, or any other text. Return pure JSON that can be parsed directly.' },
             { role: 'user', content: prompt }
           ],
           temperature: 0.5,
@@ -194,7 +194,9 @@ Make hashtags relevant to the content and user's industry. Make the CTA engaging
       const enhancementText = data.choices[0].message.content;
       
       try {
-        const enhancement = JSON.parse(enhancementText);
+        // Clean the response by removing markdown code blocks if present
+        const cleanedText = this.cleanJsonResponse(enhancementText);
+        const enhancement = JSON.parse(cleanedText);
         return {
           ...post,
           hashtags: enhancement.hashtags || [],
@@ -202,6 +204,7 @@ Make hashtags relevant to the content and user's industry. Make the CTA engaging
         };
       } catch (parseError) {
         console.error('Failed to parse hashtags and CTA:', parseError);
+        console.error('Raw response:', enhancementText);
         return {
           ...post,
           hashtags: request.contentIdea.hashtagSuggestions || ["#LinkedIn", "#ProfessionalDevelopment"],
@@ -216,6 +219,24 @@ Make hashtags relevant to the content and user's industry. Make the CTA engaging
         callToAction: "What's your experience with this? Share your thoughts below! 👇"
       };
     }
+  }
+
+  /**
+   * Clean JSON response by removing markdown code blocks
+   */
+  private cleanJsonResponse(text: string): string {
+    // Remove markdown code blocks (```json ... ```)
+    let cleaned = text.replace(/```json\s*/g, '').replace(/```\s*$/g, '');
+    
+    // Remove any leading/trailing whitespace
+    cleaned = cleaned.trim();
+    
+    // If the response starts with a newline, remove it
+    if (cleaned.startsWith('\n')) {
+      cleaned = cleaned.substring(1);
+    }
+    
+    return cleaned;
   }
 
   /**

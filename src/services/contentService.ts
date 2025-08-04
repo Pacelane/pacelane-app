@@ -307,9 +307,49 @@ export class ContentService {
    */
   static async loadContentSuggestions(userId: string): Promise<ApiResponse<ContentSuggestion[]>> {
     try {
-      console.log('ContentService: Loading content suggestions for user:', userId);
+      console.log('ContentService: Loading enhanced content suggestions for user:', userId);
 
-      const { data: suggestions, error } = await supabase
+      // First try to load from enhanced_content_suggestions table
+      const { data: enhancedSuggestions, error: enhancedError } = await supabase
+        .from('enhanced_content_suggestions')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+
+      if (enhancedError) {
+        console.error('ContentService: Load enhanced content suggestions error:', enhancedError);
+        throw enhancedError;
+      }
+
+      if (enhancedSuggestions && enhancedSuggestions.length > 0) {
+        console.log('ContentService: Loaded', enhancedSuggestions.length, 'enhanced content suggestions');
+        
+        // Transform enhanced suggestions to match ContentSuggestion interface
+        const transformedSuggestions = enhancedSuggestions.map(suggestion => ({
+          id: suggestion.id,
+          user_id: suggestion.user_id,
+          title: suggestion.title,
+          description: suggestion.description,
+          suggested_outline: suggestion.full_content, // Use full_content as outline
+          full_content: suggestion.full_content,
+          hashtags: suggestion.hashtags || [],
+          call_to_action: suggestion.call_to_action,
+          estimated_engagement: suggestion.estimated_engagement,
+          quality_score: suggestion.quality_score,
+          context_sources: suggestion.context_sources,
+          generation_metadata: suggestion.generation_metadata,
+          is_active: suggestion.is_active,
+          created_at: suggestion.created_at,
+          updated_at: suggestion.updated_at
+        }));
+        
+        return { data: transformedSuggestions };
+      }
+
+      // Fallback to old content_suggestions table if no enhanced suggestions found
+      console.log('ContentService: No enhanced suggestions found, falling back to old table');
+      const { data: oldSuggestions, error: oldError } = await supabase
         .from('content_suggestions')
         .select('*')
         .eq('user_id', userId)
@@ -317,13 +357,13 @@ export class ContentService {
         .is('used_at', null)
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('ContentService: Load content suggestions error:', error);
-        throw error;
+      if (oldError) {
+        console.error('ContentService: Load old content suggestions error:', oldError);
+        throw oldError;
       }
 
-      console.log('ContentService: Loaded', suggestions?.length || 0, 'content suggestions');
-      return { data: suggestions || [] };
+      console.log('ContentService: Loaded', oldSuggestions?.length || 0, 'old content suggestions');
+      return { data: oldSuggestions || [] };
     } catch (error: any) {
       console.error('ContentService: loadContentSuggestions failed:', error);
       return { error: error.message || 'Failed to load content suggestions' };

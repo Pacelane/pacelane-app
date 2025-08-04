@@ -379,9 +379,9 @@ const ContentEditor = () => {
   // Editor content styles
   const editorContentStyles = {
     flex: 1,
-    padding: `${spacing.spacing[40]} ${spacing.spacing[64]}`,
+    padding: `${spacing.spacing[48]} ${spacing.spacing[80]}`, // Increased padding for better breathing room
     overflow: 'auto',
-    maxWidth: '800px',
+    maxWidth: '1200px', // Increased from 800px for better use of space
     margin: '0 auto',
     width: '100%',
   };
@@ -768,7 +768,7 @@ const ContentEditor = () => {
                 border: 'none',
                 backgroundColor: 'transparent',
                 padding: 0,
-                marginBottom: spacing.spacing[24],
+                marginBottom: spacing.spacing[48], // Increased from 24 to 48 for better spacing
               }}
             />
             
@@ -778,16 +778,17 @@ const ContentEditor = () => {
             onChange={(e) => setEditorContent(e.target.value)}
               style={{
                 width: '100%',
-                minHeight: '400px',
+                minHeight: '600px', // Increased from 400px for better writing experience
                 border: 'none',
                 outline: 'none',
                 backgroundColor: 'transparent',
                 fontFamily: typography.fontFamily.body,
                 fontSize: typography.desktop.size.md,
                 fontWeight: typography.desktop.weight.normal,
-                lineHeight: '1.6',
+                lineHeight: '1.8', // Increased from 1.6 for better readability
                 color: colors.text.default,
                 resize: 'vertical',
+                padding: `${spacing.spacing[16]} 0`, // Added padding for better text positioning
               }}
             placeholder="Start writing your content..."
           />

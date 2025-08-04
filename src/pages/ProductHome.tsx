@@ -75,12 +75,16 @@ const ProductHome = () => {
     }
   };
 
-  // Generate new content suggestions using the edge function
+  // Generate new content suggestions using the enhanced multi-agent system
   const generateContentSuggestions = async () => {
-    if (!user) return;
+    console.log('generateContentSuggestions called!');
+    if (!user) {
+      console.log('No user found, returning early');
+      return;
+    }
     
     try {
-      console.log('Generating new content suggestions...');
+      console.log('Generating new content suggestions with multi-agent system...');
       
       // Get the current session token
       const { data: sessionData } = await supabase.auth.getSession();
@@ -90,25 +94,28 @@ const ProductHome = () => {
         throw new Error('No auth token available');
       }
 
-      // Call the edge function
-      const { data, error } = await supabase.functions.invoke('generate-content-suggestions', {
+      // Call the enhanced edge function
+      const { data, error } = await supabase.functions.invoke('generate-enhanced-content-suggestions', {
         headers: {
           Authorization: `Bearer ${token}`
         }
       });
 
       if (error) {
-        console.error('Edge function error:', error);
+        console.error('Enhanced edge function error:', error);
         throw error;
       }
 
       if (data?.suggestions) {
-        console.log('Generated suggestions:', data.suggestions);
+        console.log('Generated enhanced suggestions:', data.suggestions);
         // Reload content suggestions to get the new ones
         await loadContentSuggestions();
+        console.log('Content suggestions after reload:', contentSuggestions);
+      } else {
+        console.log('No suggestions generated, but no error occurred');
       }
     } catch (err) {
-      console.error('Failed to generate content suggestions:', err);
+      console.error('Failed to generate enhanced content suggestions:', err);
       // Don't throw - just log the error so UI doesn't break
     }
   };
@@ -299,13 +306,29 @@ const ProductHome = () => {
     navigate('/content-editor', { state: { draftId } });
   };
 
-  const handleGenerateContent = async () => {
-    // Generate new content suggestions if none exist, or reload if they do
-    if (contentSuggestions.length === 0) {
-      await generateContentSuggestions();
-    } else {
-      await loadContentSuggestions();
+  // Function to create a preview of the post content
+  const createPostPreview = (suggestion: any) => {
+    if (!suggestion.full_content) {
+      return suggestion.description || 'No content available';
     }
+    
+    // Get the first paragraph or first 150 characters
+    const content = suggestion.full_content;
+    const firstParagraph = content.split('\n\n')[0] || content;
+    const preview = firstParagraph.length > 150 
+      ? firstParagraph.substring(0, 150) + '...'
+      : firstParagraph;
+    
+    return preview;
+  };
+
+  const handleGenerateContent = async () => {
+    console.log('handleGenerateContent called!');
+    console.log('Current contentSuggestions length:', contentSuggestions.length);
+    
+    // Always generate new suggestions when button is clicked
+    console.log('Generating new suggestions...');
+    await generateContentSuggestions();
   };
 
   // Show loading state only on initial load
@@ -394,12 +417,19 @@ const ProductHome = () => {
               }
               contentCards={
                 contentSuggestions.length > 0 
-                  ? contentSuggestions.slice(0, 2).map(suggestion => ({
-                      variant: 'gradient' as const,
-                      title: suggestion.title,
-                      subtitle: suggestion.description || 'Suggested for today',
-                      onClick: () => navigate('/content-editor', { state: { suggestion } })
-                    }))
+                  ? contentSuggestions.slice(0, 3).map(suggestion => {
+                      const hashtags = suggestion.hashtags?.length > 0 
+                        ? suggestion.hashtags.slice(0, 3).join(' ') 
+                        : '';
+                      
+                      return {
+                        variant: 'gradient' as const,
+                        title: suggestion.title,
+                        subtitle: `Quality Score: ${suggestion.quality_score || 'N/A'}/10${hashtags ? ` • ${hashtags}` : ''}`,
+                        content: suggestion.full_content || suggestion.suggested_outline || 'No content available',
+                        onClick: () => navigate('/content-editor', { state: { suggestion } })
+                      };
+                    })
                   : [
                       {
                         variant: 'empty' as const,

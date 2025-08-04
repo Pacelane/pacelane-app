@@ -119,7 +119,7 @@ Format as JSON:
         body: JSON.stringify({
           model: 'gpt-4o-mini',
           messages: [
-            { role: 'system', content: 'You are a content quality assurance expert. Always respond with valid JSON only.' },
+            { role: 'system', content: 'You are a content quality assurance expert. Respond ONLY with valid JSON. Do not include markdown formatting, code blocks, or any other text. Return pure JSON that can be parsed directly.' },
             { role: 'user', content: prompt }
           ],
           temperature: 0.3,
@@ -135,9 +135,12 @@ Format as JSON:
       const reviewText = data.choices[0].message.content;
       
       try {
-        return JSON.parse(reviewText);
+        // Clean the response by removing markdown code blocks if present
+        const cleanedText = this.cleanJsonResponse(reviewText);
+        return JSON.parse(cleanedText);
       } catch (parseError) {
         console.error('Failed to parse quality review:', parseError);
+        console.error('Raw response:', reviewText);
         return {
           qualityScore: 7,
           brandVoiceAlignment: 7,
@@ -274,7 +277,7 @@ Format as JSON:
         body: JSON.stringify({
           model: 'gpt-4o-mini',
           messages: [
-            { role: 'system', content: 'You are a content quality expert. Always respond with valid JSON only.' },
+            { role: 'system', content: 'You are a content quality expert. Respond ONLY with valid JSON. Do not include markdown formatting, code blocks, or any other text. Return pure JSON that can be parsed directly.' },
             { role: 'user', content: prompt }
           ],
           temperature: 0.3,
@@ -290,7 +293,9 @@ Format as JSON:
       const assessmentText = data.choices[0].message.content;
       
       try {
-        const assessment = JSON.parse(assessmentText);
+        // Clean the response by removing markdown code blocks if present
+        const cleanedText = this.cleanJsonResponse(assessmentText);
+        const assessment = JSON.parse(cleanedText);
         return {
           qualityScore: assessment.qualityScore || 8,
           improvements: [],
@@ -302,6 +307,7 @@ Format as JSON:
         };
       } catch (parseError) {
         console.error('Failed to parse final assessment:', parseError);
+        console.error('Raw response:', assessmentText);
         return {
           qualityScore: 8,
           improvements: [],
@@ -324,6 +330,24 @@ Format as JSON:
         reviewNotes: 'Post approved for LinkedIn'
       };
     }
+  }
+
+  /**
+   * Clean JSON response by removing markdown code blocks
+   */
+  private cleanJsonResponse(text: string): string {
+    // Remove markdown code blocks (```json ... ```)
+    let cleaned = text.replace(/```json\s*/g, '').replace(/```\s*$/g, '');
+    
+    // Remove any leading/trailing whitespace
+    cleaned = cleaned.trim();
+    
+    // If the response starts with a newline, remove it
+    if (cleaned.startsWith('\n')) {
+      cleaned = cleaned.substring(1);
+    }
+    
+    return cleaned;
   }
 
   /**

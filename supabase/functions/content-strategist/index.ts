@@ -185,7 +185,7 @@ Focus on actionable, valuable content that positions the user as a thought leade
         body: JSON.stringify({
           model: 'gpt-4o-mini',
           messages: [
-            { role: 'system', content: 'You are a content strategy expert. Always respond with valid JSON only.' },
+            { role: 'system', content: 'You are a content strategy expert. Respond ONLY with valid JSON. Do not include markdown formatting, code blocks, or any other text. Return pure JSON that can be parsed directly.' },
             { role: 'user', content: prompt }
           ],
           temperature: 0.7,
@@ -201,16 +201,37 @@ Focus on actionable, valuable content that positions the user as a thought leade
       const ideasText = data.choices[0].message.content;
       
       try {
-        const ideas = JSON.parse(ideasText);
+        // Clean the response by removing markdown code blocks if present
+        const cleanedText = this.cleanJsonResponse(ideasText);
+        const ideas = JSON.parse(cleanedText);
         return Array.isArray(ideas) ? ideas : [];
       } catch (parseError) {
         console.error('Failed to parse content ideas:', parseError);
+        console.error('Raw response:', ideasText);
         return [];
       }
     } catch (error) {
       console.error('Error generating content ideas:', error);
       return [];
     }
+  }
+
+  /**
+   * Clean JSON response by removing markdown code blocks
+   */
+  private cleanJsonResponse(text: string): string {
+    // Remove markdown code blocks (```json ... ```)
+    let cleaned = text.replace(/```json\s*/g, '').replace(/```\s*$/g, '');
+    
+    // Remove any leading/trailing whitespace
+    cleaned = cleaned.trim();
+    
+    // If the response starts with a newline, remove it
+    if (cleaned.startsWith('\n')) {
+      cleaned = cleaned.substring(1);
+    }
+    
+    return cleaned;
   }
 
   /**
