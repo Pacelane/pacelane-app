@@ -1,134 +1,351 @@
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useProfile } from '@/hooks/api/useProfile';
-import { useToast } from '@/components/ui/use-toast';
+import { useTheme } from '@/services/theme-context';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+
+// Design System Components
+import TopNav from '@/design-system/components/TopNav';
+import Button from '@/design-system/components/Button';
+import Bichaurinho from '@/design-system/components/Bichaurinho';
+
+// Design System Tokens
+import { spacing } from '@/design-system/tokens/spacing';
+import { cornerRadius } from '@/design-system/tokens/corner-radius';
+import { getShadow } from '@/design-system/tokens/shadows';
+import { typography } from '@/design-system/tokens/typography';
+
+// Icons
+import { ArrowLeft, ArrowRight, Sparkles } from 'lucide-react';
 
 const Ready = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { completeOnboarding, saving } = useProfile();
-  const { toast } = useToast();
+  const { user, refreshProfile } = useAuth();
+  const { colors } = useTheme();
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleGoBack = () => {
     navigate('/onboarding/contact');
   };
 
+  const generateInitialContentSuggestions = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-content-suggestions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({}),
+      });
+
+      if (!response.ok) {
+        console.warn('Failed to generate initial content suggestions');
+        return;
+      }
+
+      console.log('Initial content suggestions generated successfully');
+    } catch (error) {
+      console.warn('Error generating initial content suggestions:', error);
+    }
+  };
+
+  const completeOnboarding = async () => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ 
+          onboarding_completed: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error('Error completing onboarding:', error);
+      return false;
+    }
+  };
+
   const handleStart = async () => {
     if (!user) return;
     
+    setIsLoading(true);
+    
     try {
-      // Use our clean onboarding completion API
-      const result = await completeOnboarding();
-
-      if (result.error) {
-        throw new Error(result.error);
+      // Complete onboarding
+      const success = await completeOnboarding();
+      
+      if (!success) {
+        throw new Error('Failed to complete onboarding');
       }
 
-      toast({
-        title: "Onboarding completed!",
-        description: "Welcome to your product dashboard.",
-      });
+      // Refresh profile to get updated onboarding_completed status
+      await refreshProfile();
 
+      // Generate initial content suggestions in the background
+      generateInitialContentSuggestions();
+
+      toast.success('Welcome to Pacelane! Your content strategy is ready.');
       navigate('/product-home');
-    } catch (error: any) {
-      console.error('Error completing onboarding:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to complete onboarding. Please try again.",
-        variant: "destructive",
-      });
+    } catch (error) {
+      console.error('Error starting:', error);
+      toast.error('Failed to complete setup. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 overflow-hidden relative">
-      {/* Animated confetti background */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="animate-pulse absolute top-10 left-10 w-4 h-4 bg-yellow-400 rounded-full opacity-70"></div>
-        <div className="animate-bounce absolute top-20 right-20 w-3 h-3 bg-red-400 rounded-full opacity-60" style={{animationDelay: '0.5s'}}></div>
-        <div className="animate-pulse absolute top-40 left-1/4 w-2 h-2 bg-blue-400 rounded-full opacity-80" style={{animationDelay: '1s'}}></div>
-        <div className="animate-bounce absolute top-60 right-1/3 w-3 h-3 bg-green-400 rounded-full opacity-70" style={{animationDelay: '1.5s'}}></div>
-        <div className="animate-pulse absolute bottom-40 left-20 w-4 h-4 bg-purple-400 rounded-full opacity-60" style={{animationDelay: '2s'}}></div>
-        <div className="animate-bounce absolute bottom-20 right-10 w-2 h-2 bg-pink-400 rounded-full opacity-80" style={{animationDelay: '2.5s'}}></div>
-        <div className="animate-pulse absolute top-32 right-1/2 w-3 h-3 bg-orange-400 rounded-full opacity-70" style={{animationDelay: '3s'}}></div>
-        <div className="animate-bounce absolute bottom-32 left-1/3 w-4 h-4 bg-cyan-400 rounded-full opacity-60" style={{animationDelay: '3.5s'}}></div>
+    <div
+      style={{
+        minHeight: '100vh',
+        backgroundColor: colors.bg.default,
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      {/* Top Navigation */}
+      <TopNav />
+
+      {/* Content Container with gradient background */}
+      <div
+        style={{
+          flex: 1,
+          position: 'relative',
+          backgroundColor: colors.bg.default,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: spacing.spacing[40],
+          paddingBottom: '160px', // Account for button container height
+        }}
+      >
+        {/* Gradient background with 5% opacity */}
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundImage: 'url(/src/assets/images/gradient-bg.svg)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+            opacity: 0.05,
+            zIndex: 0,
+          }}
+        />
+
+        {/* Content Column */}
+        <div style={{
+          position: 'relative',
+          zIndex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: spacing.spacing[24],
+          alignItems: 'center',
+        }}>
+          {/* Back Button */}
+          <div style={{ alignSelf: 'flex-start', width: '400px' }}>
+            <Button
+              label="Go Back"
+              style="dashed"
+              size="xs"
+              leadIcon={<ArrowLeft size={12} />}
+              onClick={handleGoBack}
+            />
       </div>
 
-      <div className="w-full max-w-md relative z-10">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-          {/* Go Back Button */}
-          <button
-            onClick={handleGoBack}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-800 mb-6 transition-colors"
+          {/* Main Card */}
+          <div
+            style={{
+              backgroundColor: colors.bg.card.default,
+              borderRadius: cornerRadius.borderRadius.lg,
+              border: `1px solid ${colors.border.darker}`,
+              boxShadow: getShadow('regular.card', colors, { withBorder: true }),
+              width: '400px',
+              overflow: 'hidden',
+            }}
           >
-            <ChevronLeft className="h-4 w-4" />
-            Go Back
-          </button>
+            {/* Main Container */}
+            <div
+              style={{
+                padding: spacing.spacing[36],
+                backgroundColor: colors.bg.card.default,
+                borderBottom: `1px solid ${colors.border.default}`,
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              {/* Heading Container - 16px gap between bichaurinho and title/subtitle */}
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-start',
+                  gap: spacing.spacing[16],
+                  marginBottom: spacing.spacing[24],
+                }}
+              >
+                {/* Bichaurinho */}
+                <div>
+                  <Bichaurinho variant={1} size={48} />
+                </div>
 
-          {/* Green blob icon with eyes */}
-          <div className="flex justify-center mb-6">
-            <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center relative overflow-hidden animate-pulse">
-              {/* Main blob shape */}
-              <div className="w-14 h-14 bg-green-500 rounded-full relative">
-                {/* Eyes */}
-                <div className="absolute top-4 left-3 w-2 h-2 bg-white rounded-full"></div>
-                <div className="absolute top-4 right-3 w-2 h-2 bg-white rounded-full"></div>
-                {/* Smile */}
-                <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2 w-4 h-2 border-b-2 border-white rounded-full"></div>
+                {/* Title and Subtitle Container - 12px gap between title and subtitle */}
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: spacing.spacing[12],
+                    alignItems: 'flex-start',
+                  }}
+                >
+                  {/* Title */}
+                  <h1
+                    style={{
+                      fontFamily: typography.fontFamily['awesome-serif'],
+                      fontSize: typography.desktop.size['5xl'],
+                      fontWeight: typography.desktop.weight.semibold,
+                      lineHeight: '0.9',
+                      color: colors.text.default,
+                      margin: 0,
+                      textAlign: 'left',
+                    }}
+                  >
+                    Ready to<br />Start?
+                  </h1>
+
+                  {/* Subtitle */}
+                  <p
+                    style={{
+                      fontFamily: typography.fontFamily.body,
+                      fontSize: typography.desktop.size.sm,
+                      fontWeight: typography.desktop.weight.normal,
+                      lineHeight: typography.desktop.lineHeight.sm,
+                      color: colors.text.muted,
+                      margin: 0,
+                      textAlign: 'left',
+                    }}
+                  >
+                    Perfect! We have everything we need to create your personalized content strategy.
+                  </p>
+                </div>
               </div>
-              {/* Side protrusions */}
-              <div className="absolute -top-2 -left-2 w-7 h-7 bg-green-500 rounded-full"></div>
-              <div className="absolute -bottom-2 -right-2 w-5 h-5 bg-green-500 rounded-full"></div>
-              <div className="absolute top-2 -right-2 w-6 h-6 bg-green-500 rounded-full"></div>
-              <div className="absolute bottom-4 -left-1 w-4 h-4 bg-green-500 rounded-full"></div>
+
+              {/* Features List */}
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: spacing.spacing[12],
+                }}
+              >
+                {[
+                  'Personalized content suggestions',
+                  'LinkedIn profile analysis insights',
+                  'Content calendar planning',
+                  'Performance tracking'
+                ].map((feature, index) => (
+                  <div
+                    key={index}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: spacing.spacing[12],
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: '6px',
+                        height: '6px',
+                        borderRadius: '50%',
+                        backgroundColor: colors.text.muted,
+                        flexShrink: 0,
+                      }}
+                    />
+                    <p
+                      style={{
+                        fontFamily: typography.fontFamily.body,
+                        fontSize: typography.desktop.size.sm,
+                        fontWeight: typography.desktop.weight.normal,
+                        lineHeight: typography.desktop.lineHeight.sm,
+                        color: colors.text.muted,
+                        margin: 0,
+                      }}
+                    >
+                      {feature}
+                    </p>
+                  </div>
+                ))}
             </div>
           </div>
 
-          <h1 className="text-4xl font-bold font-playfair text-[#111115] mb-2 text-center">
-            You Are<br />Ready!
-          </h1>
-
-          <p className="text-[#4E4E55] text-sm text-center leading-relaxed mb-8">
-            Congratulations! Your content strategy is now<br />
-            personalized and ready to help you achieve<br />
-            your goals.
-          </p>
-
-          <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-6 mb-8 border border-green-100">
-            <div className="text-center">
-              <div className="text-2xl mb-2">🎉</div>
-              <p className="text-sm text-gray-700 font-medium">
-                Your personalized content plan is ready!
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                Let's start creating amazing content together.
+            {/* Text Container */}
+            <div
+              style={{
+                padding: `${spacing.spacing[24]} ${spacing.spacing[36]}`,
+                backgroundColor: colors.bg.card.subtle,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: spacing.spacing[4],
+              }}
+            >
+              <p
+                style={{
+                  fontFamily: typography.fontFamily.body,
+                  fontSize: typography.desktop.size.sm,
+                  fontWeight: typography.desktop.weight.normal,
+                  lineHeight: typography.desktop.lineHeight.sm,
+                  color: colors.text.muted,
+                  margin: 0,
+                  textAlign: 'center',
+                }}
+              >
+                Your content strategy will be generated and ready to use!
               </p>
             </div>
           </div>
-
-          {/* Progress indicator - all complete */}
-          <div className="flex justify-center gap-2 mb-8">
-            <div className="w-8 h-1 bg-green-500 rounded-full"></div>
-            <div className="w-8 h-1 bg-green-500 rounded-full"></div>
-            <div className="w-8 h-1 bg-green-500 rounded-full"></div>
-            <div className="w-8 h-1 bg-green-500 rounded-full"></div>
-            <div className="w-8 h-1 bg-green-500 rounded-full"></div>
-            <div className="w-8 h-1 bg-green-500 rounded-full"></div>
-            <div className="w-8 h-1 bg-green-500 rounded-full"></div>
-            <div className="w-8 h-1 bg-green-500 rounded-full"></div>
-            <div className="w-8 h-1 bg-green-500 rounded-full"></div>
+        </div>
           </div>
 
+      {/* Button Container - Fixed overlay at bottom */}
+      <div
+        style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: '80px',
+          backgroundColor: colors.bg.default,
+          borderTop: `1px solid ${colors.border.default}`,
+          padding: spacing.spacing[40],
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 10,
+        }}
+      >
+        <div style={{ width: '280px' }}>
           <Button 
+            label={isLoading ? "Setting up your strategy..." : "Let's Go!"}
+            style="primary"
+            size="lg"
+            leadIcon={!isLoading ? <Sparkles size={16} /> : undefined}
+            tailIcon={!isLoading ? <ArrowRight size={16} /> : undefined}
             onClick={handleStart}
-            disabled={saving}
-            className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 rounded-lg disabled:opacity-50 shadow-lg transform transition-transform hover:scale-105"
-          >
-            {saving ? "Getting Started..." : "Let's Start! 🚀"}
-          </Button>
+            disabled={isLoading}
+            className="w-full"
+          />
         </div>
       </div>
     </div>

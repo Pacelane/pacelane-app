@@ -1,173 +1,300 @@
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useProfile } from '@/hooks/api/useProfile';
-import { useToast } from '@/components/ui/use-toast';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { contactSchema, type ContactFormData } from '@/lib/validationSchemas';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useTheme } from '@/services/theme-context';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+
+// Design System Components
+import TopNav from '@/design-system/components/TopNav';
+import Button from '@/design-system/components/Button';
+import Input from '@/design-system/components/Input';
+import ProgressBar from '@/design-system/components/ProgressBar';
+import Bichaurinho from '@/design-system/components/Bichaurinho';
+
+// Design System Tokens
+import { spacing } from '@/design-system/tokens/spacing';
+import { cornerRadius } from '@/design-system/tokens/corner-radius';
+import { getShadow } from '@/design-system/tokens/shadows';
+import { typography } from '@/design-system/tokens/typography';
+
+// Icons
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 const Contact = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { saveContactInfo, saving } = useProfile();
-  const { toast } = useToast();
-
-  const form = useForm<ContactFormData>({
-    resolver: zodResolver(contactSchema),
-    defaultValues: {
-      countryCode: '+55',
-      phoneNumber: '',
-    },
-  });
+  const { colors } = useTheme();
+  const [whatsappNumber, setWhatsappNumber] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleGoBack = () => {
     navigate('/onboarding/pacing');
   };
 
-  const onSubmit = async (data: ContactFormData) => {
+  const handleContinue = async () => {
     if (!user) return;
     
+    setIsLoading(true);
+    
     try {
-      // Use our clean contact info API
-      const result = await saveContactInfo({
-        countryCode: data.countryCode,
-        phoneNumber: data.phoneNumber
-      });
+      const { error } = await supabase
+        .from('profiles')
+        .update({ whatsapp_number: whatsappNumber.trim() })
+        .eq('user_id', user.id);
 
-      if (result.error) {
-        throw new Error(result.error);
-      }
+      if (error) throw error;
 
+      toast.success('WhatsApp number saved!');
       navigate('/onboarding/ready');
-    } catch (error: any) {
-      console.error('Error saving phone number:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to save phone number. Please try again.",
-        variant: "destructive",
-      });
+    } catch (error) {
+      console.error('Error saving WhatsApp number:', error);
+      toast.error('Failed to save WhatsApp number. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-          {/* Go Back Button */}
-          <button
-            onClick={handleGoBack}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-800 mb-6 transition-colors"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Go Back
-          </button>
+  // Check if WhatsApp number is provided (optional but recommended)
+  const canContinue = true; // WhatsApp is optional
 
-          {/* Phone icon */}
-          <div className="flex justify-center mb-6">
-            <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center relative">
-              <div className="w-8 h-8 relative">
-                <div className="w-6 h-8 bg-white rounded-lg border-2 border-green-500 relative mx-auto">
-                  <div className="absolute top-1 left-1/2 transform -translate-x-1/2 w-2 h-0.5 bg-green-500 rounded-full"></div>
-                  <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-green-500 rounded-full"></div>
-                </div>
-                <div className="absolute top-2 left-2 w-1.5 h-1.5 bg-white rounded-full"></div>
-                <div className="absolute top-2 right-2 w-1.5 h-1.5 bg-white rounded-full"></div>
-              </div>
-            </div>
+  return (
+    <div
+      style={{
+        minHeight: '100vh',
+        backgroundColor: colors.bg.default,
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      {/* Top Navigation */}
+      <TopNav />
+
+      {/* Content Container with gradient background */}
+      <div
+        style={{
+          flex: 1,
+          position: 'relative',
+          backgroundColor: colors.bg.default,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: spacing.spacing[40],
+          paddingBottom: '160px', // Account for button container height
+        }}
+      >
+        {/* Gradient background with 5% opacity */}
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundImage: 'url(/src/assets/images/gradient-bg.svg)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+            opacity: 0.05,
+            zIndex: 0,
+          }}
+        />
+
+        {/* Content Column */}
+        <div style={{
+          position: 'relative',
+          zIndex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: spacing.spacing[24],
+          alignItems: 'center',
+        }}>
+          {/* Back Button */}
+          <div style={{ alignSelf: 'flex-start', width: '400px' }}>
+            <Button
+              label="Go Back"
+              style="dashed"
+              size="xs"
+              leadIcon={<ArrowLeft size={12} />}
+              onClick={handleGoBack}
+            />
           </div>
 
-          <h1 className="text-4xl font-bold font-playfair text-[#111115] mb-2 text-center">
-            Keeping<br />Contact
-          </h1>
-
-          <p className="text-[#4E4E55] text-sm text-center leading-relaxed mb-8">
-            Enter your WhatsApp number so we can send<br />
-            you updates and reminders.
-          </p>
-
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {/* Phone Number Input */}
-              <div className="flex gap-2">
-                <FormField
-                  control={form.control}
-                  name="countryCode"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormControl>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <SelectTrigger className="w-24">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="+55">🇧🇷 +55</SelectItem>
-                            <SelectItem value="+1">🇺🇸 +1</SelectItem>
-                            <SelectItem value="+44">🇬🇧 +44</SelectItem>
-                            <SelectItem value="+49">🇩🇪 +49</SelectItem>
-                            <SelectItem value="+33">🇫🇷 +33</SelectItem>
-                            <SelectItem value="+34">🇪🇸 +34</SelectItem>
-                            <SelectItem value="+39">🇮🇹 +39</SelectItem>
-                            <SelectItem value="+52">🇲🇽 +52</SelectItem>
-                            <SelectItem value="+54">🇦🇷 +54</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="phoneNumber"
-                  render={({ field }) => (
-                    <FormItem className="flex-1">
-                      <FormControl>
-                        <Input
-                          type="tel"
-                          placeholder="Enter your phone number"
-                          className="border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <p className="text-[#4E4E55] text-sm text-center mb-8">
-                We'll ask a few questions to tailor your strategy.
-              </p>
-
-              {/* Progress indicator */}
-              <div className="flex justify-center gap-2 mb-8">
-                <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
-                <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
-                <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
-                <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
-                <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
-                <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
-                <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
-                <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
-                <div className="w-8 h-1 bg-gray-300 rounded-full"></div>
-              </div>
-
-              <Button 
-                type="submit"
-                disabled={saving}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg disabled:opacity-50"
+          {/* Main Card */}
+          <div
+            style={{
+              backgroundColor: colors.bg.card.default,
+              borderRadius: cornerRadius.borderRadius.lg,
+              border: `1px solid ${colors.border.darker}`,
+              boxShadow: getShadow('regular.card', colors, { withBorder: true }),
+              width: '400px',
+              overflow: 'hidden',
+            }}
+          >
+            {/* Main Container */}
+            <div
+              style={{
+                padding: spacing.spacing[36],
+                backgroundColor: colors.bg.card.default,
+                borderBottom: `1px solid ${colors.border.default}`,
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              {/* Heading Container - 16px gap between bichaurinho and title/subtitle */}
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-start',
+                  gap: spacing.spacing[16],
+                  marginBottom: spacing.spacing[32],
+                }}
               >
-                {saving ? "Saving..." : "Continue"}
-              </Button>
-            </form>
-          </Form>
+                {/* Bichaurinho */}
+                <div>
+                  <Bichaurinho variant={3} size={48} />
+                </div>
+
+                {/* Title and Subtitle Container - 12px gap between title and subtitle */}
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: spacing.spacing[12],
+                    alignItems: 'flex-start',
+                  }}
+                >
+                  {/* Title */}
+                  <h1
+                    style={{
+                      fontFamily: typography.fontFamily['awesome-serif'],
+                      fontSize: typography.desktop.size['5xl'],
+                      fontWeight: typography.desktop.weight.semibold,
+                      lineHeight: '0.9',
+                      color: colors.text.default,
+                      margin: 0,
+                      textAlign: 'left',
+                    }}
+                  >
+                    Keeping in<br />Contact
+                  </h1>
+
+                  {/* Subtitle */}
+                  <p
+                    style={{
+                      fontFamily: typography.fontFamily.body,
+                      fontSize: typography.desktop.size.sm,
+                      fontWeight: typography.desktop.weight.normal,
+                      lineHeight: typography.desktop.lineHeight.sm,
+                      color: colors.text.muted,
+                      margin: 0,
+                      textAlign: 'left',
+                    }}
+                  >
+                    What's your WhatsApp number? We'll send you content suggestions and updates.
+                  </p>
+                </div>
+              </div>
+
+              {/* WhatsApp Number Input */}
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: spacing.spacing[12],
+                }}
+              >
+                <Input
+                  placeholder="WhatsApp Number (Optional)"
+                  value={whatsappNumber}
+                  onChange={(e) => setWhatsappNumber(e.target.value)}
+                  style="default"
+                  size="lg"
+                  disabled={isLoading}
+                />
+
+                {/* Helper text container with background */}
+                <div
+                  style={{
+                    backgroundColor: colors.bg.card.subtle,
+                    padding: `${spacing.spacing[12]} ${spacing.spacing[16]}`,
+                    borderRadius: cornerRadius.borderRadius.sm,
+                    marginTop: spacing.spacing[8],
+                  }}
+                >
+                  <p
+                    style={{
+                      fontFamily: typography.fontFamily.body,
+                      fontSize: typography.desktop.size.xs,
+                      fontWeight: typography.desktop.weight.normal,
+                      lineHeight: typography.desktop.lineHeight.xs,
+                      color: colors.text.muted,
+                      margin: 0,
+                      textAlign: 'center',
+                    }}
+                  >
+                    We'll send you personalized content ideas and platform updates via WhatsApp
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Text Container */}
+            <div
+              style={{
+                padding: `${spacing.spacing[24]} ${spacing.spacing[36]}`,
+                backgroundColor: colors.bg.card.subtle,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: spacing.spacing[4],
+              }}
+            >
+              <p
+                style={{
+                  fontFamily: typography.fontFamily.body,
+                  fontSize: typography.desktop.size.sm,
+                  fontWeight: typography.desktop.weight.normal,
+                  lineHeight: typography.desktop.lineHeight.sm,
+                  color: colors.text.muted,
+                  margin: 0,
+                  textAlign: 'center',
+                }}
+              >
+                You can skip this step and add your number later in settings.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Button Container - Fixed overlay at bottom */}
+      <div
+        style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: '80px',
+          backgroundColor: colors.bg.default,
+          borderTop: `1px solid ${colors.border.default}`,
+          padding: spacing.spacing[40],
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 10,
+        }}
+      >
+        <div style={{ width: '280px' }}>
+          <Button
+            label={isLoading ? "Saving..." : "Continue"}
+            style="primary"
+            size="lg"
+            tailIcon={!isLoading ? <ArrowRight size={16} /> : undefined}
+            onClick={handleContinue}
+            disabled={isLoading}
+            className="w-full"
+          />
         </div>
       </div>
     </div>

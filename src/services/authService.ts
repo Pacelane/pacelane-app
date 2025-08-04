@@ -51,9 +51,10 @@ export class AuthService {
       const { data, error } = await supabase.auth.signUp({
         email: credentials.email,
         password: credentials.password,
-        options: credentials.emailRedirectTo 
-          ? { emailRedirectTo: credentials.emailRedirectTo }
-          : undefined
+        options: {
+          ...(credentials.emailRedirectTo && { emailRedirectTo: credentials.emailRedirectTo }),
+          ...(credentials.options?.data && { data: credentials.options.data })
+        }
       });
       
       if (error) {

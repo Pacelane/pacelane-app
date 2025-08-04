@@ -1,44 +1,203 @@
 import React from 'react';
-import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from '@/services/theme-context';
+
+// Design System Components
+import TopNav from '@/design-system/components/TopNav';
+import Button from '@/design-system/components/Button';
+import Bichaurinho from '@/design-system/components/Bichaurinho';
+
+// Design System Tokens
+import { spacing } from '@/design-system/tokens/spacing';
+import { cornerRadius } from '@/design-system/tokens/corner-radius';
+import { getShadow } from '@/design-system/tokens/shadows';
+import { typography } from '@/design-system/tokens/typography';
+
+// Icons
+import { ArrowRight } from 'lucide-react';
 
 const Welcome = () => {
   const navigate = useNavigate();
+  const { colors } = useTheme();
 
-  const handleLetsStart = () => {
+  const handleContinue = () => {
     navigate('/onboarding/first-things-first');
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
-          {/* Green blob icon */}
-          <div className="flex justify-center mb-6">
-            <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center">
-              <div className="w-8 h-8 bg-green-600 rounded-full"></div>
+    <div
+      style={{
+        minHeight: '100vh',
+        backgroundColor: colors.bg.default,
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      {/* Top Navigation */}
+      <TopNav />
+
+      {/* Content Container with gradient background */}
+      <div
+        style={{
+          flex: 1,
+          position: 'relative',
+          backgroundColor: colors.bg.default,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: spacing.spacing[40],
+          paddingBottom: '160px', // Account for button container height
+        }}
+      >
+        {/* Gradient background with 12% opacity */}
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundImage: 'url(/src/assets/images/gradient-bg.svg)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+            opacity: 0.05,
+            zIndex: 0,
+          }}
+        />
+        
+        {/* Main Card */}
+        <div
+          style={{
+            backgroundColor: colors.bg.card.default,
+            borderRadius: cornerRadius.borderRadius.lg,
+            border: `1px solid ${colors.border.darker}`,
+            boxShadow: getShadow('regular.card', colors, { withBorder: true }),
+            width: '400px',
+            overflow: 'hidden',
+            position: 'relative',
+            zIndex: 1,
+          }}
+        >
+          {/* Main Container */}
+          <div
+            style={{
+              padding: spacing.spacing[36],
+              backgroundColor: colors.bg.card.default,
+              borderBottom: `1px solid ${colors.border.default}`,
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            {/* Heading Container - 24px gap between bichaurinho and title/subtitle */}
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                gap: spacing.spacing[16],
+              }}
+            >
+              {/* Bichaurinho */}
+              <div>
+                <Bichaurinho variant={15} size={48} />
+              </div>
+
+              {/* Title and Subtitle Container - 12px gap between title and subtitle */}
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: spacing.spacing[0],
+                  alignItems: 'flex-start',
+                }}
+              >
+                {/* Title */}
+                <h1
+                  style={{
+                    fontFamily: typography.fontFamily['awesome-serif'],
+                    fontSize: typography.desktop.size['5xl'],
+                    fontWeight: typography.desktop.weight.semibold,
+                    lineHeight: typography.desktop.lineHeight['5xl'],
+                    color: colors.text.default,
+                    margin: 0,
+                    textAlign: 'left',
+                  }}
+                >
+                  Welcome!
+                </h1>
+
+                {/* Subtitle */}
+                <p
+                  style={{
+                    fontFamily: typography.fontFamily.body,
+                    fontSize: typography.desktop.size.sm,
+                    fontWeight: typography.desktop.weight.normal,
+                    lineHeight: typography.desktop.lineHeight.sm,
+                    color: colors.text.muted,
+                    margin: 0,
+                    textAlign: 'left',
+                  }}
+                >
+                  We want to help you show up consistently on LinkedIn with content that feels like you.
+                </p>
+              </div>
             </div>
           </div>
 
-          <h1 className="text-4xl font-bold font-playfair text-[#111115] mb-4">
-            Welcome!
-          </h1>
-
-          <p className="text-[#4E4E55] text-sm leading-relaxed mb-8">
-            We want to help you show up consistently on<br />
-            LinkedIn with content that feels like you.
-          </p>
-
-          <p className="text-[#4E4E55] text-sm mb-8">
-            We'll ask a few questions to tailor your strategy.
-          </p>
-
-          <Button 
-            onClick={handleLetsStart}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg"
+          {/* Text Container */}
+          <div
+            style={{
+              padding: `${spacing.spacing[24]} ${spacing.spacing[36]}`,
+              backgroundColor: colors.bg.card.subtle,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: spacing.spacing[4],
+            }}
           >
-            Let's Start →
-          </Button>
+            <p
+              style={{
+                fontFamily: typography.fontFamily.body,
+                fontSize: typography.desktop.size.sm,
+                fontWeight: typography.desktop.weight.normal,
+                lineHeight: typography.desktop.lineHeight.sm,
+                color: colors.text.muted,
+                margin: 0,
+                textAlign: 'center',
+              }}
+            >
+              We'll ask a few questions to tailor your strategy.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Button Container - Fixed overlay at bottom */}
+      <div
+        style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: '80px',
+          backgroundColor: colors.bg.default,
+          borderTop: `1px solid ${colors.border.default}`,
+          padding: spacing.spacing[40],
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 10,
+        }}
+      >
+        <div style={{ width: '280px' }}>
+          <Button
+            label="Let's Start"
+            style="primary"
+            size="lg"
+            tailIcon={<ArrowRight size={16} />}
+            onClick={handleContinue}
+            className="w-full"
+          />
         </div>
       </div>
     </div>

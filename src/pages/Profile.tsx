@@ -1,235 +1,929 @@
 import React, { useState, useEffect } from 'react';
-import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
-import { AppSidebar } from '@/components/app-sidebar';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Edit, Search, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/api/useProfile';
-const Profile = () => {
-  // Use our clean auth and profile hooks
-  const { user, loading: authLoading, signOut } = useAuth();
-  const { profile, saving, updateBasicProfile, error } = useProfile();
-  
-  // Local state for form inputs (only fields that exist in DB)
-  const [displayName, setDisplayName] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  
-  const navigate = useNavigate();
+import { useTheme } from '@/services/theme-context';
+import { supabase } from '@/integrations/supabase/client';
 
-  // Load profile data into form when profile loads
+// Design System Components
+import HomeSidebar from '@/design-system/components/HomeSidebar';
+import Button from '@/design-system/components/Button';
+import Input from '@/design-system/components/Input';
+import SidebarMenuItem from '@/design-system/components/SidebarMenuItem';
+import Chips from '@/design-system/components/Chips';
+
+// Design System Tokens
+import { spacing } from '@/design-system/tokens/spacing';
+import { cornerRadius } from '@/design-system/tokens/corner-radius';
+import { getShadow } from '@/design-system/tokens/shadows';
+import { typography } from '@/design-system/tokens/typography';
+import { textStyles } from '@/design-system/styles/typography/typography-styles';
+
+// Icons
+import { 
+  Plus,
+  Trash2,
+  Check,
+  X,
+  Sparkles,
+  Info
+} from 'lucide-react';
+
+const Profile = () => {
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+  const { profile, saving, updateBasicProfile } = useProfile();
+  const { colors } = useTheme();
+  
+  // Sidebar state
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  
+  // State for active section in side menu
+  const [activeSection, setActiveSection] = useState('personal');
+  
+  // Personal Information state - connected to real profile data
+  const [personalInfo, setPersonalInfo] = useState({
+    name: '',
+    profession: '',
+    avatar: '',
+    linkedinUrl: '',
+    whatsapp: '',
+    bio: '',
+    city: '',
+    country: ''
+  });
+
+  // Company Information state - connected to real profile data
+  const [companyInfo, setCompanyInfo] = useState({
+    name: '',
+    industry: '',
+    avatar: '',
+    about: ''
+  });
+
+  // Load profile data into state when profile loads
   useEffect(() => {
     if (profile) {
-      setDisplayName(profile.display_name || '');
-      setPhoneNumber(profile.phone_number || '');
+      setPersonalInfo({
+        name: profile.display_name || profile.linkedin_name || '',
+        profession: profile.linkedin_headline || '',
+        avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=96&h=96&fit=crop&crop=face',
+        linkedinUrl: profile.linkedin_profile || '',
+        whatsapp: profile.whatsapp_number || profile.phone_number || '',
+        bio: profile.linkedin_about || '',
+        city: '',
+        country: ''
+      });
+
+      setCompanyInfo({
+        name: profile.linkedin_company || '',
+        industry: profile.linkedin_headline || '',
+        avatar: 'https://images.unsplash.com/photo-1549923746-c502d488b3ea?w=96&h=96&fit=crop',
+        about: ''
+      });
+
+      // Load goals, guides, pillars, and inspirations from profile
+      if (profile.goals) {
+        const goalsArray = Array.isArray(profile.goals) ? profile.goals : [];
+        setGoals(goalsArray.map((goal, index) => ({ id: index + 1, value: goal })));
+      }
+
+      if (profile.guides) {
+        const guidesArray = Array.isArray(profile.guides) ? profile.guides : [];
+        setGuides(guidesArray.map((guide, index) => ({ id: index + 1, value: guide })));
+      }
+
+      if (profile.content_pillars) {
+        const pillarsArray = Array.isArray(profile.content_pillars) ? profile.content_pillars : [];
+        setPillars(pillarsArray.map((pillar, index) => ({ id: index + 1, value: pillar })));
+      }
+
+      if (profile.inspirations) {
+        const inspirationsArray = Array.isArray(profile.inspirations) ? profile.inspirations : [];
+        setInspirations(inspirationsArray.map((inspiration, index) => ({ id: index + 1, value: inspiration })));
+      }
     }
   }, [profile]);
 
-  // Redirect if not authenticated
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate('/signin');
+  // Dynamic lists state - will be connected to profile fields
+  const [inspirations, setInspirations] = useState([
+    { id: 1, value: '' }
+  ]);
+
+  const [goals, setGoals] = useState([
+    { id: 1, value: '' }
+  ]);
+
+  const [guides, setGuides] = useState([
+    { id: 1, value: '' }
+  ]);
+
+  const [pillars, setPillars] = useState([
+    { id: 1, value: '' }
+  ]);
+
+  // New item input states
+  const [newGoal, setNewGoal] = useState('');
+  const [newPillar, setNewPillar] = useState('');
+  const [newGuide, setNewGuide] = useState('');
+
+  // Target persona and competitors
+  const [targetPersona, setTargetPersona] = useState('');
+  const [competitors, setCompetitors] = useState([
+    { id: 1, url: '' }
+  ]);
+
+  // Saved states for each section
+  const [savedStates, setSavedStates] = useState({
+    profile: false,
+    whatsapp: false,
+    bio: false,
+    address: false,
+    companyProfile: false,
+    companyAbout: false,
+    inspirations: false,
+    targetPersona: false,
+    competitors: false,
+    goals: false,
+    guides: false,
+    pillars: false
+  });
+
+  // Get user display info
+  const getUserName = () => {
+    if (profile?.display_name) return profile.display_name;
+    if (profile?.linkedin_name) return profile.linkedin_name;
+    if (user?.email) return user.email.split('@')[0];
+    return 'User';
+  };
+
+  const getUserAvatar = () => {
+    return 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=48&h=48&fit=crop&crop=face';
+  };
+
+  // Side menu items
+  const menuItems = [
+    { id: 'personal', label: 'Personal Information' },
+    { id: 'company', label: 'Company Information' },
+    { id: 'inspirations', label: 'Inspirations' },
+    { id: 'goals', label: 'Goals' },
+    { id: 'guides', label: 'Guides' },
+    { id: 'pillars', label: 'Pillars' }
+  ];
+
+  // Generic functions for managing dynamic lists
+  const addListItem = (listType, setterFunction) => {
+    const currentList = getCurrentList(listType);
+    const newId = Math.max(...currentList.map(item => item.id), 0) + 1;
+    setterFunction(prev => [...prev, { id: newId, value: '' }]);
+  };
+
+  const removeListItem = (listType, setterFunction, id) => {
+    setterFunction(prev => prev.filter(item => item.id !== id));
+  };
+
+  const updateListItem = (listType, setterFunction, id, value) => {
+    setterFunction(prev => 
+      prev.map(item => 
+        item.id === id ? { ...item, value } : item
+      )
+    );
+  };
+
+  const getCurrentList = (listType) => {
+    switch (listType) {
+      case 'inspirations': return inspirations;
+      case 'goals': return goals;
+      case 'guides': return guides;
+      case 'pillars': return pillars;
+      default: return [];
     }
-  }, [user, authLoading, navigate]);
+  };
+
+  const getSetterFunction = (listType) => {
+    switch (listType) {
+      case 'inspirations': return setInspirations;
+      case 'goals': return setGoals;
+      case 'guides': return setGuides;
+      case 'pillars': return setPillars;
+      default: return () => {};
+    }
+  };
+
+  // Save functions for different sections
+  const handleSave = async (sectionId) => {
+    try {
+      let updateData = {};
+
+      switch (sectionId) {
+        case 'profile':
+          updateData = {
+            display_name: personalInfo.name,
+            linkedin_profile: personalInfo.linkedinUrl
+          };
+          break;
+        case 'whatsapp':
+          updateData = {
+            whatsapp_number: personalInfo.whatsapp
+          };
+          break;
+        case 'goals':
+          updateData = {
+            goals: goals.filter(g => g.value.trim()).map(g => g.value)
+          };
+          break;
+        case 'guides':
+          updateData = {
+            guides: guides.filter(g => g.value.trim()).map(g => g.value)
+          };
+          break;
+        case 'pillars':
+          updateData = {
+            content_pillars: pillars.filter(p => p.value.trim()).map(p => p.value)
+          };
+          break;
+        default:
+          // For sections not yet connected to backend, just show saved state
+          break;
+      }
+
+      if (Object.keys(updateData).length > 0) {
+        await updateBasicProfile(updateData);
+      }
+
+      setSavedStates(prev => ({
+        ...prev,
+        [sectionId]: true
+      }));
+      
+      // Reset saved state after 2 seconds
+      setTimeout(() => {
+        setSavedStates(prev => ({
+          ...prev,
+          [sectionId]: false
+        }));
+      }, 2000);
+
+    } catch (error) {
+      console.error('Error saving profile:', error);
+    }
+  };
+
+  // Sidebar event handlers
+  const handleMenuItemClick = (menuId: string) => {
+    switch (menuId) {
+      case 'home':
+        navigate('/product-home');
+        break;
+      case 'profile':
+        // Already on profile
+        break;
+      case 'knowledge':
+        navigate('/knowledge');
+        break;
+      case 'history':
+        navigate('/posts');
+        break;
+      default:
+        console.log('Navigation for:', menuId);
+    }
+  };
+
+  const handleCreateNewClick = () => {
+    navigate('/content-editor');
+  };
+
+  const handleAvatarClick = () => {
+    // Already on profile
+  };
+
   const handleSignOut = async () => {
     const result = await signOut();
-    if (result.error) {
-      toast.error('Error signing out');
-    } else {
+    if (!result.error) {
       navigate('/signin');
-      toast.success('Signed out successfully');
     }
   };
 
-  const handleSaveProfile = async () => {
-    const result = await updateBasicProfile({
-      display_name: displayName,
-      phone_number: phoneNumber
-    });
-    
-    if (result.error) {
-      toast.error(result.error);
-    } else {
-      toast.success('Profile updated successfully');
+  // Goals chips functions
+  const addGoalChip = () => {
+    if (newGoal.trim()) {
+      const newId = Math.max(...goals.map(goal => goal.id), 0) + 1;
+      setGoals(prev => [...prev, { id: newId, value: newGoal.trim() }]);
+      setNewGoal('');
     }
   };
-  if (authLoading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
-  }
 
-  if (!user) {
-    return null; // Will redirect to signin
-  }
-  return <SidebarProvider>
-      <div className="flex min-h-screen w-full">
-        <AppSidebar userName={user?.email?.split('@')[0] || 'User'} userAvatar="/lovable-uploads/fe97b466-2c78-4c2a-baeb-f2e13105460d.png" navigationItems={[{
-        id: 'home',
-        label: 'Home',
-        icon: 'home',
-        isActive: false
-      }, {
-        id: 'posts',
-        label: 'Posts',
-        icon: 'knowledge',
-        isActive: false
-      }, {
-        id: 'profile',
-        label: 'Profile',
-        icon: 'profile',
-        isActive: true
-      }, {
-        id: 'knowledge',
-        label: 'Knowledge',
-        icon: 'knowledge',
-        isActive: false
-      }, {
-        id: 'calendar',
-        label: 'Calendar',
-        icon: 'calendar',
-        isActive: false
-      }]} onCreateNew={() => {}} onUserMenuClick={() => {}} onNavigationClick={itemId => {
-        if (itemId === 'home') navigate('/product-home');
-        if (itemId === 'knowledge') navigate('/knowledge');
-        if (itemId === 'profile') navigate('/profile');
-        if (itemId === 'posts') navigate('/posts');
-      }} onFinishOnboarding={() => {}} onHelpClick={() => {}} />
-        
-        <SidebarInset>
-          
-          
-          <div className="flex-1 bg-gray-50">
-            <div className="w-full max-w-4xl mx-auto p-8">
-              <div className="mb-8">
-                <h1 className="text-4xl font-bold font-playfair text-[#111115] mb-2">Profile</h1>
-                <p className="text-[#4E4E55] text-sm">
-                  Here you can find all the details about your strategy or content creation
+  const removeGoalChip = (goalId) => {
+    setGoals(prev => prev.filter(goal => goal.id !== goalId));
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addGoalChip();
+    }
+  };
+
+  // Guides chips functions
+  const addGuideChip = () => {
+    if (newGuide.trim()) {
+      const newId = Math.max(...guides.map(guide => guide.id), 0) + 1;
+      setGuides(prev => [...prev, { id: newId, value: newGuide.trim() }]);
+      setNewGuide('');
+    }
+  };
+
+  const removeGuideChip = (guideId) => {
+    setGuides(prev => prev.filter(guide => guide.id !== guideId));
+  };
+
+  const handleGuideKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addGuideChip();
+    }
+  };
+
+  // Pillars chips functions
+  const addPillarChip = () => {
+    if (newPillar.trim()) {
+      const newId = Math.max(...pillars.map(pillar => pillar.id), 0) + 1;
+      setPillars(prev => [...prev, { id: newId, value: newPillar.trim() }]);
+      setNewPillar('');
+    }
+  };
+
+  const removePillarChip = (pillarId) => {
+    setPillars(prev => prev.filter(pillar => pillar.id !== pillarId));
+  };
+
+  const handlePillarKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addPillarChip();
+    }
+  };
+
+  const handlePersonalInfoChange = (field, value) => {
+    setPersonalInfo(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleCompanyInfoChange = (field, value) => {
+    setCompanyInfo(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  // Avatar component
+  const Avatar = ({ src, alt, size = '64px' }) => (
+    <img
+      src={src}
+      alt={alt}
+      style={{
+        width: size,
+        height: size,
+        borderRadius: cornerRadius.borderRadius.full,
+        objectFit: 'cover',
+        border: `2px solid ${colors.border.default}`,
+      }}
+    />
+  );
+
+  // Main container styles - accounting for sidebar
+  const mainContainerStyles = {
+    marginLeft: isSidebarCollapsed ? '72px' : '240px',
+    transition: 'margin-left 0.3s cubic-bezier(0.4, 0.0, 0.2, 1)',
+    minHeight: '100vh',
+    backgroundColor: colors?.bg?.default || '#ffffff',
+    width: `calc(100vw - ${isSidebarCollapsed ? '72px' : '240px'})`,
+    position: 'relative',
+    paddingTop: spacing.spacing[80],
+    paddingBottom: spacing.spacing[160],
+    paddingLeft: spacing.spacing[32],
+    paddingRight: spacing.spacing[32],
+  };
+
+  // Content container styles
+  const containerStyles = {
+    width: '100%',
+    maxWidth: '1200px',
+    margin: '0 auto',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacing.spacing[48],
+  };
+
+  // Title and subtitle styles
+  const titleStyle = {
+    fontFamily: typography.fontFamily['awesome-serif'],
+    fontSize: typography.desktop.size['4xl'],
+    fontWeight: typography.desktop.weight.semibold,
+    lineHeight: typography.desktop.lineHeight.leading7,
+    letterSpacing: typography.desktop.letterSpacing.normal,
+    color: colors.text.default,
+    margin: 0,
+  };
+
+  const subtitleStyle = {
+    ...textStyles.sm.medium,
+    color: colors.text.subtle,
+    margin: 0,
+    marginTop: spacing.spacing[8],
+  };
+
+  // Render different section content
+  const renderSectionContent = () => {
+    switch (activeSection) {
+      case 'goals':
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[16] }}>
+            <div>
+              <h3 style={{ ...textStyles.sm.semibold, color: colors.text.default, margin: 0 }}>
+                Goals
+              </h3>
+              <p style={{ ...textStyles.xs.normal, color: colors.text.subtle, margin: 0 }}>
+                What are your key objectives and aspirations?
+              </p>
+            </div>
+
+            <div style={{ 
+              display: 'flex', 
+              flexWrap: 'wrap', 
+              gap: spacing.spacing[8],
+              minHeight: '44px',
+              alignItems: 'flex-start'
+            }}>
+              {goals.filter(goal => goal.value.trim()).map((goal) => (
+                <Chips
+                  key={goal.id}
+                  label={goal.value}
+                  style="default"
+                  size="lg"
+                  selected={true}
+                  leadingIcon={<X size={16} />}
+                  onClick={() => removeGoalChip(goal.id)}
+                />
+              ))}
+            </div>
+
+            <Input
+              placeholder="Enter a new goal..."
+              value={newGoal}
+              onChange={(e) => setNewGoal(e.target.value)}
+              onKeyPress={handleKeyPress}
+              style="tail-action"
+              tailAction={{
+                icon: <Plus size={14} />,
+                onClick: addGoalChip,
+                disabled: !newGoal.trim()
+              }}
+            />
+
+            <div style={{ alignSelf: 'flex-start' }}>
+              <Button
+                label={savedStates.goals ? "Saved!" : "Save"}
+                style="primary"
+                size="sm"
+                leadIcon={savedStates.goals ? <Check size={16} /> : undefined}
+                onClick={() => handleSave('goals')}
+                disabled={savedStates.goals}
+              />
+            </div>
+          </div>
+        );
+
+      case 'guides':
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[16] }}>
+            <div>
+              <h3 style={{ ...textStyles.sm.semibold, color: colors.text.default, margin: 0 }}>
+                Guides
+              </h3>
+              <p style={{ ...textStyles.xs.normal, color: colors.text.subtle, margin: 0 }}>
+                What values and principles guide your content creation?
+              </p>
+            </div>
+
+            <div style={{ 
+              display: 'flex', 
+              flexWrap: 'wrap', 
+              gap: spacing.spacing[8],
+              minHeight: '44px',
+              alignItems: 'flex-start'
+            }}>
+              {guides.filter(guide => guide.value.trim()).map((guide) => (
+                <Chips
+                  key={guide.id}
+                  label={guide.value}
+                  style="default"
+                  size="lg"
+                  selected={true}
+                  leadingIcon={<X size={16} />}
+                  onClick={() => removeGuideChip(guide.id)}
+                />
+              ))}
+            </div>
+
+            <Input
+              placeholder="Enter a new guide..."
+              value={newGuide}
+              onChange={(e) => setNewGuide(e.target.value)}
+              onKeyPress={handleGuideKeyPress}
+              style="tail-action"
+              tailAction={{
+                icon: <Plus size={14} />,
+                onClick: addGuideChip,
+                disabled: !newGuide.trim()
+              }}
+            />
+
+            <div style={{ alignSelf: 'flex-start' }}>
+              <Button
+                label={savedStates.guides ? "Saved!" : "Save"}
+                style="primary"
+                size="sm"
+                leadIcon={savedStates.guides ? <Check size={16} /> : undefined}
+                onClick={() => handleSave('guides')}
+                disabled={savedStates.guides}
+              />
+            </div>
+          </div>
+        );
+
+      case 'pillars':
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[16] }}>
+            <div>
+              <h3 style={{ ...textStyles.sm.semibold, color: colors.text.default, margin: 0 }}>
+                Pillars
+              </h3>
+              <p style={{ ...textStyles.xs.normal, color: colors.text.subtle, margin: 0 }}>
+                What are the core pillars that define your approach?
+              </p>
+            </div>
+
+            <div style={{ 
+              display: 'flex', 
+              flexWrap: 'wrap', 
+              gap: spacing.spacing[8],
+              minHeight: '44px',
+              alignItems: 'flex-start'
+            }}>
+              {pillars.filter(pillar => pillar.value.trim()).map((pillar) => (
+                <Chips
+                  key={pillar.id}
+                  label={pillar.value}
+                  style="default"
+                  size="lg"
+                  selected={true}
+                  leadingIcon={<X size={16} />}
+                  onClick={() => removePillarChip(pillar.id)}
+                />
+              ))}
+            </div>
+
+            <Input
+              placeholder="Enter a new pillar..."
+              value={newPillar}
+              onChange={(e) => setNewPillar(e.target.value)}
+              onKeyPress={handlePillarKeyPress}
+              style="tail-action"
+              tailAction={{
+                icon: <Plus size={14} />,
+                onClick: addPillarChip,
+                disabled: !newPillar.trim()
+              }}
+            />
+
+            <div style={{ alignSelf: 'flex-start' }}>
+              <Button
+                label={savedStates.pillars ? "Saved!" : "Save"}
+                style="primary"
+                size="sm"
+                leadIcon={savedStates.pillars ? <Check size={16} /> : undefined}
+                onClick={() => handleSave('pillars')}
+                disabled={savedStates.pillars}
+              />
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div style={{ display: 'flex', minHeight: '100vh' }}>
+      {/* HomeSidebar */}
+      <HomeSidebar
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapsed={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+        userName={getUserName()}
+        userAvatar={getUserAvatar()}
+        activeMenuItem="profile"
+        onMenuItemClick={handleMenuItemClick}
+        onCreateNewClick={handleCreateNewClick}
+        onAvatarClick={handleAvatarClick}
+        onThemeChange={(theme) => console.log('Theme changed:', theme)}
+        onHelpClick={() => console.log('Help clicked')}
+      />
+
+      {/* Main Content */}
+      <div style={mainContainerStyles}>
+        <div style={containerStyles}>
+          {/* Header */}
+          <div>
+            <h1 style={titleStyle}>Profile Settings</h1>
+            <p style={subtitleStyle}>
+              Manage your personal information, company details, and content preferences
                 </p>
               </div>
 
-              <div className="space-y-8">
-                {/* Personal Information */}
-                <Card className="border border-gray-200 shadow-sm rounded-lg">
-                  <CardContent className="p-0">
-                    <div className="flex items-center justify-between p-6 border-b border-gray-100">
-                      <h3 className="font-semibold text-gray-900 text-lg">Personal Information</h3>
+          {/* Main Content Layout */}
+          <div style={{ display: 'flex', gap: spacing.spacing[32], width: '100%' }}>
+            {/* Left Side Menu */}
+            <div style={{
+              width: '280px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: spacing.spacing[8],
+              flex: 'none',
+            }}>
+              {menuItems.map((item) => (
+                <SidebarMenuItem
+                  key={item.id}
+                  variant="default"
+                  state={activeSection === item.id ? 'active' : 'default'}
+                  label={item.label}
+                  onClick={() => setActiveSection(item.id)}
+                />
+              ))}
                     </div>
                     
-                    <div className="p-6">
-                      <div className="flex items-center gap-4 mb-6">
-                        <Avatar className="w-16 h-16">
-                          <AvatarImage src="" />
-                          <AvatarFallback className="bg-gray-200 text-gray-600 text-lg">
-                            {user?.email?.charAt(0).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
+            {/* Right Content Area */}
+            <div style={{
+              flex: 1,
+              maxWidth: '480px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: spacing.spacing[20],
+            }}>
+              {/* Personal Information Cards */}
+              {activeSection === 'personal' && (
+                <>
+                  {/* Profile Card */}
+                  <div style={{
+                    backgroundColor: colors.bg.card.default,
+                    border: `1px solid ${colors.border.default}`,
+                    borderRadius: cornerRadius.borderRadius.lg,
+                    boxShadow: getShadow('regular.card', colors, { withBorder: true }),
+                    padding: spacing.spacing[20],
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: spacing.spacing[12],
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: spacing.spacing[16] }}>
+                      <Avatar
+                        src={personalInfo.avatar}
+                        alt={personalInfo.name}
+                        size="64px"
+                      />
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: spacing.spacing[12] }}>
                         <div>
-                          <h4 className="font-semibold text-gray-900">
-                            {profile?.display_name || user?.email?.split('@')[0] || 'User'}
-                          </h4>
-                          <p className="text-sm text-gray-500">
-                            {profile?.linkedin_headline || 'User @ Pacelane'}
+                          <h2 style={{
+                            fontFamily: typography.fontFamily['awesome-serif'],
+                            fontSize: typography.desktop.size['2xl'],
+                            fontWeight: typography.desktop.weight.semibold,
+                            color: colors.text.default,
+                            margin: 0,
+                          }}>
+                            {personalInfo.name || 'Your Name'}
+                          </h2>
+                          <p style={{
+                            ...textStyles.sm.normal,
+                            color: colors.text.subtle,
+                            margin: 0,
+                            marginTop: spacing.spacing[4],
+                          }}>
+                            {personalInfo.profession || 'Your Profession'}
                           </p>
                         </div>
-                        <Button variant="ghost" size="icon" className="ml-auto">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      </div>
-
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Display Name
-                          </label>
-                          <Input 
-                            type="text" 
-                            value={displayName} 
-                            onChange={e => setDisplayName(e.target.value)} 
-                            placeholder="Your display name" 
-                            className="mb-4" 
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[8] }}>
+                          <Input
+                            placeholder="Full Name"
+                            value={personalInfo.name}
+                            onChange={(e) => handlePersonalInfoChange('name', e.target.value)}
+                            style="default"
                           />
-                        </div>
-                        
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Phone Number
-                          </label>
                           <Input 
-                            type="text" 
-                            value={phoneNumber} 
-                            onChange={e => setPhoneNumber(e.target.value)} 
-                            placeholder="+55 (11) 99999-9999" 
-                            className="w-full" 
+                            placeholder="Professional Title"
+                            value={personalInfo.profession}
+                            onChange={(e) => handlePersonalInfoChange('profession', e.target.value)}
+                            style="default"
                           />
-                          <Button 
-                            className="mt-3 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2" 
-                            onClick={handleSaveProfile}
-                            disabled={saving}
-                          >
-                            {saving ? 'Saving...' : 'Save'}
-                          </Button>
+                          <Input 
+                            placeholder="LinkedIn URL"
+                            value={personalInfo.linkedinUrl}
+                            onChange={(e) => handlePersonalInfoChange('linkedinUrl', e.target.value)}
+                            style="default"
+                          />
                         </div>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-
-                {/* LinkedIn Information */}
-                <Card className="border border-gray-200 shadow-sm rounded-lg">
-                  <CardContent className="p-0">
-                    <div className="flex items-center justify-between p-6 border-b border-gray-100">
-                      <h3 className="font-semibold text-gray-900 text-lg">LinkedIn Profile</h3>
+                    <div style={{ alignSelf: 'flex-start' }}>
+                      <Button
+                        label={savedStates.profile ? "Saved!" : "Save"}
+                        style="primary"
+                        size="sm"
+                        leadIcon={savedStates.profile ? <Check size={16} /> : undefined}
+                        onClick={() => handleSave('profile')}
+                        disabled={savedStates.profile || saving}
+                      />
                     </div>
-                    
-                    <div className="p-6 space-y-4">
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <p className="text-sm text-gray-600 mb-2">
-                          <strong>LinkedIn URL:</strong> {profile?.linkedin_profile || 'Not set'}
+                  </div>
+
+                  {/* WhatsApp Card */}
+                  <div style={{
+                    backgroundColor: colors.bg.card.default,
+                    border: `1px solid ${colors.border.default}`,
+                    borderRadius: cornerRadius.borderRadius.lg,
+                    boxShadow: getShadow('regular.card', colors, { withBorder: true }),
+                    padding: spacing.spacing[20],
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: spacing.spacing[12],
+                  }}>
+                    <h4 style={{ ...textStyles.sm.semibold, color: colors.text.default, margin: 0 }}>
+                      WhatsApp Number
+                    </h4>
+                    <Input
+                      placeholder="+1 (555) 123-4567"
+                      value={personalInfo.whatsapp}
+                      onChange={(e) => handlePersonalInfoChange('whatsapp', e.target.value)}
+                      style="default"
+                    />
+                    <div style={{ alignSelf: 'flex-start' }}>
+                      <Button
+                        label={savedStates.whatsapp ? "Saved!" : "Save"}
+                        style="primary"
+                        size="sm"
+                        leadIcon={savedStates.whatsapp ? <Check size={16} /> : undefined}
+                        onClick={() => handleSave('whatsapp')}
+                        disabled={savedStates.whatsapp || saving}
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Company Information Cards */}
+              {activeSection === 'company' && (
+                <div style={{
+                  backgroundColor: colors.bg.card.default,
+                  border: `1px solid ${colors.border.default}`,
+                  borderRadius: cornerRadius.borderRadius.lg,
+                  boxShadow: getShadow('regular.card', colors, { withBorder: true }),
+                  padding: spacing.spacing[20],
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: spacing.spacing[12],
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: spacing.spacing[16] }}>
+                    <Avatar
+                      src={companyInfo.avatar}
+                      alt={companyInfo.name}
+                      size="64px"
+                    />
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: spacing.spacing[12] }}>
+                      <div>
+                        <h2 style={{
+                          fontFamily: typography.fontFamily['awesome-serif'],
+                          fontSize: typography.desktop.size['2xl'],
+                          fontWeight: typography.desktop.weight.semibold,
+                          color: colors.text.default,
+                          margin: 0,
+                        }}>
+                          {companyInfo.name || 'Your Company'}
+                        </h2>
+                        <p style={{
+                          ...textStyles.sm.normal,
+                          color: colors.text.subtle,
+                          margin: 0,
+                          marginTop: spacing.spacing[4],
+                        }}>
+                          {companyInfo.industry || 'Industry'}
                         </p>
-                        {profile?.linkedin_name && (
-                          <p className="text-sm text-gray-600 mb-2">
-                            <strong>Name:</strong> {profile.linkedin_name}
-                          </p>
-                        )}
-                        {profile?.linkedin_company && (
-                          <p className="text-sm text-gray-600 mb-2">
-                            <strong>Company:</strong> {profile.linkedin_company}
-                          </p>
-                        )}
-                        {profile?.linkedin_headline && (
-                          <p className="text-sm text-gray-600">
-                            <strong>Headline:</strong> {profile.linkedin_headline}
-                          </p>
-                        )}
                       </div>
-                      
-                      <p className="text-sm text-gray-500">
-                        LinkedIn information is set during onboarding and updated automatically when available.
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[8] }}>
+                        <Input
+                          placeholder="Company Name"
+                          value={companyInfo.name}
+                          onChange={(e) => handleCompanyInfoChange('name', e.target.value)}
+                          style="default"
+                        />
+                        <Input
+                          placeholder="Industry / Field"
+                          value={companyInfo.industry}
+                          onChange={(e) => handleCompanyInfoChange('industry', e.target.value)}
+                          style="default"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ alignSelf: 'flex-start' }}>
+                  <Button 
+                      label={savedStates.companyProfile ? "Saved!" : "Save"}
+                      style="primary"
+                      size="sm"
+                      leadIcon={savedStates.companyProfile ? <Check size={16} /> : undefined}
+                      onClick={() => handleSave('companyProfile')}
+                      disabled={savedStates.companyProfile}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Dynamic Sections (Goals, Guides, Pillars) */}
+              {(activeSection === 'goals' || activeSection === 'guides' || activeSection === 'pillars') && (
+                <div style={{
+                  backgroundColor: colors.bg.card.default,
+                  border: `1px solid ${colors.border.default}`,
+                  borderRadius: cornerRadius.borderRadius.lg,
+                  boxShadow: getShadow('regular.card', colors, { withBorder: true }),
+                  padding: spacing.spacing[24],
+                }}>
+                  {renderSectionContent()}
+                </div>
+              )}
+
+              {/* Inspirations Section */}
+              {activeSection === 'inspirations' && (
+                <div style={{
+                  backgroundColor: colors.bg.card.default,
+                  border: `1px solid ${colors.border.default}`,
+                  borderRadius: cornerRadius.borderRadius.lg,
+                  boxShadow: getShadow('regular.card', colors, { withBorder: true }),
+                  padding: spacing.spacing[24],
+                }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[16] }}>
+                    <div>
+                      <h3 style={{ ...textStyles.sm.semibold, color: colors.text.default, margin: 0 }}>
+                        Inspirations
+                      </h3>
+                      <p style={{ ...textStyles.xs.normal, color: colors.text.subtle, margin: 0 }}>
+                        LinkedIn profiles that inspire your content creation
                       </p>
                     </div>
-                  </CardContent>
-                </Card>
 
-                {/* Sign Out Section */}
-                <div className="pt-8 border-t border-gray-200">
-                  <Button 
-                    variant="destructive" 
-                    onClick={handleSignOut}
-                    className="w-full"
-                  >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Sign Out
-                  </Button>
+                    <div style={{ 
+                      display: 'flex', 
+                      flexWrap: 'wrap', 
+                      gap: spacing.spacing[8],
+                      minHeight: '44px',
+                      alignItems: 'flex-start'
+                    }}>
+                      {inspirations.filter(inspiration => inspiration.value.trim()).map((inspiration) => (
+                        <Chips
+                          key={inspiration.id}
+                          label={inspiration.value}
+                          style="default"
+                          size="lg"
+                          selected={true}
+                          leadingIcon={<X size={16} />}
+                          onClick={() => removeListItem('inspirations', setInspirations, inspiration.id)}
+                        />
+                      ))}
+                    </div>
+
+                    {inspirations.filter(inspiration => inspiration.value.trim()).length === 0 && (
+                      <p style={{ ...textStyles.xs.normal, color: colors.text.muted, margin: 0, textAlign: 'center' }}>
+                        No inspirations added yet. Add some during onboarding or edit your profile.
+                      </p>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
-        </SidebarInset>
+
+          {/* Sign Out Section */}
+          <div style={{ paddingTop: spacing.spacing[32], borderTop: `1px solid ${colors.border.default}` }}>
+            <Button
+              label="Sign Out"
+              style="destructive"
+              size="md"
+              onClick={handleSignOut}
+            />
+          </div>
+        </div>
       </div>
-    </SidebarProvider>;
+    </div>
+  );
 };
+
 export default Profile;

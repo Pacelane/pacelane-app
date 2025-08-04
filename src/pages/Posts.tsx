@@ -1,19 +1,32 @@
 import React, { useState } from 'react';
-import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
-import { AppSidebar } from '@/components/app-sidebar';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Search, Edit, Trash2, Bell, Settings, FileText, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useContent } from '@/hooks/api/useContent';
+import { useTheme } from '@/services/theme-context';
 import { SavedDraft, ContentSuggestion } from '@/types/content';
 import { toast } from 'sonner';
+
+// Design System Components
+import HomeSidebar from '@/design-system/components/HomeSidebar';
+import ContentCard from '@/design-system/components/ContentCard';
+import Input from '@/design-system/components/Input';
+import DropdownMenu from '@/design-system/components/DropdownMenu';
+import Button from '@/design-system/components/Button';
+
+// Design System Tokens
+import { spacing } from '@/design-system/tokens/spacing';
+import { textStyles } from '@/design-system/styles/typography/typography-styles';
+import { typography } from '@/design-system/tokens/typography';
+import { cornerRadius } from '@/design-system/tokens/corner-radius';
+import { getShadow } from '@/design-system/tokens/shadows';
+
+// Icons
+import { Search, ChevronDown, Plus, FileText } from 'lucide-react';
+
 const Posts = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const { colors } = useTheme();
   
   // ========== CLEAN CONTENT STATE MANAGEMENT ==========
   const {
@@ -26,15 +39,124 @@ const Posts = () => {
   } = useContent();
 
   // ========== LOCAL COMPONENT STATE ==========
-  const [activeNavItem, setActiveNavItem] = useState('posts');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'draft' | 'published' | 'archived'>('all');
-  // Data loading now handled automatically by useContent hook!
-  const filteredDrafts = savedDrafts.filter(draft => {
-    const matchesSearch = draft.title.toLowerCase().includes(searchQuery.toLowerCase()) || draft.content.toLowerCase().includes(searchQuery.toLowerCase());
+  const [sortBy, setSortBy] = useState('lastEdited');
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
+
+  // Main container styles - accounting for sidebar
+  const mainContainerStyles = {
+    marginLeft: isSidebarCollapsed ? '72px' : '240px',
+    transition: 'margin-left 0.3s cubic-bezier(0.4, 0.0, 0.2, 1)',
+    minHeight: '100vh',
+    backgroundColor: colors?.bg?.default || '#ffffff',
+    width: `calc(100vw - ${isSidebarCollapsed ? '72px' : '240px'})`,
+    position: 'relative',
+    paddingTop: spacing.spacing[80],
+    paddingBottom: spacing.spacing[160],
+    paddingLeft: spacing.spacing[32],
+    paddingRight: spacing.spacing[32],
+  };
+
+  // Content container styles
+  const containerStyles = {
+    width: '100%',
+    maxWidth: '1200px',
+    margin: '0 auto',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacing.spacing[24],
+  };
+
+  // Title style using awesome serif font, 4xl semi bold
+  const titleStyle = {
+    fontFamily: typography.fontFamily['awesome-serif'],
+    fontSize: typography.desktop.size['4xl'],
+    fontWeight: typography.desktop.weight.semibold,
+    lineHeight: typography.desktop.lineHeight.leading7,
+    letterSpacing: typography.desktop.letterSpacing.normal,
+    color: colors.text.default,
+    margin: 0,
+  };
+
+  // Subtitle style - sm medium, text subtle
+  const subtitleStyle = {
+    ...textStyles.sm.medium,
+    color: colors.text.subtle,
+    margin: 0,
+    marginTop: spacing.spacing[8],
+  };
+
+  // Filter tabs configuration
+  const filterTabs = [
+    { id: 'all', label: 'All' },
+    { id: 'draft', label: 'Drafts' },
+    { id: 'published', label: 'Published' },
+    { id: 'archived', label: 'Archived' },
+  ];
+
+  // Sort dropdown options
+  const sortOptions = [
+    { label: 'Last Edited', onClick: () => setSortBy('lastEdited') },
+    { label: 'Newest First', onClick: () => setSortBy('newest') },
+    { label: 'Oldest First', onClick: () => setSortBy('oldest') },
+    { label: 'A-Z', onClick: () => setSortBy('nameAsc') },
+    { label: 'Z-A', onClick: () => setSortBy('nameDesc') },
+  ];
+
+  // Filter drafts based on search and filter
+  const getFilteredDrafts = () => {
+    return savedDrafts.filter(draft => {
+      const matchesSearch = draft.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                           draft.content.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesFilter = selectedFilter === 'all' || draft.status === selectedFilter;
     return matchesSearch && matchesFilter;
   });
+  };
+
+  // Sort drafts based on sortBy
+  const getSortedDrafts = (drafts) => {
+    switch (sortBy) {
+      case 'nameAsc':
+        return [...drafts].sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+      case 'nameDesc':
+        return [...drafts].sort((a, b) => (b.title || '').localeCompare(a.title || ''));
+      case 'newest':
+        return [...drafts].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+      case 'oldest':
+        return [...drafts].sort((a, b) => new Date(a.updated_at) - new Date(b.updated_at));
+      case 'lastEdited':
+      default:
+        return drafts; // Already sorted by updated_at from backend
+    }
+  };
+
+  // Transform drafts to ContentCard format
+  const getDraftCards = () => {
+    return getSortedDrafts(getFilteredDrafts()).map(draft => ({
+      id: draft.id,
+      title: draft.title || 'Untitled',
+      subtitle: `Last edited ${new Date(draft.updated_at).toLocaleDateString()}`,
+      content: draft.content.substring(0, 200) + (draft.content.length > 200 ? '...' : ''),
+      variant: 'gradient',
+      status: draft.status,
+    }));
+  };
+
+  // Transform suggestions to ContentCard format
+  const getSuggestionCards = () => {
+    return contentSuggestions.map(suggestion => ({
+      id: suggestion.id,
+      title: suggestion.title,
+      subtitle: 'Content suggestion',
+      content: suggestion.description || suggestion.suggested_outline?.substring(0, 200) || 'No description available',
+      variant: 'image',
+      status: 'suggestion',
+    }));
+  };
+
+  // Event handlers
   const handleEditDraft = (draft: SavedDraft) => {
     navigate('/content-editor', {
       state: {
@@ -44,9 +166,9 @@ const Posts = () => {
       }
     });
   };
+
   const handleDeleteDraft = async (draftId: string) => {
     try {
-      // Use clean deleteDraft API
       const result = await deleteDraft(draftId);
       
       if (result.error) {
@@ -59,6 +181,7 @@ const Posts = () => {
       toast.error(error.message || 'Failed to delete draft');
     }
   };
+
   const handleCreateFromSuggestion = (suggestion: ContentSuggestion) => {
     navigate('/content-editor', {
       state: {
@@ -66,173 +189,333 @@ const Posts = () => {
       }
     });
   };
-  const navigationItems = [{
-    id: 'home',
-    label: 'Home',
-    icon: 'home',
-    isActive: activeNavItem === 'home'
-  }, {
-    id: 'posts',
-    label: 'Posts',
-    icon: 'file-text',
-    isActive: activeNavItem === 'posts'
-  }, {
-    id: 'profile',
-    label: 'Profile',
-    icon: 'profile',
-    isActive: activeNavItem === 'profile'
-  }, {
-    id: 'knowledge',
-    label: 'Knowledge',
-    icon: 'knowledge',
-    isActive: activeNavItem === 'knowledge'
-  }, {
-    id: 'calendar',
-    label: 'Calendar',
-    icon: 'calendar',
-    isActive: activeNavItem === 'calendar'
-  }];
-  const handleCreateNew = () => {
+
+  const handleDraftAction = (action, draftId) => {
+    const draft = savedDrafts.find(d => d.id === draftId);
+    if (!draft) return;
+
+    switch (action) {
+      case 'edit':
+        handleEditDraft(draft);
+        break;
+      case 'delete':
+        handleDeleteDraft(draftId);
+        break;
+    }
+  };
+
+  const handleSuggestionAction = (action, suggestionId) => {
+    const suggestion = contentSuggestions.find(s => s.id === suggestionId);
+    if (!suggestion) return;
+
+    switch (action) {
+      case 'create':
+        handleCreateFromSuggestion(suggestion);
+        break;
+    }
+  };
+
+  // Sidebar event handlers
+  const handleMenuItemClick = (menuId: string) => {
+    switch (menuId) {
+      case 'home':
+        navigate('/product-home');
+        break;
+      case 'profile':
+        navigate('/profile');
+        break;
+      case 'knowledge':
+        navigate('/knowledge');
+        break;
+      case 'history':
+        // Already on posts/history
+        break;
+      default:
+        console.log('Navigation for:', menuId);
+    }
+  };
+
+  const handleCreateNewClick = () => {
     navigate('/content-editor');
   };
-  const handleUserMenuClick = () => {
+
+  const handleAvatarClick = () => {
     navigate('/profile');
   };
-  const handleNavigationClick = (itemId: string) => {
-    setActiveNavItem(itemId);
-    if (itemId === 'home') {
-      navigate('/product-home');
-    } else if (itemId === 'profile') {
-      navigate('/profile');
-    } else if (itemId === 'knowledge') {
-      navigate('/knowledge');
-    } else if (itemId === 'posts') {
-      navigate('/posts');
-    }
+
+  // Get user display info
+  const getUserName = () => {
+    if (profile?.display_name) return profile.display_name;
+    if (profile?.linkedin_name) return profile.linkedin_name;
+    if (user?.email) return user.email.split('@')[0];
+    return 'User';
   };
-  const handleFinishOnboarding = () => {
-    console.log('Finish onboarding clicked');
+
+  const getUserAvatar = () => {
+    return 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=48&h=48&fit=crop&crop=face';
   };
-  const handleHelpClick = () => {
-    console.log('Help clicked');
+
+  // Controls row styles for search and sort
+  const controlRowStyles = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.spacing[24],
+    width: '100%',
   };
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'draft':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'published':
-        return 'bg-green-100 text-green-800';
-      case 'archived':
-        return 'bg-gray-100 text-gray-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
+
+  // Right section styles for search and dropdown
+  const rightSectionStyles = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacing.spacing[12],
   };
-  return <SidebarProvider>
-      <div className="flex min-h-screen w-full">
-        <AppSidebar userName="Simon Alt" userAvatar="https://api.builder.io/api/v1/image/assets/33e5c0ee54254724b25b444ecf442f35/75fe1b108c00417d7dc855be81d3b2879bf7e2f0?placeholderIfAbsent=true" navigationItems={navigationItems} onCreateNew={handleCreateNew} onUserMenuClick={handleUserMenuClick} onNavigationClick={handleNavigationClick} onFinishOnboarding={handleFinishOnboarding} onHelpClick={handleHelpClick} />
-        
-        <SidebarInset>
-          
-          
-          <div className="flex-1 bg-gray-50">
-            <div className="w-full max-w-4xl mx-auto p-4">
-              <div className="mb-6">
-                <h1 className="text-4xl font-bold font-playfair text-gray-900 mb-2">Posts</h1>
-                <p className="text-gray-600">Manage your saved drafts and content suggestions</p>
+
+  // Content grid styles (2 columns)
+  const contentGridStyles = {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: spacing.spacing[24],
+  };
+
+  // Section styles
+  const sectionStyles = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacing.spacing[16],
+  };
+
+  const sectionTitleStyle = {
+    ...textStyles.lg.semibold,
+    color: colors.text.default,
+    margin: 0,
+  };
+
+  const draftCards = getDraftCards();
+  const suggestionCards = getSuggestionCards();
+
+  return (
+    <div style={{ display: 'flex', minHeight: '100vh' }}>
+      {/* HomeSidebar */}
+      <HomeSidebar
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapsed={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+        userName={getUserName()}
+        userAvatar={getUserAvatar()}
+        activeMenuItem="history"
+        onMenuItemClick={handleMenuItemClick}
+        onCreateNewClick={handleCreateNewClick}
+        onAvatarClick={handleAvatarClick}
+        onThemeChange={(theme) => console.log('Theme changed:', theme)}
+        onHelpClick={() => console.log('Help clicked')}
+      />
+
+      {/* Main Content */}
+      <div style={mainContainerStyles}>
+        <div style={containerStyles}>
+          {/* Header Section */}
+          <div>
+            <h1 style={titleStyle}>Posts</h1>
+            <p style={subtitleStyle}>
+              Manage your saved drafts and content suggestions
+            </p>
+          </div>
+
+          {/* Controls Row - Filter Tabs, Search and Sort */}
+          <div style={controlRowStyles}>
+            {/* Left: Filter Tabs */}
+            <div style={{ display: 'flex', gap: spacing.spacing[8] }}>
+              {filterTabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  style={{
+                    padding: `${spacing.spacing[8]} ${spacing.spacing[12]}`,
+                    backgroundColor: selectedFilter === tab.id ? colors.bg.state.ghostHover : colors.bg.card.default,
+                    border: `1px solid ${selectedFilter === tab.id ? colors.border.highlight : colors.border.default}`,
+                    borderRadius: cornerRadius.borderRadius.sm,
+                    color: selectedFilter === tab.id ? colors.text.default : colors.text.subtle,
+                    fontSize: textStyles.sm.normal.fontSize,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease-in-out',
+                    textTransform: 'capitalize',
+                  }}
+                  onClick={() => setSelectedFilter(tab.id as any)}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Right: Search and Sort */}
+            <div style={rightSectionStyles}>
+              {/* Search Input */}
+              <div style={{ width: '280px' }}>
+                <Input
+                  size="lg"
+                  style="default"
+                  placeholder="Search posts..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  leadIcon={<Search size={16} />}
+                />
               </div>
 
-              {/* Filter buttons */}
-              <div className="flex gap-2 mb-6">
-                {(['all', 'draft', 'published', 'archived'] as const).map(filter => <Button key={filter} variant={selectedFilter === filter ? 'default' : 'outline'} size="sm" onClick={() => setSelectedFilter(filter)} className="capitalize">
-                    {filter}
-                  </Button>)}
+              {/* Sort Dropdown */}
+              <div style={{ position: 'relative' }}>
+                <button
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: spacing.spacing[8],
+                    padding: `${spacing.spacing[8]} ${spacing.spacing[12]}`,
+                    backgroundColor: colors.bg.card.default,
+                    border: `1px solid ${colors.border.default}`,
+                    borderRadius: cornerRadius.borderRadius.sm,
+                    color: colors.text.default,
+                    fontSize: textStyles.sm.normal.fontSize,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease-in-out',
+                  }}
+                  onClick={() => setShowSortDropdown(!showSortDropdown)}
+                >
+                  {sortOptions.find(opt => 
+                    (sortBy === 'lastEdited' && opt.label === 'Last Edited') ||
+                    (sortBy === 'newest' && opt.label === 'Newest First') ||
+                    (sortBy === 'oldest' && opt.label === 'Oldest First') ||
+                    (sortBy === 'nameAsc' && opt.label === 'A-Z') ||
+                    (sortBy === 'nameDesc' && opt.label === 'Z-A')
+                  )?.label || 'Last Edited'}
+                  <ChevronDown size={12} />
+                </button>
+                
+                <DropdownMenu
+                  isOpen={showSortDropdown}
+                  onClose={() => setShowSortDropdown(false)}
+                  items={sortOptions}
+                  position="bottom-right"
+                  minWidth="160px"
+                />
               </div>
-
-              {isLoading ? <div className="text-center py-8">Loading...</div> : <div className="space-y-8">
-                  {/* Saved Drafts Section */}
-                  <div>
-                    <h2 className="text-2xl font-semibold text-gray-900 mb-4">Saved Drafts</h2>
-                    {filteredDrafts.length === 0 ? <Card className="border border-gray-200 shadow-sm rounded-lg">
-                        <CardContent className="p-8 text-center">
-                          <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                          <p className="text-gray-600">No drafts found. Start writing to create your first draft!</p>
-                          <Button onClick={handleCreateNew} className="mt-4">
-                            <Plus className="h-4 w-4 mr-2" />
-                            Create New Post
-                          </Button>
-                        </CardContent>
-                      </Card> : <div className="grid gap-4">
-                        {filteredDrafts.map(draft => <Card key={draft.id} className="border border-gray-200 shadow-sm rounded-lg">
-                            <CardContent className="p-4">
-                              <div className="flex items-start justify-between">
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <h3 className="font-semibold text-gray-900 text-lg">
-                                      {draft.title || 'Untitled'}
-                                    </h3>
-                                    <Badge className={getStatusColor(draft.status)}>
-                                      {draft.status}
-                                    </Badge>
                                   </div>
-                                  <p className="text-gray-600 text-sm mb-2 line-clamp-2">
-                                    {draft.content.substring(0, 150)}...
-                                  </p>
-                                  <p className="text-xs text-gray-500">
-                                    Last updated: {new Date(draft.updated_at).toLocaleDateString()}
-                                  </p>
                                 </div>
-                                <div className="flex gap-2 ml-4">
-                                  <Button variant="outline" size="sm" onClick={() => handleEditDraft(draft)}>
-                                    <Edit className="h-4 w-4 mr-1" />
-                                    Edit
-                                  </Button>
-                                  <Button variant="outline" size="sm" onClick={() => handleDeleteDraft(draft.id)} className="text-red-600 hover:text-red-700">
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
+
+          {/* Loading State */}
+          {isLoading && (
+            <div style={{
+              textAlign: 'center',
+              padding: spacing.spacing[48],
+              color: colors.text.muted,
+            }}>
+              <div style={{
+                width: '32px',
+                height: '32px',
+                border: `2px solid ${colors.border.default}`,
+                borderTop: `2px solid ${colors.border.highlight}`,
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite',
+                margin: '0 auto',
+                marginBottom: spacing.spacing[16],
+              }} />
+              <p style={textStyles.sm.medium}>Loading your posts...</p>
                                 </div>
+          )}
+
+          {/* Content Sections */}
+          {!isLoading && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[32] }}>
+              {/* Saved Drafts Section */}
+              <div style={sectionStyles}>
+                <h2 style={sectionTitleStyle}>Saved Drafts</h2>
+                
+                {draftCards.length === 0 ? (
+                  <div style={{
+                    backgroundColor: colors.bg.card.default,
+                    border: `1px solid ${colors.border.default}`,
+                    borderRadius: cornerRadius.borderRadius.lg,
+                    boxShadow: getShadow('regular.card', colors, { withBorder: true }),
+                    padding: spacing.spacing[32],
+                    textAlign: 'center',
+                  }}>
+                    <FileText style={{ 
+                      width: '48px', 
+                      height: '48px', 
+                      color: colors.text.muted,
+                      margin: '0 auto',
+                      marginBottom: spacing.spacing[16],
+                    }} />
+                    <p style={{ ...textStyles.sm.medium, color: colors.text.subtle, margin: 0, marginBottom: spacing.spacing[16] }}>
+                      No drafts found. Start writing to create your first draft!
+                    </p>
+                    <Button
+                      label="Create New Post"
+                      style="primary"
+                      size="sm"
+                      leadIcon={<Plus size={16} />}
+                      onClick={handleCreateNewClick}
+                    />
                               </div>
-                            </CardContent>
-                          </Card>)}
-                      </div>}
+                ) : (
+                  <div style={contentGridStyles}>
+                    {draftCards.map((draft) => (
+                      <ContentCard
+                        key={draft.id}
+                        variant={draft.variant}
+                        title={draft.title}
+                        subtitle={draft.subtitle}
+                        content={draft.content}
+                        onClick={() => {
+                          const originalDraft = savedDrafts.find(d => d.id === draft.id);
+                          if (originalDraft) handleEditDraft(originalDraft);
+                        }}
+                        onMenuAction={(action) => handleDraftAction(action, draft.id)}
+                      />
+                    ))}
+                  </div>
+                )}
                   </div>
 
                   {/* Content Suggestions Section */}
-                  <div>
-                    <h2 className="text-2xl font-semibold text-gray-900 mb-4">Unused Content Suggestions</h2>
-                    {contentSuggestions.length === 0 ? <Card className="border border-gray-200 shadow-sm rounded-lg">
-                        <CardContent className="p-8 text-center">
-                          <p className="text-gray-600">No unused suggestions available.</p>
-                        </CardContent>
-                      </Card> : <div className="grid gap-4">
-                        {contentSuggestions.map(suggestion => <Card key={suggestion.id} className="border border-gray-200 shadow-sm rounded-lg">
-                            <CardContent className="p-4">
-                              <div className="flex items-start justify-between">
-                                <div className="flex-1">
-                                  <h3 className="font-semibold text-gray-900 text-lg mb-2">
-                                    {suggestion.title}
-                                  </h3>
-                                  {suggestion.description && <p className="text-gray-600 text-sm mb-2">
-                                      {suggestion.description}
-                                    </p>}
-                                  {suggestion.suggested_outline && <p className="text-gray-500 text-xs">
-                                      Outline: {suggestion.suggested_outline.substring(0, 100)}...
-                                    </p>}
+              <div style={sectionStyles}>
+                <h2 style={sectionTitleStyle}>Unused Content Suggestions</h2>
+                
+                {suggestionCards.length === 0 ? (
+                  <div style={{
+                    backgroundColor: colors.bg.card.default,
+                    border: `1px solid ${colors.border.default}`,
+                    borderRadius: cornerRadius.borderRadius.lg,
+                    boxShadow: getShadow('regular.card', colors, { withBorder: true }),
+                    padding: spacing.spacing[32],
+                    textAlign: 'center',
+                  }}>
+                    <p style={{ ...textStyles.sm.medium, color: colors.text.subtle, margin: 0 }}>
+                      No unused suggestions available.
+                    </p>
                                 </div>
-                                <Button variant="outline" size="sm" onClick={() => handleCreateFromSuggestion(suggestion)}>
-                                  <Plus className="h-4 w-4 mr-1" />
-                                  Create Post
-                                </Button>
-                              </div>
-                            </CardContent>
-                          </Card>)}
-                      </div>}
+                ) : (
+                  <div style={contentGridStyles}>
+                    {suggestionCards.map((suggestion) => (
+                      <ContentCard
+                        key={suggestion.id}
+                        variant={suggestion.variant}
+                        title={suggestion.title}
+                        subtitle={suggestion.subtitle}
+                        content={suggestion.content}
+                        onClick={() => {
+                          const originalSuggestion = contentSuggestions.find(s => s.id === suggestion.id);
+                          if (originalSuggestion) handleCreateFromSuggestion(originalSuggestion);
+                        }}
+                        onMenuAction={(action) => handleSuggestionAction(action, suggestion.id)}
+                      />
+                    ))}
                   </div>
-                </div>}
+                )}
+              </div>
             </div>
+          )}
           </div>
-        </SidebarInset>
       </div>
-    </SidebarProvider>;
+    </div>
+  );
 };
+
 export default Posts;

@@ -1,225 +1,354 @@
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Plus, X, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useInspirations } from '@/hooks/api/useInspirations';
+import { useTheme } from '@/services/theme-context';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+
+// Design System Components
+import TopNav from '@/design-system/components/TopNav';
+import Button from '@/design-system/components/Button';
+import Input from '@/design-system/components/Input';
+import ProgressBar from '@/design-system/components/ProgressBar';
+import Bichaurinho from '@/design-system/components/Bichaurinho';
+
+// Design System Tokens
+import { spacing } from '@/design-system/tokens/spacing';
+import { cornerRadius } from '@/design-system/tokens/corner-radius';
+import { getShadow } from '@/design-system/tokens/shadows';
+import { typography } from '@/design-system/tokens/typography';
+
+// Icons
+import { ArrowLeft, ArrowRight, Plus, Trash2 } from 'lucide-react';
+
+interface Benchmark {
+  id: number;
+  value: string;
+  isRequired: boolean;
+}
 
 const Inspirations = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { 
-    inspirations, 
-    loading, 
-    adding, 
-    error,
-    addInspiration, 
-    removeInspiration,
-    validateLinkedInUrl,
-    clearError
-  } = useInspirations();
-  
-  const [linkedinUrl, setLinkedinUrl] = useState('');
+  const { colors } = useTheme();
+  const [isLoading, setIsLoading] = useState(false);
 
-  // loadInspirations is now handled automatically by useInspirations hook
+  // Initialize with one required benchmark field
+  const [benchmarks, setBenchmarks] = useState<Benchmark[]>([
+    { id: 1, value: '', isRequired: true }
+  ]);
 
   const handleGoBack = () => {
     navigate('/onboarding/first-things-first');
   };
 
-  const handleAddBenchmark = async () => {
-    if (!user || !linkedinUrl.trim()) return;
-
-    // Clear any previous errors
-    clearError();
-
-    // Frontend validation using our clean API
-    const validation = validateLinkedInUrl(linkedinUrl);
-    if (!validation.valid) {
-      toast.error(validation.error);
-      return;
-    }
-
-    try {
-      // Use our clean add inspiration API
-      const result = await addInspiration(linkedinUrl);
-
-      if (result.error) {
-        toast.error(result.error);
-        return;
-      }
-
-      // Success! Clear the input and show success message
-      setLinkedinUrl('');
-      toast.success('Inspiration added successfully!');
-      
-      // Check if LinkedIn scraping worked (if data has profile info)
-      if (result.data?.name) {
-        toast.success('LinkedIn profile analyzed successfully!');
-      } else if (result.data) {
-        toast.warning('Could not analyze LinkedIn profile, but saved the URL');
-      }
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to add inspiration');
-    }
+  const addBenchmark = () => {
+    const newId = Math.max(...benchmarks.map(b => b.id)) + 1;
+    setBenchmarks(prev => [...prev, { id: newId, value: '', isRequired: false }]);
   };
 
-  const handleRemoveInspiration = async (inspiration: any) => {
+  const removeBenchmark = (id: number) => {
+    setBenchmarks(prev => prev.filter(benchmark => benchmark.id !== id));
+  };
+
+  const updateBenchmark = (id: number, value: string) => {
+    setBenchmarks(prev =>
+      prev.map(benchmark =>
+        benchmark.id === id ? { ...benchmark, value } : benchmark
+      )
+    );
+  };
+
+  const handleContinue = async () => {
     if (!user) return;
 
+    // Validate required field (first benchmark)
+    const requiredBenchmark = benchmarks.find(b => b.isRequired);
+    if (!requiredBenchmark?.value.trim()) {
+      return; // Don't proceed if required field is empty
+    }
+
+    setIsLoading(true);
+
     try {
-      // Use our clean remove inspiration API
-      const result = await removeInspiration(inspiration.id);
+      // Filter out empty benchmarks and trim values
+      const validBenchmarks = benchmarks
+        .filter(b => b.value.trim())
+        .map(b => b.value.trim());
 
-      if (result.error) {
-        toast.error(result.error);
-        return;
-      }
+      const { error } = await supabase
+        .from('profiles')
+        .update({ inspirations: validBenchmarks })
+        .eq('user_id', user.id);
 
-      toast.success('Inspiration removed');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to remove inspiration');
+      if (error) throw error;
+
+      navigate('/onboarding/goals');
+    } catch (error) {
+      console.error('Error saving inspirations:', error);
+      toast.error('Failed to save inspirations. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleContinue = () => {
-    navigate('/onboarding/goals');
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !adding) {
-      handleAddBenchmark();
-    }
-  };
+  // Check if required field is filled
+  const requiredBenchmark = benchmarks.find(b => b.isRequired);
+  const canContinue = requiredBenchmark?.value.trim();
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-          {/* Go Back Button */}
-          <button
-            onClick={handleGoBack}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-800 mb-6 transition-colors"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Go Back
-          </button>
+    <div
+      style={{
+        minHeight: '100vh',
+        backgroundColor: colors.bg.default,
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      {/* Top Navigation */}
+      <TopNav />
 
-          {/* Green blob icon */}
-          <div className="flex justify-center mb-6">
-            <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center relative">
-              <div className="w-8 h-8 bg-green-600 rounded-full"></div>
-              <div className="absolute top-2 right-2 w-3 h-3 bg-green-400 rounded-full"></div>
-            </div>
+      {/* Content Container with gradient background */}
+      <div
+        style={{
+          flex: 1,
+          position: 'relative',
+          backgroundColor: colors.bg.default,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: spacing.spacing[40],
+          paddingBottom: '160px', // Account for button container height
+        }}
+      >
+        {/* Gradient background with 5% opacity */}
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundImage: 'url(/src/assets/images/gradient-bg.svg)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+            opacity: 0.05,
+            zIndex: 0,
+          }}
+        />
+
+        {/* Content Column */}
+        <div style={{
+          position: 'relative',
+          zIndex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: spacing.spacing[24],
+          alignItems: 'center',
+        }}>
+          {/* Back Button */}
+          <div style={{ alignSelf: 'flex-start', width: '400px' }}>
+            <Button
+              label="Go Back"
+              style="dashed"
+              size="xs"
+              leadIcon={<ArrowLeft size={12} />}
+              onClick={handleGoBack}
+            />
           </div>
 
-          <h1 className="text-4xl font-bold font-playfair text-[#111115] mb-4 text-center">
-            Inspirations
-          </h1>
-
-          <p className="text-[#4E4E55] text-sm text-center leading-relaxed mb-8">
-            Tell us what are the profiles on LinkedIn that you<br />
-            admire, and want to be more like
-          </p>
-
-          {/* LinkedIn Profile Input */}
-          <div className="mb-4">
-            <label className="block text-[#111115] text-sm font-medium mb-2">
-              LinkedIn Profile <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <Input
-                type="url"
-                value={linkedinUrl}
-                onChange={(e) => setLinkedinUrl(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="www.linkedin.com/in/"
-                className="w-full bg-white border-[rgba(39,39,42,0.15)] text-sm"
-              />
-            </div>
-          </div>
-
-          {/* Add Benchmark Button */}
-          <Button
-            onClick={handleAddBenchmark}
-            variant="outline"
-            className="w-full mb-6 border-dashed border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400"
-            disabled={!linkedinUrl.trim() || adding}
+          {/* Main Card */}
+          <div
+            style={{
+              backgroundColor: colors.bg.card.default,
+              borderRadius: cornerRadius.borderRadius.lg,
+              border: `1px solid ${colors.border.darker}`,
+              boxShadow: getShadow('regular.card', colors, { withBorder: true }),
+              width: '400px',
+              overflow: 'hidden',
+            }}
           >
-            {adding ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Analyzing Profile...
-              </>
-            ) : (
-              <>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Benchmark
-              </>
-            )}
-          </Button>
-
-          {/* Added Inspirations List */}
-          {inspirations.length > 0 && (
-            <div className="mb-6 space-y-2">
-              {inspirations.map((inspiration) => (
-                <div
-                  key={inspiration.id}
-                  className="flex items-start justify-between bg-gray-50 rounded-lg p-3 border border-gray-200"
-                >
-                  <div className="flex-1 truncate">
-                    {inspiration.name && (
-                      <div className="font-medium text-sm text-gray-900 mb-1">
-                        {inspiration.name}
-                      </div>
-                    )}
-                    {inspiration.headline && (
-                      <div className="text-xs text-gray-600 mb-1">
-                        {inspiration.headline}
-                      </div>
-                    )}
-                    {inspiration.company && (
-                      <div className="text-xs text-gray-500 mb-1">
-                        {inspiration.company}
-                      </div>
-                    )}
-                    <div className="text-xs text-blue-600 truncate">
-                      {inspiration.linkedin_url}
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => handleRemoveInspiration(inspiration)}
-                    className="ml-2 text-gray-400 hover:text-red-500 transition-colors flex-shrink-0"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
+            {/* Main Container */}
+            <div
+              style={{
+                padding: spacing.spacing[36],
+                backgroundColor: colors.bg.card.default,
+                borderBottom: `1px solid ${colors.border.default}`,
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              {/* Heading Container - 16px gap between bichaurinho and title/subtitle */}
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-start',
+                  gap: spacing.spacing[16],
+                  marginBottom: spacing.spacing[32],
+                }}
+              >
+                {/* Bichaurinho */}
+                <div>
+                  <Bichaurinho variant={8} size={48} />
                 </div>
-              ))}
+
+                {/* Title and Subtitle Container - 12px gap between title and subtitle */}
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: spacing.spacing[12],
+                    alignItems: 'flex-start',
+                  }}
+                >
+                  {/* Title */}
+                  <h1
+                    style={{
+                      fontFamily: typography.fontFamily['awesome-serif'],
+                      fontSize: typography.desktop.size['5xl'],
+                      fontWeight: typography.desktop.weight.semibold,
+                      lineHeight: '0.9',
+                      color: colors.text.default,
+                      margin: 0,
+                      textAlign: 'left',
+                    }}
+                  >
+                    Who Do You<br />Look Up To?
+                  </h1>
+
+                  {/* Subtitle */}
+                  <p
+                    style={{
+                      fontFamily: typography.fontFamily.body,
+                      fontSize: typography.desktop.size.sm,
+                      fontWeight: typography.desktop.weight.normal,
+                      lineHeight: typography.desktop.lineHeight.sm,
+                      color: colors.text.muted,
+                      margin: 0,
+                      textAlign: 'left',
+                    }}
+                  >
+                    Your Benchmarks. Share the LinkedIn profiles of people whose content style you admire.
+                  </p>
+                </div>
+              </div>
+
+              {/* Dynamic Inputs Container */}
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: spacing.spacing[12],
+                }}
+              >
+                {benchmarks.map((benchmark, index) => (
+                  <div
+                    key={benchmark.id}
+                    style={{
+                      display: 'flex',
+                      gap: spacing.spacing[8],
+                      alignItems: 'center',
+                    }}
+                  >
+                    <div style={{ flex: 1 }}>
+                      <Input
+                        placeholder={index === 0 ? "Benchmark 1 *" : `Benchmark ${index + 1}`}
+                        value={benchmark.value}
+                        onChange={(e) => updateBenchmark(benchmark.id, e.target.value)}
+                        style="default"
+                        size="lg"
+                        disabled={isLoading}
+                      />
+                    </div>
+                    
+                    {/* Only show delete button for non-required benchmarks */}
+                    {!benchmark.isRequired && (
+                      <Button
+                        label=""
+                        style="ghost"
+                        size="sm"
+                        leadIcon={<Trash2 size={16} />}
+                        onClick={() => removeBenchmark(benchmark.id)}
+                        disabled={isLoading}
+                      />
+                    )}
+                  </div>
+                ))}
+
+                {/* Add Benchmark Button */}
+                <div style={{ marginTop: spacing.spacing[8] }}>
+                  <Button
+                    label="Add Another Benchmark"
+                    style="dashed"
+                    size="sm"
+                    leadIcon={<Plus size={16} />}
+                    onClick={addBenchmark}
+                    disabled={isLoading}
+                  />
+                </div>
+              </div>
             </div>
-          )}
 
-          <p className="text-[#4E4E55] text-sm text-center mb-8">
-            We'll ask a few questions to tailor your strategy.
-          </p>
-
-          {/* Progress indicator */}
-          <div className="flex justify-center gap-2 mb-8">
-            <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
-            <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
-            <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
-            <div className="w-8 h-1 bg-gray-300 rounded-full"></div>
-            <div className="w-8 h-1 bg-gray-300 rounded-full"></div>
-            <div className="w-8 h-1 bg-gray-300 rounded-full"></div>
+            {/* Text Container */}
+            <div
+              style={{
+                padding: `${spacing.spacing[24]} ${spacing.spacing[36]}`,
+                backgroundColor: colors.bg.card.subtle,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: spacing.spacing[4],
+              }}
+            >
+              <p
+                style={{
+                  fontFamily: typography.fontFamily.body,
+                  fontSize: typography.desktop.size.sm,
+                  fontWeight: typography.desktop.weight.normal,
+                  lineHeight: typography.desktop.lineHeight.sm,
+                  color: colors.text.muted,
+                  margin: 0,
+                  textAlign: 'center',
+                }}
+              >
+                {!canContinue 
+                  ? "Please add at least one benchmark to continue."
+                  : "Great! We'll analyze these profiles to understand your style preferences."
+                }
+              </p>
+            </div>
           </div>
+        </div>
+      </div>
 
-          <Button 
+      {/* Button Container - Fixed overlay at bottom */}
+      <div
+        style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: '80px',
+          backgroundColor: colors.bg.default,
+          borderTop: `1px solid ${colors.border.default}`,
+          padding: spacing.spacing[40],
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 10,
+        }}
+      >
+        <div style={{ width: '280px' }}>
+          <Button
+            label={isLoading ? "Saving..." : "Continue"}
+            style="primary"
+            size="lg"
+            tailIcon={!isLoading ? <ArrowRight size={16} /> : undefined}
             onClick={handleContinue}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg"
-          >
-            Continue
-          </Button>
+            disabled={!canContinue || isLoading}
+            className="w-full"
+          />
         </div>
       </div>
     </div>

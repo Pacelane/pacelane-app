@@ -1,26 +1,32 @@
-import React, { useState, useRef } from 'react';
-import { AppSidebar } from '@/components/app-sidebar';
-import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Search, Upload, FileText, Image, Film, Music, Link, FileSpreadsheet, Trash2 } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useContent } from '@/hooks/api/useContent';
+import { useTheme } from '@/services/theme-context';
 import { toast } from 'sonner';
 
-interface NavigationItem {
-  id: string;
-  label: string;
-  icon: string;
-  isActive?: boolean;
-}
+// Design System Components
+import HomeSidebar from '@/design-system/components/HomeSidebar';
+import FileUpload from '@/design-system/components/FileUpload';
+import FileCard from '@/design-system/components/FileCard';
+import Tabs from '@/design-system/components/Tabs';
+import DropdownMenu from '@/design-system/components/DropdownMenu';
+import Input from '@/design-system/components/Input';
+
+// Design System Tokens
+import { spacing } from '@/design-system/tokens/spacing';
+import { textStyles } from '@/design-system/styles/typography/typography-styles';
+import { typography } from '@/design-system/tokens/typography';
+import { cornerRadius } from '@/design-system/tokens/corner-radius';
+import { getShadow } from '@/design-system/tokens/shadows';
+
+// Icons
+import { Search, ChevronDown } from 'lucide-react';
 
 const KnowledgeBase = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const { colors } = useTheme();
   
   // ========== CLEAN CONTENT STATE MANAGEMENT ==========
   const {
@@ -37,95 +43,158 @@ const KnowledgeBase = () => {
   } = useContent();
 
   // ========== LOCAL COMPONENT STATE ==========
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [activeFilter, setActiveFilter] = useState('all');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeNavItem, setActiveNavItem] = useState('knowledge');
-  const [linkInput, setLinkInput] = useState('');
+  const [sortBy, setSortBy] = useState('lastAdded');
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
+  const [urlInput, setUrlInput] = useState('');
 
-  // Helper functions now provided by useContent hook!
+  // Main container styles - accounting for sidebar
+  const mainContainerStyles = {
+    marginLeft: isSidebarCollapsed ? '72px' : '240px',
+    transition: 'margin-left 0.3s cubic-bezier(0.4, 0.0, 0.2, 1)',
+    minHeight: '100vh',
+    backgroundColor: colors?.bg?.default || '#ffffff',
+    width: `calc(100vw - ${isSidebarCollapsed ? '72px' : '240px'})`,
+    position: 'relative',
+    paddingTop: spacing.spacing[80],
+    paddingBottom: spacing.spacing[160],
+    paddingLeft: spacing.spacing[32],
+    paddingRight: spacing.spacing[32],
+  };
 
-  const navigationItems: NavigationItem[] = [
-    {
-      id: 'home',
-      label: 'Home',
-      icon: 'home',
-      isActive: activeNavItem === 'home'
-    },
-    {
-      id: 'posts',
-      label: 'Posts',
-      icon: 'knowledge',
-      isActive: activeNavItem === 'posts'
-    },
-    {
-      id: 'profile',
-      label: 'Profile',
-      icon: 'profile',
-      isActive: activeNavItem === 'profile'
-    },
-    {
-      id: 'knowledge',
-      label: 'Knowledge',
-      icon: 'knowledge',
-      isActive: activeNavItem === 'knowledge'
-    },
-    {
-      id: 'calendar',
-      label: 'Calendar',
-      icon: 'calendar',
-      isActive: activeNavItem === 'calendar'
-    }
-  ];
+  // Content container styles
+  const containerStyles = {
+    width: '100%',
+    maxWidth: '1200px',
+    margin: '0 auto',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacing.spacing[24],
+  };
 
-  // Data loading now handled automatically by useContent hook!
+  // Title style using awesome serif font, 4xl semi bold
+  const titleStyle = {
+    fontFamily: typography.fontFamily['awesome-serif'],
+    fontSize: typography.desktop.size['4xl'],
+    fontWeight: typography.desktop.weight.semibold,
+    lineHeight: typography.desktop.lineHeight.leading7,
+    letterSpacing: typography.desktop.letterSpacing.normal,
+    color: colors.text.default,
+    margin: 0,
+  };
 
+  // Subtitle style - sm medium, text subtle
+  const subtitleStyle = {
+    ...textStyles.sm.medium,
+    color: colors.text.subtle,
+    margin: 0,
+    marginTop: spacing.spacing[8],
+  };
+
+  // Filter tabs configuration
   const filterTabs = [
     { id: 'all', label: 'All' },
     { id: 'files', label: 'Files' },
     { id: 'images', label: 'Images' },
-    { id: 'audios', label: 'Audios' },
-    { id: 'videos', label: 'Videos' },
-    { id: 'links', label: 'Links' }
+    { id: 'audio', label: 'Audio' },
+    { id: 'links', label: 'Links' },
   ];
 
-  const handleCreateNew = () => {
-    navigate('/content-editor');
+  // Sort dropdown options
+  const sortOptions = [
+    { label: 'Last Added', onClick: () => setSortBy('lastAdded') },
+    { label: 'Name A-Z', onClick: () => setSortBy('nameAsc') },
+    { label: 'Name Z-A', onClick: () => setSortBy('nameDesc') },
+    { label: 'Size (Largest)', onClick: () => setSortBy('sizeLarge') },
+    { label: 'Size (Smallest)', onClick: () => setSortBy('sizeSmall') },
+  ];
+
+  // Transform knowledge files to FileCard format
+  const getFileCards = () => {
+    return knowledgeFiles.map(item => {
+      // Map file type to FileCard expected types
+      let cardFileType = 'default';
+      switch (item.type) {
+        case 'image':
+          cardFileType = 'image';
+          break;
+        case 'video':
+          cardFileType = 'video';
+          break;
+        case 'audio':
+          cardFileType = 'audio';
+          break;
+        case 'link':
+          cardFileType = 'link';
+          break;
+        default:
+          // Check file extension for more specific types
+          if (item.name?.toLowerCase().endsWith('.pdf')) {
+            cardFileType = 'pdf';
+          } else if (item.name?.toLowerCase().endsWith('.zip')) {
+            cardFileType = 'zip';
+          } else {
+            cardFileType = 'default';
+          }
+      }
+
+      return {
+        id: item.id,
+        title: item.name,
+        subtitle: `${item.size ? `${(item.size / 1024).toFixed(1)} KB` : ''} • ${new Date(item.created_at).toLocaleDateString()}`,
+        fileType: cardFileType,
+        status: 'ready',
+        fileSize: item.size,
+      };
+    });
   };
 
-  const handleUserMenuClick = () => {
-    navigate('/profile');
+  // Filter files based on active tab
+  const getFilteredFiles = () => {
+    const allFiles = getFileCards();
+    
+    if (activeTab === 'all') return allFiles;
+    
+    return allFiles.filter(file => {
+      switch (activeTab) {
+        case 'files':
+          return ['default', 'pdf', 'zip'].includes(file.fileType);
+        case 'images':
+          return file.fileType === 'image';
+        case 'audio':
+          return file.fileType === 'audio';
+        case 'links':
+          return file.fileType === 'link';
+        default:
+          return true;
+      }
+    });
   };
 
-  const handleNavigationClick = (itemId: string) => {
-    setActiveNavItem(itemId);
-    if (itemId === 'home') {
-      navigate('/product-home');
-    } else if (itemId === 'profile') {
-      navigate('/profile');
-    } else if (itemId === 'posts') {
-      navigate('/posts');
+  // Sort files based on sortBy
+  const getSortedFiles = (files) => {
+    switch (sortBy) {
+      case 'nameAsc':
+        return [...files].sort((a, b) => a.title.localeCompare(b.title));
+      case 'nameDesc':
+        return [...files].sort((a, b) => b.title.localeCompare(a.title));
+      case 'sizeLarge':
+        return [...files].sort((a, b) => (b.fileSize || 0) - (a.fileSize || 0));
+      case 'sizeSmall':
+        return [...files].sort((a, b) => (a.fileSize || 0) - (b.fileSize || 0));
+      case 'lastAdded':
+      default:
+        return files; // Already sorted by creation date from backend
     }
   };
 
-  const handleFinishOnboarding = () => {
-    console.log('Finish onboarding clicked');
-  };
-
-  const handleHelpClick = () => {
-    console.log('Help clicked');
-  };
-
-  const handleFileUpload = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
+  // File upload handlers
+  const handleFileSelect = async (files) => {
     if (!files || files.length === 0) return;
 
     try {
-      // Use clean uploadFiles API
       const result = await uploadFiles(Array.from(files));
       
       if (result.error) {
@@ -139,12 +208,11 @@ const KnowledgeBase = () => {
     }
   };
 
-  const handleLinkSubmit = async () => {
-    if (!linkInput.trim()) return;
+  const handleUrlSubmit = async (url) => {
+    if (!url.trim()) return;
 
     try {
-      // Use clean addLink API
-      const result = await addLink({ url: linkInput });
+      const result = await addLink({ url });
       
       if (result.error) {
         toast.error(result.error);
@@ -152,248 +220,264 @@ const KnowledgeBase = () => {
       }
       
       toast.success('Link added successfully');
-      setLinkInput('');
+      setUrlInput('');
     } catch (error: any) {
       toast.error(error.message || 'Failed to add link');
     }
   };
 
-  const handleDeleteItem = async (itemId: string) => {
-    if (!user) return;
-    
-    try {
-      // Use clean deleteKnowledgeFile API
-      const result = await deleteKnowledgeFile(itemId);
-      
-      if (result.error) {
-        toast.error(result.error);
-        return;
+  const handleFileAction = async (action, fileId) => {
+    if (action === 'delete') {
+      try {
+        const result = await deleteKnowledgeFile(fileId);
+        
+        if (result.error) {
+          toast.error(result.error);
+          return;
+        }
+        
+        toast.success('File deleted successfully');
+      } catch (error: any) {
+        toast.error(error.message || 'Failed to delete file');
       }
-      
-      toast.success('File deleted successfully');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to delete file');
     }
   };
 
-  const getFileIcon = (type: string) => {
-    switch (type) {
-      case 'image': return Image;
-      case 'video': return Film;
-      case 'audio': return Music;
-      case 'link': return Link;
-      default: return FileText;
+  // Sidebar event handlers
+  const handleMenuItemClick = (menuId: string) => {
+    switch (menuId) {
+      case 'home':
+        navigate('/product-home');
+        break;
+      case 'profile':
+        navigate('/profile');
+        break;
+      case 'knowledge':
+        // Already on knowledge
+        break;
+      case 'history':
+        navigate('/posts');
+        break;
+      default:
+        console.log('Navigation for:', menuId);
     }
   };
 
-  const filteredItems = knowledgeFiles.filter(item => {
-    // Filter by type
-    const typeMatch = activeFilter === 'all' || 
-      (activeFilter === 'files' && item.type === 'file') ||
-      (activeFilter === 'images' && item.type === 'image') ||
-      (activeFilter === 'audios' && item.type === 'audio') ||
-      (activeFilter === 'videos' && item.type === 'video') ||
-      (activeFilter === 'links' && item.type === 'link');
+  const handleCreateNewClick = () => {
+    navigate('/content-editor');
+  };
 
-    // Filter by search query
-    const searchMatch = !searchQuery || 
-      item.name.toLowerCase().includes(searchQuery.toLowerCase());
+  const handleAvatarClick = () => {
+    navigate('/profile');
+  };
 
-    return typeMatch && searchMatch;
-  });
+  const handleSignOut = async () => {
+    // Handle sign out if needed
+  };
+
+  // Get user display info
+  const getUserName = () => {
+    if (profile?.display_name) return profile.display_name;
+    if (profile?.linkedin_name) return profile.linkedin_name;
+    if (user?.email) return user.email.split('@')[0];
+    return 'User';
+  };
+
+  const getUserAvatar = () => {
+    return 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=48&h=48&fit=crop&crop=face';
+  };
+
+  // Grid styles for file cards - 2 columns
+  const gridStyles = {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(2, 1fr)',
+    gap: spacing.spacing[20],
+    width: '100%',
+  };
+
+  // Row styles for tabs and search
+  const controlRowStyles = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.spacing[24],
+    width: '100%',
+  };
+
+  // Right section styles for search and dropdown
+  const rightSectionStyles = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacing.spacing[12],
+  };
 
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen w-full">
-        <AppSidebar
-          userName={user?.email?.split('@')[0] || 'User'}
-          userAvatar="/lovable-uploads/fe97b466-2c78-4c2a-baeb-f2e13105460d.png"
-          navigationItems={navigationItems}
-          onCreateNew={handleCreateNew}
-          onUserMenuClick={handleUserMenuClick}
-          onNavigationClick={handleNavigationClick}
-          onFinishOnboarding={handleFinishOnboarding}
-          onHelpClick={handleHelpClick}
-        />
-        
-        <SidebarInset>
-          <header className="flex h-16 items-center gap-4 border-b bg-neutral-50 px-4">
-            <SidebarTrigger />
-          </header>
-          
-          <main className="flex-1 p-6">
-            <div className="max-w-7xl mx-auto">
-              {/* Header */}
-              <div className="flex items-center justify-between mb-2">
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-900 mb-2">Knowledge Base</h1>
-                  <p className="text-gray-600">Here you can find all the files, links, and images to use as reference to the AI</p>
-                </div>
-                <Button variant="outline" className="text-blue-600 border-blue-600 hover:bg-blue-50">
-                  Manage Integrations
-                </Button>
-              </div>
+    <div style={{ display: 'flex', minHeight: '100vh' }}>
+      {/* HomeSidebar */}
+      <HomeSidebar
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapsed={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+        userName={getUserName()}
+        userAvatar={getUserAvatar()}
+        activeMenuItem="knowledge"
+        onMenuItemClick={handleMenuItemClick}
+        onCreateNewClick={handleCreateNewClick}
+        onAvatarClick={handleAvatarClick}
+        onThemeChange={(theme) => console.log('Theme changed:', theme)}
+        onHelpClick={() => console.log('Help clicked')}
+      />
 
-              {/* Upload Section */}
-              <div className="bg-white rounded-lg border border-gray-200 p-8 mb-6">
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                  multiple
-                  accept=".pdf,.docx,.doc,.png"
-                  className="hidden"
+      {/* Main Content */}
+      <div style={mainContainerStyles}>
+        <div style={containerStyles}>
+          {/* Header Section */}
+          <div>
+            <h1 style={titleStyle}>Knowledge Base</h1>
+            <p style={subtitleStyle}>
+              Organize and access all your project files, documents, and resources in one place
+            </p>
+          </div>
+
+          {/* File Upload Area */}
+          <FileUpload
+            onFileSelect={handleFileSelect}
+            onUrlSubmit={handleUrlSubmit}
+            urlValue={urlInput}
+            onUrlChange={setUrlInput}
+            urlPlaceholder="Paste a website URL or document link here"
+            accept="*/*"
+            multiple={true}
+            maxFiles={20}
+          />
+
+          {/* Controls Row - Tabs and Search */}
+          <div style={controlRowStyles}>
+            {/* Left: Tab Bar */}
+            <Tabs
+              style="segmented"
+              type="default"
+              tabs={filterTabs}
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+            />
+
+            {/* Right: Search and Sort */}
+            <div style={rightSectionStyles}>
+              {/* Search Input */}
+              <div style={{ width: '280px' }}>
+                <Input
+                  size="lg"
+                  style="default"
+                  placeholder="Search files..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  leadIcon={<Search size={16} />}
                 />
+              </div>
+
+              {/* Sort Dropdown */}
+              <div style={{ position: 'relative' }}>
+                <button
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: spacing.spacing[8],
+                    padding: `${spacing.spacing[8]} ${spacing.spacing[12]}`,
+                    backgroundColor: colors.bg.card.default,
+                    border: `1px solid ${colors.border.default}`,
+                    borderRadius: cornerRadius.borderRadius.sm,
+                    color: colors.text.default,
+                    fontSize: textStyles.sm.normal.fontSize,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease-in-out',
+                  }}
+                  onClick={() => setShowSortDropdown(!showSortDropdown)}
+                >
+                  {sortOptions.find(opt => 
+                    (sortBy === 'lastAdded' && opt.label === 'Last Added') ||
+                    (sortBy === 'nameAsc' && opt.label === 'Name A-Z') ||
+                    (sortBy === 'nameDesc' && opt.label === 'Name Z-A') ||
+                    (sortBy === 'sizeLarge' && opt.label === 'Size (Largest)') ||
+                    (sortBy === 'sizeSmall' && opt.label === 'Size (Smallest)')
+                  )?.label || 'Last Added'}
+                  <ChevronDown size={12} />
+                </button>
                 
-                <div className="text-center">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
-                    <Upload className={`w-8 h-8 ${uploading ? 'text-blue-600' : 'text-gray-400'}`} />
-                  </div>
-                  <p className="text-gray-600 mb-2">
-                    {uploading ? 'Uploading files...' : 'Drop your files here, or'}{' '}
-                    {!uploading && (
-                      <button 
-                        onClick={handleFileUpload}
-                        className="text-blue-600 hover:underline"
-                        disabled={uploading}
-                      >
-                        click to browse
-                      </button>
-                    )}
-                  </p>
-                  <p className="text-sm text-gray-400">Support for PDF, Word (.docx), and PNG files</p>
-                </div>
-
-                <div className="flex items-center justify-center my-6">
-                  <div className="flex-1 border-t border-gray-200"></div>
-                  <span className="px-4 text-gray-500">or</span>
-                  <div className="flex-1 border-t border-gray-200"></div>
-                </div>
-
-                <div className="text-center">
-                  <p className="text-gray-600 mb-4">Add a link to a website</p>
-                  <div className="flex items-center justify-center gap-2 max-w-md mx-auto">
-                    <span className="text-gray-500">https://</span>
-                    <Input
-                      placeholder="example.com"
-                      value={linkInput}
-                      onChange={(e) => setLinkInput(e.target.value)}
-                      className="flex-1"
-                      onKeyPress={(e) => e.key === 'Enter' && handleLinkSubmit()}
-                    />
-                    <Button 
-                      onClick={handleLinkSubmit}
-                      disabled={!linkInput.trim()}
-                      size="sm"
-                    >
-                      Add
-                    </Button>
-                  </div>
-                </div>
+                <DropdownMenu
+                  isOpen={showSortDropdown}
+                  onClose={() => setShowSortDropdown(false)}
+                  items={sortOptions}
+                  position="bottom-right"
+                  minWidth="160px"
+                />
               </div>
-
-              {/* Filters and Search */}
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-1">
-                  {filterTabs.map((tab) => (
-                    <Button
-                      key={tab.id}
-                      variant={activeFilter === tab.id ? 'default' : 'ghost'}
-                      size="sm"
-                      onClick={() => setActiveFilter(tab.id)}
-                      className={`px-4 py-2 ${
-                        activeFilter === tab.id 
-                          ? 'bg-gray-100 text-gray-900' 
-                          : 'text-gray-600 hover:text-gray-900'
-                      }`}
-                    >
-                      {tab.label}
-                    </Button>
-                  ))}
-                </div>
-
-                <div className="flex items-center gap-4">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <Input
-                      placeholder="Search"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10 w-64"
-                    />
-                  </div>
-                  <Select defaultValue="last-edited">
-                    <SelectTrigger className="w-40">
-                      <SelectValue placeholder="Sort By" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="last-edited">Last Edited</SelectItem>
-                      <SelectItem value="name">Name</SelectItem>
-                      <SelectItem value="date-added">Date Added</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Content Grid */}
-              {loading ? (
-                <div className="text-center py-12">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                  <p className="text-gray-600">Loading your files...</p>
-                </div>
-              ) : filteredItems.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
-                    <FileText className="w-8 h-8 text-gray-400" />
-                  </div>
-                  <p className="text-gray-600 mb-2">No files found</p>
-                  <p className="text-sm text-gray-400">
-                    {searchQuery 
-                      ? 'Try adjusting your search or filters' 
-                      : 'Upload your first file to get started'
-                    }
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredItems.map((item) => {
-                    const IconComponent = getFileIcon(item.type);
-                    return (
-                      <div key={item.id} className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow group">
-                        <div className="aspect-video relative bg-gray-50 flex items-center justify-center">
-                          <IconComponent className="w-12 h-12 text-gray-400" />
-                          <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => handleDeleteItem(item.id)}
-                              className="h-8 w-8 p-0"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                        <div className="p-4">
-                          <h3 className="font-medium text-gray-900 mb-1 truncate">{item.name}</h3>
-                          <p className="text-sm text-gray-500">
-                            Added {new Date(item.created_at).toLocaleDateString()}
-                          </p>
-                          {item.size && (
-                            <p className="text-xs text-gray-400 mt-1">
-                              {(item.size / 1024).toFixed(1)} KB
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
             </div>
-          </main>
-        </SidebarInset>
+          </div>
+
+          {/* Loading State */}
+          {loading && (
+            <div style={{
+              textAlign: 'center',
+              padding: spacing.spacing[48],
+              color: colors.text.muted,
+            }}>
+              <div style={{
+                width: '32px',
+                height: '32px',
+                border: `2px solid ${colors.border.default}`,
+                borderTop: `2px solid ${colors.border.highlight}`,
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite',
+                margin: '0 auto',
+                marginBottom: spacing.spacing[16],
+              }} />
+              <p style={textStyles.sm.medium}>Loading your files...</p>
+            </div>
+          )}
+
+          {/* File Grid - 2 columns */}
+          {!loading && (
+            <div style={gridStyles}>
+              {getSortedFiles(getFilteredFiles())
+                .filter(file => 
+                  searchQuery === '' || 
+                  file.title.toLowerCase().includes(searchQuery.toLowerCase())
+                )
+                .map((file) => (
+                  <FileCard
+                    key={file.id}
+                    variant="gradient"
+                    title={file.title}
+                    subtitle={file.subtitle}
+                    fileType={file.fileType}
+                    status={file.status}
+                    fileSize={file.fileSize}
+                    onMenuAction={(action) => handleFileAction(action, file.id)}
+                    onClick={() => console.log(`Clicked file: ${file.id}`)}
+                  />
+                ))}
+            </div>
+          )}
+
+          {/* Empty state when no files match */}
+          {!loading && getSortedFiles(getFilteredFiles()).filter(file => 
+            searchQuery === '' || 
+            file.title.toLowerCase().includes(searchQuery.toLowerCase())
+          ).length === 0 && (
+            <div style={{
+              textAlign: 'center',
+              padding: spacing.spacing[48],
+              color: colors.text.muted,
+            }}>
+              <p style={textStyles.lg.medium}>No files found</p>
+              <p style={textStyles.sm.normal}>
+                {searchQuery ? 'Try adjusting your search or filter' : 'Upload some files to get started'}
+              </p>
+            </div>
+          )}
+        </div>
       </div>
-    </SidebarProvider>
+    </div>
   );
 };
 

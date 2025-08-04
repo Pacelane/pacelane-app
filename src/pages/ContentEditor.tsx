@@ -1,28 +1,50 @@
 import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { Checkbox } from '@/components/ui/checkbox';
-import { ConversationSelector } from '@/components/ConversationSelector';
-import { 
-  ArrowLeft, 
-  Search, 
-  FileText, 
-  Folder, 
-  FolderOpen,
-  Plus,
-  Send,
-  Save,
-  File,
-  Image,
-  Book
-} from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useContent } from '@/hooks/api/useContent';
+import { useTheme } from '@/services/theme-context';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+
+// Design System Components
+import EditorNav from '@/design-system/components/EditorNav';
+import Button from '@/design-system/components/Button';
+import ButtonGroup from '@/design-system/components/ButtonGroup';
+import SidebarMenuItem from '@/design-system/components/SidebarMenuItem';
+import Input from '@/design-system/components/Input';
+import Bichaurinho from '@/design-system/components/Bichaurinho';
+
+// Design System Tokens
+import { spacing } from '@/design-system/tokens/spacing';
+import { stroke } from '@/design-system/tokens/stroke';
+import { cornerRadius } from '@/design-system/tokens/corner-radius';
+import { textStyles } from '@/design-system/styles/typography/typography-styles';
+import { getShadow, shadows } from '@/design-system/tokens/shadows';
+import { typography } from '@/design-system/tokens/typography';
+
+// Icons
+import { 
+  FileText, 
+  Folder, 
+  FolderOpen,
+  MoreHorizontal, 
+  Trash2, 
+  Clock,
+  Sun,
+  Moon,
+  Monitor,
+  HelpCircle,
+  Send,
+  User,
+  Save,
+  ArrowLeft,
+  Book,
+  Search,
+  Image,
+  File,
+  ChevronDown,
+  Plus
+} from 'lucide-react';
 
 interface FileItem {
   id: string;
@@ -37,6 +59,7 @@ const ContentEditor = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const { colors, themePreference, setTheme } = useTheme();
   
   // ========== CLEAN CONTENT STATE MANAGEMENT ==========
   const {
@@ -72,6 +95,10 @@ const ContentEditor = () => {
   const [draftTitle, setDraftTitle] = useState('New Post');
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [editorContent, setEditorContent] = useState('# New Post\n\nStart writing your content here...');
+  const [sidebarSplit, setSidebarSplit] = useState(60); // Percentage for knowledge base section
+  const [showConversationDropdown, setShowConversationDropdown] = useState(false);
+  const [conversations, setConversations] = useState<any[]>([]);
+  const [loadingConversations, setLoadingConversations] = useState(false);
 
   const [fileStructure, setFileStructure] = useState<FileItem[]>([
     {
@@ -83,7 +110,60 @@ const ContentEditor = () => {
     }
   ]);
 
-  // Data loading is now handled automatically by useContent hook!
+  // Load conversations on mount
+  useEffect(() => {
+    if (user) {
+      loadConversations();
+    }
+  }, [user]);
+
+  const loadConversations = async () => {
+    if (!user) return;
+    
+    try {
+      setLoadingConversations(true);
+      const { data, error } = await supabase
+        .from('conversations')
+        .select('id, title, updated_at')
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false })
+        .limit(20);
+
+      if (error) throw error;
+
+      setConversations(data || []);
+    } catch (error) {
+      console.error('Error loading conversations:', error);
+      toast.error('Failed to load conversations');
+    } finally {
+      setLoadingConversations(false);
+    }
+  };
+
+  const formatTitle = (title: string) => {
+    if (!title || title.trim() === '') return 'Untitled Conversation';
+    return title.length > 30 ? `${title.substring(0, 30)}...` : title;
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInHours = Math.abs(now.getTime() - date.getTime()) / (1000 * 60 * 60);
+    
+    if (diffInHours < 24) {
+      return 'Today';
+    } else if (diffInHours < 48) {
+      return 'Yesterday';
+    } else {
+      return date.toLocaleDateString();
+    }
+  };
+
+  const handleConversationChange = (conversationId: string | null) => {
+    // TODO: Implement conversation switching when useContent hook supports it
+    console.log('Switching to conversation:', conversationId);
+    setShowConversationDropdown(false);
+  };
 
   // Handle content suggestions from ProductHome and draft editing
   useEffect(() => {
@@ -121,9 +201,7 @@ const ContentEditor = () => {
     return () => clearTimeout(autoSaveTimer);
   }, [editorContent, user]);
 
-  // ========== CLEAN HELPER FUNCTIONS ==========
-  // Complex data loading functions removed - now handled by useContent hook!
-
+  // ========== HELPER FUNCTIONS ==========
   const handleNewConversation = () => {
     clearConversation();
   };
@@ -203,93 +281,308 @@ const ContentEditor = () => {
     }
   };
 
+  const handleChatKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
   const toggleFolder = (folderId: string) => {
     setFileStructure(prev => prev.map(item => 
       item.id === folderId ? { ...item, isOpen: !item.isOpen } : item
     ));
   };
 
-  const renderFileTree = (items: FileItem[], depth = 0) => {
-    return items.map(item => (
+  // Handle theme selection
+  const handleThemeSelect = (item: any, index: number) => {
+    const themes = ['light', 'dark', 'system'];
+    const selectedTheme = themes[index];
+    setTheme(selectedTheme);
+  };
+
+  // Page container styles
+  const pageStyles = {
+    display: 'flex',
+    flexDirection: 'column',
+    height: '100vh',
+    backgroundColor: colors.bg.default,
+  };
+
+  // Main content area styles (below nav)
+  const mainContentStyles = {
+    display: 'flex',
+    flex: 1,
+    overflow: 'hidden',
+  };
+
+  // Left sidebar styles
+  const leftSidebarStyles = {
+    width: '280px',
+    backgroundColor: colors.bg.sidebar?.subtle || colors.bg.card.default,
+    borderRight: `${stroke.default} solid ${colors.border.default}`,
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
+  };
+
+  // Sidebar section styles
+  const sidebarSectionStyles = {
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
+  };
+
+  // Section header styles
+  const sectionHeaderStyles = {
+    padding: `${spacing.spacing[12]} ${spacing.spacing[16]}`,
+    borderBottom: `${stroke.default} solid ${colors.border.default}`,
+    backgroundColor: colors.bg.sidebar?.subtle || colors.bg.card.default,
+  };
+
+  // Section content styles
+  const sectionContentStyles = {
+    flex: 1,
+    overflow: 'auto',
+    padding: spacing.spacing[8],
+  };
+
+  // Resizer handle styles
+  const resizerStyles = {
+    height: '4px',
+    backgroundColor: colors.border.default,
+    cursor: 'row-resize',
+    position: 'relative',
+    zIndex: 1,
+  };
+
+  // Sidebar bottom actions styles
+  const sidebarActionsStyles = {
+    padding: spacing.spacing[16],
+    borderTop: `${stroke.default} solid ${colors.border.default}`,
+    backgroundColor: colors.bg.sidebar?.subtle || colors.bg.card.default,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.spacing[8],
+  };
+
+  // Center editor styles
+  const centerEditorStyles = {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    backgroundColor: colors.bg.default,
+    overflow: 'hidden',
+  };
+
+  // Editor content styles
+  const editorContentStyles = {
+    flex: 1,
+    padding: `${spacing.spacing[40]} ${spacing.spacing[64]}`,
+    overflow: 'auto',
+    maxWidth: '800px',
+    margin: '0 auto',
+    width: '100%',
+  };
+
+  // Right chat sidebar styles
+  const rightSidebarStyles = {
+    width: '320px',
+    backgroundColor: colors.bg.sidebar?.subtle || colors.bg.card.default,
+    borderLeft: `${stroke.default} solid ${colors.border.default}`,
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
+  };
+
+  // Chat header styles
+  const chatHeaderStyles = {
+    padding: `${spacing.spacing[16]} ${spacing.spacing[20]}`,
+    borderBottom: `${stroke.default} solid ${colors.border.default}`,
+    backgroundColor: colors.bg.sidebar?.subtle || colors.bg.card.default,
+  };
+
+  // Chat messages area styles
+  const chatMessagesStyles = {
+    flex: 1,
+    overflow: 'auto',
+    padding: spacing.spacing[16],
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacing.spacing[12],
+  };
+
+  // Chat input area styles
+  const chatInputAreaStyles = {
+    padding: spacing.spacing[16],
+    borderTop: `${stroke.default} solid ${colors.border.default}`,
+    backgroundColor: colors.bg.sidebar?.subtle || colors.bg.card.default,
+  };
+
+  // User message bubble styles
+  const userMessageStyles = {
+    alignSelf: 'flex-end',
+    maxWidth: '80%',
+    backgroundColor: colors.bg.subtle,
+    border: `${stroke.default} solid ${colors.border.default}`,
+    borderRadius: cornerRadius.borderRadius.lg,
+    padding: spacing.spacing[12],
+    display: 'flex',
+    gap: spacing.spacing[8],
+    alignItems: 'flex-start',
+  };
+
+  // Bot message bubble styles
+  const botMessageStyles = {
+    alignSelf: 'flex-start',
+    maxWidth: '80%',
+    backgroundColor: 'transparent',
+    borderRadius: cornerRadius.borderRadius.lg,
+    padding: spacing.spacing[12],
+    display: 'flex',
+    gap: spacing.spacing[8],
+    alignItems: 'flex-start',
+  };
+
+  // Avatar styles
+  const avatarStyles = {
+    width: '24px',
+    height: '24px',
+    borderRadius: cornerRadius.borderRadius.sm,
+    backgroundColor: colors.bg.state?.secondary || colors.bg.subtle,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  };
+
+  // Theme selector items
+  const themeItems = [
+    { id: 'light', leadIcon: <Sun />, onClick: handleThemeSelect },
+    { id: 'dark', leadIcon: <Moon />, onClick: handleThemeSelect },
+    { id: 'system', leadIcon: <Monitor />, onClick: handleThemeSelect },
+  ];
+
+  // Render knowledge base item
+  const renderKnowledgeItem = (item: any, level = 0) => {
+    if (item.type === 'folder') {
+      const isExpanded = fileStructure.find(f => f.id === item.id)?.isOpen || false;
+      return (
       <div key={item.id}>
-        <div 
-          className={`flex items-center gap-2 py-1 px-2 hover:bg-gray-100 cursor-pointer`}
-          style={{ paddingLeft: `${depth * 12 + 8}px` }}
-          onClick={() => item.type === 'folder' ? toggleFolder(item.id) : null}
-        >
-          {item.type === 'folder' ? (
-            item.isOpen ? <FolderOpen className="h-4 w-4 text-blue-600" /> : <Folder className="h-4 w-4 text-blue-600" />
-          ) : (
-            <FileText className="h-4 w-4 text-gray-600" />
+          <SidebarMenuItem
+            variant="default"
+            label={item.name}
+            leadIcon={isExpanded ? <FolderOpen /> : <Folder />}
+            onClick={() => toggleFolder(item.id)}
+            style={{ paddingLeft: `${12 + level * 16}px` }}
+          />
+          {isExpanded && item.children && (
+            <div>
+              {item.children.map((child: any) => renderKnowledgeItem(child, level + 1))}
+            </div>
           )}
-          <span className="text-sm text-gray-700 truncate">{item.name}</span>
         </div>
-        {item.type === 'folder' && item.isOpen && item.children && (
-          <div>
-            {renderFileTree(item.children, depth + 1)}
+      );
+    } else {
+      return (
+        <div key={item.id} style={{ position: 'relative', paddingLeft: `${12 + level * 16}px` }}>
+          <SidebarMenuItem
+            variant="default"
+            label={item.name}
+            leadIcon={<FileText />}
+            onClick={() => console.log('File clicked:', item.name)}
+          />
           </div>
-        )}
-      </div>
-    ));
+      );
+    }
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Left Sidebar - File Explorer */}
-      <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
-        {/* Header */}
-        <div className="p-4 border-b border-gray-200">
-          <Button
-            variant="ghost"
+    <div style={pageStyles}>
+      {/* Editor Navigation */}
+      <EditorNav 
+        title={draftTitle}
+        onGoBack={() => navigate('/product-home')}
+        onSaveDraft={handleSaveDraft}
+      />
+      
+      {/* Main Content Area */}
+      <div style={mainContentStyles}>
+        {/* Left Sidebar - Knowledge Base & Content History */}
+        <div style={leftSidebarStyles}>
+          {/* Knowledge Base Section */}
+          <div style={{ 
+            ...sidebarSectionStyles, 
+            height: `${sidebarSplit}%` 
+          }}>
+            <div style={sectionHeaderStyles}>
+              <h3 style={{ 
+                ...textStyles.sm.semibold, 
+                color: colors.text.default,
+                margin: 0 
+              }}>
+                Knowledge Base
+              </h3>
+            </div>
+            <div style={sectionContentStyles}>
+              {/* Search Input */}
+              <div style={{ marginBottom: spacing.spacing[12] }}>
+                <Input
             size="sm"
-            onClick={() => navigate('/product-home')}
-            className="mb-3 text-gray-600 hover:text-gray-900"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Go Back
-          </Button>
-          
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate('/posts')}
-            className="mb-3 text-gray-600 hover:text-gray-900 w-full justify-start"
-          >
-            <Book className="h-4 w-4 mr-2" />
-            Posts
-          </Button>
-          
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              type="text"
+                  style="default"
               placeholder="Find content..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 text-sm"
+                  leadIcon={<Search size={14} />}
             />
-          </div>
         </div>
 
         {/* File Tree */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="p-2">
             {renderFileTree(fileStructure)}
+              
             {/* Show knowledge base files */}
             {fileStructure.find(item => item.id === 'knowledge-base')?.isOpen && (
-              <div className="px-4 pb-4">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="text-sm font-medium text-gray-900">Knowledge Files</h4>
-                  <span className="text-xs text-gray-500">
+                <div style={{ marginTop: spacing.spacing[16] }}>
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between',
+                    marginBottom: spacing.spacing[8]
+                  }}>
+                    <h4 style={{ 
+                      ...textStyles.xs.semibold, 
+                      color: colors.text.default,
+                      margin: 0 
+                    }}>
+                      Knowledge Files
+                    </h4>
+                    <span style={{ 
+                      ...textStyles.xs.normal, 
+                      color: colors.text.muted 
+                    }}>
                     {getSelectedFiles().length} selected
                   </span>
                 </div>
                 {loadingFiles ? (
-                  <div className="text-center py-4">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mx-auto"></div>
+                    <div style={{ textAlign: 'center', padding: spacing.spacing[16] }}>
+                      <div style={{
+                        width: '16px',
+                        height: '16px',
+                        border: `2px solid ${colors.border.default}`,
+                        borderTop: `2px solid ${colors.border.highlight}`,
+                        borderRadius: '50%',
+                        animation: 'spin 1s linear infinite',
+                        margin: '0 auto',
+                      }} />
                   </div>
                 ) : knowledgeFiles.length === 0 ? (
-                  <p className="text-xs text-gray-500 text-center py-2">
+                    <p style={{ 
+                      ...textStyles.xs.normal, 
+                      color: colors.text.muted,
+                      textAlign: 'center',
+                      padding: spacing.spacing[8]
+                    }}>
                     No files found. Upload files in Knowledge Base.
                   </p>
                 ) : (
@@ -297,14 +590,46 @@ const ContentEditor = () => {
                     const Icon = file.type === 'image' ? Image : 
                                 file.type === 'file' ? FileText : File;
                     return (
-                      <div key={file.id} className="flex items-center gap-2 py-1 px-2 hover:bg-gray-100">
-                        <Checkbox
+                        <div key={file.id} style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: spacing.spacing[8],
+                          padding: spacing.spacing[4],
+                          borderRadius: cornerRadius.borderRadius.sm,
+                          cursor: 'pointer',
+                          transition: 'background-color 0.15s ease-in-out',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = colors.bg.state?.ghostHover || colors.bg.subtle;
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                        }}
+                        onClick={() => handleFileSelection(file.id, !file.selected)}
+                        >
+                          <input
+                            type="checkbox"
                           checked={file.selected || false}
-                          onCheckedChange={(checked) => handleFileSelection(file.id, checked as boolean)}
-                          className="h-3 w-3"
-                        />
-                        <Icon className="h-3 w-3 text-gray-600" />
-                        <span className="text-xs text-gray-700 truncate flex-1">
+                            onChange={(e) => handleFileSelection(file.id, e.target.checked)}
+                            style={{
+                              width: '12px',
+                              height: '12px',
+                              accentColor: colors.border.highlight,
+                            }}
+                          />
+                          <Icon style={{ 
+                            width: '12px', 
+                            height: '12px', 
+                            color: colors.icon.muted 
+                          }} />
+                          <span style={{ 
+                            ...textStyles.xs.normal, 
+                            color: colors.text.default,
+                            flex: 1,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                          }}>
                           {file.name}
                         </span>
                       </div>
@@ -316,107 +641,304 @@ const ContentEditor = () => {
           </div>
         </div>
 
-        {/* Posts Section */}
-        <div className="border-t border-gray-200 bg-gray-50">
-          <div className="p-3">
-            <h4 className="text-sm font-medium text-gray-900 mb-2 flex items-center gap-2">
-              <FileText className="h-4 w-4" />
+          {/* Resizer Handle */}
+          <div style={resizerStyles} />
+          
+          {/* Content History Section */}
+          <div style={{ 
+            ...sidebarSectionStyles, 
+            height: `${100 - sidebarSplit}%` 
+          }}>
+            <div style={sectionHeaderStyles}>
+              <h3 style={{ 
+                ...textStyles.sm.semibold, 
+                color: colors.text.default,
+                margin: 0 
+              }}>
               Recent Posts
-            </h4>
+              </h3>
+            </div>
+            <div style={sectionContentStyles}>
             {loadingDrafts ? (
-              <div className="text-center py-2">
-                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600 mx-auto"></div>
+                <div style={{ textAlign: 'center', padding: spacing.spacing[16] }}>
+                  <div style={{
+                    width: '12px',
+                    height: '12px',
+                    border: `2px solid ${colors.border.default}`,
+                    borderTop: `2px solid ${colors.border.highlight}`,
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite',
+                    margin: '0 auto',
+                  }} />
               </div>
             ) : savedDrafts.length === 0 ? (
-              <p className="text-xs text-gray-500 text-center py-2">
+                <p style={{ 
+                  ...textStyles.xs.normal, 
+                  color: colors.text.muted,
+                  textAlign: 'center',
+                  padding: spacing.spacing[8]
+                }}>
                 No saved drafts yet
               </p>
             ) : (
-              <div className="space-y-1 max-h-32 overflow-y-auto">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[4] }}>
                 {savedDrafts.slice(0, 5).map(draft => (
-                  <button
+                    <div
                     key={draft.id}
                     onClick={() => handleLoadDraft(draft)}
-                    className={`w-full text-left p-2 rounded hover:bg-gray-100 transition-colors ${
-                      draftId === draft.id ? 'bg-blue-50 border border-blue-200' : ''
-                    }`}
-                  >
-                    <div className="text-xs font-medium text-gray-900 truncate">
+                      style={{
+                        padding: spacing.spacing[8],
+                        borderRadius: cornerRadius.borderRadius.sm,
+                        cursor: 'pointer',
+                        transition: 'background-color 0.15s ease-in-out',
+                        backgroundColor: draftId === draft.id ? colors.bg.state?.ghostHover || colors.bg.subtle : 'transparent',
+                        border: draftId === draft.id ? `1px solid ${colors.border.highlight}` : 'none',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (draftId !== draft.id) {
+                          e.currentTarget.style.backgroundColor = colors.bg.state?.ghostHover || colors.bg.subtle;
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (draftId !== draft.id) {
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                        }
+                      }}
+                    >
+                      <div style={{ 
+                        ...textStyles.xs.semibold, 
+                        color: colors.text.default,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                      }}>
                       {draft.title || 'Untitled'}
                     </div>
-                    <div className="text-xs text-gray-500 mt-0.5">
+                      <div style={{ 
+                        ...textStyles.xs.normal, 
+                        color: colors.text.muted,
+                        marginTop: spacing.spacing[2]
+                      }}>
                       {new Date(draft.updated_at).toLocaleDateString()}
+                      </div>
                     </div>
-                  </button>
                 ))}
               </div>
             )}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate('/posts')}
-              className="w-full justify-start mt-2 text-xs text-gray-600 hover:text-gray-900"
-            >
-              View all posts →
-            </Button>
+              <div style={{ marginTop: spacing.spacing[8] }}>
+                <Button
+                  label="View all posts"
+                  style="dashed"
+                  size="xs"
+                  onClick={() => navigate('/posts')}
+                />
+              </div>
+            </div>
           </div>
+          
+          {/* Sidebar Actions */}
+          <div style={sidebarActionsStyles}>
+            <ButtonGroup
+              type="iconOnly"
+              size="xs"
+              items={themeItems}
+            />
+            <Button
+              label="Help"
+              style="dashed"
+              size="xs"
+              leadIcon={<HelpCircle size={12} />}
+              onClick={() => console.log('Help clicked')}
+            />
         </div>
       </div>
 
-      {/* Main Editor Area */}
-      <div className="flex-1 flex flex-col">
-        {/* Editor Header */}
-        <div className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
-          <div className="flex-1">
+        {/* Center Content Editor */}
+        <div style={centerEditorStyles}>
+          <div style={editorContentStyles}>
+            {/* Title Input */}
             <Input
               value={draftTitle}
               onChange={(e) => setDraftTitle(e.target.value)}
-              className="text-xl font-semibold text-gray-900 border-0 p-0 focus-visible:ring-0 bg-transparent"
+              style="default"
+              size="lg"
               placeholder="Enter title..."
+              style={{
+                fontSize: typography.desktop.size['2xl'],
+                fontWeight: typography.desktop.weight.semibold,
+                border: 'none',
+                backgroundColor: 'transparent',
+                padding: 0,
+                marginBottom: spacing.spacing[24],
+              }}
             />
-          </div>
-          <div className="flex items-center gap-3">
-            {lastSaved && (
-              <span className="text-xs text-gray-500">
-                Saved {lastSaved.toLocaleTimeString()}
-              </span>
-            )}
-            <Button 
-              size="sm" 
-              onClick={() => handleSaveDraft(false)}
-              disabled={saving}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              <Save className="h-4 w-4 mr-2" />
-              {saving ? 'Saving...' : 'Save Draft'}
-            </Button>
-          </div>
-        </div>
-
-        {/* Editor Content */}
-        <div className="flex-1 p-6">
-          <Textarea
+            
+            {/* Content Textarea */}
+            <textarea
             value={editorContent}
             onChange={(e) => setEditorContent(e.target.value)}
-            className="w-full h-full resize-none border-0 focus-visible:ring-0 text-base leading-relaxed"
+              style={{
+                width: '100%',
+                minHeight: '400px',
+                border: 'none',
+                outline: 'none',
+                backgroundColor: 'transparent',
+                fontFamily: typography.fontFamily.body,
+                fontSize: typography.desktop.size.md,
+                fontWeight: typography.desktop.weight.normal,
+                lineHeight: '1.6',
+                color: colors.text.default,
+                resize: 'vertical',
+              }}
             placeholder="Start writing your content..."
           />
         </div>
       </div>
 
-      {/* Right Sidebar - AI Chat */}
-      <div className="w-80 bg-white border-l border-gray-200 flex flex-col">
+        {/* Right Sidebar - Chat Bot */}
+        <div style={rightSidebarStyles}>
         {/* Chat Header */}
-        <div className="p-4 border-b border-gray-200">
-          <h3 className="font-semibold text-gray-900 mb-3">AI Assistant</h3>
-          <ConversationSelector
-            currentConversationId={currentConversationId}
-            onConversationChange={() => {}} // Disabled for now since conversation switching isn't implemented in useContent
-            onNewConversation={handleNewConversation}
-          />
+          <div style={chatHeaderStyles}>
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between',
+              marginBottom: spacing.spacing[8]
+            }}>
+              <h3 style={{ 
+                ...textStyles.sm.semibold, 
+                color: colors.text.default,
+                margin: 0 
+              }}>
+                AI Assistant
+              </h3>
+              <div style={{ position: 'relative' }}>
+                <Button
+                  label={currentConversationId 
+                    ? formatTitle(conversations.find(c => c.id === currentConversationId)?.title || 'Current Chat')
+                    : 'New Conversation'
+                  }
+                  style="secondary"
+                  size="xs"
+                  leadIcon={<Clock size={12} />}
+                  tailIcon={<ChevronDown size={12} />}
+                  onClick={() => setShowConversationDropdown(!showConversationDropdown)}
+                />
+                
+                {showConversationDropdown && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '100%',
+                    right: 0,
+                    marginTop: spacing.spacing[4],
+                    backgroundColor: colors.bg.card.default,
+                    border: `1px solid ${colors.border.default}`,
+                    borderRadius: cornerRadius.borderRadius.lg,
+                    boxShadow: getShadow('regular.card', colors, { withBorder: true }),
+                    minWidth: '200px',
+                    zIndex: 10,
+                    overflow: 'hidden',
+                  }}>
+                    {/* New Conversation Option */}
+                    <div
+                      style={{
+                        padding: spacing.spacing[12],
+                        borderBottom: `1px solid ${colors.border.default}`,
+                        cursor: 'pointer',
+                        transition: 'background-color 0.15s ease-in-out',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = colors.bg.state?.ghostHover || colors.bg.subtle;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                      }}
+                      onClick={() => {
+                        handleNewConversation();
+                        setShowConversationDropdown(false);
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: spacing.spacing[8] }}>
+                        <Plus size={14} style={{ color: colors.icon.highlight }} />
+                        <span style={{ ...textStyles.sm.medium, color: colors.text.default }}>
+                          New Conversation
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Recent Conversations */}
+                    {conversations.length > 0 && (
+                      <>
+                        <div style={{
+                          padding: `${spacing.spacing[8]} ${spacing.spacing[12]}`,
+                          backgroundColor: colors.bg.subtle,
+                          borderBottom: `1px solid ${colors.border.default}`,
+                        }}>
+                          <span style={{ ...textStyles.xs.semibold, color: colors.text.muted }}>
+                            Recent Conversations
+                          </span>
+                        </div>
+                        {conversations.map((conversation) => (
+                          <div
+                            key={conversation.id}
+                            style={{
+                              padding: spacing.spacing[12],
+                              cursor: 'pointer',
+                              transition: 'background-color 0.15s ease-in-out',
+                              borderBottom: `1px solid ${colors.border.default}`,
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = colors.bg.state?.ghostHover || colors.bg.subtle;
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = 'transparent';
+                            }}
+                            onClick={() => handleConversationChange(conversation.id)}
+                          >
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[2] }}>
+                              <span style={{ ...textStyles.sm.medium, color: colors.text.default }}>
+                                {formatTitle(conversation.title)}
+                              </span>
+                              <span style={{ ...textStyles.xs.normal, color: colors.text.muted }}>
+                                {formatDate(conversation.updated_at)}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </>
+                    )}
+
+                    {loadingConversations && (
+                      <div style={{
+                        padding: spacing.spacing[12],
+                        textAlign: 'center',
+                      }}>
+                        <div style={{
+                          width: '16px',
+                          height: '16px',
+                          border: `2px solid ${colors.border.default}`,
+                          borderTop: `2px solid ${colors.border.highlight}`,
+                          borderRadius: '50%',
+                          animation: 'spin 1s linear infinite',
+                          margin: '0 auto',
+                        }} />
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
           {getSelectedFiles().length > 0 && (
-            <div className="mt-2 p-2 bg-blue-50 rounded-md">
-              <p className="text-xs text-blue-700">
+              <div style={{ 
+                padding: spacing.spacing[8],
+                backgroundColor: colors.bg.state?.secondary || colors.bg.subtle,
+                borderRadius: cornerRadius.borderRadius.sm,
+              }}>
+                <p style={{ 
+                  ...textStyles.xs.normal, 
+                  color: colors.text.default,
+                  margin: 0 
+                }}>
                 {getSelectedFiles().length} file{getSelectedFiles().length > 1 ? 's' : ''} selected as context
               </p>
             </div>
@@ -424,68 +946,154 @@ const ContentEditor = () => {
         </div>
 
         {/* Chat Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div style={chatMessagesStyles}>
           {chatMessages.length === 0 ? (
-            <div className="text-center text-gray-500 mt-8">
-              <p className="mb-2">👋 Hello! I'm your AI content assistant.</p>
-              <p className="text-sm">Ask me anything about your content, writing tips, or ideas!</p>
+              <div style={{ textAlign: 'center', color: colors.text.muted, marginTop: spacing.spacing[32] }}>
+                <p style={{ ...textStyles.sm.medium, margin: 0, marginBottom: spacing.spacing[8] }}>
+                  👋 Hello! I'm your AI content assistant.
+                </p>
+                <p style={{ ...textStyles.xs.normal, margin: 0 }}>
+                  Ask me anything about your content, writing tips, or ideas!
+                </p>
             </div>
           ) : (
             chatMessages.map(message => (
-              <div key={message.id} className="space-y-2">
+                <div
+                  key={message.id}
+                  style={message.role === 'user' ? userMessageStyles : botMessageStyles}
+                >
+                  <div style={avatarStyles}>
                 {message.role === 'user' ? (
-                  <div className="flex justify-end">
-                    <div className="bg-blue-600 text-white px-3 py-2 rounded-lg max-w-[80%] text-sm">
-                      {message.content}
-                    </div>
+                      <User size={12} style={{ color: colors.icon.muted }} />
+                    ) : (
+                      <Bichaurinho variant={12} size={24} />
+                    )}
                   </div>
-                ) : (
-                  <div className="flex justify-start">
-                    <div className="bg-gray-100 text-gray-900 px-3 py-2 rounded-lg max-w-[80%] text-sm">
+                  <div style={{
+                    ...textStyles.sm.normal,
+                    color: colors.text.default,
+                    flex: 1,
+                  }}>
                       {message.content}
-                    </div>
                   </div>
-                )}
               </div>
             ))
           )}
           {aiLoading && (
-            <div className="flex justify-start">
-              <div className="bg-gray-100 text-gray-900 px-3 py-2 rounded-lg text-sm">
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+              <div style={botMessageStyles}>
+                <div style={avatarStyles}>
+                  <Bichaurinho variant={12} size={24} />
                 </div>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: spacing.spacing[4],
+                }}>
+                  <div style={{
+                    width: '8px',
+                    height: '8px',
+                    backgroundColor: colors.icon.muted,
+                    borderRadius: '50%',
+                    animation: 'bounce 1s infinite',
+                  }} />
+                  <div style={{
+                    width: '8px',
+                    height: '8px',
+                    backgroundColor: colors.icon.muted,
+                    borderRadius: '50%',
+                    animation: 'bounce 1s infinite',
+                    animationDelay: '0.1s',
+                  }} />
+                  <div style={{
+                    width: '8px',
+                    height: '8px',
+                    backgroundColor: colors.icon.muted,
+                    borderRadius: '50%',
+                    animation: 'bounce 1s infinite',
+                    animationDelay: '0.2s',
+                  }} />
               </div>
             </div>
           )}
         </div>
 
         {/* Chat Input */}
-        <div className="p-4 border-t border-gray-200">
-          <div className="flex gap-2">
+          <div style={chatInputAreaStyles}>
+            <div style={{ display: 'flex', gap: spacing.spacing[8] }}>
+              <div style={{ flex: 1 }}>
             <Input
+                  placeholder="Ask AI anything"
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
-              placeholder="Ask AI anything"
-              className="flex-1"
+                  onKeyPress={handleChatKeyPress}
+                  style="default"
+                  size="sm"
               disabled={aiLoading}
-              onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
             />
+              </div>
             <Button
-              size="icon"
+                label=""
+                style="primary"
+                size="sm"
+                leadIcon={<Send size={16} />}
               onClick={handleSendMessage}
               disabled={aiLoading || !chatInput.trim()}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              <Send className="h-4 w-4" />
-            </Button>
+              />
+            </div>
           </div>
         </div>
       </div>
     </div>
   );
+
+  // Helper function to render file tree
+  function renderFileTree(items: FileItem[], depth = 0) {
+    return items.map(item => (
+      <div key={item.id}>
+        <div 
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: spacing.spacing[8],
+            padding: spacing.spacing[4],
+            paddingLeft: `${depth * 12 + 8}px`,
+            borderRadius: cornerRadius.borderRadius.sm,
+            cursor: 'pointer',
+            transition: 'background-color 0.15s ease-in-out',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = colors.bg.state?.ghostHover || colors.bg.subtle;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }}
+          onClick={() => item.type === 'folder' ? toggleFolder(item.id) : null}
+        >
+          {item.type === 'folder' ? (
+            item.isOpen ? 
+              <FolderOpen style={{ width: '16px', height: '16px', color: colors.icon.highlight }} /> : 
+              <Folder style={{ width: '16px', height: '16px', color: colors.icon.highlight }} />
+          ) : (
+            <FileText style={{ width: '16px', height: '16px', color: colors.icon.muted }} />
+          )}
+          <span style={{ 
+            ...textStyles.sm.normal, 
+            color: colors.text.default,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap'
+          }}>
+            {item.name}
+          </span>
+        </div>
+        {item.type === 'folder' && item.isOpen && item.children && (
+          <div>
+            {renderFileTree(item.children, depth + 1)}
+          </div>
+        )}
+      </div>
+    ));
+  }
 };
 
 export default ContentEditor;

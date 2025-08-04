@@ -1,229 +1,500 @@
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useProfile } from '@/hooks/api/useProfile';
-import { useToast } from '@/components/ui/use-toast';
+import { useTheme } from '@/services/theme-context';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+
+// Design System Components
+import TopNav from '@/design-system/components/TopNav';
+import Button from '@/design-system/components/Button';
+import ButtonGroup from '@/design-system/components/ButtonGroup';
+import Checkbox from '@/design-system/components/Checkbox';
+import ProgressBar from '@/design-system/components/ProgressBar';
+import Bichaurinho from '@/design-system/components/Bichaurinho';
+
+// Design System Tokens
+import { spacing } from '@/design-system/tokens/spacing';
+import { cornerRadius } from '@/design-system/tokens/corner-radius';
+import { getShadow } from '@/design-system/tokens/shadows';
+import { typography } from '@/design-system/tokens/typography';
+
+// Icons
+import { ArrowLeft, ArrowRight, ChevronDown } from 'lucide-react';
 
 const Pacing = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { savePacingPreferences, saving } = useProfile();
-  const { toast } = useToast();
+  const { colors } = useTheme();
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Form state
-  const [intensity, setIntensity] = useState('2-3 pieces of content per week');
-  const [selectedDays, setSelectedDays] = useState<string[]>(['Monday', 'Wednesday', 'Friday']);
-  const [dailySummaryTime, setDailySummaryTime] = useState('9:00 AM');
-  const [followupsFrequency, setFollowupsFrequency] = useState('Daily');  
-  const [recommendationsTime, setRecommendationsTime] = useState('2:00 PM');
-  const [contextSessionsTime, setContextSessionsTime] = useState('5:00 PM');
+  // State for pace selection
+  const [selectedPace, setSelectedPace] = useState('moderate');
+  
+  // State for weekday selection
+  const [selectedDays, setSelectedDays] = useState<string[]>(['monday', 'wednesday', 'friday']);
+  
+  // State for dropdowns
+  const [dailySummaryTime, setDailySummaryTime] = useState('Evening (6-8 PM)');
+  const [followUps, setFollowUps] = useState('Two more times the same day');
+  const [recommendationsTime, setRecommendationsTime] = useState('Morning (8-10 AM)');
+  const [contextSessionsTime, setContextSessionsTime] = useState('Weekly');
 
-  const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-  const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  const weekdays = [
+    { id: 'monday', label: 'M', day: 'Monday' },
+    { id: 'tuesday', label: 'T', day: 'Tuesday' },
+    { id: 'wednesday', label: 'W', day: 'Wednesday' },
+    { id: 'thursday', label: 'T', day: 'Thursday' },
+    { id: 'friday', label: 'F', day: 'Friday' },
+    { id: 'saturday', label: 'S', day: 'Saturday' },
+    { id: 'sunday', label: 'S', day: 'Sunday' }
+  ];
+
+  const timeOptions = [
+    'Morning (8-10 AM)',
+    'Afternoon (12-2 PM)', 
+    'Evening (6-8 PM)',
+    'Night (8-10 PM)'
+  ];
+
+  const followUpOptions = [
+    'No follow-ups',
+    'One more time the same day',
+    'Two more times the same day',
+    'Next day if no response'
+  ];
+
+  const contextOptions = [
+    'Daily',
+    'Every 3 days',
+    'Weekly',
+    'Bi-weekly',
+    'Monthly'
+  ];
+
+  const paceOptions = [
+    { id: 'light', label: 'Light' },
+    { id: 'moderate', label: 'Moderate' },
+    { id: 'hardcore', label: 'Hard Core' }
+  ];
 
   const handleGoBack = () => {
     navigate('/onboarding/content-pillars');
   };
 
-  const toggleDay = (dayIndex: number) => {
-    const dayName = dayNames[dayIndex];
-    setSelectedDays(prev => 
-      prev.includes(dayName)
-        ? prev.filter(d => d !== dayName)
-        : [...prev, dayName]
-    );
+  const toggleDay = (dayId: string) => {
+    setSelectedDays(prev => {
+      if (prev.includes(dayId)) {
+        return prev.filter(d => d !== dayId);
+      } else {
+        return [...prev, dayId];
+      }
+    });
   };
 
   const handleContinue = async () => {
     if (!user) return;
     
+    setIsLoading(true);
+    
     try {
-      // Use our clean pacing preferences API
-      const result = await savePacingPreferences({
-        intensity,
+      const pacingData = {
+        pace: selectedPace,
         frequency: selectedDays,
         daily_summary_time: dailySummaryTime,
-        followups_frequency: followupsFrequency,
+        followups_frequency: followUps,
         recommendations_time: recommendationsTime,
         context_sessions_time: contextSessionsTime
-      });
+      };
 
-      if (result.error) {
-        throw new Error(result.error);
-      }
+      const { error } = await supabase
+        .from('profiles')
+        .update({ pacing_preferences: pacingData })
+        .eq('user_id', user.id);
+
+      if (error) throw error;
 
       navigate('/onboarding/contact');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error saving pacing preferences:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to save pacing preferences. Please try again.",
-        variant: "destructive",
-      });
+      toast.error('Failed to save pacing preferences. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  const canContinue = selectedDays.length > 0;
+
+  const InnerSection = ({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) => (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: spacing.spacing[12],
+        padding: spacing.spacing[16],
+        border: `1px solid ${colors.border.default}`,
+        borderRadius: cornerRadius.borderRadius.lg,
+      }}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[4] }}>
+        <h3
+          style={{
+            fontFamily: typography.fontFamily.body,
+            fontSize: typography.desktop.size.sm,
+            fontWeight: typography.desktop.weight.semibold,
+            color: colors.text.default,
+            margin: 0,
+          }}
+        >
+          {title}
+        </h3>
+        <p
+          style={{
+            fontFamily: typography.fontFamily.body,
+            fontSize: typography.desktop.size.xs,
+            fontWeight: typography.desktop.weight.normal,
+            color: colors.text.subtle,
+            margin: 0,
+          }}
+        >
+          {subtitle}
+        </p>
+      </div>
+      {children}
+    </div>
+  );
+
+  const DropdownButton = ({ value, options, onChange, placeholder = "Select an option" }: { 
+    value: string; 
+    options: string[]; 
+    onChange: (value: string) => void; 
+    placeholder?: string; 
+  }) => (
+    <div style={{ position: 'relative' }}>
+      <Button
+        label={value || placeholder}
+        style="secondary"
+        size="sm"
+        tailIcon={<ChevronDown size={14} />}
+        onClick={() => {
+          // Cycle through options for demo
+          const currentIndex = options.indexOf(value);
+          const nextIndex = (currentIndex + 1) % options.length;
+          onChange(options[nextIndex]);
+        }}
+      />
+    </div>
+  );
+
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-          {/* Go Back Button */}
-          <button
-            onClick={handleGoBack}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-800 mb-6 transition-colors"
+    <div
+      style={{
+        minHeight: '100vh',
+        backgroundColor: colors.bg.default,
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      {/* Top Navigation */}
+      <TopNav />
+
+      {/* Content Container with gradient background */}
+      <div
+        style={{
+          flex: 1,
+          position: 'relative',
+          backgroundColor: colors.bg.default,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: spacing.spacing[40],
+          paddingBottom: '160px', // Account for button container height
+        }}
+      >
+        {/* Gradient background with 5% opacity */}
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundImage: 'url(/src/assets/images/gradient-bg.svg)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+            opacity: 0.05,
+            zIndex: 0,
+          }}
+        />
+
+        {/* Content Column */}
+        <div style={{
+          position: 'relative',
+          zIndex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: spacing.spacing[24],
+          alignItems: 'center',
+        }}>
+          {/* Back Button */}
+          <div style={{ alignSelf: 'flex-start', width: '400px' }}>
+            <Button
+              label="Go Back"
+              style="dashed"
+              size="xs"
+              leadIcon={<ArrowLeft size={12} />}
+              onClick={handleGoBack}
+            />
+          </div>
+
+          {/* Main Card */}
+          <div
+            style={{
+              backgroundColor: colors.bg.card.default,
+              borderRadius: cornerRadius.borderRadius.lg,
+              border: `1px solid ${colors.border.darker}`,
+              boxShadow: getShadow('regular.card', colors, { withBorder: true }),
+              width: '400px',
+              overflow: 'hidden',
+            }}
           >
-            <ChevronLeft className="h-4 w-4" />
-            Go Back
-          </button>
+            {/* Main Container */}
+            <div
+              style={{
+                padding: spacing.spacing[36],
+                backgroundColor: colors.bg.card.default,
+                borderBottom: `1px solid ${colors.border.default}`,
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              {/* Heading Container */}
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-start',
+                  gap: spacing.spacing[16],
+                  marginBottom: spacing.spacing[32],
+                }}
+              >
+                {/* Bichaurinho */}
+                <div>
+                  <Bichaurinho variant={9} size={48} />
+                </div>
 
-          {/* Clock icon */}
-          <div className="flex justify-center mb-6">
-            <div className="w-16 h-16 bg-purple-500 rounded-full flex items-center justify-center relative">
-              <div className="w-8 h-8 rounded-full border-2 border-white relative">
-                <div className="absolute top-1 left-3 w-0.5 h-3 bg-white rounded-full origin-bottom transform rotate-90"></div>
-                <div className="absolute top-3 left-1 w-2 h-0.5 bg-white rounded-full origin-left transform rotate-0"></div>
-                <div className="absolute top-1/2 left-1/2 w-1 h-1 bg-white rounded-full transform -translate-x-1/2 -translate-y-1/2"></div>
-                <div className="absolute top-2 left-2 w-1.5 h-1.5 bg-white rounded-full"></div>
-                <div className="absolute top-2 right-2 w-1.5 h-1.5 bg-white rounded-full"></div>
-              </div>
-            </div>
-          </div>
-
-          <h1 className="text-4xl font-bold font-playfair text-[#111115] mb-2 text-center">
-            Your Pacing
-          </h1>
-
-          <p className="text-[#4E4E55] text-sm text-center leading-relaxed mb-8">
-            How often do you want to post? We'll create a<br />
-            schedule that fits your lifestyle.
-          </p>
-
-          {/* Intensity Selection */}
-          <div className="mb-6">
-            <h3 className="text-sm font-medium text-gray-700 mb-3">Intensity</h3>
-            <div className="space-y-2">
-              {[
-                '1 piece of content per week',
-                '2-3 pieces of content per week', 
-                '4-5 pieces of content per week',
-                'Daily content'
-              ].map((option) => (
-                <label key={option} className="flex items-center space-x-3 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="intensity"
-                    value={option}
-                    checked={intensity === option}
-                    onChange={(e) => setIntensity(e.target.value)}
-                    className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700">{option}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Days Selection */}
-          <div className="mb-6">
-            <h3 className="text-sm font-medium text-gray-700 mb-3">Days</h3>
-            <div className="flex gap-2">
-              {days.map((day, index) => (
-                <button
-                  key={index}
-                  onClick={() => toggleDay(index)}
-                  className={`w-10 h-10 rounded-full border text-sm font-medium transition-all ${
-                    selectedDays.includes(dayNames[index])
-                      ? 'bg-blue-600 border-blue-600 text-white'
-                      : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                  }`}
+                {/* Title and Subtitle Container */}
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: spacing.spacing[12],
+                    alignItems: 'flex-start',
+                  }}
                 >
-                  {day}
-                </button>
-              ))}
+                  {/* Title */}
+                  <h1
+                    style={{
+                      fontFamily: typography.fontFamily['awesome-serif'],
+                      fontSize: typography.desktop.size['5xl'],
+                      fontWeight: typography.desktop.weight.semibold,
+                      lineHeight: '0.9',
+                      color: colors.text.default,
+                      margin: 0,
+                      textAlign: 'left',
+                    }}
+                  >
+                    Your<br />Pacing
+                  </h1>
+
+                  {/* Subtitle */}
+                  <p
+                    style={{
+                      fontFamily: typography.fontFamily.body,
+                      fontSize: typography.desktop.size.sm,
+                      fontWeight: typography.desktop.weight.normal,
+                      lineHeight: typography.desktop.lineHeight.sm,
+                      color: colors.text.muted,
+                      margin: 0,
+                      textAlign: 'left',
+                    }}
+                  >
+                    How often do you want to post? We'll create a schedule that fits your lifestyle.
+                  </p>
+                </div>
+              </div>
+
+              {/* Pace Selection */}
+              <InnerSection
+                title="Choose Your Pace"
+                subtitle="How often would you like to share content?"
+              >
+                <ButtonGroup
+                  buttons={paceOptions.map(option => ({
+                    id: option.id,
+                    label: option.label,
+                    selected: selectedPace === option.id,
+                    onClick: () => setSelectedPace(option.id)
+                  }))}
+                />
+              </InnerSection>
+
+              <div style={{ height: spacing.spacing[16] }} />
+
+              {/* Weekday Selection */}
+              <InnerSection
+                title="Which Days?"
+                subtitle="Select the days you prefer to post"
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: spacing.spacing[8],
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  {weekdays.map((weekday) => (
+                    <div
+                      key={weekday.id}
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: spacing.spacing[4],
+                      }}
+                    >
+                      <Checkbox
+                        checked={selectedDays.includes(weekday.id)}
+                        onChange={() => toggleDay(weekday.id)}
+                      />
+                      <span
+                        style={{
+                          fontFamily: typography.fontFamily.body,
+                          fontSize: typography.desktop.size.xs,
+                          fontWeight: typography.desktop.weight.normal,
+                          color: colors.text.muted,
+                        }}
+                      >
+                        {weekday.label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </InnerSection>
+
+              <div style={{ height: spacing.spacing[16] }} />
+
+              {/* Time Preferences */}
+              <InnerSection
+                title="Daily Summary"
+                subtitle="When should we send you a daily summary?"
+              >
+                <DropdownButton
+                  value={dailySummaryTime}
+                  options={timeOptions}
+                  onChange={setDailySummaryTime}
+                />
+              </InnerSection>
+
+              <div style={{ height: spacing.spacing[12] }} />
+
+              <InnerSection
+                title="Follow-ups"
+                subtitle="How often should we follow up on your posts?"
+              >
+                <DropdownButton
+                  value={followUps}
+                  options={followUpOptions}
+                  onChange={setFollowUps}
+                />
+              </InnerSection>
+
+              <div style={{ height: spacing.spacing[12] }} />
+
+              <InnerSection
+                title="Content Recommendations"
+                subtitle="When should we suggest new content ideas?"
+              >
+                <DropdownButton
+                  value={recommendationsTime}
+                  options={timeOptions}
+                  onChange={setRecommendationsTime}
+                />
+              </InnerSection>
+
+              <div style={{ height: spacing.spacing[12] }} />
+
+              <InnerSection
+                title="Context Sessions"
+                subtitle="How often should we review your content strategy?"
+              >
+                <DropdownButton
+                  value={contextSessionsTime}
+                  options={contextOptions}
+                  onChange={setContextSessionsTime}
+                />
+              </InnerSection>
+            </div>
+
+            {/* Text Container */}
+            <div
+              style={{
+                padding: `${spacing.spacing[24]} ${spacing.spacing[36]}`,
+                backgroundColor: colors.bg.card.subtle,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: spacing.spacing[4],
+              }}
+            >
+              <p
+                style={{
+                  fontFamily: typography.fontFamily.body,
+                  fontSize: typography.desktop.size.sm,
+                  fontWeight: typography.desktop.weight.normal,
+                  lineHeight: typography.desktop.lineHeight.sm,
+                  color: colors.text.muted,
+                  margin: 0,
+                  textAlign: 'center',
+                }}
+              >
+                {!canContinue 
+                  ? "Please select at least one day to continue."
+                  : `${selectedDays.length} day${selectedDays.length === 1 ? '' : 's'} selected.`
+                }
+              </p>
             </div>
           </div>
+        </div>
+      </div>
 
-          {/* Time Settings */}
-          <div className="space-y-4 mb-8">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-700">Daily Summary</span>
-              <select 
-                value={dailySummaryTime}
-                onChange={(e) => setDailySummaryTime(e.target.value)}
-                className="text-sm border border-gray-300 rounded px-2 py-1 bg-white"
-              >
-                {['9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM'].map(time => (
-                  <option key={time} value={time}>{time}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-700">Followups</span>
-              <select 
-                value={followupsFrequency}
-                onChange={(e) => setFollowupsFrequency(e.target.value)}
-                className="text-sm border border-gray-300 rounded px-2 py-1 bg-white"
-              >
-                {['Daily', 'Weekly', 'Bi-weekly', 'Monthly'].map(freq => (
-                  <option key={freq} value={freq}>{freq}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-700">Recommendations</span>
-              <select 
-                value={recommendationsTime}
-                onChange={(e) => setRecommendationsTime(e.target.value)}
-                className="text-sm border border-gray-300 rounded px-2 py-1 bg-white"
-              >
-                {['2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM', '6:00 PM', '7:00 PM'].map(time => (
-                  <option key={time} value={time}>{time}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-700">Context Sessions</span>
-              <select 
-                value={contextSessionsTime}
-                onChange={(e) => setContextSessionsTime(e.target.value)}
-                className="text-sm border border-gray-300 rounded px-2 py-1 bg-white"
-              >
-                {['5:00 PM', '6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM', '10:00 PM'].map(time => (
-                  <option key={time} value={time}>{time}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <p className="text-[#4E4E55] text-sm text-center mb-8">
-            We'll ask a few questions to tailor your strategy.
-          </p>
-
-          {/* Progress indicator */}
-          <div className="flex justify-center gap-2 mb-8">
-            <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
-            <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
-            <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
-            <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
-            <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
-            <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
-            <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
-            <div className="w-8 h-1 bg-gray-300 rounded-full"></div>
-            <div className="w-8 h-1 bg-gray-300 rounded-full"></div>
-          </div>
-
-          <Button 
+      {/* Button Container - Fixed overlay at bottom */}
+      <div
+        style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: '80px',
+          backgroundColor: colors.bg.default,
+          borderTop: `1px solid ${colors.border.default}`,
+          padding: spacing.spacing[40],
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 10,
+        }}
+      >
+        <div style={{ width: '280px' }}>
+          <Button
+            label={isLoading ? "Saving..." : "Continue"}
+            style="primary"
+            size="lg"
+            tailIcon={!isLoading ? <ArrowRight size={16} /> : undefined}
             onClick={handleContinue}
-                            disabled={selectedDays.length === 0 || saving}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg disabled:opacity-50"
-          >
-                          {saving ? "Saving..." : "Continue"}
-          </Button>
+            disabled={!canContinue || isLoading}
+            className="w-full"
+          />
         </div>
       </div>
     </div>

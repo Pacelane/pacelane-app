@@ -2,6 +2,39 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Font Face Declarations */
+@font-face {
+  font-family: 'Inter';
+  src: url('./assets/fonts/Inter-VariableFont_opsz,wght.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Fraunces';
+  src: url('./assets/fonts/Fraunces-VariableFont_SOFT,WONK,opsz,wght.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('./assets/fonts/JetBrainsMono-VariableFont_wght.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Awesome Serif VAR';
+  src: url('./assets/fonts/Awesome%20Serif%20VAR-VF.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
 */
@@ -99,7 +132,15 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
-  body {
+  html, body {
     @apply bg-background text-foreground;
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow-x: hidden;
+  }
+
+  body {
+    min-height: 100vh;
   }
 }
