@@ -1019,11 +1019,87 @@ class ChatwootWebhookProcessor {
       }
 
       console.log('Audio record stored in database:', data?.[0]?.id);
+
+      // Also add to knowledge_files table so it appears in the knowledge base
+      if (userId) {
+        await this.addAudioToKnowledgeBase(
+          attachment,
+          audioGcsPath,
+          transcription,
+          userId,
+          contactId,
+          payload
+        );
+      }
+
       return true;
 
     } catch (error) {
       console.error('Error storing audio record:', error);
       return false;
+    }
+  }
+
+  /**
+   * Add audio file to knowledge base so users can access it
+   */
+  private async addAudioToKnowledgeBase(
+    attachment: AudioAttachment,
+    audioGcsPath: string,
+    transcription: { text: string; error?: string } | null,
+    userId: string,
+    contactId: string,
+    payload: ChatwootWebhookPayload
+  ): Promise<void> {
+    try {
+      // Generate a descriptive filename
+      const timestamp = new Date(payload.created_at).toISOString().split('T')[0];
+      const fileName = `WhatsApp Audio - ${timestamp} - ${contactId}.mp3`;
+      
+      // Create knowledge file record
+      const knowledgeFileData = {
+        user_id: userId,
+        name: fileName,
+        type: 'audio',
+        size: attachment.file_size,
+        gcs_bucket: audioGcsPath.split('/')[0], // Extract bucket name from path
+        gcs_path: audioGcsPath,
+        file_hash: `audio_${attachment.id}_${Date.now()}`, // Generate unique hash
+        content_extracted: transcription?.text ? true : false,
+        extracted_content: transcription?.text || null,
+        extraction_metadata: {
+          source: 'whatsapp_audio',
+          contact_id: contactId,
+          chatwoot_attachment_id: attachment.id,
+          transcription_status: transcription?.error ? 'error' : (transcription?.text ? 'completed' : 'error'),
+          openai_model: this.openaiConfig.model,
+          original_message_id: payload.id,
+          recorded_at: payload.created_at
+        },
+        metadata: {
+          original_name: fileName,
+          source: 'whatsapp',
+          contact_identifier: contactId,
+          chatwoot_attachment_id: attachment.id,
+          file_type: 'audio',
+          duration_seconds: null, // Could be extracted if needed
+          uploaded_at: new Date().toISOString()
+        }
+      };
+
+      const { data: knowledgeFile, error: knowledgeError } = await this.supabase
+        .from('knowledge_files')
+        .insert([knowledgeFileData])
+        .select();
+
+      if (knowledgeError) {
+        console.error('Error adding audio to knowledge base:', knowledgeError);
+      } else {
+        console.log('Audio file added to knowledge base:', knowledgeFile?.[0]?.id);
+      }
+
+    } catch (error) {
+      console.error('Error adding audio to knowledge base:', error);
     }
   }
 }

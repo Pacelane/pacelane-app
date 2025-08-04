@@ -57,6 +57,8 @@ const KnowledgeBase = () => {
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('lastAdded');
+  const [selectedAudioFile, setSelectedAudioFile] = useState(null);
+  const [showAudioModal, setShowAudioModal] = useState(false);
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [urlInput, setUrlInput] = useState('');
 
@@ -160,13 +162,61 @@ const KnowledgeBase = () => {
           }
       }
 
+      // Create enhanced subtitle with file-specific information
+      let subtitle = '';
+      
+      if (item.type === 'audio') {
+        const transcriptionStatus = item.extraction_metadata?.transcription_status || 'unknown';
+        const hasTranscription = item.extracted_content && item.extracted_content.length > 0;
+        
+        subtitle = `${item.size ? `${(item.size / 1024).toFixed(1)} KB` : ''} • ${item.created_at ? new Date(item.created_at).toLocaleDateString() : 'Unknown Date'}`;
+        
+        if (hasTranscription) {
+          subtitle += ` • Transcribed`;
+        } else if (transcriptionStatus === 'error') {
+          subtitle += ` • Transcription failed`;
+        } else if (transcriptionStatus === 'completed') {
+          subtitle += ` • Transcription ready`;
+        } else {
+          subtitle += ` • Transcription pending`;
+        }
+        
+        // Add source info if available
+        if (item.metadata?.source === 'whatsapp') {
+          subtitle += ` • WhatsApp`;
+        }
+      } else {
+        subtitle = `${item.size ? `${(item.size / 1024).toFixed(1)} KB` : ''} • ${item.created_at ? new Date(item.created_at).toLocaleDateString() : 'Unknown Date'}`;
+      }
+
       return {
         id: item.id || 'unknown',
         title: item.name || 'Unknown File',
-        subtitle: `${item.size ? `${(item.size / 1024).toFixed(1)} KB` : ''} • ${item.created_at ? new Date(item.created_at).toLocaleDateString() : 'Unknown Date'}`,
+        subtitle: subtitle,
         fileType: cardFileType,
         status: 'ready',
         fileSize: item.size || 0,
+        onClick: () => handleFileClick({
+          id: item.id || 'unknown',
+          title: item.name || 'Unknown File',
+          subtitle: subtitle,
+          fileType: cardFileType,
+          status: 'ready',
+          fileSize: item.size || 0,
+          metadata: item.type === 'audio' ? {
+            transcription: item.extracted_content,
+            transcriptionStatus: item.extraction_metadata?.transcription_status,
+            source: item.metadata?.source,
+            contactId: item.metadata?.contact_identifier
+          } : undefined
+        }),
+        // Add additional metadata for audio files
+        metadata: item.type === 'audio' ? {
+          transcription: item.extracted_content,
+          transcriptionStatus: item.extraction_metadata?.transcription_status,
+          source: item.metadata?.source,
+          contactId: item.metadata?.contact_identifier
+        } : undefined
       };
     });
   };
@@ -268,6 +318,13 @@ const KnowledgeBase = () => {
       } catch (error: any) {
         toast.error(error.message || 'Failed to delete file');
       }
+    }
+  };
+
+  const handleFileClick = (file) => {
+    if (file.fileType === 'audio' && file.metadata?.transcription) {
+      setSelectedAudioFile(file);
+      setShowAudioModal(true);
     }
   };
 
@@ -481,7 +538,7 @@ const KnowledgeBase = () => {
                     status={file.status}
                     fileSize={file.fileSize}
                     onMenuAction={(action) => handleFileAction(action, file.id)}
-                    onClick={() => console.log(`Clicked file: ${file.id}`)}
+                    onClick={file.onClick}
                   />
                 ))}
             </div>
@@ -501,6 +558,117 @@ const KnowledgeBase = () => {
               <p style={textStyles.sm.normal}>
                 {searchQuery ? 'Try adjusting your search or filter' : 'Upload some files to get started'}
               </p>
+            </div>
+          )}
+
+          {/* Audio Transcription Modal */}
+          {showAudioModal && selectedAudioFile && (
+            <div style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              zIndex: 1000,
+            }}>
+              <div style={{
+                backgroundColor: colors.bg.card.default,
+                borderRadius: cornerRadius.borderRadius.lg,
+                padding: spacing.spacing[24],
+                maxWidth: '600px',
+                width: '90%',
+                maxHeight: '80vh',
+                overflow: 'auto',
+                border: `1px solid ${colors.border.default}`,
+                boxShadow: getShadow('regular.modalMd', colors, { withBorder: true }),
+              }}>
+                {/* Header */}
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: spacing.spacing[16],
+                }}>
+                  <h2 style={{
+                    ...textStyles.xl.semibold,
+                    color: colors.text.default,
+                    margin: 0,
+                  }}>
+                    Audio Transcription
+                  </h2>
+                  <button
+                    onClick={() => setShowAudioModal(false)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: colors.text.muted,
+                      fontSize: '20px',
+                      padding: spacing.spacing[4],
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+
+                {/* File Info */}
+                <div style={{
+                  marginBottom: spacing.spacing[16],
+                  padding: spacing.spacing[12],
+                  backgroundColor: colors.bg.subtle,
+                  borderRadius: cornerRadius.borderRadius.md,
+                }}>
+                  <p style={{
+                    ...textStyles.sm.medium,
+                    color: colors.text.default,
+                    margin: 0,
+                    marginBottom: spacing.spacing[4],
+                  }}>
+                    {selectedAudioFile.title}
+                  </p>
+                  <p style={{
+                    ...textStyles.xs.normal,
+                    color: colors.text.muted,
+                    margin: 0,
+                  }}>
+                    {selectedAudioFile.subtitle}
+                  </p>
+                </div>
+
+                {/* Transcription */}
+                <div>
+                  <h3 style={{
+                    ...textStyles.md.semibold,
+                    color: colors.text.default,
+                    margin: 0,
+                    marginBottom: spacing.spacing[12],
+                  }}>
+                    Transcription
+                  </h3>
+                  <div style={{
+                    padding: spacing.spacing[16],
+                    backgroundColor: colors.bg.default,
+                    border: `1px solid ${colors.border.default}`,
+                    borderRadius: cornerRadius.borderRadius.md,
+                    maxHeight: '400px',
+                    overflow: 'auto',
+                  }}>
+                    <p style={{
+                      ...textStyles.sm.normal,
+                      color: colors.text.default,
+                      margin: 0,
+                      lineHeight: '1.6',
+                      whiteSpace: 'pre-wrap',
+                    }}>
+                      {selectedAudioFile.metadata?.transcription || 'No transcription available'}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>
