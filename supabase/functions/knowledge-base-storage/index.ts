@@ -368,7 +368,7 @@ class GCSKnowledgeBaseStorage {
       return files.map((file: any) => ({
         id: file.id,
         name: file.name,
-        type: file.type,
+        type: this.getFileTypeFromName(file.name), // Use the same type detection logic
         size: file.size,
         url: file.url || file.gcs_path,
         user_id: file.user_id,

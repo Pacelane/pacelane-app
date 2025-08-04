@@ -123,8 +123,17 @@ const KnowledgeBase = () => {
 
   // Transform knowledge files to FileCard format
   const getFileCards = () => {
+    if (!Array.isArray(knowledgeFiles)) {
+      console.error('KnowledgeBase: knowledgeFiles is not an array:', knowledgeFiles);
+      return [];
+    }
+    
     console.log('KnowledgeBase: Transforming', knowledgeFiles.length, 'files to cards');
-    return knowledgeFiles.map(item => {
+    console.log('KnowledgeBase: Raw knowledge files data:', knowledgeFiles);
+    return knowledgeFiles.filter(item => {
+      console.log('KnowledgeBase: Processing item:', item);
+      return item && item.type;
+    }).map(item => {
       // Map file type to FileCard expected types
       let cardFileType = 'default';
       switch (item.type) {
@@ -152,12 +161,12 @@ const KnowledgeBase = () => {
       }
 
       return {
-        id: item.id,
-        title: item.name,
-        subtitle: `${item.size ? `${(item.size / 1024).toFixed(1)} KB` : ''} • ${new Date(item.created_at).toLocaleDateString()}`,
+        id: item.id || 'unknown',
+        title: item.name || 'Unknown File',
+        subtitle: `${item.size ? `${(item.size / 1024).toFixed(1)} KB` : ''} • ${item.created_at ? new Date(item.created_at).toLocaleDateString() : 'Unknown Date'}`,
         fileType: cardFileType,
         status: 'ready',
-        fileSize: item.size,
+        fileSize: item.size || 0,
       };
     });
   };
