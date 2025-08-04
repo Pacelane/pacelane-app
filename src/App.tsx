@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/services/theme-context";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import LandingPage from "./pages/LandingPage";
+
 import ProductHome from "./pages/ProductHome";
 import NewProductHome from "./pages/NewProductHome";
 import KnowledgeBase from "./pages/KnowledgeBase";
@@ -36,7 +36,7 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
           <Routes>
-            <Route path="/" element={<LandingPage />} />
+            <Route path="/" element={<SignIn />} />
             <Route path="/signin" element={<SignIn />} />
             <Route path="/onboarding/welcome" element={<Welcome />} />
             <Route path="/onboarding/first-things-first" element={<FirstThingsFirst />} />

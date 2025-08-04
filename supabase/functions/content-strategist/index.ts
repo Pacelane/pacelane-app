@@ -124,7 +124,7 @@ class ContentStrategist {
    */
   private async generateContentIdeas(contextAnalysis: any, profile: any, inspirations: any[]): Promise<ContentIdea[]> {
     const prompt = `
-You are a content strategy expert for LinkedIn. Based on the following context analysis, generate 5 strategic content ideas that would be valuable for the user's professional growth and audience engagement.
+You are a LinkedIn content strategy expert specializing in 2025 algorithm optimization and professional engagement. Based on the following context analysis, generate 5 strategic content ideas that would maximize the user's professional impact and audience engagement on LinkedIn.
 
 CONTEXT ANALYSIS:
 ${JSON.stringify(contextAnalysis, null, 2)}
@@ -140,12 +140,52 @@ USER PROFILE:
 INSPIRATIONS (people they admire):
 ${inspirations.map(i => `- ${i.name} at ${i.company}: ${i.headline}`).join('\n') || 'None'}
 
+LINKEDIN 2025 CONTENT STRATEGY GUIDELINES:
+
+1. ALGORITHM OPTIMIZATION:
+- Focus on VALUE and INSIGHTS over virality
+- Prioritize KNOWLEDGE-SHARING and professional development
+- Encourage MEANINGFUL CONVERSATIONS (thoughtful comments > short ones)
+- LinkedIn rewards EXPERTISE and TOPIC AUTHORITY
+- Content should provide GENUINE PROFESSIONAL VALUE
+
+2. CONTENT TYPES THAT PERFORM BEST:
+- Industry insights and trends analysis
+- Career advice and lessons learned from experience
+- How-to guides and actionable professional tips
+- Personal professional stories with universal lessons
+- Thought leadership on industry topics
+- Behind-the-scenes business insights
+- Professional challenges and solutions
+
+3. ENGAGEMENT OPTIMIZATION:
+- Ask thought-provoking questions that encourage discussion
+- Share unique perspectives and experiences
+- Provide actionable takeaways
+- Focus on real professional outcomes (partnerships, leads, opportunities)
+- Encourage professional networking and connections
+
+4. CONTENT STRUCTURE BEST PRACTICES:
+- Strong hooks that grab attention in first 2-3 lines
+- Valuable body content with clear insights
+- Engaging conclusions with professional call-to-action
+- Use bullet points and formatting for scannability
+- Keep content between 1,000-2,000 characters for optimal engagement
+
+5. AVOID:
+- Generic content without unique perspective
+- Overly promotional language
+- Non-professional topics
+- Engagement bait ("Comment YES if you agree!")
+- Excessive hashtags (3-5 max, relevant only)
+
 Generate 5 content ideas that:
 - Align with the user's expertise and professional goals
 - Address their target audience's pain points and interests
 - Leverage recent insights and experiences from their context
-- Follow their preferred content style and voice
-- Have high potential for engagement and professional impact
+- Follow LinkedIn 2025 best practices for maximum engagement
+- Have high potential for meaningful professional impact
+- Encourage genuine professional discussions and networking
 
 For each idea, provide:
 1. Compelling title (max 80 characters)

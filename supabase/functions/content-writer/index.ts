@@ -64,7 +64,7 @@ class ContentWriter {
    */
   private async generatePostContent(request: ContentWritingRequest): Promise<Partial<LinkedInPost>> {
     const prompt = `
-You are a LinkedIn content writer specializing in professional posts. Write a complete, engaging LinkedIn post based on this content idea and user context.
+You are a LinkedIn content writer specializing in professional posts that maximize engagement and align with LinkedIn's 2025 algorithm. Write a complete, engaging LinkedIn post based on this content idea and user context.
 
 CONTENT IDEA:
 ${JSON.stringify(request.contentIdea, null, 2)}
@@ -80,21 +80,75 @@ USER PROFILE:
 - Headline: ${request.userProfile.linkedin_headline || 'N/A'}
 - Company: ${request.userProfile.linkedin_company || 'N/A'}
 
+LINKEDIN 2025 BEST PRACTICES TO FOLLOW:
+
+1. ALGORITHM OPTIMIZATION:
+- Focus on VALUE and INSIGHTS over virality
+- Prioritize KNOWLEDGE-SHARING and professional development
+- Encourage MEANINGFUL CONVERSATIONS (thoughtful comments > short ones)
+- Avoid engagement bait ("Comment YES if you agree!")
+- LinkedIn is NOT designed for virality - focus on professional value
+
+2. CONTENT STRUCTURE (2800 characters max):
+- STRONG HOOK: First 2-3 lines must grab attention immediately
+- VALUABLE BODY: Provide actionable insights, lessons learned, or unique perspectives
+- ENGAGING CONCLUSION: End with a compelling call-to-action
+- Use SHORT PARAGRAPHS (2-3 lines max) for scannability
+- Include BULLET POINTS and BOLDED KEYWORDS for readability
+
+3. FORMATTING BEST PRACTICES:
+- Use bullet points (•) to break up text
+- Bold important keywords and phrases
+- Keep paragraphs short and scannable
+- Use line breaks strategically
+- Avoid walls of text
+
+4. ENGAGEMENT STRATEGIES:
+- Ask thought-provoking questions that encourage discussion
+- Share personal stories or experiences when relevant
+- Provide actionable takeaways
+- Encourage professional networking and connections
+- Focus on real professional outcomes (partnerships, leads, opportunities)
+
+5. CONTENT TYPES THAT PERFORM BEST:
+- Industry insights and trends
+- Career advice and lessons learned
+- How-to guides and actionable tips
+- Personal professional stories
+- Thought leadership on industry topics
+- Behind-the-scenes business insights
+
+6. ALGORITHM SIGNALS TO OPTIMIZE FOR:
+- Dwell time (how long users spend reading)
+- Meaningful comments from relevant professionals
+- Saves and shares
+- Professional relevance to user's network
+- Topic authority and expertise
+
+7. AVOID:
+- Excessive hashtags (3-5 max, relevant only)
+- External links in main post (put in comments if needed)
+- Generic content without unique perspective
+- Overly promotional language
+- Non-professional topics
+
 Write a complete LinkedIn post that:
-- Opens with a compelling hook that grabs attention
-- Provides valuable insights or lessons learned
+- Opens with a compelling hook that grabs attention in the first 2-3 lines
+- Provides valuable insights, lessons learned, or actionable advice
 - Uses storytelling or examples when appropriate
 - Is optimized for LinkedIn's algorithm (2800 characters max)
-- Encourages engagement and discussion
+- Encourages meaningful engagement and discussion
 - Matches the user's professional voice and style
+- Uses proper formatting with bullet points, bold text, and short paragraphs
+- Ends with a clear, professional call-to-action
 
 Structure the post with:
 1. Strong opening hook (first 2-3 lines)
-2. Valuable content body with clear points
-3. Engaging conclusion
-4. Clear call-to-action
+2. Valuable content body with clear points and formatting
+3. Engaging conclusion with call-to-action
+4. Professional tone throughout
 
-Return the complete post text ready for LinkedIn. Focus on being authentic, valuable, and engaging.
+Return the complete post text ready for LinkedIn. Focus on being authentic, valuable, and engaging while following all LinkedIn best practices.
 `;
 
     try {
@@ -107,7 +161,7 @@ Return the complete post text ready for LinkedIn. Focus on being authentic, valu
         body: JSON.stringify({
           model: 'gpt-4o-mini',
           messages: [
-            { role: 'system', content: 'You are a LinkedIn content writer. Write engaging, professional posts.' },
+            { role: 'system', content: 'You are a LinkedIn content writer specializing in professional posts that maximize engagement and align with LinkedIn\'s 2025 algorithm. Write engaging, valuable, and properly formatted posts.' },
             { role: 'user', content: prompt }
           ],
           temperature: 0.7,
@@ -143,29 +197,34 @@ Return the complete post text ready for LinkedIn. Focus on being authentic, valu
    */
   private async enhancePostWithHashtagsAndCTA(post: Partial<LinkedInPost>, request: ContentWritingRequest): Promise<Partial<LinkedInPost>> {
     const prompt = `
-Based on this LinkedIn post content, suggest relevant hashtags and a compelling call-to-action.
+Based on this LinkedIn post content, suggest relevant hashtags and a compelling call-to-action following LinkedIn 2025 best practices.
 
 POST CONTENT:
 ${post.content}
 
-CONTENT IDEA:
-${JSON.stringify(request.contentIdea, null, 2)}
+LINKEDIN HASHTAG BEST PRACTICES:
+- Use 3-5 hashtags maximum (LinkedIn flags excessive hashtags as spam)
+- Choose RELEVANT hashtags that match the content topic
+- Mix popular hashtags with niche ones
+- Avoid generic hashtags like #motivation or #success
+- Focus on industry-specific and topic-specific hashtags
+- Research trending hashtags in the user's industry
 
-USER PROFILE:
-- Headline: ${request.userProfile.linkedin_headline || 'N/A'}
-- Company: ${request.userProfile.linkedin_company || 'N/A'}
+CALL-TO-ACTION BEST PRACTICES:
+- Encourage meaningful professional engagement
+- Ask thought-provoking questions
+- Invite industry discussion
+- Focus on professional networking
+- Avoid engagement bait ("Comment YES if you agree!")
+- Make it relevant to the post content
 
-Provide:
-1. 3-5 relevant hashtags (mix of popular and niche)
-2. A compelling call-to-action that encourages engagement
-
-Format as JSON:
+Return a JSON object with:
 {
-  "hashtags": ["#hashtag1", "#hashtag2", "#hashtag3"],
-  "callToAction": "What's your experience with this? Share your thoughts below! 👇"
+  "hashtags": ["#relevant1", "#relevant2", "#relevant3"],
+  "callToAction": "Professional call-to-action that encourages meaningful discussion"
 }
 
-Make hashtags relevant to the content and user's industry. Make the CTA engaging and specific to the post content.
+Focus on hashtags that would help this post reach the right professional audience and a CTA that encourages genuine professional engagement.
 `;
 
     try {
@@ -178,11 +237,11 @@ Make hashtags relevant to the content and user's industry. Make the CTA engaging
         body: JSON.stringify({
           model: 'gpt-4o-mini',
           messages: [
-            { role: 'system', content: 'You are a LinkedIn optimization expert. Respond ONLY with valid JSON. Do not include markdown formatting, code blocks, or any other text. Return pure JSON that can be parsed directly.' },
+            { role: 'system', content: 'You are a LinkedIn optimization specialist. Provide relevant hashtags and professional call-to-actions that follow LinkedIn best practices.' },
             { role: 'user', content: prompt }
           ],
-          temperature: 0.5,
-          max_tokens: 300,
+          temperature: 0.7,
+          max_tokens: 500,
         }),
       });
 
@@ -193,30 +252,24 @@ Make hashtags relevant to the content and user's industry. Make the CTA engaging
       const data = await response.json();
       const enhancementText = data.choices[0].message.content;
       
-      try {
-        // Clean the response by removing markdown code blocks if present
-        const cleanedText = this.cleanJsonResponse(enhancementText);
-        const enhancement = JSON.parse(cleanedText);
-        return {
-          ...post,
-          hashtags: enhancement.hashtags || [],
-          callToAction: enhancement.callToAction || "What's your experience with this? Share your thoughts below! 👇"
-        };
-      } catch (parseError) {
-        console.error('Failed to parse hashtags and CTA:', parseError);
-        console.error('Raw response:', enhancementText);
-        return {
-          ...post,
-          hashtags: request.contentIdea.hashtagSuggestions || ["#LinkedIn", "#ProfessionalDevelopment"],
-          callToAction: "What's your experience with this? Share your thoughts below! 👇"
-        };
-      }
-    } catch (error) {
-      console.error('Error enhancing post with hashtags and CTA:', error);
+      console.error('Raw response:', enhancementText);
+      
+      const cleanedText = this.cleanJsonResponse(enhancementText);
+      const enhancement = JSON.parse(cleanedText);
+
       return {
         ...post,
-        hashtags: request.contentIdea.hashtagSuggestions || ["#LinkedIn", "#ProfessionalDevelopment"],
-        callToAction: "What's your experience with this? Share your thoughts below! 👇"
+        hashtags: enhancement.hashtags || [],
+        callToAction: enhancement.callToAction || 'What are your thoughts on this? Share your experience in the comments below!'
+      };
+
+    } catch (error) {
+      console.error('Error enhancing post with hashtags and CTA:', error);
+      // Fallback hashtags and CTA
+      return {
+        ...post,
+        hashtags: ['#professionaldevelopment', '#linkedin', '#networking'],
+        callToAction: 'What are your thoughts on this? Share your experience in the comments below!'
       };
     }
   }
@@ -249,22 +302,91 @@ Make hashtags relevant to the content and user's industry. Make the CTA engaging
     // Optimize content length and structure
     const optimizedContent = this.optimizeContentStructure(post.content || '');
     
-    // Add hashtags to the end of the post
+    // LinkedIn 2025 optimization: Ensure content follows best practices
+    const linkedInOptimizedContent = this.applyLinkedInOptimizations(optimizedContent);
+    
+    // Add hashtags to the end of the post (LinkedIn best practice)
     const hashtagString = post.hashtags?.length ? `\n\n${post.hashtags.join(' ')}` : '';
-    const finalContent = `${optimizedContent}\n\n${post.callToAction}${hashtagString}`;
+    const finalContent = `${linkedInOptimizedContent}\n\n${post.callToAction}${hashtagString}`;
+
+    // Calculate estimated engagement based on LinkedIn best practices
+    const estimatedEngagement = this.calculateLinkedInEngagementScore(finalContent, readabilityScore);
 
     return {
       title: post.title || '',
       content: finalContent,
       hashtags: post.hashtags || [],
       callToAction: post.callToAction || '',
-      estimatedEngagement: post.estimatedEngagement || 7,
+      estimatedEngagement,
       writingStyle: post.writingStyle || 'professional',
       contentLength: finalContent.length,
       readabilityScore,
       keyPoints: post.keyPoints || [],
       contextSources: post.contextSources || []
     };
+  }
+
+  /**
+   * Apply LinkedIn-specific optimizations to content
+   */
+  private applyLinkedInOptimizations(content: string): string {
+    let optimized = content;
+
+    // Ensure proper paragraph breaks for scannability
+    optimized = optimized.replace(/\n{3,}/g, '\n\n');
+    
+    // Add bullet points where appropriate for better formatting
+    optimized = optimized.replace(/^(\s*)(\d+\.\s)/gm, '$1• ');
+    
+    // Ensure hashtags are properly spaced
+    optimized = optimized.replace(/([^\s])(#\w+)/g, '$1 $2');
+    
+    // Add line breaks before call-to-action for better visual separation
+    optimized = optimized.replace(/([.!?])\s*([A-Z][^.!?]*\?)/g, '$1\n\n$2');
+    
+    return optimized;
+  }
+
+  /**
+   * Calculate LinkedIn engagement score based on best practices
+   */
+  private calculateLinkedInEngagementScore(content: string, readabilityScore: number): number {
+    let score = 7; // Base score
+    
+    // Content length optimization (LinkedIn prefers 1,000-2,000 characters)
+    const contentLength = content.length;
+    if (contentLength >= 1000 && contentLength <= 2000) {
+      score += 1;
+    } else if (contentLength >= 500 && contentLength <= 3000) {
+      score += 0.5;
+    }
+    
+    // Readability optimization (LinkedIn prefers readable content)
+    if (readabilityScore >= 60) {
+      score += 1;
+    } else if (readabilityScore >= 40) {
+      score += 0.5;
+    }
+    
+    // Engagement elements
+    if (content.includes('?')) score += 0.5; // Questions encourage engagement
+    if (content.includes('•')) score += 0.5; // Bullet points improve readability
+    if (content.includes('**')) score += 0.5; // Bold text draws attention
+    
+    // Professional tone indicators
+    if (content.toLowerCase().includes('industry') || 
+        content.toLowerCase().includes('professional') ||
+        content.toLowerCase().includes('business')) {
+      score += 0.5;
+    }
+    
+    // Avoid engagement bait detection
+    if (content.toLowerCase().includes('comment yes') ||
+        content.toLowerCase().includes('like if you agree')) {
+      score -= 1;
+    }
+    
+    return Math.min(10, Math.max(1, Math.round(score)));
   }
 
   /**

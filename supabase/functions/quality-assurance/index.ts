@@ -72,7 +72,7 @@ class QualityAssurance {
    */
   private async performComprehensiveReview(post: LinkedInPost, userContext: any, userProfile: any): Promise<Partial<QualityReview>> {
     const prompt = `
-You are a content quality assurance expert specializing in LinkedIn posts. Review this post for quality, relevance, and optimization.
+You are a LinkedIn content quality assurance expert specializing in 2025 algorithm optimization and professional engagement. Review this post for quality, relevance, and LinkedIn-specific optimization.
 
 ORIGINAL POST:
 Title: ${post.title}
@@ -88,24 +88,63 @@ USER PROFILE:
 - Headline: ${userProfile.linkedin_headline || 'N/A'}
 - Company: ${userProfile.linkedin_company || 'N/A'}
 
-Review the post against these criteria:
+LINKEDIN 2025 QUALITY ASSESSMENT CRITERIA:
 
-1. BRAND VOICE ALIGNMENT (1-10): Does it match the user's professional voice and style?
-2. AUDIENCE RELEVANCE (1-10): Is it relevant to their target audience?
-3. ENGAGEMENT POTENTIAL (1-10): Will it encourage likes, comments, and shares?
-4. LINKEDIN BEST PRACTICES: Does it follow LinkedIn's algorithm preferences?
-5. PROFESSIONAL IMPACT: Does it position the user as a thought leader?
+1. ALGORITHM OPTIMIZATION (1-10):
+- Does it focus on VALUE and INSIGHTS over virality?
+- Does it encourage MEANINGFUL CONVERSATIONS?
+- Does it avoid engagement bait?
+- Is it optimized for LinkedIn's knowledge-sharing focus?
 
-Provide specific feedback and suggestions for improvement.
+2. CONTENT STRUCTURE (1-10):
+- Does it have a strong hook in the first 2-3 lines?
+- Is it properly formatted with bullet points and short paragraphs?
+- Is the content length optimal (1,000-2,000 characters)?
+- Does it have a clear, professional call-to-action?
+
+3. PROFESSIONAL VALUE (1-10):
+- Does it provide actionable insights or lessons learned?
+- Does it position the user as a thought leader?
+- Is it relevant to the user's industry and expertise?
+- Does it encourage professional networking?
+
+4. ENGAGEMENT POTENTIAL (1-10):
+- Will it encourage thoughtful comments from relevant professionals?
+- Does it ask thought-provoking questions?
+- Does it provide value that people would want to save/share?
+- Is it optimized for dwell time (reading engagement)?
+
+5. BRAND VOICE ALIGNMENT (1-10):
+- Does it match the user's professional voice and style?
+- Is it authentic to their expertise and experience?
+- Does it maintain professional tone throughout?
+
+6. HASHTAG OPTIMIZATION (1-10):
+- Are hashtags relevant and industry-specific?
+- Are there 3-5 hashtags maximum?
+- Do they help reach the right professional audience?
+
+7. AVOIDANCE OF RED FLAGS:
+- No engagement bait ("Comment YES if you agree!")
+- No excessive hashtags
+- No overly promotional language
+- No non-professional topics
+- No external links in main post
+
+Review the post against these LinkedIn-specific criteria and provide detailed feedback.
 
 Format as JSON:
 {
   "qualityScore": 8,
+  "algorithmOptimization": 8,
+  "contentStructure": 7,
+  "professionalValue": 9,
+  "engagementPotential": 8,
   "brandVoiceAlignment": 7,
-  "audienceRelevance": 8,
-  "improvements": ["improvement1", "improvement2"],
-  "engagementOptimization": ["optimization1", "optimization2"],
-  "reviewNotes": "Brief summary of review findings"
+  "hashtagOptimization": 8,
+  "improvements": ["LinkedIn-specific improvement 1", "LinkedIn-specific improvement 2"],
+  "engagementOptimization": ["LinkedIn optimization 1", "LinkedIn optimization 2"],
+  "reviewNotes": "Brief summary of LinkedIn-specific review findings"
 }
 `;
 
@@ -119,7 +158,7 @@ Format as JSON:
         body: JSON.stringify({
           model: 'gpt-4o-mini',
           messages: [
-            { role: 'system', content: 'You are a content quality assurance expert. Respond ONLY with valid JSON. Do not include markdown formatting, code blocks, or any other text. Return pure JSON that can be parsed directly.' },
+            { role: 'system', content: 'You are a LinkedIn content quality assurance expert specializing in 2025 algorithm optimization and professional engagement. Respond ONLY with valid JSON. Do not include markdown formatting, code blocks, or any other text. Return pure JSON that can be parsed directly.' },
             { role: 'user', content: prompt }
           ],
           temperature: 0.3,
