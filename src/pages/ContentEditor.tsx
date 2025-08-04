@@ -760,7 +760,6 @@ const ContentEditor = () => {
             <Input
               value={draftTitle}
               onChange={(e) => setDraftTitle(e.target.value)}
-              style="default"
               size="lg"
               placeholder="Enter title..."
               style={{

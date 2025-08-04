@@ -194,16 +194,24 @@ const KnowledgeBase = () => {
   const handleFileSelect = async (files) => {
     if (!files || files.length === 0) return;
 
+    console.log('KnowledgeBase: Starting file upload for', files.length, 'files');
+
     try {
       const result = await uploadFiles(Array.from(files));
       
       if (result.error) {
+        console.error('KnowledgeBase: Upload error:', result.error);
         toast.error(result.error);
         return;
       }
       
+      console.log('KnowledgeBase: Files uploaded successfully:', result);
       toast.success('Files uploaded successfully');
+      
+      // Prevent any potential page reload
+      return false;
     } catch (error: any) {
+      console.error('KnowledgeBase: Upload exception:', error);
       toast.error(error.message || 'Failed to upload files');
     }
   };

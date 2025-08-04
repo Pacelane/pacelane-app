@@ -37,12 +37,14 @@ const FileUpload = ({
   // Handle file drop
   const handleDrop = (e) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsDragOver(false);
     
     if (disabled) return;
     
     const files = Array.from(e.dataTransfer.files);
     if (files.length > 0) {
+      console.log('FileUpload: Files dropped:', files.length);
       onFileSelect?.(files);
     }
   };
@@ -80,6 +82,7 @@ const FileUpload = ({
   const handleFileInputChange = (e) => {
     const files = Array.from(e.target.files);
     if (files.length > 0) {
+      console.log('FileUpload: Files selected via input:', files.length);
       onFileSelect?.(files);
     }
     // Reset input to allow selecting the same file again

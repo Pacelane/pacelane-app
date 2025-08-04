@@ -466,41 +466,69 @@ serve(async (req) => {
 
     if (req.method === 'POST') {
       // Handle file upload
-      const formData = await req.formData();
-      const file = formData.get('file') as File;
-      const metadata = JSON.parse(formData.get('metadata') as string || '{}');
+      const body = await req.json();
+      const { action, file: fileData, metadata = {} } = body;
 
-      if (!file) {
-        return new Response(JSON.stringify({ error: 'No file provided' }), {
+      if (action === 'upload') {
+        if (!fileData) {
+          return new Response(JSON.stringify({ error: 'No file provided' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        // Convert base64 back to File object
+        const fileBuffer = Uint8Array.from(atob(fileData.content), c => c.charCodeAt(0));
+        const file = new File([fileBuffer], fileData.name, { type: fileData.type });
+
+        const result = await storage.uploadFile(user.id, file, metadata);
+
+        return new Response(JSON.stringify(result), {
+          status: result.success ? 200 : 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      } else if (action === 'list') {
+        // Handle file listing
+        const files = await storage.listFiles(user.id);
+        return new Response(JSON.stringify({ files }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      } else if (action === 'delete') {
+        // Handle file deletion
+        const { fileName } = body;
+        if (!fileName) {
+          return new Response(JSON.stringify({ error: 'File name required' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        
+        // Find file by name in database and delete
+        const { data: file, error: fetchError } = await supabaseClient
+          .from('knowledge_files')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('name', fileName)
+          .single();
+
+        if (fetchError || !file) {
+          return new Response(JSON.stringify({ error: 'File not found' }), {
+            status: 404,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        const success = await storage.deleteFile(user.id, file.id);
+        return new Response(JSON.stringify({ success }), {
+          status: success ? 200 : 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      } else {
+        return new Response(JSON.stringify({ error: 'Invalid action' }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-
-      const result = await storage.uploadFile(user.id, file, metadata);
-
-      return new Response(JSON.stringify(result), {
-        status: result.success ? 200 : 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-
-    } else if (req.method === 'GET') {
-      // Handle file listing
-      const files = await storage.listFiles(user.id);
-
-      return new Response(JSON.stringify({ files }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-
-    } else if (req.method === 'DELETE') {
-      // Handle file deletion
-      const { fileId } = await req.json();
-      const success = await storage.deleteFile(user.id, fileId);
-
-      return new Response(JSON.stringify({ success }), {
-        status: success ? 200 : 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
 
     } else {
       return new Response(JSON.stringify({ error: 'Method not allowed' }), {
