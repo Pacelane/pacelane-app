@@ -458,6 +458,9 @@ export class ContentService {
     if (['mp3', 'wav', 'ogg', 'm4a', 'flac'].includes(extension)) {
       return 'audio';
     }
+    if (['pdf', 'docx', 'doc', 'txt'].includes(extension)) {
+      return 'document';
+    }
     
     return 'file';
   }
@@ -472,21 +475,51 @@ export class ContentService {
       'application/pdf',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       'application/msword',
-      'image/png'
+      'image/png',
+      'image/jpeg',
+      'image/gif',
+      'image/webp',
+      'image/svg+xml',
+      'audio/mpeg',
+      'audio/mp3',
+      'audio/wav',
+      'audio/ogg',
+      'audio/m4a',
+      'audio/flac',
+      'video/mp4',
+      'video/avi',
+      'video/mov',
+      'video/webm'
     ];
     
-    if (!allowedTypes.includes(file.type)) {
+    // Also check file extension as fallback
+    const fileName = file.name.toLowerCase();
+    const allowedExtensions = [
+      '.pdf', '.docx', '.doc', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg',
+      '.mp3', '.wav', '.ogg', '.m4a', '.flac',
+      '.mp4', '.avi', '.mov', '.webm'
+    ];
+    
+    const hasValidExtension = allowedExtensions.some(ext => fileName.endsWith(ext));
+    
+    if (!allowedTypes.includes(file.type) && !hasValidExtension) {
       return {
         valid: false,
-        error: 'File type not supported. Only PDF, Word documents (.docx), and PNG images are allowed.'
+        error: 'File type not supported. Allowed types: PDF, Word documents, images (PNG, JPG, GIF, WebP, SVG), audio (MP3, WAV, OGG, M4A, FLAC), and video (MP4, AVI, MOV, WebM).'
       };
     }
 
-    // Check file size (10MB limit)
-    if (file.size > 10 * 1024 * 1024) {
+    // Check file size (25MB limit for audio/video files, 10MB for others)
+    const isAudioOrVideo = file.type.startsWith('audio/') || file.type.startsWith('video/') || 
+                          ['.mp3', '.wav', '.ogg', '.m4a', '.flac', '.mp4', '.avi', '.mov', '.webm'].some(ext => fileName.endsWith(ext));
+    
+    const maxSize = isAudioOrVideo ? 25 * 1024 * 1024 : 10 * 1024 * 1024; // 25MB for audio/video, 10MB for others
+    
+    if (file.size > maxSize) {
+      const maxSizeMB = isAudioOrVideo ? 25 : 10;
       return {
         valid: false,
-        error: 'File size too large. Maximum size is 10MB.'
+        error: `File size too large. Maximum size is ${maxSizeMB}MB for ${isAudioOrVideo ? 'audio/video' : 'document/image'} files.`
       };
     }
 

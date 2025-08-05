@@ -103,12 +103,50 @@ class GCSKnowledgeBaseStorage {
         });
 
       if (error) {
-        console.error('Error storing bucket mapping:', error);
+        console.error('❌ Error storing bucket mapping:', error);
       } else {
-        console.log(`Stored bucket mapping for user ${userId}: ${bucketName}`);
+        console.log(`✅ Stored bucket mapping for user ${userId}: ${bucketName}`);
       }
     } catch (error) {
-      console.error('Error storing bucket mapping:', error);
+      console.error('❌ Error storing bucket mapping:', error);
+    }
+  }
+
+  /**
+   * Check if bucket exists and create mapping if it does
+   */
+  private async checkAndMapExistingBucket(userId: string, bucketName: string): Promise<boolean> {
+    try {
+      console.log(`🔍 Checking if bucket exists in GCS: ${bucketName}`);
+      
+      const accessToken = await this.getGCSAccessToken();
+      if (!accessToken) {
+        console.error('❌ Failed to get GCS access token');
+        return false;
+      }
+
+      const response = await fetch(`https://storage.googleapis.com/storage/v1/b/${bucketName}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      });
+
+      if (response.status === 200) {
+        console.log(`✅ Found existing bucket ${bucketName} for user ${userId}, creating mapping`);
+        await this.storeUserBucketMapping(userId, bucketName);
+        return true;
+      } else if (response.status === 404) {
+        console.log(`❌ Bucket ${bucketName} does not exist in GCS`);
+        return false;
+      } else {
+        const errorText = await response.text();
+        console.error(`❌ Error checking bucket: ${response.status} ${response.statusText} - ${errorText}`);
+        return false;
+      }
+    } catch (error) {
+      console.error('❌ Error checking and mapping existing bucket:', error);
+      return false;
     }
   }
 
@@ -218,13 +256,32 @@ class GCSKnowledgeBaseStorage {
    */
   private async ensureUserBucket(bucketName: string): Promise<boolean> {
     try {
+      console.log(`🔍 Ensuring bucket exists: ${bucketName}`);
+      
+      // First, check if this bucket name is already mapped to a user in our database
+      // This is a faster check than querying GCS
+      try {
+        const { data: existingMapping, error } = await this.supabase
+          .from('user_bucket_mapping')
+          .select('bucket_name')
+          .eq('bucket_name', bucketName)
+          .single();
+
+        if (!error && existingMapping) {
+          console.log(`✅ Bucket ${bucketName} is already mapped in database, assuming it exists`);
+          return true;
+        }
+      } catch (error) {
+        console.log(`📋 No existing mapping found for bucket ${bucketName}, checking GCS...`);
+      }
+      
       const accessToken = await this.getGCSAccessToken();
       if (!accessToken) {
-        console.error('Failed to get GCS access token');
+        console.error('❌ Failed to get GCS access token');
         return false;
       }
 
-      // Check if bucket exists
+      // Check if bucket exists in GCS
       const checkResponse = await fetch(`https://storage.googleapis.com/storage/v1/b/${bucketName}`, {
         method: 'GET',
         headers: {
@@ -232,11 +289,15 @@ class GCSKnowledgeBaseStorage {
         },
       });
 
+      console.log(`🔍 Bucket check response status: ${checkResponse.status}`);
+
       if (checkResponse.status === 200) {
+        console.log(`✅ Bucket ${bucketName} exists in GCS`);
         return true;
       }
 
       if (checkResponse.status === 404) {
+        console.log(`❌ Bucket ${bucketName} does not exist, creating...`);
         // Create bucket
         const bucketConfig = {
           name: bucketName,
@@ -269,12 +330,22 @@ class GCSKnowledgeBaseStorage {
           body: JSON.stringify(bucketConfig),
         });
 
-        return createResponse.status === 200 || createResponse.status === 201;
+        if (createResponse.status === 200 || createResponse.status === 201) {
+          console.log(`✅ Successfully created bucket: ${bucketName}`);
+          return true;
+        } else {
+          const errorText = await createResponse.text();
+          console.error(`❌ Error creating bucket: ${createResponse.status} ${createResponse.statusText} - ${errorText}`);
+          return false;
+        }
       }
 
+      // Handle other status codes
+      const errorText = await checkResponse.text();
+      console.error(`❌ Error checking bucket: ${checkResponse.status} ${checkResponse.statusText} - ${errorText}`);
       return false;
     } catch (error) {
-      console.error('Error ensuring bucket exists:', error);
+      console.error('❌ Error ensuring bucket exists:', error);
       return false;
     }
   }
@@ -284,15 +355,26 @@ class GCSKnowledgeBaseStorage {
    */
   async uploadFile(userId: string, file: File, metadata: any = {}): Promise<UploadResponse> {
     try {
+      console.log(`📁 Starting file upload for user: ${userId}`);
+      
       // First, try to get existing bucket for this user
       let bucketName = await this.getUserBucketName(userId);
       if (!bucketName) {
-        // Generate new bucket name and store mapping
+        // If no mapping exists, generate bucket name and check if it exists in GCS
         bucketName = this.generateUserBucketName(userId);
-        console.log(`Generated new bucket: ${bucketName} for user: ${userId}`);
-        await this.storeUserBucketMapping(userId, bucketName);
+        console.log(`🔍 No database mapping found, checking if bucket exists in GCS: ${bucketName}`);
+        
+        // Check if this bucket already exists in GCS (created by create-user-bucket function)
+        const existingBucketFound = await this.checkAndMapExistingBucket(userId, bucketName);
+        if (existingBucketFound) {
+          console.log(`✅ Found existing bucket in GCS and created mapping: ${bucketName}`);
+        } else {
+          console.log(`❌ No existing bucket found, will create new bucket: ${bucketName}`);
+          // Store mapping for the new bucket we're about to create
+          await this.storeUserBucketMapping(userId, bucketName);
+        }
       } else {
-        console.log(`Using existing bucket: ${bucketName} for user: ${userId}`);
+        console.log(`✅ Using existing bucket from database: ${bucketName} for user: ${userId}`);
       }
 
       const date = new Date().toISOString().split('T')[0];

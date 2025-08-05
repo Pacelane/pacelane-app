@@ -202,18 +202,23 @@ class ChatwootWebhookProcessor {
    */
   private async checkAndMapExistingBucket(userId: string, bucketName: string): Promise<boolean> {
     try {
+      console.log(`🔍 Checking if bucket exists in GCS: ${bucketName}`);
+      
       // Check if bucket exists in GCS
       const exists = await this.bucketExists(bucketName);
       if (exists) {
-        console.log(`Found existing bucket ${bucketName} for user ${userId}, creating mapping`);
+        console.log(`✅ Found existing bucket ${bucketName} for user ${userId}, creating mapping`);
         
         // Create the mapping in our database
         await this.storeUserBucketMapping(userId, bucketName);
+        console.log(`✅ Successfully created mapping for bucket ${bucketName}`);
         return true;
+      } else {
+        console.log(`❌ Bucket ${bucketName} does not exist in GCS`);
+        return false;
       }
-      return false;
     } catch (error) {
-      console.error('Error checking and mapping existing bucket:', error);
+      console.error('❌ Error checking and mapping existing bucket:', error);
       return false;
     }
   }
@@ -391,7 +396,7 @@ class ChatwootWebhookProcessor {
       });
 
       console.log(`Bucket check response status: ${response.status}`);
-      
+
       if (response.status === 200) {
         console.log(`Bucket ${bucketName} exists`);
         return true;
@@ -612,34 +617,34 @@ class ChatwootWebhookProcessor {
       
       // First, try to find existing mapping in whatsapp_user_mapping table
       for (const variation of numberVariations) {
-        const { data: existingMapping, error: mappingError } = await this.supabase
-          .from('whatsapp_user_mapping')
-          .select('user_id')
+      const { data: existingMapping, error: mappingError } = await this.supabase
+        .from('whatsapp_user_mapping')
+        .select('user_id')
           .eq('whatsapp_number', variation)
-          .single();
+        .single();
 
-        if (!mappingError && existingMapping) {
+      if (!mappingError && existingMapping) {
           console.log(`Found existing WhatsApp mapping: ${existingMapping.user_id} for number: ${variation}`);
-          return { userId: existingMapping.user_id, contactId };
+        return { userId: existingMapping.user_id, contactId };
         }
       }
 
       // If no mapping exists, try to find user by WhatsApp number in profiles
       for (const variation of numberVariations) {
-        const { data: userProfile, error: profileError } = await this.supabase
-          .from('profiles')
-          .select('user_id, whatsapp_number')
+      const { data: userProfile, error: profileError } = await this.supabase
+        .from('profiles')
+        .select('user_id, whatsapp_number')
           .eq('whatsapp_number', variation)
-          .single();
+        .single();
 
-        if (!profileError && userProfile) {
+      if (!profileError && userProfile) {
           console.log(`Found user ${userProfile.user_id} for WhatsApp number: ${variation}`);
-          
+        
           // Create mapping for future use with the original normalized number
           const normalizedNumber = this.normalizeWhatsAppNumber(whatsappNumber);
-          await this.createWhatsAppMapping(userProfile.user_id, normalizedNumber, payload);
-          
-          return { userId: userProfile.user_id, contactId };
+        await this.createWhatsAppMapping(userProfile.user_id, normalizedNumber, payload);
+        
+        return { userId: userProfile.user_id, contactId };
         }
       }
 
@@ -920,27 +925,45 @@ class ChatwootWebhookProcessor {
     const { userId, contactId } = await this.findUserByWhatsAppNumber(payload);
     
     // Debug: List existing buckets to help with troubleshooting
-    console.log('Listing existing buckets for debugging...');
-    await this.listBucketsWithPrefix();
+    console.log('🔍 Listing existing buckets for debugging...');
+    const existingBuckets = await this.listBucketsWithPrefix();
+    console.log(`📋 Found ${existingBuckets.length} existing buckets with prefix ${this.gcsConfig.bucketPrefix}`);
     
-    // Determine bucket name based on user identification
+    // Also check if user has any bucket mapping in database
+    if (userId) {
+      const { data: userMapping, error } = await this.supabase
+        .from('user_bucket_mapping')
+        .select('bucket_name')
+        .eq('user_id', userId);
+      
+      if (!error && userMapping && userMapping.length > 0) {
+        console.log(`📋 User ${userId} has ${userMapping.length} bucket mappings:`, userMapping.map(m => m.bucket_name));
+      } else {
+        console.log(`📋 User ${userId} has no bucket mappings in database`);
+      }
+    }
+    
+        // Determine bucket name based on user identification
     let bucketName: string;
     if (userId) {
-      // First, try to get existing bucket for this user
+      // ALWAYS try to get existing bucket for this user first
       const existingBucket = await this.getUserBucketName(userId);
       if (existingBucket) {
         bucketName = existingBucket;
-        console.log(`Using existing bucket: ${bucketName} for user: ${userId}`);
+        console.log(`✅ Found existing bucket in database: ${bucketName} for user: ${userId}`);
       } else {
-        // Generate new bucket name
+        // If no mapping exists, generate bucket name and check if it exists in GCS
         bucketName = this.generateUserBucketName(userId);
-        console.log(`Generated bucket name: ${bucketName} for user: ${userId}`);
+        console.log(`🔍 No database mapping found, checking if bucket exists in GCS: ${bucketName}`);
         
-        // Check if this bucket already exists in GCS (from previous runs)
+        // Check if this bucket already exists in GCS (created by create-user-bucket function)
         const existingBucketFound = await this.checkAndMapExistingBucket(userId, bucketName);
-        if (!existingBucketFound) {
-          // Only store mapping if we're going to create a new bucket
-          console.log(`No existing bucket found, will create new bucket: ${bucketName}`);
+        if (existingBucketFound) {
+          console.log(`✅ Found existing bucket in GCS and created mapping: ${bucketName}`);
+        } else {
+          console.log(`❌ No existing bucket found, will create new bucket: ${bucketName}`);
+          // Store mapping for the new bucket we're about to create
+          await this.storeUserBucketMapping(userId, bucketName);
         }
       }
     } else {
