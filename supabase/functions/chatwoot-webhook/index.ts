@@ -198,6 +198,60 @@ class ChatwootWebhookProcessor {
   }
 
   /**
+   * Check if bucket exists and create mapping if it does
+   */
+  private async checkAndMapExistingBucket(userId: string, bucketName: string): Promise<boolean> {
+    try {
+      // Check if bucket exists in GCS
+      const exists = await this.bucketExists(bucketName);
+      if (exists) {
+        console.log(`Found existing bucket ${bucketName} for user ${userId}, creating mapping`);
+        
+        // Create the mapping in our database
+        await this.storeUserBucketMapping(userId, bucketName);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error checking and mapping existing bucket:', error);
+      return false;
+    }
+  }
+
+  /**
+   * List buckets with our prefix to help with debugging
+   */
+  private async listBucketsWithPrefix(): Promise<string[]> {
+    try {
+      const accessToken = await this.getGCSAccessToken();
+      if (!accessToken) {
+        console.error('Failed to get GCS access token for listing buckets');
+        return [];
+      }
+
+      const response = await fetch(`https://storage.googleapis.com/storage/v1/b?prefix=${this.gcsConfig.bucketPrefix}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const bucketNames = data.items?.map((item: any) => item.name) || [];
+        console.log(`Found ${bucketNames.length} buckets with prefix ${this.gcsConfig.bucketPrefix}:`, bucketNames);
+        return bucketNames;
+      } else {
+        console.error(`Error listing buckets: ${response.status} ${response.statusText}`);
+        return [];
+      }
+    } catch (error) {
+      console.error('Error listing buckets:', error);
+      return [];
+    }
+  }
+
+  /**
    * Generate contact-based bucket name (fallback)
    */
   private generateContactBucketName(contactId: string): string {
@@ -336,6 +390,8 @@ class ChatwootWebhookProcessor {
         },
       });
 
+      console.log(`Bucket check response status: ${response.status}`);
+      
       if (response.status === 200) {
         console.log(`Bucket ${bucketName} exists`);
         return true;
@@ -343,12 +399,24 @@ class ChatwootWebhookProcessor {
         console.log(`Bucket ${bucketName} does not exist`);
         return false;
       } else {
-        console.error(`Error checking bucket: ${response.status} ${response.statusText}`);
+        const errorText = await response.text();
+        console.error(`Error checking bucket: ${response.status} ${response.statusText} - ${errorText}`);
+        
+        // If we get a 403 (Forbidden), it might mean the bucket exists but we don't have access
+        // or there's a permissions issue. Let's assume it exists to avoid creating duplicates.
+        if (response.status === 403) {
+          console.log(`Got 403 for bucket ${bucketName}, assuming it exists to avoid duplicates`);
+          return true;
+        }
+        
         return false;
       }
     } catch (error) {
       console.error('Error checking bucket existence:', error);
-      return false;
+      
+      // If there's a network error or other issue, assume bucket exists to avoid duplicates
+      console.log(`Error occurred, assuming bucket ${bucketName} exists to avoid duplicates`);
+      return true;
     }
   }
 
@@ -416,10 +484,29 @@ class ChatwootWebhookProcessor {
    * Ensure user bucket exists (create if necessary)
    */
   private async ensureUserBucket(bucketName: string): Promise<boolean> {
-    console.log(`Checking if bucket exists: ${bucketName}`);
+    console.log(`Ensuring bucket exists: ${bucketName}`);
+    
+    // First, check if this bucket name is already mapped to a user in our database
+    // This is a faster check than querying GCS
+    try {
+      const { data: existingMapping, error } = await this.supabase
+        .from('user_bucket_mapping')
+        .select('bucket_name')
+        .eq('bucket_name', bucketName)
+        .single();
+
+      if (!error && existingMapping) {
+        console.log(`Bucket ${bucketName} is already mapped in database, assuming it exists`);
+        return true;
+      }
+    } catch (error) {
+      console.log(`No existing mapping found for bucket ${bucketName}, checking GCS...`);
+    }
+    
+    // If no mapping exists, check GCS
     const exists = await this.bucketExists(bucketName);
     if (exists) {
-      console.log(`Bucket already exists: ${bucketName}`);
+      console.log(`Bucket already exists in GCS: ${bucketName}`);
       return true;
     }
 
@@ -832,6 +919,10 @@ class ChatwootWebhookProcessor {
     // Find user by WhatsApp number
     const { userId, contactId } = await this.findUserByWhatsAppNumber(payload);
     
+    // Debug: List existing buckets to help with troubleshooting
+    console.log('Listing existing buckets for debugging...');
+    await this.listBucketsWithPrefix();
+    
     // Determine bucket name based on user identification
     let bucketName: string;
     if (userId) {
@@ -841,10 +932,16 @@ class ChatwootWebhookProcessor {
         bucketName = existingBucket;
         console.log(`Using existing bucket: ${bucketName} for user: ${userId}`);
       } else {
-        // Generate new bucket name and store mapping
+        // Generate new bucket name
         bucketName = this.generateUserBucketName(userId);
-        console.log(`Generated new bucket: ${bucketName} for user: ${userId}`);
-        await this.storeUserBucketMapping(userId, bucketName);
+        console.log(`Generated bucket name: ${bucketName} for user: ${userId}`);
+        
+        // Check if this bucket already exists in GCS (from previous runs)
+        const existingBucketFound = await this.checkAndMapExistingBucket(userId, bucketName);
+        if (!existingBucketFound) {
+          // Only store mapping if we're going to create a new bucket
+          console.log(`No existing bucket found, will create new bucket: ${bucketName}`);
+        }
       }
     } else {
       bucketName = this.generateContactBucketName(contactId);

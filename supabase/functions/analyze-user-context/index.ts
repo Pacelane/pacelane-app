@@ -62,7 +62,7 @@ class ContextAnalyzer {
     );
 
     this.gcsConfig = {
-      bucketPrefix: Deno.env.get('GCS_BUCKET_PREFIX') ?? 'pacelane-storage',
+      bucketPrefix: Deno.env.get('GCS_BUCKET_PREFIX') ?? 'pacelane-whatsapp',
       projectId: Deno.env.get('GCS_PROJECT_ID') ?? '',
       clientEmail: Deno.env.get('GCS_CLIENT_EMAIL') ?? '',
       privateKey: Deno.env.get('GCS_PRIVATE_KEY') ?? '',

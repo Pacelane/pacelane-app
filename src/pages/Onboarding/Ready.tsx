@@ -54,6 +54,34 @@ const Ready = () => {
     }
   };
 
+  const createUserBucket = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return false;
+
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-user-bucket`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ userId: user.id }),
+      });
+
+      if (!response.ok) {
+        console.warn('Failed to create user bucket');
+        return false;
+      }
+
+      const result = await response.json();
+      console.log('User bucket created:', result);
+      return result.success;
+    } catch (error) {
+      console.warn('Error creating user bucket:', error);
+      return false;
+    }
+  };
+
   const completeOnboarding = async () => {
     if (!user) return;
 
@@ -80,6 +108,12 @@ const Ready = () => {
     setIsLoading(true);
     
     try {
+      // Create user bucket first
+      const bucketCreated = await createUserBucket();
+      if (!bucketCreated) {
+        console.warn('Failed to create user bucket, but continuing with onboarding');
+      }
+
       // Complete onboarding
       const success = await completeOnboarding();
       

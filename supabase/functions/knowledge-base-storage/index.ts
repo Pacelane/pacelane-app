@@ -39,7 +39,7 @@ class GCSKnowledgeBaseStorage {
 
   constructor(userToken: string) {
     this.gcsConfig = {
-      bucketPrefix: Deno.env.get('GCS_BUCKET_PREFIX') ?? 'pacelane-storage',
+      bucketPrefix: Deno.env.get('GCS_BUCKET_PREFIX') ?? 'pacelane-whatsapp',
       projectId: Deno.env.get('GCS_PROJECT_ID') ?? '',
       clientEmail: Deno.env.get('GCS_CLIENT_EMAIL') ?? '',
       privateKey: Deno.env.get('GCS_PRIVATE_KEY') ?? '',
@@ -63,6 +63,53 @@ class GCSKnowledgeBaseStorage {
   private generateUserBucketName(userId: string): string {
     const userHash = this.hashUserId(userId);
     return `${this.gcsConfig.bucketPrefix}-user-${userHash}`.toLowerCase();
+  }
+
+  /**
+   * Get existing bucket name for user from database
+   */
+  private async getUserBucketName(userId: string): Promise<string | null> {
+    try {
+      // Check if user already has a bucket mapping in the database
+      const { data: bucketMapping, error } = await this.supabase
+        .from('user_bucket_mapping')
+        .select('bucket_name')
+        .eq('user_id', userId)
+        .single();
+
+      if (!error && bucketMapping) {
+        console.log(`Found existing bucket mapping for user ${userId}: ${bucketMapping.bucket_name}`);
+        return bucketMapping.bucket_name;
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Error getting user bucket name:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Store bucket mapping for user in database
+   */
+  private async storeUserBucketMapping(userId: string, bucketName: string): Promise<void> {
+    try {
+      const { error } = await this.supabase
+        .from('user_bucket_mapping')
+        .insert({
+          user_id: userId,
+          bucket_name: bucketName,
+          created_at: new Date().toISOString()
+        });
+
+      if (error) {
+        console.error('Error storing bucket mapping:', error);
+      } else {
+        console.log(`Stored bucket mapping for user ${userId}: ${bucketName}`);
+      }
+    } catch (error) {
+      console.error('Error storing bucket mapping:', error);
+    }
   }
 
   /**
@@ -237,7 +284,17 @@ class GCSKnowledgeBaseStorage {
    */
   async uploadFile(userId: string, file: File, metadata: any = {}): Promise<UploadResponse> {
     try {
-      const bucketName = this.generateUserBucketName(userId);
+      // First, try to get existing bucket for this user
+      let bucketName = await this.getUserBucketName(userId);
+      if (!bucketName) {
+        // Generate new bucket name and store mapping
+        bucketName = this.generateUserBucketName(userId);
+        console.log(`Generated new bucket: ${bucketName} for user: ${userId}`);
+        await this.storeUserBucketMapping(userId, bucketName);
+      } else {
+        console.log(`Using existing bucket: ${bucketName} for user: ${userId}`);
+      }
+
       const date = new Date().toISOString().split('T')[0];
       const fileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
       const filePath = `knowledge-base/${date}/${fileName}`;
