@@ -43,7 +43,8 @@ import {
   Image,
   File,
   ChevronDown,
-  Plus
+  Plus,
+  X
 } from 'lucide-react';
 
 interface FileItem {
@@ -81,6 +82,7 @@ const ContentEditor = () => {
     aiLoading,
     sendMessage,
     clearConversation,
+    loadConversationMessages,
     currentConversationId,
     
     // General
@@ -98,7 +100,14 @@ const ContentEditor = () => {
   const [sidebarSplit, setSidebarSplit] = useState(60); // Percentage for knowledge base section
   const [showConversationDropdown, setShowConversationDropdown] = useState(false);
   const [conversations, setConversations] = useState<any[]>([]);
+  const [showQuickActions, setShowQuickActions] = useState(false);
   const [loadingConversations, setLoadingConversations] = useState(false);
+  const [aiEditSuggestion, setAiEditSuggestion] = useState<{
+    originalContent: string;
+    suggestedContent: string;
+    explanation: string;
+  } | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   const [fileStructure, setFileStructure] = useState<FileItem[]>([
     {
@@ -121,6 +130,7 @@ const ContentEditor = () => {
     if (!user) return;
     
     try {
+      console.log('Loading conversations for user:', user.id);
       setLoadingConversations(true);
       const { data, error } = await supabase
         .from('conversations')
@@ -129,12 +139,19 @@ const ContentEditor = () => {
         .order('updated_at', { ascending: false })
         .limit(20);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading conversations:', error);
+        // Don't show error toast for conversations - they're optional
+        setConversations([]);
+        return;
+      }
 
+      console.log('Loaded conversations:', data);
       setConversations(data || []);
     } catch (error) {
       console.error('Error loading conversations:', error);
-      toast.error('Failed to load conversations');
+      // Don't show error toast for conversations - they're optional
+      setConversations([]);
     } finally {
       setLoadingConversations(false);
     }
@@ -160,8 +177,16 @@ const ContentEditor = () => {
   };
 
   const handleConversationChange = (conversationId: string | null) => {
-    // TODO: Implement conversation switching when useContent hook supports it
     console.log('Switching to conversation:', conversationId);
+    
+    if (conversationId) {
+      // Load messages for the selected conversation
+      loadConversationMessages(conversationId);
+    } else {
+      // Clear conversation
+      clearConversation();
+    }
+    
     setShowConversationDropdown(false);
   };
 
@@ -175,7 +200,7 @@ const ContentEditor = () => {
       // Clear the state to prevent re-applying on navigation
       window.history.replaceState({}, document.title);
       
-      toast.success(`"${suggestion.title}" has been loaded into the editor`);
+      // Removed success toast - no need to notify user when loading content
     } else if (location.state?.draftId) {
       // Load existing draft
       const { draftId, title, content } = location.state;
@@ -186,7 +211,7 @@ const ContentEditor = () => {
       // Clear the state to prevent re-applying on navigation
       window.history.replaceState({}, document.title);
       
-      toast.success('Draft loaded successfully');
+      // Removed success toast - no need to notify user when loading draft
     }
   }, [location.state]);
 
@@ -267,18 +292,79 @@ const ContentEditor = () => {
     setChatInput('');
 
     try {
-      // Send message using clean API with selected files
+      // Send message using clean API with selected files and current content
       const result = await sendMessage({
         message: messageText,
-        selectedFiles: getSelectedFiles()
+        selectedFiles: getSelectedFiles(),
+        currentContent: editorContent // Pass current editor content for context
       });
 
       if (result.error) {
         throw new Error(result.error);
       }
+
+      // Check if the AI response contains an edit suggestion
+      if (result.data?.message) {
+        const editSuggestion = parseAIResponseForEdits(result.data.message);
+        if (editSuggestion) {
+          setAiEditSuggestion(editSuggestion);
+          setShowEditModal(true);
+        }
+      }
     } catch (error: any) {
       toast.error(error.message || 'Failed to send message');
     }
+  };
+
+  const handleQuickAction = async (action: string) => {
+    const actionMessages = {
+      'professional': 'Make this content more professional and business-focused for LinkedIn. Provide the edited version.',
+      'bullet_points': 'Convert this content to use bullet points and make it more scannable. Provide the edited version.',
+      'improve_hook': 'Improve the opening hook to make it more engaging and attention-grabbing. Provide the edited version.',
+      'add_hashtags': 'Suggest relevant hashtags for this LinkedIn post. Provide the edited version.',
+      'shorter': 'Make this content more concise and to the point. Provide the edited version.',
+      'longer': 'Expand this content with more details and examples. Provide the edited version.',
+      'storytelling': 'Add storytelling elements to make this more engaging. Provide the edited version.',
+      'actionable': 'Make this content more actionable with specific steps or takeaways. Provide the edited version.'
+    };
+
+    const message = actionMessages[action as keyof typeof actionMessages] || action;
+    setChatInput(message);
+    setShowQuickActions(false);
+  };
+
+  const handleApplyAIEdit = () => {
+    if (aiEditSuggestion) {
+      setEditorContent(aiEditSuggestion.suggestedContent);
+      setAiEditSuggestion(null);
+      setShowEditModal(false);
+      toast.success('AI edit applied successfully!');
+    }
+  };
+
+  const handleRejectAIEdit = () => {
+    setAiEditSuggestion(null);
+    setShowEditModal(false);
+    toast.info('AI edit rejected');
+  };
+
+  const parseAIResponseForEdits = (response: string) => {
+    // Look for markdown code blocks that might contain edited content
+    const codeBlockRegex = /```(?:markdown|md)?\n([\s\S]*?)\n```/g;
+    const matches = [...response.matchAll(codeBlockRegex)];
+    
+    if (matches.length > 0) {
+      const suggestedContent = matches[0][1].trim();
+      if (suggestedContent !== editorContent) {
+        return {
+          originalContent: editorContent,
+          suggestedContent,
+          explanation: response.replace(codeBlockRegex, '').trim()
+        };
+      }
+    }
+    
+    return null;
   };
 
   const handleChatKeyPress = (e: React.KeyboardEvent) => {
@@ -1017,12 +1103,102 @@ const ContentEditor = () => {
           )}
         </div>
 
+        {/* Quick Actions */}
+        <div style={{
+          padding: spacing.spacing[12],
+          borderTop: `1px solid ${colors.border.default}`,
+          backgroundColor: colors.bg.subtle,
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: spacing.spacing[8],
+          }}>
+            <span style={{ ...textStyles.xs.semibold, color: colors.text.muted }}>
+              Quick Actions
+            </span>
+            <Button
+              label=""
+              style="secondary"
+              size="xs"
+              leadIcon={showQuickActions ? <ChevronDown size={12} /> : <ChevronDown size={12} style={{ transform: 'rotate(180deg)' }} />}
+              onClick={() => setShowQuickActions(!showQuickActions)}
+            />
+          </div>
+          
+          {showQuickActions && (
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: spacing.spacing[6],
+            }}>
+              <Button
+                label="Professional"
+                style="secondary"
+                size="xs"
+                onClick={() => handleQuickAction('professional')}
+                disabled={aiLoading}
+              />
+              <Button
+                label="Bullet Points"
+                style="secondary"
+                size="xs"
+                onClick={() => handleQuickAction('bullet_points')}
+                disabled={aiLoading}
+              />
+              <Button
+                label="Better Hook"
+                style="secondary"
+                size="xs"
+                onClick={() => handleQuickAction('improve_hook')}
+                disabled={aiLoading}
+              />
+              <Button
+                label="Add Hashtags"
+                style="secondary"
+                size="xs"
+                onClick={() => handleQuickAction('add_hashtags')}
+                disabled={aiLoading}
+              />
+              <Button
+                label="Make Shorter"
+                style="secondary"
+                size="xs"
+                onClick={() => handleQuickAction('shorter')}
+                disabled={aiLoading}
+              />
+              <Button
+                label="Make Longer"
+                style="secondary"
+                size="xs"
+                onClick={() => handleQuickAction('longer')}
+                disabled={aiLoading}
+              />
+              <Button
+                label="Add Story"
+                style="secondary"
+                size="xs"
+                onClick={() => handleQuickAction('storytelling')}
+                disabled={aiLoading}
+              />
+              <Button
+                label="Make Actionable"
+                style="secondary"
+                size="xs"
+                onClick={() => handleQuickAction('actionable')}
+                disabled={aiLoading}
+              />
+            </div>
+          )}
+        </div>
+
         {/* Chat Input */}
           <div style={chatInputAreaStyles}>
             <div style={{ display: 'flex', gap: spacing.spacing[8] }}>
               <div style={{ flex: 1 }}>
             <Input
-                  placeholder="Ask AI anything"
+                  placeholder="Ask AI anything about your content..."
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
                   onKeyPress={handleChatKeyPress}
@@ -1043,6 +1219,121 @@ const ContentEditor = () => {
           </div>
         </div>
       </div>
+
+      {/* AI Edit Modal */}
+      {showEditModal && aiEditSuggestion && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+        }}>
+          <div style={{
+            backgroundColor: colors.bg.card.default,
+            borderRadius: cornerRadius.borderRadius.lg,
+            padding: spacing.spacing[24],
+            maxWidth: '800px',
+            width: '90%',
+            maxHeight: '80vh',
+            overflow: 'auto',
+            boxShadow: getShadow('regular.card', colors, { withBorder: true }),
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: spacing.spacing[16],
+            }}>
+              <h3 style={{ ...textStyles.lg.semibold, color: colors.text.default, margin: 0 }}>
+                AI Edit Suggestion
+              </h3>
+              <Button
+                label=""
+                style="secondary"
+                size="sm"
+                leadIcon={<X size={16} />}
+                onClick={handleRejectAIEdit}
+              />
+            </div>
+
+            <div style={{ marginBottom: spacing.spacing[16] }}>
+              <p style={{ ...textStyles.sm.normal, color: colors.text.default, margin: 0 }}>
+                {aiEditSuggestion.explanation}
+              </p>
+            </div>
+
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: spacing.spacing[16],
+              marginBottom: spacing.spacing[24],
+            }}>
+              <div>
+                <h4 style={{ ...textStyles.sm.semibold, color: colors.text.default, marginBottom: spacing.spacing[8] }}>
+                  Current Content
+                </h4>
+                <div style={{
+                  backgroundColor: colors.bg.subtle,
+                  border: `1px solid ${colors.border.default}`,
+                  borderRadius: cornerRadius.borderRadius.md,
+                  padding: spacing.spacing[12],
+                  maxHeight: '300px',
+                  overflow: 'auto',
+                  fontFamily: 'monospace',
+                  fontSize: '14px',
+                  lineHeight: '1.5',
+                }}>
+                  {aiEditSuggestion.originalContent}
+                </div>
+              </div>
+
+              <div>
+                <h4 style={{ ...textStyles.sm.semibold, color: colors.text.default, marginBottom: spacing.spacing[8] }}>
+                  Suggested Edit
+                </h4>
+                <div style={{
+                  backgroundColor: colors.bg.subtle,
+                  border: `1px solid ${colors.border.default}`,
+                  borderRadius: cornerRadius.borderRadius.md,
+                  padding: spacing.spacing[12],
+                  maxHeight: '300px',
+                  overflow: 'auto',
+                  fontFamily: 'monospace',
+                  fontSize: '14px',
+                  lineHeight: '1.5',
+                }}>
+                  {aiEditSuggestion.suggestedContent}
+                </div>
+              </div>
+            </div>
+
+            <div style={{
+              display: 'flex',
+              gap: spacing.spacing[12],
+              justifyContent: 'flex-end',
+            }}>
+              <Button
+                label="Reject"
+                style="secondary"
+                size="md"
+                onClick={handleRejectAIEdit}
+              />
+              <Button
+                label="Apply Edit"
+                style="primary"
+                size="md"
+                onClick={handleApplyAIEdit}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 

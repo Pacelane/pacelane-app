@@ -419,7 +419,8 @@ export class ContentService {
         body: {
           message: messageData.message,
           conversationId: messageData.conversationId,
-          fileContexts: messageData.fileContexts || []
+          fileContexts: messageData.fileContexts || [],
+          currentContent: messageData.currentContent
         }
       });
 

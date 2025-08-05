@@ -151,6 +151,53 @@ class ChatwootWebhookProcessor {
   }
 
   /**
+   * Get existing bucket name for user from database
+   */
+  private async getUserBucketName(userId: string): Promise<string | null> {
+    try {
+      // Check if user already has a bucket mapping in the database
+      const { data: bucketMapping, error } = await this.supabase
+        .from('user_bucket_mapping')
+        .select('bucket_name')
+        .eq('user_id', userId)
+        .single();
+
+      if (!error && bucketMapping) {
+        console.log(`Found existing bucket mapping for user ${userId}: ${bucketMapping.bucket_name}`);
+        return bucketMapping.bucket_name;
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Error getting user bucket name:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Store bucket mapping for user in database
+   */
+  private async storeUserBucketMapping(userId: string, bucketName: string): Promise<void> {
+    try {
+      const { error } = await this.supabase
+        .from('user_bucket_mapping')
+        .insert({
+          user_id: userId,
+          bucket_name: bucketName,
+          created_at: new Date().toISOString()
+        });
+
+      if (error) {
+        console.error('Error storing bucket mapping:', error);
+      } else {
+        console.log(`Stored bucket mapping for user ${userId}: ${bucketName}`);
+      }
+    } catch (error) {
+      console.error('Error storing bucket mapping:', error);
+    }
+  }
+
+  /**
    * Generate contact-based bucket name (fallback)
    */
   private generateContactBucketName(contactId: string): string {
@@ -369,12 +416,20 @@ class ChatwootWebhookProcessor {
    * Ensure user bucket exists (create if necessary)
    */
   private async ensureUserBucket(bucketName: string): Promise<boolean> {
+    console.log(`Checking if bucket exists: ${bucketName}`);
     const exists = await this.bucketExists(bucketName);
     if (exists) {
+      console.log(`Bucket already exists: ${bucketName}`);
       return true;
     }
 
+    console.log(`Bucket does not exist, creating: ${bucketName}`);
     const created = await this.createUserBucket(bucketName);
+    if (created) {
+      console.log(`Successfully created bucket: ${bucketName}`);
+    } else {
+      console.error(`Failed to create bucket: ${bucketName}`);
+    }
     return created;
   }
 
@@ -464,71 +519,40 @@ class ChatwootWebhookProcessor {
         return { userId: null, contactId };
       }
 
-      // Normalize WhatsApp number for comparison
-      const normalizedNumber = this.normalizeWhatsAppNumber(whatsappNumber);
-      
-      console.log(`Looking for user with WhatsApp number: ${normalizedNumber}`);
+      // Generate all possible number variations for matching
+      const numberVariations = this.generateNumberVariations(whatsappNumber);
+      console.log(`Looking for user with WhatsApp number variations:`, numberVariations);
       
       // First, try to find existing mapping in whatsapp_user_mapping table
-      const { data: existingMapping, error: mappingError } = await this.supabase
-        .from('whatsapp_user_mapping')
-        .select('user_id')
-        .eq('whatsapp_number', normalizedNumber)
-        .single();
+      for (const variation of numberVariations) {
+        const { data: existingMapping, error: mappingError } = await this.supabase
+          .from('whatsapp_user_mapping')
+          .select('user_id')
+          .eq('whatsapp_number', variation)
+          .single();
 
-      if (!mappingError && existingMapping) {
-        console.log(`Found existing WhatsApp mapping: ${existingMapping.user_id}`);
-        return { userId: existingMapping.user_id, contactId };
+        if (!mappingError && existingMapping) {
+          console.log(`Found existing WhatsApp mapping: ${existingMapping.user_id} for number: ${variation}`);
+          return { userId: existingMapping.user_id, contactId };
+        }
       }
 
       // If no mapping exists, try to find user by WhatsApp number in profiles
-      const { data: userProfile, error: profileError } = await this.supabase
-        .from('profiles')
-        .select('user_id, whatsapp_number')
-        .eq('whatsapp_number', normalizedNumber)
-        .single();
-
-      if (!profileError && userProfile) {
-        console.log(`Found user ${userProfile.user_id} for WhatsApp number: ${normalizedNumber}`);
-        
-        // Create mapping for future use
-        await this.createWhatsAppMapping(userProfile.user_id, normalizedNumber, payload);
-        
-        return { userId: userProfile.user_id, contactId };
-      }
-
-      // Try different number formats for Brazilian numbers
-      if (normalizedNumber.startsWith('+55')) {
-        // Try without country code
-        const withoutCountryCode = normalizedNumber.substring(3);
-        console.log(`Trying without country code: ${withoutCountryCode}`);
-        
-        const { data: userProfile2, error: profileError2 } = await this.supabase
+      for (const variation of numberVariations) {
+        const { data: userProfile, error: profileError } = await this.supabase
           .from('profiles')
           .select('user_id, whatsapp_number')
-          .eq('whatsapp_number', withoutCountryCode)
+          .eq('whatsapp_number', variation)
           .single();
 
-        if (!profileError2 && userProfile2) {
-          console.log(`Found user ${userProfile2.user_id} for WhatsApp number without country code: ${withoutCountryCode}`);
-          await this.createWhatsAppMapping(userProfile2.user_id, normalizedNumber, payload);
-          return { userId: userProfile2.user_id, contactId };
-        }
-
-        // Try with 0 prefix
-        const withZeroPrefix = '0' + withoutCountryCode;
-        console.log(`Trying with 0 prefix: ${withZeroPrefix}`);
-        
-        const { data: userProfile3, error: profileError3 } = await this.supabase
-          .from('profiles')
-          .select('user_id, whatsapp_number')
-          .eq('whatsapp_number', withZeroPrefix)
-          .single();
-
-        if (!profileError3 && userProfile3) {
-          console.log(`Found user ${userProfile3.user_id} for WhatsApp number with 0 prefix: ${withZeroPrefix}`);
-          await this.createWhatsAppMapping(userProfile3.user_id, normalizedNumber, payload);
-          return { userId: userProfile3.user_id, contactId };
+        if (!profileError && userProfile) {
+          console.log(`Found user ${userProfile.user_id} for WhatsApp number: ${variation}`);
+          
+          // Create mapping for future use with the original normalized number
+          const normalizedNumber = this.normalizeWhatsAppNumber(whatsappNumber);
+          await this.createWhatsAppMapping(userProfile.user_id, normalizedNumber, payload);
+          
+          return { userId: userProfile.user_id, contactId };
         }
       }
 
@@ -654,6 +678,47 @@ class ChatwootWebhookProcessor {
   }
 
   /**
+   * Generate all possible number variations for matching
+   */
+  private generateNumberVariations(number: string): string[] {
+    const variations: string[] = [];
+    
+    // Add the normalized number
+    const normalized = this.normalizeWhatsAppNumber(number);
+    variations.push(normalized);
+    
+    // For Brazilian numbers, add variations
+    if (normalized.startsWith('+55')) {
+      // Without country code
+      const withoutCountry = normalized.substring(3);
+      variations.push(withoutCountry);
+      
+      // With 0 prefix
+      if (!withoutCountry.startsWith('0')) {
+        variations.push('0' + withoutCountry);
+      }
+      
+      // Without 0 prefix
+      if (withoutCountry.startsWith('0')) {
+        variations.push(withoutCountry.substring(1));
+      }
+    }
+    
+    // For numbers without +, add with +
+    if (!normalized.startsWith('+')) {
+      variations.push('+' + normalized);
+    }
+    
+    // For numbers with +, add without +
+    if (normalized.startsWith('+')) {
+      variations.push(normalized.substring(1));
+    }
+    
+    // Remove duplicates
+    return [...new Set(variations)];
+  }
+
+  /**
    * Create WhatsApp mapping for future use
    */
   private async createWhatsAppMapping(userId: string, whatsappNumber: string, payload: ChatwootWebhookPayload): Promise<void> {
@@ -770,18 +835,30 @@ class ChatwootWebhookProcessor {
     // Determine bucket name based on user identification
     let bucketName: string;
     if (userId) {
-      bucketName = this.generateUserBucketName(userId);
-      console.log(`Using user-specific bucket: ${bucketName} for user: ${userId}`);
+      // First, try to get existing bucket for this user
+      const existingBucket = await this.getUserBucketName(userId);
+      if (existingBucket) {
+        bucketName = existingBucket;
+        console.log(`Using existing bucket: ${bucketName} for user: ${userId}`);
+      } else {
+        // Generate new bucket name and store mapping
+        bucketName = this.generateUserBucketName(userId);
+        console.log(`Generated new bucket: ${bucketName} for user: ${userId}`);
+        await this.storeUserBucketMapping(userId, bucketName);
+      }
     } else {
       bucketName = this.generateContactBucketName(contactId);
       console.log(`Using contact-based bucket: ${bucketName} for contact: ${contactId}`);
     }
     
     // Ensure bucket exists (create if necessary)
+    console.log(`Ensuring bucket exists: ${bucketName}`);
     const bucketReady = await this.ensureUserBucket(bucketName);
     if (!bucketReady) {
+      console.error(`Failed to ensure bucket exists: ${bucketName}`);
       return { success: false, message: 'Failed to ensure bucket exists' };
     }
+    console.log(`Bucket is ready: ${bucketName}`);
 
     // Generate GCS storage path with user bucket
     const gcsPath = this.generateGCSPath(payload, bucketName);

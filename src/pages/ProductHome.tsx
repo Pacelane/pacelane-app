@@ -21,6 +21,8 @@ import Input from '@/design-system/components/Input';
 import { spacing } from '@/design-system/tokens/spacing';
 import { textStyles } from '@/design-system/styles/typography/typography-styles';
 import { typography } from '@/design-system/tokens/typography';
+import { cornerRadius } from '@/design-system/tokens/corner-radius';
+import { shadows, getShadow } from '@/design-system/tokens/shadows';
 
 // Icons
 import { ChevronRight, Search } from 'lucide-react';
@@ -36,6 +38,15 @@ const ProductHome = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
+  const [generationProgress, setGenerationProgress] = useState<{
+    isGenerating: boolean;
+    currentStep: string;
+    progress: number;
+  }>({
+    isGenerating: false,
+    currentStep: '',
+    progress: 0
+  });
 
   // Load user data on component mount
   useEffect(() => {
@@ -83,6 +94,13 @@ const ProductHome = () => {
       return;
     }
     
+    // Start progress tracking
+    setGenerationProgress({
+      isGenerating: true,
+      currentStep: 'Analyzing your context...',
+      progress: 10
+    });
+    
     try {
       console.log('Generating new content suggestions with multi-agent system...');
       
@@ -93,6 +111,13 @@ const ProductHome = () => {
       if (!token) {
         throw new Error('No auth token available');
       }
+
+      // Update progress
+      setGenerationProgress(prev => ({
+        ...prev,
+        currentStep: 'Generating content strategy...',
+        progress: 30
+      }));
 
       // Call the enhanced edge function
       const { data, error } = await supabase.functions.invoke('generate-enhanced-content-suggestions', {
@@ -106,6 +131,13 @@ const ProductHome = () => {
         throw error;
       }
 
+      // Update progress
+      setGenerationProgress(prev => ({
+        ...prev,
+        currentStep: 'Finalizing your posts...',
+        progress: 80
+      }));
+
       if (data?.suggestions) {
         console.log('Generated enhanced suggestions:', data.suggestions);
         // Reload content suggestions to get the new ones
@@ -114,9 +146,30 @@ const ProductHome = () => {
       } else {
         console.log('No suggestions generated, but no error occurred');
       }
+
+      // Complete progress
+      setGenerationProgress(prev => ({
+        ...prev,
+        currentStep: 'Done!',
+        progress: 100
+      }));
+
+      // Reset progress after a short delay
+      setTimeout(() => {
+        setGenerationProgress({
+          isGenerating: false,
+          currentStep: '',
+          progress: 0
+        });
+      }, 1000);
+      
     } catch (err) {
       console.error('Failed to generate enhanced content suggestions:', err);
-      // Don't throw - just log the error so UI doesn't break
+      setGenerationProgress({
+        isGenerating: false,
+        currentStep: '',
+        progress: 0
+      });
     }
   };
 
@@ -312,11 +365,11 @@ const ProductHome = () => {
       return suggestion.description || 'No content available';
     }
     
-    // Get the first paragraph or first 150 characters
+    // Get the first paragraph or first 200 characters
     const content = suggestion.full_content;
     const firstParagraph = content.split('\n\n')[0] || content;
-    const preview = firstParagraph.length > 150 
-      ? firstParagraph.substring(0, 150) + '...'
+    const preview = firstParagraph.length > 200 
+      ? firstParagraph.substring(0, 200) + '...'
       : firstParagraph;
     
     return preview;
@@ -376,6 +429,14 @@ const ProductHome = () => {
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
+      <style>
+        {`
+          @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+        `}
+      </style>
       {/* HomeSidebar */}
       <HomeSidebar
         isCollapsed={isSidebarCollapsed}
@@ -408,41 +469,113 @@ const ProductHome = () => {
 
           {/* Suggestion Card - Always show with dynamic content */}
           {hasLoadedInitialData && (
-            <SuggestionCard 
-              title="For Today"
-              description={
-                contentSuggestions.length > 0 
-                  ? "Here are some content suggestions based on your goals and preferences."
-                  : "Let's create personalized content suggestions for you!"
-              }
-              contentCards={
-                contentSuggestions.length > 0 
-                  ? contentSuggestions.slice(0, 3).map(suggestion => {
-                      const hashtags = suggestion.hashtags?.length > 0 
-                        ? suggestion.hashtags.slice(0, 3).join(' ') 
-                        : '';
-                      
-                      return {
-                        variant: 'gradient' as const,
-                        title: suggestion.title,
-                        subtitle: `Quality Score: ${suggestion.quality_score || 'N/A'}/10${hashtags ? ` • ${hashtags}` : ''}`,
-                        content: suggestion.full_content || suggestion.suggested_outline || 'No content available',
-                        onClick: () => navigate('/content-editor', { state: { suggestion } })
-                      };
-                    })
-                  : [
-                      {
-                        variant: 'empty' as const,
-                        title: 'Generate Your First Suggestions',
-                        subtitle: 'Click generate to get AI-powered content ideas',
-                        onClick: handleGenerateContent
-                      }
-                    ]
-              }
-              onCalendarClick={() => console.log('Calendar clicked')}
-              onGenerateClick={handleGenerateContent}
-              style={{ width: '100%' }}
-            />
+            <>
+              {/* Progress Indicator */}
+              {generationProgress.isGenerating && (
+                <div style={{
+                  padding: spacing.spacing[24],
+                  backgroundColor: colors.bg.card.default,
+                  borderRadius: cornerRadius.borderRadius.xl,
+                  border: `1px solid ${colors.border.default}`,
+                  boxShadow: getShadow('regular.card', colors, { withBorder: true }),
+                  marginBottom: spacing.spacing[16]
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: spacing.spacing[16],
+                    marginBottom: spacing.spacing[12]
+                  }}>
+                    <div style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '50%',
+                      backgroundColor: colors.icon.highlight,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      animation: 'spin 1s linear infinite'
+                    }}>
+                      <div style={{
+                        width: '16px',
+                        height: '16px',
+                        border: '2px solid transparent',
+                        borderTop: '2px solid white',
+                        borderRadius: '50%'
+                      }} />
+                    </div>
+                    <div>
+                      <div style={{
+                        ...textStyles.sm.semibold,
+                        color: colors.text.default,
+                        marginBottom: spacing.spacing[4]
+                      }}>
+                        {generationProgress.currentStep}
+                      </div>
+                      <div style={{
+                        ...textStyles.xs.normal,
+                        color: colors.text.muted
+                      }}>
+                        Using AI to create personalized content for you...
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Progress Bar */}
+                  <div style={{
+                    width: '100%',
+                    height: '4px',
+                    backgroundColor: colors.bg.subtle,
+                    borderRadius: '2px',
+                    overflow: 'hidden'
+                  }}>
+                    <div style={{
+                      width: `${generationProgress.progress}%`,
+                      height: '100%',
+                      backgroundColor: colors.icon.highlight,
+                      transition: 'width 0.3s ease',
+                      borderRadius: '2px'
+                    }} />
+                  </div>
+                </div>
+              )}
+
+              <SuggestionCard 
+                title="For Today"
+                description={
+                  contentSuggestions.length > 0 
+                    ? "Here are some content suggestions based on your goals and preferences."
+                    : "Let's create personalized content suggestions for you!"
+                }
+                contentCards={
+                  contentSuggestions.length > 0 
+                    ? contentSuggestions.slice(0, 3).map(suggestion => {
+                        const hashtags = suggestion.hashtags?.length > 0 
+                          ? suggestion.hashtags.slice(0, 3).join(' ') 
+                          : '';
+                        
+                        return {
+                          variant: 'gradient' as const,
+                          title: suggestion.title,
+                          subtitle: `Quality Score: ${suggestion.quality_score || 'N/A'}/10${hashtags ? ` • ${hashtags}` : ''}`,
+                          content: createPostPreview(suggestion),
+                          onClick: () => navigate('/content-editor', { state: { suggestion } })
+                        };
+                      })
+                    : [
+                        {
+                          variant: 'empty' as const,
+                          title: 'Generate Your First Suggestions',
+                          subtitle: 'Click generate to get AI-powered content ideas',
+                          onClick: handleGenerateContent
+                        }
+                      ]
+                }
+                onCalendarClick={() => console.log('Calendar clicked')}
+                onGenerateClick={handleGenerateContent}
+                style={{ width: '100%' }}
+              />
+            </>
           )}
 
           {/* Templates Section */}

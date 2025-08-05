@@ -5,6 +5,7 @@
 import { useState, useEffect } from 'react';
 import { contentApi } from '@/api/content';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import type {
   ContentState,
   ContentActions,
@@ -391,7 +392,7 @@ export const useContent = (): ContentState & ContentActions => {
    * @param messageData - AI message data
    * @returns Promise with operation result
    */
-  const sendMessage = async (messageData: { message: string; selectedFiles?: KnowledgeFile[] }) => {
+  const sendMessage = async (messageData: { message: string; selectedFiles?: KnowledgeFile[]; currentContent?: string }) => {
     return executeContentOperation(
       async () => {
         // Add user message to chat
@@ -406,7 +407,8 @@ export const useContent = (): ContentState & ContentActions => {
         const result = await contentApi.sendAIMessage(
           messageData.message,
           messageData.selectedFiles || [],
-          currentConversationId
+          currentConversationId,
+          messageData.currentContent
         );
         
         if (result.data) {
@@ -441,6 +443,40 @@ export const useContent = (): ContentState & ContentActions => {
   const clearConversation = () => {
     setChatMessages([]);
     setCurrentConversationId(undefined);
+  };
+
+  /**
+   * Load messages for a specific conversation
+   */
+  const loadConversationMessages = async (conversationId: string) => {
+    return executeContentOperation(
+      async () => {
+        setCurrentConversationId(conversationId);
+        
+        // Load messages for this conversation
+        const { data, error } = await supabase
+          .from('messages')
+          .select('id, role, content, created_at')
+          .eq('conversation_id', conversationId)
+          .order('created_at', { ascending: true });
+
+        if (error) {
+          throw error;
+        }
+
+        // Convert to ChatMessage format
+        const messages: ChatMessage[] = (data || []).map(msg => ({
+          id: msg.id,
+          role: msg.role as 'user' | 'assistant',
+          content: msg.content,
+          timestamp: new Date(msg.created_at)
+        }));
+
+        setChatMessages(messages);
+        return { data: messages };
+      },
+      'aiLoading'
+    );
   };
 
   // ========== UTILITY ACTIONS ==========
@@ -585,6 +621,7 @@ export const useContent = (): ContentState & ContentActions => {
     // AI Assistant Actions
     sendMessage,
     clearConversation,
+    loadConversationMessages,
     
     // Utility Actions
     clearError,

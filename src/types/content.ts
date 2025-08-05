@@ -88,6 +88,7 @@ export interface AIMessageData {
   message: string;
   conversationId?: string;
   fileContexts?: FileContext[];
+  currentContent?: string; // Current editor content for context
 }
 
 export interface AIResponseData {
@@ -142,6 +143,7 @@ export interface ContentActions {
   // AI Assistant Actions
   sendMessage: (messageData: AIMessageData) => Promise<any>;
   clearConversation: () => void;
+  loadConversationMessages: (conversationId: string) => Promise<any>;
   
   // Utility Actions
   clearError: () => void;

@@ -244,7 +244,8 @@ export const contentApi = {
   async sendAIMessage(
     message: string, 
     selectedFiles: any[] = [], 
-    conversationId?: string
+    conversationId?: string,
+    currentContent?: string
   ) {
     // Frontend validation
     if (!message.trim()) {
@@ -261,7 +262,8 @@ export const contentApi = {
     const messageData: AIMessageData = {
       message: message.trim(),
       conversationId,
-      fileContexts
+      fileContexts,
+      currentContent
     };
 
     return ContentService.sendAIMessage(messageData);

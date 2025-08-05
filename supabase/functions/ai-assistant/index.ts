@@ -21,10 +21,16 @@ serve(async (req) => {
 
     // Get Supabase environment variables
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     
-    // Create Supabase client with service role
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    // Create Supabase client with anon key and user token
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: req.headers.get('Authorization')!
+        }
+      }
+    });
 
     // Get authorization header
     const authHeader = req.headers.get('Authorization');
@@ -32,21 +38,21 @@ serve(async (req) => {
       throw new Error('Authorization header is required');
     }
 
-    // Extract user from JWT token
-    const jwt = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(jwt);
+    // Get current user from the authenticated session
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
     
     if (authError || !user) {
       throw new Error('Invalid authorization token');
     }
 
-    const { message, conversationId, fileContexts = [] } = await req.json();
+    const { message, conversationId, fileContexts = [], currentContent } = await req.json();
 
     console.log('Processing request:', { 
       userId: user.id, 
       conversationId, 
       messageLength: message?.length,
-      fileContextsCount: fileContexts.length 
+      fileContextsCount: fileContexts.length,
+      hasCurrentContent: !!currentContent
     });
 
     if (!message) {
@@ -110,11 +116,41 @@ ${fileContexts.map((file: any) => `- ${file.name} (${file.type})`).join('\n')}
 Please consider these files when providing your response and refer to them if relevant to the user's question.`;
     }
 
+    // Prepare current content context
+    let contentContextInfo = '';
+    if (currentContent) {
+      contentContextInfo = `\n\nCurrent Content: The user is currently working on this content:
+"""
+${currentContent}
+"""
+
+You are helping them improve this content. When they ask for changes, provide specific suggestions and improvements. 
+
+IMPORTANT: If the user asks for edits or improvements, provide the complete edited version of their content wrapped in a markdown code block like this:
+
+\`\`\`markdown
+[edited content here]
+\`\`\`
+
+This allows the user to easily apply your suggestions. Always provide the full edited content, not just suggestions.`;
+    }
+
     // Prepare messages for OpenAI API
     const messages = [
       {
         role: 'system',
-        content: `You are a helpful AI assistant specializing in content creation. You help users write, edit, and improve their content. Be creative, supportive, and provide actionable suggestions. Keep your responses concise but helpful.${fileContextInfo}`
+        content: `You are a helpful AI assistant specializing in LinkedIn content creation and editing. You help users write, edit, and improve their professional content. 
+
+Your expertise includes:
+- LinkedIn post optimization and best practices
+- Professional tone and business writing
+- Content structure and formatting
+- Engagement strategies and call-to-actions
+- Hashtag suggestions and optimization
+
+Be creative, supportive, and provide actionable suggestions. When suggesting edits, be specific about what to change and why. Keep your responses concise but helpful.
+
+${fileContextInfo}${contentContextInfo}`
       },
       ...conversationHistory.map(msg => ({
         role: msg.role,
