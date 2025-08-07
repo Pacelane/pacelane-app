@@ -21,7 +21,17 @@ npm install
 yarn install
 ```
 
-### 2. Start Local Supabase
+### 2. Initialize Supabase (First Time Only)
+
+If this is your first time setting up the project, you need to initialize Supabase:
+
+```bash
+supabase init
+```
+
+This will create the necessary Supabase configuration files for local development.
+
+### 3. Start Local Supabase
 
 ```bash
 supabase start
@@ -31,7 +41,7 @@ This will start all Supabase services with Docker. Take note of the output, spec
 - **API URL**: `http://127.0.0.1:54321`
 - **anon key**: (long JWT token)
 
-### 3. Create Local Environment File
+### 4. Create Local Environment File
 
 Create `.env.local` in the project root:
 
@@ -50,7 +60,7 @@ APIFY_API_KEY=your_apify_api_key_here
 - Your real OpenAI API key from [OpenAI Platform](https://platform.openai.com/api-keys)
 - Your real Apify API key from [Apify Console](https://console.apify.com/account/integrations)
 
-### 4. Set Up Database Schema
+### 5. Set Up Database Schema
 
 The migration files need to be properly named. If they have hyphens instead of underscores, rename them:
 
@@ -73,7 +83,7 @@ supabase db reset
 
 You should see all migrations being applied successfully.
 
-### 5. Start Development Servers
+### 6. Start Development Servers
 
 You need to run **three** separate terminals:
 
