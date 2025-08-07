@@ -1,0 +1,31 @@
+export { default as Bichaurinho } from './Bichaurinho.jsx';
+export { default as Logo } from './Logo.jsx';
+export { default as LogoSymbol } from './LogoSymbol.jsx';
+export { default as Button } from './Button.jsx';
+export { default as LoadingSpinner } from './LoadingSpinner.jsx';
+export { default as Chips } from './Chips.jsx';
+export { default as Tabs } from './Tabs.jsx';
+export { default as TemplateCard } from './TemplateCard.jsx';
+export { default as ButtonGroup } from './ButtonGroup.jsx';
+export { default as Checkbox } from './Checkbox.jsx';
+export { default as Input } from './Input.jsx';
+export { default as ProgressBar } from './ProgressBar.jsx';
+export { default as ContentCard } from './ContentCard.jsx';
+export { default as FileCard } from './FileCard.jsx';
+export { default as DropdownMenu } from './DropdownMenu.jsx';
+export { default as Badge } from './Badge.jsx';
+export { default as FileUpload } from './FileUpload.jsx';
+export { default as Divider } from './Divider.jsx';
+export { default as SidebarMenuItem } from './SidebarMenuItem.jsx';
+export { default as HomeSidebar } from './HomeSidebar.jsx';
+export { default as StatsSummaryCard } from './StatsSummaryCard.jsx';
+export { default as StreakCard } from './StreakCard.jsx';
+export { default as TopNav } from './TopNav.jsx';
+export { default as EditorNav } from './EditorNav.jsx';
+export { default as MainAppChrome } from './MainAppChrome.jsx';
+export { default as SuggestionCard } from './SuggestionCard.jsx';
+export { default as NotificationItem } from './NotificationItem.jsx';
+export { default as ProtectedRoute } from './ProtectedRoute.tsx';
+
+// Pages
+export { default as HomePage } from './pages/HomePage.jsx'; 

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/api/useProfile';
 import { useTheme } from '@/services/theme-context';
-import { toast } from 'sonner';
+import { useToast } from '@/design-system/components/Toast';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { linkedInProfileSchema, type LinkedInProfileFormData } from '@/lib/validationSchemas';

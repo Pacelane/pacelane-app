@@ -1,0 +1,719 @@
+# Pacelane Design System - Cursor Rules
+
+You are working on the Pacelane Design project, a React-based design system with comprehensive design tokens, theming, and component patterns. Always reference and use the existing design system instead of creating new styles or tokens.
+
+## Design System Structure
+
+The design system is located in `src/design-system/` with the following structure:
+- `tokens/` - All design tokens (colors, typography, spacing, etc.)
+- `components/` - Reusable design system components  
+- `styles/` - Pre-defined style combinations and utilities
+- `services/theme-context.jsx` - Theme management and switching
+
+## Design Tokens Reference
+
+### Import Design Tokens
+```javascript
+// Import all tokens
+import { tokens } from 'src/design-system/tokens/index.js';
+
+// Import specific token categories
+import { colors } from 'src/design-system/tokens/primitive-colors.js';
+import { themes } from 'src/design-system/tokens/semantic-colors.js';
+import { typography } from 'src/design-system/tokens/typography.js';
+import { spacing } from 'src/design-system/tokens/spacing.js';
+import { cornerRadius } from 'src/design-system/tokens/corner-radius.js';
+import { stroke } from 'src/design-system/tokens/stroke.js';
+import { shadows, getShadow } from 'src/design-system/tokens/shadows.js';
+
+// Import theme context
+import { useTheme, ThemeProvider } from 'src/services/theme-context.jsx';
+
+// Import text styles
+import { textStyles } from 'src/design-system/styles/typography/typography-styles.js';
+
+// Import Lucide icons
+import { IconName } from 'lucide-react';
+```
+
+### Color System
+
+#### Primitive Colors
+Use primitive colors from `colors` object with full color scales:
+- **Grayscale**: `colors.gray[0-1000]` (white to black)
+- **Brand Colors**: `colors.blue[50-950]`, `colors.teal[50-950]`
+- **Semantic Colors**: `colors.red[50-950]` (destructive), `colors.green[50-950]` (success), `colors.orange[50-950]` (warning)
+- **Extended Palette**: `colors.violet`, `colors.indigo`, `colors.cyan`, `colors.emerald`, `colors.rose`
+- **Transparent Variants**: `colors.transparentDark[0-90]`, `colors.transparentLight[0-90]`
+- **Transparent Colored**: `colors.transparentRed[10-90]`, `colors.transparentBlue[10-90]`, etc.
+
+#### Semantic Colors (Theme-Aware)
+Always use semantic colors for theme-compatible components:
+
+```javascript
+const { colors } = useTheme(); // Gets current theme colors
+
+// Text colors
+colors.text.default, colors.text.subtle, colors.text.muted, colors.text.hint
+colors.text.destructive, colors.text.success, colors.text.warning, colors.text.informative
+colors.text.accent // teal accent color
+colors.text.inverted.default, colors.text.white.default, colors.text.dark.default
+
+// Background colors
+colors.bg.default, colors.bg.subtle, colors.bg.muted, colors.bg.inverted
+colors.bg.card.default, colors.bg.card.subtle, colors.bg.card.inverted
+colors.bg.input.default, colors.bg.input.soft, colors.bg.input.disabled
+
+// Interactive states
+colors.bg.state.primary, colors.bg.state.primaryHover, colors.bg.state.primaryPress
+colors.bg.state.secondary, colors.bg.state.secondaryHover
+colors.bg.state.soft, colors.bg.state.softHover, colors.bg.state.ghost
+colors.bg.state.destructive, colors.bg.state.brand
+
+// Border colors
+colors.border.default, colors.border.darker, colors.border.strong
+colors.border.destructive, colors.border.success, colors.border.warning
+colors.border.highlight, colors.border.menuItem
+
+// Icon colors
+colors.icon.default, colors.icon.subtle, colors.icon.muted, colors.icon.disabled
+colors.icon.destructive, colors.icon.success, colors.icon.warning
+```
+
+### Typography System
+
+#### Font Families
+```javascript
+typography.fontFamily.inter        // ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif']
+typography.fontFamily.fraunces     // ['Fraunces', 'ui-serif', 'Georgia', 'serif'] 
+typography.fontFamily.jetbrains    // ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'monospace']
+typography.fontFamily['awesome-serif'] // ['Awesome Serif VAR', 'ui-serif', 'Georgia', 'serif']
+
+// Semantic assignments
+typography.fontFamily.headline     // Inter
+typography.fontFamily.body         // Inter  
+typography.fontFamily.quote        // Fraunces
+typography.fontFamily.code         // JetBrains Mono
+```
+
+#### Text Sizes (Desktop/Mobile)
+```javascript
+// Desktop sizes
+typography.desktop.size.xs         // 12px
+typography.desktop.size.sm         // 14px  
+typography.desktop.size.md         // 16px
+typography.desktop.size.lg         // 18px
+typography.desktop.size.xl         // 20px
+typography.desktop.size['2xl']     // 24px
+typography.desktop.size['3xl']     // 30px
+typography.desktop.size['4xl']     // 36px
+typography.desktop.size['5xl']     // 48px
+typography.desktop.size['6xl']     // 60px
+typography.desktop.size['7xl']     // 72px
+typography.desktop.size['8xl']     // 96px
+typography.desktop.size['9xl']     // 128px
+
+// Mobile sizes (different scaling)
+typography.mobile.size.lg          // 16px (vs 18px desktop)
+typography.mobile.size.xl          // 18px (vs 20px desktop)
+// etc. - mobile sizes are smaller for better mobile UX
+```
+
+#### Font Weights
+```javascript
+typography.desktop.weight.light     // 300
+typography.desktop.weight.normal    // 400
+typography.desktop.weight.medium    // 500
+typography.desktop.weight.semibold  // 600
+typography.desktop.weight.bold      // 700
+typography.desktop.weight.extrabold // 800
+typography.desktop.weight.black     // 900
+```
+
+#### Pre-defined Text Styles
+Use `textStyles` for consistent typography combinations:
+
+```javascript
+// Available sizes: xs, sm, md, lg, xl, 2xl, 3xl, 4xl, 5xl, 6xl, 7xl, 8xl, 9xl
+// Available weights: light, normal, medium, semibold, bold, extrabold, black
+
+textStyles.md.semibold    // 16px, 600 weight, proper line height
+textStyles.xl.bold        // 20px, 700 weight, proper line height
+textStyles['2xl'].normal  // 24px, 400 weight, proper line height
+
+// Special styles
+textStyles.quote.normal   // Fraunces font for quotes
+textStyles.code.normal    // JetBrains Mono for code
+```
+
+### Spacing System
+```javascript
+spacing.spacing.none      // 0px
+spacing.spacing[4]        // 4px
+spacing.spacing[8]        // 8px
+spacing.spacing[12]       // 12px
+spacing.spacing[16]       // 16px
+spacing.spacing[20]       // 20px
+spacing.spacing[24]       // 24px
+spacing.spacing[32]       // 32px
+spacing.spacing[40]       // 40px
+spacing.spacing[48]       // 48px
+spacing.spacing[56]       // 56px
+spacing.spacing[64]       // 64px
+spacing.spacing[80]       // 80px
+spacing.spacing[96]       // 96px
+// ... up to 384px
+```
+
+### Border Radius
+```javascript
+cornerRadius.borderRadius.none      // 0px
+cornerRadius.borderRadius['2xs']    // 2px
+cornerRadius.borderRadius.xs        // 4px
+cornerRadius.borderRadius.sm        // 6px
+cornerRadius.borderRadius.md        // 8px
+cornerRadius.borderRadius.lg        // 12px
+cornerRadius.borderRadius.xl        // 16px
+cornerRadius.borderRadius['2xl']    // 24px
+cornerRadius.borderRadius['3xl']    // 28px
+cornerRadius.borderRadius.full      // 9999px
+```
+
+### Shadow System
+Always use the design system shadow tokens for consistent shadows across all components:
+
+```javascript
+// Import shadows
+import { shadows, getShadow } from 'src/design-system/tokens/shadows.js';
+import { useTheme } from 'src/services/theme-context.jsx';
+```
+
+#### Regular Shadows
+Use these for elevated surfaces like cards, modals, and overlays:
+
+```javascript
+// Card shadow - Inner + drop shadow combination
+shadows.regular.card        // Inner shadow (y:-1px, 10%) + Drop (y:1px, blur:2px, 5%)
+
+// Modal shadows - Multiple layered drop shadows
+shadows.regular.modalSm     // 4 layers with negative spreads (subtle elevation)
+shadows.regular.modalMd     // 4 layers with zero spreads (medium elevation)  
+shadows.regular.modalLg     // 5 layers with 16px layer (high elevation)
+```
+
+#### Component Shadows
+Use these for interactive elements like buttons, inputs, and switches:
+
+```javascript
+shadows.component.default         // Default component shadow (8% inner opacity)
+shadows.component.switchHandle    // Switch handle with stronger shadows
+shadows.component.focus          // Base focus shadow (without focus rings)
+shadows.component.destructiveFocus // Base destructive focus shadow
+```
+
+#### Shadow Usage Patterns
+
+**Direct Shadow Usage:**
+```jsx
+// Basic shadows
+<div style={{ boxShadow: shadows.regular.card }}>Card content</div>
+<div style={{ boxShadow: shadows.component.switchHandle }}>Switch handle</div>
+```
+
+**Shadows with Theme Borders:**
+```jsx
+const { colors } = useTheme();
+
+// Card with border
+<div style={{ boxShadow: getShadow('regular.card', colors, { withBorder: true }) }}>
+  Card with theme border
+</div>
+
+// Modal with border
+<div style={{ boxShadow: getShadow('regular.modalLg', colors, { withBorder: true }) }}>
+  Modal content
+</div>
+```
+
+**Focus States with Rings:**
+```jsx
+const { colors } = useTheme();
+
+// Default focus (blue ring)
+<div style={{ boxShadow: getShadow('component.focus', colors, { focusType: 'default' }) }}>
+  Focused element
+</div>
+
+// Destructive focus (red ring)
+<div style={{ boxShadow: getShadow('component.destructiveFocus', colors, { focusType: 'destructive' }) }}>
+  Error state element
+</div>
+
+// Input focus
+<div style={{ boxShadow: getShadow('', colors, { focusType: 'input' }) }}>
+  Input field
+</div>
+
+// Misc focus (general purpose)
+<div style={{ boxShadow: getShadow('', colors, { focusType: 'misc' }) }}>
+  Other focused element
+</div>
+```
+
+
+
+### Stroke/Border Widths
+```javascript
+stroke.sm                 // 0.5px
+stroke.default            // 1px
+stroke.md                 // 1.5px
+stroke.lg                 // 2px
+stroke.xl                 // 3px
+stroke['2xl']             // 4px
+```
+
+## Icons System
+
+### Lucide React Icons
+Always use Lucide React icons for consistent iconography across the design system. **NEVER create custom SVG icons** - use Lucide instead.
+
+#### Import and Usage
+```javascript
+// Import specific icons from lucide-react
+import { 
+  MoreHorizontal,    // Three dots menu
+  Plus,              // Add/create actions
+  X,                 // Close/cancel actions
+  Check,             // Confirm/success actions
+  ChevronDown,       // Dropdown indicators
+  ChevronUp,         // Collapse indicators  
+  ChevronLeft,       // Navigation back
+  ChevronRight,      // Navigation forward
+  Search,            // Search functionality
+  Settings,          // Settings/options
+  User,              // User profile
+  Bell,              // Notifications
+  Mail,              // Email/messaging
+  Calendar,          // Date/time
+  File,              // Documents
+  Folder,            // Directories
+  Download,          // Download actions
+  Upload,            // Upload actions
+  Edit,              // Edit actions
+  Trash2,            // Delete actions (preferred over Trash)
+  Eye,               // View/show actions
+  EyeOff,            // Hide actions
+  Copy,              // Copy actions
+  ExternalLink,      // External navigation
+  Info,              // Information
+  AlertCircle,       // Warning states
+  CheckCircle,       // Success states
+  XCircle,           // Error states
+  Heart,             // Like/favorite
+  Star,              // Rating/bookmark
+  Share,             // Share actions
+  Filter,            // Filter functionality
+  SortAsc,           // Sort ascending
+  SortDesc,          // Sort descending
+  Menu,              // Menu toggle
+  Home               // Home navigation
+} from 'lucide-react';
+
+// Usage in components
+<Button 
+  leadIcon={<Plus size={16} />}
+  label="Add Item"
+/>
+
+// For Button component, icons automatically inherit color
+<Button 
+  variant="iconOnly"
+  leadIcon={<MoreHorizontal size={12} />}
+  onClick={handleMenuToggle}
+/>
+
+// For standalone icons, use theme colors
+const { colors } = useTheme();
+<Search 
+  size={20} 
+  color={colors.icon.default}
+/>
+```
+
+#### Icon Sizing Guidelines
+- **Button icons**: Use size from Button component's size configuration (handled automatically)
+- **Standalone icons**: 
+  - Small: 16px (for compact UI elements)
+  - Medium: 20px (default for most interfaces)  
+  - Large: 24px (for headers and emphasis)
+  - Extra Large: 32px+ (for empty states and illustrations)
+
+#### Icon Color Guidelines
+- **In Button components**: Icons automatically inherit the correct color - use `<IconName size={x} />`
+- **Standalone icons**: Always use semantic icon colors from theme:
+  - `colors.icon.default` - Primary icon color
+  - `colors.icon.subtle` - Secondary/less important icons
+  - `colors.icon.muted` - Tertiary/background icons  
+  - `colors.icon.disabled` - Disabled state icons
+  - `colors.icon.destructive` - Error/delete action icons
+  - `colors.icon.success` - Success state icons
+  - `colors.icon.warning` - Warning state icons
+
+#### Common Icon Patterns
+```javascript
+// Dropdown trigger
+<Button 
+  leadIcon={<ChevronDown size={12} />}
+  label="Options"
+/>
+
+// Close button
+<Button 
+  variant="iconOnly"
+  style="ghost"
+  leadIcon={<X size={16} />}
+  onClick={onClose}
+/>
+
+// Search input
+<Input 
+  leadIcon={<Search size={16} />}
+  placeholder="Search..."
+/>
+
+// More options menu
+<Button 
+  variant="iconOnly" 
+  style="secondary"
+  leadIcon={<MoreHorizontal size={12} />}
+  onClick={toggleMenu}
+/>
+
+// Delete action  
+<Button 
+  style="destructive"
+  leadIcon={<Trash2 size={16} />}
+  label="Delete"
+/>
+```
+
+## Component Patterns
+
+### Theme-Aware Components
+Always create components that work with both light and dark themes:
+
+```jsx
+import React from 'react';
+import { useTheme } from 'src/services/theme-context.jsx';
+import { spacing } from 'src/design-system/tokens/spacing.js';
+import { cornerRadius } from 'src/design-system/tokens/corner-radius.js';
+import { getShadow } from 'src/design-system/tokens/shadows.js';
+
+const MyComponent = ({ children, variant = 'default', elevated = false }) => {
+  const { colors } = useTheme();
+  
+  return (
+    <div
+      style={{
+        backgroundColor: colors.bg.card.default,
+        color: colors.text.default,
+        padding: spacing.spacing[16],
+        borderRadius: cornerRadius.borderRadius.md,
+        boxShadow: elevated 
+          ? getShadow('regular.modalMd', colors, { withBorder: true })
+          : getShadow('regular.card', colors, { withBorder: true }),
+      }}
+    >
+      {children}
+    </div>
+  );
+};
+```
+
+### Using Tailwind with Design Tokens
+The design tokens are integrated with Tailwind CSS:
+
+```jsx
+// Use Tailwind classes that map to design tokens
+<div className="bg-gray-50 text-gray-950 p-4 rounded-md border border-gray-200">
+  Content using primitive colors
+</div>
+
+// For theme-aware styling, use CSS-in-JS with semantic colors
+const { colors } = useTheme();
+<div 
+  className="p-4 rounded-md border"
+  style={{ 
+    backgroundColor: colors.bg.card.default,
+    color: colors.text.default,
+    borderColor: colors.border.default 
+  }}
+>
+  Theme-aware content
+</div>
+```
+
+### Typography Components
+```jsx
+// Using pre-defined text styles
+import { textStyles } from 'src/design-system/styles/typography/typography-styles.js';
+
+const Heading = ({ level = 1, children }) => {
+  const styles = {
+    1: textStyles['4xl'].bold,
+    2: textStyles['3xl'].semibold,
+    3: textStyles['2xl'].semibold,
+    4: textStyles.xl.medium,
+    5: textStyles.lg.medium,
+    6: textStyles.md.medium,
+  };
+  
+  return <h1 style={styles[level]}>{children}</h1>;
+};
+```
+
+## Design System Components
+
+### Available Components
+- `Button`: Comprehensive button component with 7 styles, 5 sizes, and smooth motion animations
+- `Bichaurinho`: Mascot illustrations with 32 variants
+- `Logo`: Auto-switching logo for light/dark themes
+
+```jsx
+import Button from 'src/design-system/components/Button.jsx';
+import Bichaurinho from 'src/design-system/components/Bichaurinho.jsx';
+import Logo from 'src/design-system/components/Logo.jsx';
+
+// Button usage - ALWAYS use this component for ANY button needs
+<Button 
+  label="Click me"
+  style="primary"        // 'primary' | 'secondary' | 'dashed' | 'soft' | 'ghost' | 'ghostMuted' | 'destructive'
+  size="lg"             // 'lg' | 'md' | 'sm' | 'xs' | '2xs'
+  onClick={handleClick}
+  leadIcon={<Icon />}   // Optional leading icon
+  tailIcon={<Icon />}   // Optional trailing icon
+  loading={false}       // Loading state with spinner
+  disabled={false}      // Disabled state
+/>
+
+// Bichaurinho usage
+<Bichaurinho variant={1-32} size={128} className="custom-class" />
+
+// Logo usage  
+<Logo width={120} className="custom-class" alt="Custom alt text" />
+```
+
+#### Button Component Styles
+The Button component provides 7 complete styles for different use cases:
+
+- **Primary**: Blue backgrounds, white text/icons, shadows - for main actions
+- **Secondary**: Light backgrounds, default text, muted icons, borders, shadows - for secondary actions  
+- **Dashed**: Same as secondary but with dashed borders, no shadows - for draft/temporary actions
+- **Soft**: Soft colored backgrounds, muted text/icons, no borders/shadows - for subtle actions
+- **Ghost**: Minimal backgrounds, default text, muted icons, no borders/shadows - for minimal actions
+- **Ghost Muted**: Same as ghost but with muted text - for ultra-subtle actions
+- **Destructive**: Red backgrounds, white text/icons, shadows - for delete/remove actions
+
+#### Button Component Features
+- **Theme-Aware**: Automatically adapts to light/dark themes
+- **Motion Enhanced**: Smooth hover/press scale animations and color transitions
+- **Loading States**: Built-in loading spinner with smooth animations
+- **Icon Support**: Lead and tail icons with hover animations
+- **Accessibility**: Full keyboard navigation and screen reader support
+- **Consistent**: Uses all design system tokens (colors, spacing, typography, shadows)
+
+## Rules for Cursor
+
+### ALWAYS DO:
+1. **Use the Button component** for ALL button needs - never create custom buttons or use HTML `<button>` elements
+2. **Use Lucide React icons** for ALL icon needs - never create custom SVG icons
+3. **Import and use existing design tokens** instead of hardcoding values
+4. **Use semantic colors** (`colors.text.default`, `colors.bg.card.default`) for theme compatibility
+5. **Use the `useTheme()` hook** for theme-aware components
+6. **Reference `textStyles`** for typography instead of manual font/size combinations
+7. **Use spacing tokens** for consistent padding, margins, and gaps
+8. **Use cornerRadius tokens** for consistent border radius
+9. **Use design system shadow tokens** (`shadows.regular.card`, `shadows.component.default`) for all shadows
+10. **Use `getShadow()` helper** for theme-aware borders and focus rings
+11. **Use existing components** (`Button`, `Bichaurinho`, `Logo`, `DropdownMenu`) when appropriate
+12. **Follow the established patterns** shown in existing components
+
+### NEVER DO:
+1. **Create custom buttons or use HTML `<button>` elements** - always use the Button component
+2. **Create custom SVG icons** - always use Lucide React icons instead
+3. **Hardcode colors, fonts, spacing, or shadow values** - always use tokens
+4. **Create new design tokens** - use existing ones or ask for clarification
+5. **Use CSS color names or hex values directly** - use the color system
+6. **Ignore theme compatibility** - always consider light/dark mode
+7. **Create typography styles manually** - use `textStyles` or typography tokens
+8. **Use arbitrary Tailwind values** - use the extended theme values
+9. **Use Tailwind shadow classes** - use design system shadow tokens instead
+10. **Hardcode CSS box-shadow values** - use `shadows` tokens or `getShadow()` helper
+
+### Examples of Good vs Bad:
+
+❌ **DON'T** (Custom Buttons):
+```jsx
+<button 
+  style={{ 
+    backgroundColor: '#007bff', 
+    color: 'white',
+    padding: '12px 16px',
+    borderRadius: '6px',
+    border: 'none'
+  }}
+  onClick={handleClick}
+>
+  Submit
+</button>
+```
+
+✅ **DO** (Button Component):
+```jsx
+<Button 
+  label="Submit"
+  style="primary"
+  size="lg"
+  onClick={handleClick}
+/>
+```
+
+❌ **DON'T**:
+```jsx
+<div style={{ 
+  backgroundColor: '#f4f4f5', 
+  color: '#18181b',
+  padding: '16px',
+  borderRadius: '8px'
+}}>
+```
+
+✅ **DO**:
+```jsx
+const { colors } = useTheme();
+<div style={{ 
+  backgroundColor: colors.bg.subtle, 
+  color: colors.text.default,
+  padding: spacing.spacing[16],
+  borderRadius: cornerRadius.borderRadius.md
+}}>
+```
+
+❌ **DON'T**:
+```jsx
+<h1 style={{ fontSize: '24px', fontWeight: 600, fontFamily: 'Inter' }}>
+```
+
+✅ **DO**:
+```jsx
+<h1 style={textStyles['2xl'].semibold}>
+```
+
+❌ **DON'T**:
+```jsx
+<div className="shadow-md">
+<div style={{ boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)' }}>
+```
+
+✅ **DO**:
+```jsx
+<div style={{ boxShadow: shadows.regular.card }}>
+// Or with theme-aware borders
+const { colors } = useTheme();
+<div style={{ boxShadow: getShadow('regular.modalMd', colors, { withBorder: true }) }}>
+```
+
+❌ **DON'T** (Custom Icons):
+```jsx
+const CustomIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16">
+    <circle cx="3" cy="8" r="1.5" fill="currentColor" />
+    <circle cx="8" cy="8" r="1.5" fill="currentColor" />
+    <circle cx="13" cy="8" r="1.5" fill="currentColor" />
+  </svg>
+);
+```
+
+✅ **DO** (Lucide Icons):
+```jsx
+import { MoreHorizontal } from 'lucide-react';
+
+<Button 
+  variant="iconOnly"
+  leadIcon={<MoreHorizontal size={12} />}
+  onClick={handleMenuToggle}
+/>
+```
+
+### Component Creation Checklist:
+- [ ] Uses the Button component for ANY button needs (never create custom buttons)
+- [ ] Uses Lucide React icons for ANY icon needs (never create custom SVG icons)
+- [ ] Uses semantic colors for theme compatibility
+- [ ] Imports design tokens from the design system
+- [ ] Uses `useTheme()` hook if theme-aware
+- [ ] Uses `textStyles` for typography
+- [ ] Uses spacing tokens for layout
+- [ ] Uses cornerRadius tokens for rounded corners
+- [ ] Uses design system shadow tokens (`shadows.regular.*`, `shadows.component.*`)
+- [ ] Uses `getShadow()` helper for theme-aware shadows with borders/focus rings
+- [ ] Follows existing component patterns
+- [ ] Works in both light and dark themes
+
+Remember: The design system is comprehensive and battle-tested. Always use existing tokens and patterns rather than creating new ones. When in doubt, reference the existing components (`Button.jsx`, `Bichaurinho.jsx`, `Logo.jsx`) for implementation patterns. **NEVER create custom buttons - the Button component handles all use cases with 7 styles, 5 sizes, and full motion animations.**
+
+## Component Creation Guidelines
+
+### When to Use Existing Design System Components
+- **ALWAYS** check the design system first for existing components before creating new ones
+- Use design system components for ALL UI needs (buttons, inputs, cards, navigation, etc.)
+- **NEVER** use Shad CN components or components from `src/components/ui/` - use design system equivalents instead
+
+### When to Create New Components
+
+#### 1. Page-Level Components
+- Create new components in the same file when they are page-specific and won't be reused
+- Use descriptive names that clearly indicate their purpose and context
+- Example: `ProfileSettingsCard`, `OnboardingWelcomeHero`, `ContentEditorSidebar`
+
+#### 2. Reusable Components  
+- If a component is used more than once across different pages/contexts, add it to the design system
+- Place new design system components in `src/design-system/components/`
+- Use PascalCase naming with descriptive, semantic names
+- Example: `NotificationToast`, `UserAvatar`, `SearchFilterBar`
+
+#### 3. Component Composition
+- Prefer composing existing design system components rather than creating new ones
+- Use design system tokens (colors, spacing, typography) for all styling
+- Follow established patterns from existing design system components
+
+### Design System Component Naming Convention
+- Use clear, semantic names that describe the component's purpose
+- Avoid generic names like `Card`, `Modal`, `List` - be specific about the use case
+- Examples:
+  - `ContentPreviewCard` instead of `Card`
+  - `ProjectSelectionModal` instead of `Modal`  
+  - `TemplateLibraryGrid` instead of `Grid`
+
+### Component File Structure
+```
+src/design-system/components/
+├── Button.jsx           // ✅ Main action component
+├── Input.jsx            // ✅ Form input component  
+├── UserProfileCard.jsx  // ✅ Specific user profile display
+├── ContentSummaryCard.jsx // ✅ Content overview display
+└── ProjectNavigationTabs.jsx // ✅ Project-specific navigation
+```
+
+### Migration Strategy
+1. **Audit existing components** - identify which can be replaced with design system components
+2. **Replace Shad CN imports** - migrate all `@/components/ui/*` imports to design system equivalents
+3. **Create missing components** - add new design system components for unique use cases
+4. **Remove unused files** - clean up old component files after migration
+5. **Ensure consistency** - verify all pages use design system components
+
+### Component Development Rules
+- **Theme Compatibility**: All components must work with light/dark themes using `useTheme()`
+- **Design Tokens**: Use design system tokens for all styling (no hardcoded values)
+- **Motion**: Include appropriate hover/focus animations using design system patterns
+- **Accessibility**: Follow accessibility best practices with proper ARIA labels and keyboard navigation
+- **Documentation**: Include clear prop interfaces and usage examples 

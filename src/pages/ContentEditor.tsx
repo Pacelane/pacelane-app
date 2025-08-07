@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useContent } from '@/hooks/api/useContent';
 import { useTheme } from '@/services/theme-context';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { useToast } from '@/design-system/components/Toast';
 
 // Design System Components
 import EditorNav from '@/design-system/components/EditorNav';

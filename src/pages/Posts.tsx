@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useContent } from '@/hooks/api/useContent';
 import { useTheme } from '@/services/theme-context';
 import { SavedDraft, ContentSuggestion } from '@/types/content';
-import { toast } from 'sonner';
+import { useToast } from '@/design-system/components/Toast';
 
 // Design System Components
 import HomeSidebar from '@/design-system/components/HomeSidebar';
@@ -27,6 +27,7 @@ const Posts = () => {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
   const { colors } = useTheme();
+  const { toast } = useToast();
   
   // ========== CLEAN CONTENT STATE MANAGEMENT ==========
   const {

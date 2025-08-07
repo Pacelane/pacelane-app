@@ -20,7 +20,15 @@ npm install
 # or
 yarn install
 ```
+### 2. Initialize Supabase (First Time Only)
 
+If this is your first time setting up the project, you need to initialize Supabase:
+
+```bash
+supabase init
+```
+
+This will create the necessary Supabase configuration files for local development.
 ### 2. Start Local Supabase
 
 ```bash

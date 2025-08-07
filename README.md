@@ -1,73 +1,131 @@
-# Welcome to your Lovable project
+# Pacelane - AI Content Assistant
 
-## Project info
+## 📝 Project Overview
 
-**URL**: https://lovable.dev/projects/fe6ccbbf-69c1-4f9d-b0e4-643c5a1e3319
+Pacelane is an AI-powered content creation assistant designed for executives and founders. It helps create high-quality, personalized content for professional platforms like LinkedIn by leveraging user insights, goals, and inspirations.
 
-## How can I edit this code?
+## 🚀 Features
 
-There are several ways of editing your application.
+- **AI-Powered Content Generation**: Create engaging LinkedIn posts and content using advanced AI
+- **Personal Insights Integration**: Leverage your professional background and expertise
+- **Inspiration Management**: Save and analyze content from industry leaders
+- **Content Strategy**: Align content with your business goals and messaging
+- **Knowledge Base**: Upload and reference your own materials and documents
+- **Analytics Dashboard**: Track content performance and engagement
 
-**Use Lovable**
+## 🛠️ Technology Stack
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/fe6ccbbf-69c1-4f9d-b0e4-643c5a1e3319) and start prompting.
+This project is built with modern web technologies:
 
-Changes made via Lovable will be committed automatically to this repo.
+- **Frontend**: React 18 with TypeScript
+- **Build Tool**: Vite
+- **Styling**: Tailwind CSS + shadcn/ui components
+- **Backend**: Supabase (PostgreSQL + Edge Functions)
+- **Authentication**: Supabase Auth
+- **Storage**: Supabase Storage + Google Cloud Storage
+- **AI Integration**: OpenAI GPT models
+- **State Management**: TanStack Query (React Query)
+- **Routing**: React Router DOM
 
-**Use your preferred IDE**
+## 📦 Installation & Setup
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Prerequisites
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- Node.js 18+ and npm (recommended: [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating))
+- Git
 
-Follow these steps:
+### Local Development
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+1. **Clone the repository**
+   ```sh
+   git clone <YOUR_GIT_URL>
+   cd pacelane-app
+   ```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+2. **Install dependencies**
+   ```sh
+   npm install
+   ```
 
-# Step 3: Install the necessary dependencies.
-npm i
+3. **Environment Setup**
+   - Copy `.env.example` to `.env.local`
+   - Configure your Supabase project credentials
+   - Add any required API keys
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+4. **Start development server**
+   ```sh
+   npm run dev
+   ```
+
+5. **Build for production**
+   ```sh
+   npm run build
+   ```
+
+## 🏗️ Project Structure
+
+```
+src/
+├── api/                    # Frontend API layer
+├── components/             # React components
+│   ├── ui/                # shadcn/ui components
+│   └── ...                # Feature components
+├── design-system/          # Design system components & tokens
+│   ├── components/        # Design system components
+│   ├── tokens/           # Design tokens (colors, typography, etc.)
+│   └── styles/           # Style utilities
+├── hooks/                 # Custom React hooks
+├── pages/                # Page components
+├── services/             # Business logic services
+├── types/                # TypeScript type definitions
+└── integrations/         # External service integrations
 ```
 
-**Edit a file directly in GitHub**
+## 🎨 Design System
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Pacelane includes a comprehensive design system with:
 
-**Use GitHub Codespaces**
+- **Design Tokens**: Colors, typography, spacing, shadows
+- **Component Library**: Pre-built, accessible components
+- **Theme Support**: Light/dark mode compatibility
+- **Motion**: Smooth animations and transitions
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+See the [design system documentation](.cursorrules) for detailed usage guidelines.
 
-## What technologies are used for this project?
+## 🔧 Available Scripts
 
-This project is built with:
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run build:dev` - Build in development mode
+- `npm run preview` - Preview production build
+- `npm run lint` - Run ESLint
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## 🌐 Deployment
 
-## How can I deploy this project?
+The application can be deployed to various platforms:
 
-Simply open [Lovable](https://lovable.dev/projects/fe6ccbbf-69c1-4f9d-b0e4-643c5a1e3319) and click on Share -> Publish.
+- **Vercel**: Connected via GitHub integration
+- **Netlify**: Deploy from Git repository
+- **Custom hosting**: Build and serve the `dist` folder
 
-## Can I connect a custom domain to my Lovable project?
+## 📚 Documentation
 
-Yes, you can!
+- [Local Development Setup](LOCAL_DEVELOPMENT_SETUP.md)
+- [Refactoring Progress](REFACTORING_PROGRESS.md)
+- [WhatsApp Integration](WHATSAPP_INTEGRATION_IMPLEMENTATION.md)
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## 🤝 Contributing
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is proprietary software. All rights reserved.
+
+## 📞 Support
+
+For support and questions, please contact the development team or open an issue in the repository.

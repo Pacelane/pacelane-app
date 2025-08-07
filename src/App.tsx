@@ -1,14 +1,12 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { ToastProvider } from "@/design-system/components/Toast";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/services/theme-context";
-import ProtectedRoute from "@/components/ProtectedRoute";
+import ProtectedRoute from "@/design-system/components/ProtectedRoute";
 
 import ProductHome from "./pages/ProductHome";
-import NewProductHome from "./pages/NewProductHome";
+
 import KnowledgeBase from "./pages/KnowledgeBase";
 import SignIn from "./pages/SignIn";
 import Profile from "./pages/Profile";
@@ -31,9 +29,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <ThemeProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
+        <ToastProvider>
           <BrowserRouter>
           <Routes>
             <Route path="/" element={<SignIn />} />
@@ -55,14 +51,7 @@ const App = () => (
                 </ProtectedRoute>
               } 
             />
-            <Route
-              path="/new-product-home" 
-              element={
-                <ProtectedRoute>
-                  <NewProductHome />
-                </ProtectedRoute>
-              } 
-            />
+
             <Route 
               path="/knowledge" 
               element={
@@ -99,7 +88,7 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
-        </TooltipProvider>
+        </ToastProvider>
       </ThemeProvider>
     </AuthProvider>
   </QueryClientProvider>

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useContent } from '@/hooks/api/useContent';
 import { useTheme } from '@/services/theme-context';
-import { toast } from 'sonner';
+import { useToast } from '@/design-system/components/Toast';
 
 // Design System Components
 import HomeSidebar from '@/design-system/components/HomeSidebar';
