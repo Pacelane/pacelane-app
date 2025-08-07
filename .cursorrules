@@ -1,0 +1,207 @@
+# Pacelane Development Guidelines
+
+## Mission & Vision
+
+Pacelane solves content consistency for executives. We help B2B executives capture insights in real-time and build publishing habits that drive 3x better conversion rates than company-branded posts.
+
+**Core Problem:** 80% of executives post less than once per week due to time constraints, not lack of insights.
+
+**Our Approach (vs competitors focusing on AI writing quality):**
+1. **Context Capture:** Integrate with existing workflows to catch content opportunities in real-time
+2. **Execution Accountability:** Make content creation as habitual as checking email
+3. **Market Intelligence:** Understand what resonates with specific audiences
+
+**Market Validation:** 2.8M executives on LinkedIn, <10% post weekly. Traktor data shows 40% more qualified leads for consistent posters.
+
+## Technical Architecture
+
+### Frontend (React/TypeScript)
+- Modern React with TypeScript for type safety
+- Tailwind CSS for consistent, responsive design
+- Component-based architecture with reusable UI components
+- Context API for state management
+- Progressive Web App capabilities
+
+### Backend (Supabase)
+- PostgreSQL database with Row Level Security (RLS)
+- Edge Functions for AI processing and integrations
+- Real-time subscriptions for live updates
+- File storage with Google Cloud Storage integration
+- Authentication with Supabase Auth
+
+### Key Integrations
+- WhatsApp Business API for content distribution
+- Google Cloud Storage for knowledge base files
+- LinkedIn (planned) for content publishing
+- AI services for content generation and analysis
+
+## Development Principles
+
+### 1. Executive-First Design
+- **Simplicity:** Executives are busy - every interaction should be frictionless
+- **Mobile-First:** Content capture happens on mobile devices
+- **Habit Formation:** Design for daily usage patterns
+- **Context Preservation:** Never lose an insight due to poor UX
+
+### 2. Content Workflow Focus
+- **Capture → Process → Publish** flow should be seamless
+- **Real-time Processing:** AI suggestions should appear instantly
+- **Draft Management:** Easy save, edit, and scheduling capabilities
+- **Multi-format Support:** Text, audio, video, and image content
+
+### 3. Accountability & Engagement
+- **Progress Tracking:** Visual indicators of posting consistency
+- **Smart Reminders:** Context-aware notifications
+- **Gamification:** Streaks, goals, and achievements
+- **Social Proof:** Audience engagement metrics
+
+### 4. Market Intelligence
+- **Audience Analytics:** What content resonates with specific audiences
+- **Performance Tracking:** Conversion rates and lead generation
+- **A/B Testing:** Content format and timing optimization
+- **Competitive Analysis:** Industry benchmark comparisons
+
+## Code Quality Standards
+
+### TypeScript
+- Strict type checking enabled
+- Comprehensive type definitions for all data structures
+- Proper error handling with typed error responses
+- Interface-first development approach
+
+### React Best Practices
+- Functional components with hooks
+- Proper component composition and reusability
+- Performance optimization (React.memo, useMemo, useCallback)
+- Accessibility (ARIA labels, keyboard navigation)
+
+### Database Design
+- Row Level Security (RLS) policies for all tables
+- Proper indexing for performance
+- Data validation at the database level
+- Audit trails for important operations
+
+### API Design
+- RESTful endpoints with consistent naming
+- Proper HTTP status codes and error messages
+- Rate limiting and security headers
+- Comprehensive API documentation
+
+## Feature Development Priorities
+
+### High Priority
+1. **Context Capture:** WhatsApp integration, voice-to-text, quick capture
+2. **Content Processing:** AI-powered content suggestions and optimization
+3. **Publishing Workflow:** Multi-platform publishing with scheduling
+4. **Analytics Dashboard:** Performance tracking and insights
+
+### Medium Priority
+1. **Team Collaboration:** Multi-user accounts and content approval
+2. **Advanced AI:** Personalized content recommendations
+3. **Integration Ecosystem:** CRM, calendar, and social media platforms
+4. **Mobile App:** Native mobile experience
+
+### Low Priority
+1. **White-label Solutions:** Custom branding for agencies
+2. **Enterprise Features:** SSO, advanced permissions, compliance
+3. **API Access:** Third-party integrations and webhooks
+
+## Security & Privacy
+
+### Data Protection
+- End-to-end encryption for sensitive content
+- GDPR and CCPA compliance
+- Regular security audits and penetration testing
+- Secure file upload and storage practices
+
+### User Privacy
+- Minimal data collection principle
+- Transparent data usage policies
+- User control over data sharing and retention
+- Anonymized analytics where possible
+
+## Testing Strategy
+
+### Frontend Testing
+- Unit tests for all utility functions
+- Component testing with React Testing Library
+- Integration tests for user workflows
+- E2E tests for critical user journeys
+
+### Backend Testing
+- Unit tests for all Edge Functions
+- Database migration testing
+- API endpoint testing
+- Performance and load testing
+
+## Deployment & DevOps
+
+### Environment Management
+- Development, staging, and production environments
+- Feature flags for gradual rollouts
+- Automated testing in CI/CD pipeline
+- Database migration safety checks
+
+### Monitoring & Observability
+- Error tracking and alerting
+- Performance monitoring
+- User analytics and behavior tracking
+- Database query performance monitoring
+
+## Documentation Standards
+
+### Code Documentation
+- JSDoc comments for all functions
+- README files for all major components
+- API documentation with examples
+- Architecture decision records (ADRs)
+
+### User Documentation
+- In-app help and tooltips
+- Video tutorials for complex features
+- Knowledge base for common questions
+- Best practices and tips
+
+## Performance Requirements
+
+### Frontend Performance
+- < 3 second initial page load
+- < 1 second for subsequent interactions
+- Optimized bundle sizes and lazy loading
+- Progressive enhancement for slow connections
+
+### Backend Performance
+- < 500ms API response times
+- Efficient database queries with proper indexing
+- Caching strategies for frequently accessed data
+- Scalable architecture for growth
+
+## Accessibility Standards
+
+### WCAG 2.1 AA Compliance
+- Keyboard navigation support
+- Screen reader compatibility
+- Color contrast requirements
+- Focus management and indicators
+
+### Mobile Accessibility
+- Touch target sizes (minimum 44px)
+- Gesture alternatives for complex interactions
+- Responsive design for all screen sizes
+- Offline functionality where possible
+
+## Future Considerations
+
+### Scalability
+- Microservices architecture planning
+- Database sharding strategies
+- CDN implementation for global performance
+- Multi-tenant architecture considerations
+
+### AI/ML Integration
+- Content recommendation algorithms
+- Sentiment analysis for audience insights
+- Automated content optimization
+- Predictive analytics for posting times
+
+Remember: Every feature should answer "How does this help executives post more consistently?" If it doesn't directly contribute to that goal, it's not a priority.

@@ -921,64 +921,18 @@ class ChatwootWebhookProcessor {
       return { success: true, message: 'Event not applicable for WhatsApp processing' };
     }
 
-    // Find user by WhatsApp number
-    const { userId, contactId } = await this.findUserByWhatsAppNumber(payload);
+    // Extract WhatsApp number and contact ID
+    const whatsappNumber = this.extractWhatsAppNumber(payload);
+    const contactId = `contact_${payload.sender.id}_account_${payload.account.id}`;
+
+    // Use centralized user-bucket service for identification and bucket setup
+    const bucketResult = await this.identifyUserAndSetupBucket(whatsappNumber, contactId);
     
-    // Debug: List existing buckets to help with troubleshooting
-    console.log('🔍 Listing existing buckets for debugging...');
-    const existingBuckets = await this.listBucketsWithPrefix();
-    console.log(`📋 Found ${existingBuckets.length} existing buckets with prefix ${this.gcsConfig.bucketPrefix}`);
-    
-    // Also check if user has any bucket mapping in database
-    if (userId) {
-      const { data: userMapping, error } = await this.supabase
-        .from('user_bucket_mapping')
-        .select('bucket_name')
-        .eq('user_id', userId);
-      
-      if (!error && userMapping && userMapping.length > 0) {
-        console.log(`📋 User ${userId} has ${userMapping.length} bucket mappings:`, userMapping.map(m => m.bucket_name));
-      } else {
-        console.log(`📋 User ${userId} has no bucket mappings in database`);
-      }
+    if (!bucketResult.success) {
+      return { success: false, message: bucketResult.error || 'Failed to setup bucket' };
     }
-    
-        // Determine bucket name based on user identification
-    let bucketName: string;
-    if (userId) {
-      // ALWAYS try to get existing bucket for this user first
-      const existingBucket = await this.getUserBucketName(userId);
-      if (existingBucket) {
-        bucketName = existingBucket;
-        console.log(`✅ Found existing bucket in database: ${bucketName} for user: ${userId}`);
-      } else {
-        // If no mapping exists, generate bucket name and check if it exists in GCS
-        bucketName = this.generateUserBucketName(userId);
-        console.log(`🔍 No database mapping found, checking if bucket exists in GCS: ${bucketName}`);
-        
-        // Check if this bucket already exists in GCS (created by create-user-bucket function)
-        const existingBucketFound = await this.checkAndMapExistingBucket(userId, bucketName);
-        if (existingBucketFound) {
-          console.log(`✅ Found existing bucket in GCS and created mapping: ${bucketName}`);
-        } else {
-          console.log(`❌ No existing bucket found, will create new bucket: ${bucketName}`);
-          // Store mapping for the new bucket we're about to create
-          await this.storeUserBucketMapping(userId, bucketName);
-        }
-      }
-    } else {
-      bucketName = this.generateContactBucketName(contactId);
-      console.log(`Using contact-based bucket: ${bucketName} for contact: ${contactId}`);
-    }
-    
-    // Ensure bucket exists (create if necessary)
-    console.log(`Ensuring bucket exists: ${bucketName}`);
-    const bucketReady = await this.ensureUserBucket(bucketName);
-    if (!bucketReady) {
-      console.error(`Failed to ensure bucket exists: ${bucketName}`);
-      return { success: false, message: 'Failed to ensure bucket exists' };
-    }
-    console.log(`Bucket is ready: ${bucketName}`);
+
+    const { userId, bucketName, contactId: finalContactId } = bucketResult.data;
 
     // Generate GCS storage path with user bucket
     const gcsPath = this.generateGCSPath(payload, bucketName);
@@ -990,14 +944,14 @@ class ChatwootWebhookProcessor {
     }
 
     // Store in database with contact identifier
-    const dbSuccess = await this.storeInDatabase(payload, gcsPath, userId, contactId);
+    const dbSuccess = await this.storeInDatabase(payload, gcsPath, userId, finalContactId);
     if (!dbSuccess) {
       return { success: false, message: 'Failed to store message in database' };
     }
 
     // Process audio attachments if present
     if (this.hasAudioAttachments(payload)) {
-      const audioSuccess = await this.processAudioAttachments(payload, bucketName, userId, contactId, gcsPath);
+      const audioSuccess = await this.processAudioAttachments(payload, bucketName, userId, finalContactId, gcsPath);
       if (!audioSuccess) {
         console.warn('Audio processing failed, but message was stored successfully');
       }
@@ -1008,8 +962,55 @@ class ChatwootWebhookProcessor {
       message: `WhatsApp message ${payload.id} processed and stored in bucket ${bucketName}`,
       userId: userId || null,
       bucketName,
-      whatsappNumber: this.extractWhatsAppNumber(payload) || null
+      whatsappNumber: whatsappNumber || null
     };
+  }
+
+  /**
+   * Use centralized user-bucket service for identification and bucket setup
+   */
+  private async identifyUserAndSetupBucket(
+    whatsappNumber?: string, 
+    contactId?: string
+  ): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      console.log('🔍 Using centralized user-bucket service...');
+      
+      // Call the centralized user-bucket service
+      const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/user-bucket-service`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'identify-and-ensure-bucket',
+          whatsappNumber,
+          contactId
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ User-bucket service error:', response.status, errorText);
+        return { 
+          success: false, 
+          error: `User-bucket service error: ${response.status} ${errorText}` 
+        };
+      }
+
+      const result = await response.json();
+      console.log('✅ User-bucket service result:', result);
+      
+      return { success: true, data: result.data };
+
+    } catch (error) {
+      console.error('❌ Error calling user-bucket service:', error);
+      return { 
+        success: false, 
+        error: `Error calling user-bucket service: ${error.message}` 
+      };
+    }
   }
 
   /**

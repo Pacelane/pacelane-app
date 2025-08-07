@@ -59,13 +59,16 @@ const Ready = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return false;
 
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-user-bucket`, {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/user-bucket-service`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ userId: user.id }),
+        body: JSON.stringify({ 
+          action: 'identify-and-ensure-bucket',
+          userId: user.id 
+        }),
       });
 
       if (!response.ok) {
