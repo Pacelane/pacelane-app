@@ -13,6 +13,24 @@ const corsHeaders = {
 const SUPPORTED_EVENTS = ['message_created'];
 const WHATSAPP_CHANNEL = 'Channel::Whatsapp';
 
+// Intent detection types
+type MessageIntent = 'NOTE' | 'ORDER';
+
+interface IntentResult {
+  intent: MessageIntent;
+  confidence: number;
+  parsedParams?: OrderParams;
+}
+
+interface OrderParams {
+  platform?: string;
+  length?: string;
+  tone?: string;
+  angle?: string;
+  refs?: string[];
+  topic?: string;
+}
+
 interface ChatwootWebhookPayload {
   event: string;
   id: string;
@@ -906,6 +924,362 @@ class ChatwootWebhookProcessor {
   }
 
   /**
+   * Detect message intent using AI: NOTE (casual input) vs ORDER (content request)
+   */
+  private async detectIntent(content: string): Promise<IntentResult> {
+    try {
+      // Try AI-powered detection first
+      const aiResult = await this.detectIntentWithAI(content);
+      if (aiResult) {
+        return aiResult;
+      }
+    } catch (error) {
+      console.warn('AI intent detection failed, falling back to rules:', error.message);
+    }
+
+    // Fallback to rule-based detection
+    return this.detectIntentWithRules(content);
+  }
+
+  /**
+   * AI-powered intent detection using OpenAI
+   */
+  private async detectIntentWithAI(content: string): Promise<IntentResult | null> {
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!openaiApiKey) {
+      console.warn('OPENAI_API_KEY not found, skipping AI detection');
+      return null;
+    }
+
+    const prompt = `Classify this WhatsApp message intent and extract parameters.
+
+Message: "${content}"
+
+Classify as:
+- NOTE: Casual sharing, updates, thoughts, information for knowledge base
+- ORDER: Explicit request to create content (posts, articles, etc.)
+
+Return only valid JSON:
+{
+  "intent": "NOTE" | "ORDER",
+  "confidence": 0.0-1.0,
+  "reasoning": "brief explanation",
+  "params": {
+    "platform": "linkedin|twitter|instagram" or null,
+    "length": "short|medium|long" or null,
+    "tone": "professional|casual|formal|friendly" or null,
+    "angle": "story|tip|insight|announcement|question" or null,
+    "topic": "extracted main topic" or null,
+    "refs": ["hashtag1", "hashtag2"] or []
+  }
+}`;
+
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${openaiApiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are an expert at classifying WhatsApp messages for a content creation system. Always return valid JSON only.'
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          temperature: 0.1,
+          max_tokens: 300,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`OpenAI API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const aiResponse = data.choices[0]?.message?.content;
+
+      if (!aiResponse) {
+        throw new Error('No response from OpenAI');
+      }
+
+      // Parse AI response
+      const parsed = JSON.parse(aiResponse);
+      
+      // Validate response structure
+      if (!parsed.intent || !['NOTE', 'ORDER'].includes(parsed.intent)) {
+        throw new Error('Invalid intent in AI response');
+      }
+
+      console.log(`🤖 AI Intent: ${parsed.intent} (${parsed.confidence}) - ${parsed.reasoning}`);
+
+      return {
+        intent: parsed.intent as MessageIntent,
+        confidence: parsed.confidence || 0.8,
+        parsedParams: parsed.params ? {
+          platform: parsed.params.platform,
+          length: parsed.params.length,
+          tone: parsed.params.tone,
+          angle: parsed.params.angle,
+          refs: parsed.params.refs || [],
+          topic: parsed.params.topic
+        } : undefined
+      };
+
+    } catch (error) {
+      console.error('Error in AI intent detection:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Fallback rule-based intent detection
+   */
+  private detectIntentWithRules(content: string): IntentResult {
+    const normalizedContent = content.toLowerCase().trim();
+    
+    // High-confidence ORDER patterns
+    const orderPatterns = [
+      /\b(write|draft|create|make|generate)\s+(a\s+)?(linkedin\s+)?post/i,
+      /\bturn\s+this\s+into\s+(a\s+)?(post|content|article)/i,
+      /\bpost\s+about/i,
+      /\bcreate\s+content/i,
+      /\bdraft\s+(something|a post)/i,
+      /\bmake\s+(me\s+)?(a\s+)?post/i,
+      /\bgenerate\s+(a\s+)?(post|content)/i
+    ];
+
+    // Check for ORDER patterns
+    for (const pattern of orderPatterns) {
+      if (pattern.test(normalizedContent)) {
+        const parsedParams = this.parseOrderParams(content);
+        return {
+          intent: 'ORDER',
+          confidence: 0.7, // Lower confidence for rule-based
+          parsedParams
+        };
+      }
+    }
+
+    // Default to NOTE
+    return {
+      intent: 'NOTE',
+      confidence: 0.8
+    };
+  }
+
+  /**
+   * Parse parameters from ORDER content
+   */
+  private parseOrderParams(content: string): OrderParams {
+    const params: OrderParams = {};
+    const normalizedContent = content.toLowerCase();
+
+    // Platform detection
+    if (normalizedContent.includes('linkedin')) {
+      params.platform = 'linkedin';
+    } else if (normalizedContent.includes('twitter') || normalizedContent.includes('x.com')) {
+      params.platform = 'twitter';
+    }
+
+    // Length detection
+    if (normalizedContent.includes('short') || normalizedContent.includes('brief')) {
+      params.length = 'short';
+    } else if (normalizedContent.includes('long') || normalizedContent.includes('detailed')) {
+      params.length = 'long';
+    }
+
+    // Tone detection
+    if (normalizedContent.includes('professional')) {
+      params.tone = 'professional';
+    } else if (normalizedContent.includes('casual') || normalizedContent.includes('friendly')) {
+      params.tone = 'casual';
+    } else if (normalizedContent.includes('formal')) {
+      params.tone = 'formal';
+    }
+
+    // Angle detection
+    if (normalizedContent.includes('story') || normalizedContent.includes('experience')) {
+      params.angle = 'story';
+    } else if (normalizedContent.includes('tip') || normalizedContent.includes('advice')) {
+      params.angle = 'tip';
+    } else if (normalizedContent.includes('insight') || normalizedContent.includes('lesson')) {
+      params.angle = 'insight';
+    }
+
+    // Simple refs detection (tags or keywords mentioned)
+    const refMatches = content.match(/#\w+/g) || [];
+    if (refMatches.length > 0) {
+      params.refs = refMatches;
+    }
+
+    return params;
+  }
+
+  /**
+   * Process NOTE intent - store in meeting_notes
+   */
+  private async processNoteIntent(
+    payload: ChatwootWebhookPayload, 
+    userId: string | null, 
+    contactId: string
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      // Get text content (from main content or transcription)
+      let textContent = payload.content || '';
+      
+      // For audio messages, try to get transcription
+      if (this.hasAudioAttachments(payload)) {
+        // We'll use the transcription if available, otherwise just store the fact it's audio
+        textContent = textContent || '[Audio message - transcription will be processed separately]';
+      }
+
+      if (!textContent.trim()) {
+        return { success: true, message: 'Empty content, skipping NOTE processing' };
+      }
+
+      // Store in meeting_notes
+      const noteData = {
+        user_id: userId,
+        chatwoot_conversation_id: payload.conversation.id.toString(),
+        content: textContent,
+        source_type: 'whatsapp',
+        metadata: {
+          chatwoot_message_id: payload.id,
+          contact_id: contactId,
+          sender_name: payload.sender.name,
+          created_at: payload.created_at,
+          content_type: payload.content_type || 'text',
+          processed_at: new Date().toISOString()
+        }
+      };
+
+      const { error } = await this.supabase
+        .from('meeting_notes')
+        .insert([noteData]);
+
+      if (error) {
+        console.error('Error storing NOTE in meeting_notes:', error);
+        return { success: false, message: 'Failed to store note in knowledge base' };
+      }
+
+      console.log('✅ NOTE stored in meeting_notes');
+      return { success: true, message: 'Note stored in knowledge base' };
+
+    } catch (error) {
+      console.error('Error processing NOTE intent:', error);
+      return { success: false, message: 'Failed to process note' };
+    }
+  }
+
+  /**
+   * Process ORDER intent - create content_order and agent_job
+   */
+  private async processOrderIntent(
+    payload: ChatwootWebhookPayload, 
+    userId: string | null, 
+    contactId: string,
+    parsedParams: OrderParams
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      if (!userId) {
+        // Cannot process ORDER without identified user
+        const clarificationMessage = "I need to know who you are to create content for you. Please make sure your WhatsApp number is linked to your Pacelane account.";
+        await this.sendClarificationMessage(payload, clarificationMessage);
+        return { success: false, message: 'User not identified for ORDER processing' };
+      }
+
+      // Create content_order
+      const orderData = {
+        user_id: userId,
+        source: 'whatsapp',
+        params_json: {
+          platform: parsedParams.platform || 'linkedin',
+          length: parsedParams.length || 'medium',
+          tone: parsedParams.tone || 'professional',
+          angle: parsedParams.angle,
+          topic: parsedParams.topic,
+          refs: parsedParams.refs || [],
+          original_content: payload.content,
+          context: {
+            chatwoot_message_id: payload.id,
+            contact_id: contactId,
+            sender_name: payload.sender.name,
+            created_at: payload.created_at
+          }
+        },
+        triggered_by: 'whatsapp'
+      };
+
+      // First, insert content_order
+      const { data: orderResult, error: orderError } = await this.supabase
+        .from('content_order')
+        .insert([orderData])
+        .select()
+        .single();
+
+      if (orderError) {
+        console.error('Error creating content_order:', orderError);
+        return { success: false, message: 'Failed to create content order' };
+      }
+
+      // Then, create agent_job to process the order
+      const jobData = {
+        type: 'process_order',
+        payload_json: {
+          order_id: orderResult.id
+        },
+        user_id: userId,
+        status: 'pending',
+        attempts: 0,
+        run_at: new Date().toISOString()
+      };
+
+      const { error: jobError } = await this.supabase
+        .from('agent_job')
+        .insert([jobData]);
+
+      if (jobError) {
+        console.error('Error creating agent_job:', jobError);
+        return { success: false, message: 'Failed to enqueue processing job' };
+      }
+
+      console.log('✅ ORDER created and job enqueued:', orderResult.id);
+      return { 
+        success: true, 
+        message: `Content order created and processing started`,
+        orderId: orderResult.id
+      };
+
+    } catch (error) {
+      console.error('Error processing ORDER intent:', error);
+      return { success: false, message: 'Failed to process content order' };
+    }
+  }
+
+  /**
+   * Send clarification message via WhatsApp (minimal use)
+   */
+  private async sendClarificationMessage(payload: ChatwootWebhookPayload, message: string): Promise<boolean> {
+    try {
+      // This would integrate with Chatwoot's API to send messages
+      // For now, just log the intent to send
+      console.log(`📤 Would send clarification message: ${message}`);
+      // TODO: Implement actual Chatwoot API call when needed
+      return true;
+    } catch (error) {
+      console.error('Error sending clarification message:', error);
+      return false;
+    }
+  }
+
+  /**
    * Process incoming webhook payload
    */
   async processWebhook(payload: ChatwootWebhookPayload): Promise<{ success: boolean; message: string }> {
@@ -934,36 +1308,58 @@ class ChatwootWebhookProcessor {
 
     const { userId, bucketName, contactId: finalContactId } = bucketResult.data;
 
-    // Generate GCS storage path with user bucket
-    const gcsPath = this.generateGCSPath(payload, bucketName);
+    // PCL-13a: AI-powered intent detection and routing
+    const intentResult = await this.detectIntent(payload.content || '');
+    console.log(`🎯 Intent detected: ${intentResult.intent} (confidence: ${intentResult.confidence})`);
 
-    // Attempt to store in GCS
-    const gcsSuccess = await this.storeInGCS(gcsPath, payload);
-    if (!gcsSuccess) {
-      return { success: false, message: 'Failed to store message in GCS' };
-    }
-
-    // Store in database with contact identifier
-    const dbSuccess = await this.storeInDatabase(payload, gcsPath, userId, finalContactId);
-    if (!dbSuccess) {
-      return { success: false, message: 'Failed to store message in database' };
-    }
-
-    // Process audio attachments if present
-    if (this.hasAudioAttachments(payload)) {
-      const audioSuccess = await this.processAudioAttachments(payload, bucketName, userId, finalContactId, gcsPath);
-      if (!audioSuccess) {
-        console.warn('Audio processing failed, but message was stored successfully');
+    // Route based on intent
+    if (intentResult.intent === 'ORDER') {
+      // Process as content order
+      const orderResult = await this.processOrderIntent(payload, userId, finalContactId, intentResult.parsedParams || {});
+      
+      // Still store in GCS for audit trail
+      const gcsPath = this.generateGCSPath(payload, bucketName);
+      await this.storeInGCS(gcsPath, payload);
+      await this.storeInDatabase(payload, gcsPath, userId, finalContactId);
+      
+      // Process audio attachments if present
+      if (this.hasAudioAttachments(payload)) {
+        await this.processAudioAttachments(payload, bucketName, userId, finalContactId, gcsPath);
       }
-    }
 
-    return { 
-      success: true, 
-      message: `WhatsApp message ${payload.id} processed and stored in bucket ${bucketName}`,
-      userId: userId || null,
-      bucketName,
-      whatsappNumber: whatsappNumber || null
-    };
+      return {
+        success: orderResult.success,
+        message: orderResult.message,
+        intent: 'ORDER',
+        userId: userId || null,
+        bucketName,
+        whatsappNumber: whatsappNumber || null,
+        orderId: orderResult.orderId || null
+      };
+
+    } else {
+      // Process as NOTE (default)
+      const noteResult = await this.processNoteIntent(payload, userId, finalContactId);
+      
+      // Store in GCS for audit trail
+      const gcsPath = this.generateGCSPath(payload, bucketName);
+      await this.storeInGCS(gcsPath, payload);
+      await this.storeInDatabase(payload, gcsPath, userId, finalContactId);
+      
+      // Process audio attachments if present (will add to knowledge_files)
+      if (this.hasAudioAttachments(payload)) {
+        await this.processAudioAttachments(payload, bucketName, userId, finalContactId, gcsPath);
+      }
+
+      return {
+        success: noteResult.success,
+        message: noteResult.message,
+        intent: 'NOTE',
+        userId: userId || null,
+        bucketName,
+        whatsappNumber: whatsappNumber || null
+      };
+    }
   }
 
   /**
