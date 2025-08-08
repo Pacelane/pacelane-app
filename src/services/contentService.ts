@@ -437,6 +437,47 @@ export class ContentService {
     }
   }
 
+  // ========== UI CONTENT ORDER OPERATIONS ==========
+
+  /**
+   * Create a content order from UI to trigger the agent pipeline
+   * @param orderData - Content order parameters
+   * @returns Promise with order creation result
+   */
+  static async createUIContentOrder(orderData: {
+    platform: string;
+    length: string;
+    tone: string;
+    angle: string;
+    refs?: string[];
+    original_content?: string;
+    context?: string;
+    topic?: string;
+  }): Promise<ApiResponse<{
+    orderId: string;
+    jobId: string;
+    message: string;
+  }>> {
+    try {
+      console.log('ContentService: Creating UI content order');
+
+      const { data, error } = await supabase.functions.invoke('ui-content-order', {
+        body: orderData
+      });
+
+      if (error) {
+        console.error('ContentService: UI content order error:', error);
+        throw error;
+      }
+
+      console.log('ContentService: UI content order created successfully');
+      return { data };
+    } catch (error: any) {
+      console.error('ContentService: createUIContentOrder failed:', error);
+      return { error: error.message || 'Failed to create content order' };
+    }
+  }
+
   // ========== UTILITY FUNCTIONS ==========
 
   /**

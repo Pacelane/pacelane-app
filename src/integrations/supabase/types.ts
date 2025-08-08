@@ -7,46 +7,367 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "12.2.12 (cd3cf9e)"
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          query?: string
+          operationName?: string
+          variables?: Json
+          extensions?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
+      agent_job: {
+        Row: {
+          attempts: number
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          payload_json: Json
+          run_at: string
+          started_at: string | null
+          status: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          payload_json?: Json
+          run_at?: string
+          started_at?: string | null
+          status?: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          payload_json?: Json
+          run_at?: string
+          started_at?: string | null
+          status?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      agent_run: {
+        Row: {
+          cost_cents: number | null
+          created_at: string
+          error_message: string | null
+          id: string
+          job_id: string | null
+          order_id: string | null
+          steps_json: Json
+          success: boolean
+          timings_json: Json
+          user_id: string
+        }
+        Insert: {
+          cost_cents?: number | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          job_id?: string | null
+          order_id?: string | null
+          steps_json?: Json
+          success?: boolean
+          timings_json?: Json
+          user_id: string
+        }
+        Update: {
+          cost_cents?: number | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          job_id?: string | null
+          order_id?: string | null
+          steps_json?: Json
+          success?: boolean
+          timings_json?: Json
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_run_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "agent_job"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_run_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "content_order"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audio_files: {
+        Row: {
+          chatwoot_attachment_id: number | null
+          chatwoot_attachment_url: string | null
+          contact_identifier: string | null
+          created_at: string
+          duration_seconds: number | null
+          file_path: string | null
+          id: string
+          meeting_note_id: string | null
+          openai_model: string | null
+          original_file_size: number | null
+          processed_at: string | null
+          transcription: string | null
+          transcription_error: string | null
+          transcription_status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          chatwoot_attachment_id?: number | null
+          chatwoot_attachment_url?: string | null
+          contact_identifier?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          file_path?: string | null
+          id?: string
+          meeting_note_id?: string | null
+          openai_model?: string | null
+          original_file_size?: number | null
+          processed_at?: string | null
+          transcription?: string | null
+          transcription_error?: string | null
+          transcription_status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          chatwoot_attachment_id?: number | null
+          chatwoot_attachment_url?: string | null
+          contact_identifier?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          file_path?: string | null
+          id?: string
+          meeting_note_id?: string | null
+          openai_model?: string | null
+          original_file_size?: number | null
+          processed_at?: string | null
+          transcription?: string | null
+          transcription_error?: string | null
+          transcription_status?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audio_files_meeting_note_id_fkey"
+            columns: ["meeting_note_id"]
+            isOneToOne: false
+            referencedRelation: "meeting_notes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_context: {
+        Row: {
+          content_suggestion_id: string | null
+          created_at: string
+          id: string
+          meeting_note_id: string | null
+          weight: number | null
+        }
+        Insert: {
+          content_suggestion_id?: string | null
+          created_at?: string
+          id?: string
+          meeting_note_id?: string | null
+          weight?: number | null
+        }
+        Update: {
+          content_suggestion_id?: string | null
+          created_at?: string
+          id?: string
+          meeting_note_id?: string | null
+          weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_context_content_suggestion_id_fkey"
+            columns: ["content_suggestion_id"]
+            isOneToOne: false
+            referencedRelation: "content_suggestions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_context_meeting_note_id_fkey"
+            columns: ["meeting_note_id"]
+            isOneToOne: false
+            referencedRelation: "meeting_notes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_order: {
+        Row: {
+          created_at: string
+          id: string
+          params_json: Json
+          source: string
+          triggered_by: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          params_json?: Json
+          source: string
+          triggered_by: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          params_json?: Json
+          source?: string
+          triggered_by?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      content_performance: {
+        Row: {
+          content_suggestion_id: string | null
+          created_at: string
+          engagement_metrics: Json | null
+          id: string
+          linkedin_post_id: string | null
+          performance_score: number | null
+          posted_at: string | null
+          user_id: string
+        }
+        Insert: {
+          content_suggestion_id?: string | null
+          created_at?: string
+          engagement_metrics?: Json | null
+          id?: string
+          linkedin_post_id?: string | null
+          performance_score?: number | null
+          posted_at?: string | null
+          user_id: string
+        }
+        Update: {
+          content_suggestion_id?: string | null
+          created_at?: string
+          engagement_metrics?: Json | null
+          id?: string
+          linkedin_post_id?: string | null
+          performance_score?: number | null
+          posted_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_performance_content_suggestion_id_fkey"
+            columns: ["content_suggestion_id"]
+            isOneToOne: false
+            referencedRelation: "enhanced_content_suggestions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       content_suggestions: {
         Row: {
+          call_to_action: string | null
+          content: string | null
+          content_type: string | null
+          context_sources: Json | null
           context_used: Json | null
           created_at: string
           description: string | null
+          estimated_engagement: number | null
+          full_content: string | null
+          generation_metadata: Json | null
+          generation_prompt: string | null
+          hashtags: string[] | null
           id: string
           is_active: boolean | null
+          quality_score: number | null
           suggested_outline: string | null
           title: string
           used_at: string | null
           user_id: string
+          word_count: number | null
         }
         Insert: {
+          call_to_action?: string | null
+          content?: string | null
+          content_type?: string | null
+          context_sources?: Json | null
           context_used?: Json | null
           created_at?: string
           description?: string | null
+          estimated_engagement?: number | null
+          full_content?: string | null
+          generation_metadata?: Json | null
+          generation_prompt?: string | null
+          hashtags?: string[] | null
           id?: string
           is_active?: boolean | null
+          quality_score?: number | null
           suggested_outline?: string | null
           title: string
           used_at?: string | null
           user_id: string
+          word_count?: number | null
         }
         Update: {
+          call_to_action?: string | null
+          content?: string | null
+          content_type?: string | null
+          context_sources?: Json | null
           context_used?: Json | null
           created_at?: string
           description?: string | null
+          estimated_engagement?: number | null
+          full_content?: string | null
+          generation_metadata?: Json | null
+          generation_prompt?: string | null
+          hashtags?: string[] | null
           id?: string
           is_active?: boolean | null
+          quality_score?: number | null
           suggested_outline?: string | null
           title?: string
           used_at?: string | null
           user_id?: string
+          word_count?: number | null
         }
         Relationships: []
       }
@@ -70,6 +391,60 @@ export type Database = {
           id?: string
           title?: string | null
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      enhanced_content_suggestions: {
+        Row: {
+          call_to_action: string | null
+          context_sources: Json | null
+          created_at: string
+          description: string | null
+          estimated_engagement: number | null
+          full_content: string
+          generation_metadata: Json | null
+          hashtags: string[] | null
+          id: string
+          is_active: boolean | null
+          quality_score: number | null
+          title: string
+          updated_at: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          call_to_action?: string | null
+          context_sources?: Json | null
+          created_at?: string
+          description?: string | null
+          estimated_engagement?: number | null
+          full_content: string
+          generation_metadata?: Json | null
+          hashtags?: string[] | null
+          id?: string
+          is_active?: boolean | null
+          quality_score?: number | null
+          title: string
+          updated_at?: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          call_to_action?: string | null
+          context_sources?: Json | null
+          created_at?: string
+          description?: string | null
+          estimated_engagement?: number | null
+          full_content?: string
+          generation_metadata?: Json | null
+          hashtags?: string[] | null
+          id?: string
+          is_active?: boolean | null
+          quality_score?: number | null
+          title?: string
+          updated_at?: string
+          used_at?: string | null
           user_id?: string
         }
         Relationships: []
@@ -119,6 +494,117 @@ export type Database = {
         }
         Relationships: []
       }
+      knowledge_files: {
+        Row: {
+          content_extracted: boolean | null
+          created_at: string
+          extracted_content: string | null
+          extraction_metadata: Json | null
+          file_hash: string | null
+          gcs_bucket: string | null
+          gcs_path: string | null
+          id: string
+          metadata: Json | null
+          name: string
+          size: number | null
+          storage_path: string | null
+          type: string
+          updated_at: string
+          url: string | null
+          user_id: string
+        }
+        Insert: {
+          content_extracted?: boolean | null
+          created_at?: string
+          extracted_content?: string | null
+          extraction_metadata?: Json | null
+          file_hash?: string | null
+          gcs_bucket?: string | null
+          gcs_path?: string | null
+          id?: string
+          metadata?: Json | null
+          name: string
+          size?: number | null
+          storage_path?: string | null
+          type: string
+          updated_at?: string
+          url?: string | null
+          user_id: string
+        }
+        Update: {
+          content_extracted?: boolean | null
+          created_at?: string
+          extracted_content?: string | null
+          extraction_metadata?: Json | null
+          file_hash?: string | null
+          gcs_bucket?: string | null
+          gcs_path?: string | null
+          id?: string
+          metadata?: Json | null
+          name?: string
+          size?: number | null
+          storage_path?: string | null
+          type?: string
+          updated_at?: string
+          url?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      meeting_notes: {
+        Row: {
+          chatwoot_contact_id: string | null
+          chatwoot_conversation_id: string | null
+          chatwoot_message_id: string | null
+          contact_identifier: string | null
+          content: string | null
+          created_at: string
+          error_details: string | null
+          gcs_storage_path: string | null
+          id: string
+          message_type: string | null
+          metadata: Json | null
+          processed_at: string
+          processing_status: string | null
+          source_type: string
+          user_id: string | null
+        }
+        Insert: {
+          chatwoot_contact_id?: string | null
+          chatwoot_conversation_id?: string | null
+          chatwoot_message_id?: string | null
+          contact_identifier?: string | null
+          content?: string | null
+          created_at?: string
+          error_details?: string | null
+          gcs_storage_path?: string | null
+          id?: string
+          message_type?: string | null
+          metadata?: Json | null
+          processed_at?: string
+          processing_status?: string | null
+          source_type: string
+          user_id?: string | null
+        }
+        Update: {
+          chatwoot_contact_id?: string | null
+          chatwoot_conversation_id?: string | null
+          chatwoot_message_id?: string | null
+          contact_identifier?: string | null
+          content?: string | null
+          created_at?: string
+          error_details?: string | null
+          gcs_storage_path?: string | null
+          id?: string
+          message_type?: string | null
+          metadata?: Json | null
+          processed_at?: string
+          processing_status?: string | null
+          source_type?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
@@ -155,10 +641,14 @@ export type Database = {
         Row: {
           company_linkedin: string | null
           content_guides: Json | null
+          content_pillars: Json | null
           created_at: string | null
           display_name: string | null
           goals: Json | null
+          guides: Json | null
           id: string
+          inspirations: Json | null
+          is_onboarded: boolean | null
           linkedin_about: string | null
           linkedin_company: string | null
           linkedin_data: Json | null
@@ -172,14 +662,19 @@ export type Database = {
           phone_number: string | null
           updated_at: string | null
           user_id: string
+          whatsapp_number: string | null
         }
         Insert: {
           company_linkedin?: string | null
           content_guides?: Json | null
+          content_pillars?: Json | null
           created_at?: string | null
           display_name?: string | null
           goals?: Json | null
+          guides?: Json | null
           id?: string
+          inspirations?: Json | null
+          is_onboarded?: boolean | null
           linkedin_about?: string | null
           linkedin_company?: string | null
           linkedin_data?: Json | null
@@ -193,14 +688,19 @@ export type Database = {
           phone_number?: string | null
           updated_at?: string | null
           user_id: string
+          whatsapp_number?: string | null
         }
         Update: {
           company_linkedin?: string | null
           content_guides?: Json | null
+          content_pillars?: Json | null
           created_at?: string | null
           display_name?: string | null
           goals?: Json | null
+          guides?: Json | null
           id?: string
+          inspirations?: Json | null
+          is_onboarded?: boolean | null
           linkedin_about?: string | null
           linkedin_company?: string | null
           linkedin_data?: Json | null
@@ -214,14 +714,17 @@ export type Database = {
           phone_number?: string | null
           updated_at?: string | null
           user_id?: string
+          whatsapp_number?: string | null
         }
         Relationships: []
       }
       saved_drafts: {
         Row: {
+          citations_json: Json | null
           content: string
           created_at: string
           id: string
+          order_id: string | null
           status: string
           suggestion_id: string | null
           title: string
@@ -229,9 +732,11 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          citations_json?: Json | null
           content?: string
           created_at?: string
           id?: string
+          order_id?: string | null
           status?: string
           suggestion_id?: string | null
           title: string
@@ -239,9 +744,11 @@ export type Database = {
           user_id: string
         }
         Update: {
+          citations_json?: Json | null
           content?: string
           created_at?: string
           id?: string
+          order_id?: string | null
           status?: string
           suggestion_id?: string | null
           title?: string
@@ -250,20 +757,182 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "saved_drafts_suggestion_id_fkey"
-            columns: ["suggestion_id"]
+            foreignKeyName: "saved_drafts_order_id_fkey"
+            columns: ["order_id"]
             isOneToOne: false
-            referencedRelation: "content_suggestions"
+            referencedRelation: "content_order"
             referencedColumns: ["id"]
           },
         ]
+      }
+      templates: {
+        Row: {
+          category: string | null
+          content: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          is_system: boolean | null
+          title: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          category?: string | null
+          content: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_system?: boolean | null
+          title: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          category?: string | null
+          content?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_system?: boolean | null
+          title?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      user_activity: {
+        Row: {
+          activity_count: number | null
+          activity_date: string
+          activity_type: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          activity_count?: number | null
+          activity_date: string
+          activity_type: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          activity_count?: number | null
+          activity_date?: string
+          activity_type?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_bucket_mapping: {
+        Row: {
+          bucket_name: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bucket_name: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bucket_name?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_context_analysis: {
+        Row: {
+          analysis_data: Json
+          analyzed_at: string
+          created_at: string
+          expires_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          analysis_data: Json
+          analyzed_at?: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          analysis_data?: Json
+          analyzed_at?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      whatsapp_user_mapping: {
+        Row: {
+          chatwoot_account_id: string | null
+          chatwoot_contact_id: string | null
+          created_at: string
+          id: string
+          is_verified: boolean | null
+          updated_at: string
+          user_id: string
+          whatsapp_number: string
+        }
+        Insert: {
+          chatwoot_account_id?: string | null
+          chatwoot_contact_id?: string | null
+          created_at?: string
+          id?: string
+          is_verified?: boolean | null
+          updated_at?: string
+          user_id: string
+          whatsapp_number: string
+        }
+        Update: {
+          chatwoot_account_id?: string | null
+          chatwoot_contact_id?: string | null
+          created_at?: string
+          id?: string
+          is_verified?: boolean | null
+          updated_at?: string
+          user_id?: string
+          whatsapp_number?: string
+        }
+        Relationships: []
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_streak: {
+        Args: { p_user_id: string }
+        Returns: {
+          current_streak: number
+          active_days_this_month: number
+          longest_streak: number
+          total_activities: number
+        }[]
+      }
+      track_user_activity: {
+        Args: { p_activity_type: string; p_user_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
@@ -392,7 +1061,11 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },
 } as const
+
