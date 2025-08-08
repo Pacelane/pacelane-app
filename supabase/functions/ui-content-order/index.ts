@@ -95,7 +95,7 @@ serve(async (req) => {
     // Create content order
     const contentOrderData = {
       user_id: user.id,
-      source: 'ui',
+      source: 'app',
       params_json: {
         platform: requestData.platform,
         length: requestData.length,
@@ -106,7 +106,7 @@ serve(async (req) => {
         context: requestData.context || null,
         topic: requestData.topic || null
       },
-      triggered_by: 'ui'
+      triggered_by: 'manual'
     };
 
     const { data: contentOrder, error: orderError } = await supabase
@@ -156,7 +156,7 @@ serve(async (req) => {
       orderId: contentOrder.id,
       jobId: agentJob.id,
       userId: user.id,
-      source: 'ui',
+      source: 'app',
       platform: requestData.platform,
       length: requestData.length,
       tone: requestData.tone,
