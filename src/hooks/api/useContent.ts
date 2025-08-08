@@ -527,6 +527,40 @@ export const useContent = (): ContentState & ContentActions => {
     return knowledgeFiles.filter(file => file.selected);
   };
 
+  // ========== UI CONTENT ORDER ACTIONS ==========
+
+  const createUIContentOrder = async (orderData: {
+    platform: string;
+    length: string;
+    tone: string;
+    angle: string;
+    refs?: string[];
+    original_content?: string;
+    context?: string;
+    topic?: string;
+  }) => {
+    if (!user) {
+      setError('User not authenticated');
+      return { error: 'User not authenticated' };
+    }
+
+    return await executeContentOperation(
+      async () => {
+        const result = await contentApi.createUIContentOrder(orderData);
+        if (result.data) {
+          console.log('UI content order created successfully:', result.data);
+          // Optionally reload drafts after a delay to show the new content
+          setTimeout(() => {
+            loadSavedDrafts();
+          }, 5000); // Wait 5 seconds for agent pipeline to complete
+        }
+        return result;
+      },
+      'aiLoading',
+      'Content order created successfully'
+    );
+  };
+
   // ========== SIDE EFFECTS ==========
 
   // Load all content data when user changes or component mounts
@@ -622,6 +656,9 @@ export const useContent = (): ContentState & ContentActions => {
     sendMessage,
     clearConversation,
     loadConversationMessages,
+    
+    // UI Content Order Actions
+    createUIContentOrder,
     
     // Utility Actions
     clearError,
