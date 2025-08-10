@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/api/useAuth';
 import { useContent } from '@/hooks/api/useContent';
 import { useTheme } from '@/services/theme-context';
 import { SavedDraft, ContentSuggestion } from '@/types/content';

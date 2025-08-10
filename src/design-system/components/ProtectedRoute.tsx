@@ -1,6 +1,6 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/api/useAuth';
 import { useTheme } from '@/services/theme-context';
 import { textStyles } from '@/design-system/styles/typography/typography-styles';
 import LoadingSpinner from '@/design-system/components/LoadingSpinner';

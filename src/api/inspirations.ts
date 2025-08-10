@@ -1,8 +1,8 @@
 // Inspirations API Layer - Frontend Interface
-// This is where frontend developers will mainly work for inspirations operations
-// It wraps the InspirationsService and adds frontend-specific logic
+// This layer adds frontend-specific logic and validation
 
 import { InspirationsService } from '@/services/inspirationsService';
+import { addInspirationSchema, validateData } from '@/api/schemas';
 import type { AddInspirationData } from '@/types/inspirations';
 
 /**
@@ -23,37 +23,31 @@ export const inspirationsApi = {
 
   /**
    * Add a new inspiration with LinkedIn URL
+   * Includes validation and duplicate checking
    * @param userId - User ID from auth
    * @param linkedinUrl - LinkedIn profile URL
    * @returns Promise with new inspiration data
    */
   async addInspiration(userId: string, linkedinUrl: string) {
-    // Frontend validation
-    if (!linkedinUrl.trim()) {
-      return { error: 'LinkedIn URL is required' };
-    }
+    // Normalize URL format
+    const fullUrl = this.formatLinkedInUrl(linkedinUrl);
 
-    // Basic URL validation
-    const urlPattern = /linkedin\.com\/in\//i;
-    if (!urlPattern.test(linkedinUrl)) {
-      return { error: 'Please enter a valid LinkedIn profile URL (e.g., linkedin.com/in/username)' };
+    // Validate input data
+    const validation = validateData(addInspirationSchema, { linkedinUrl: fullUrl });
+    if (!validation.success) {
+      return { error: Object.values(validation.errors!)[0] };
     }
 
     // Check if URL already exists (prevent duplicates)
-    const fullUrl = linkedinUrl.startsWith('http') 
-      ? linkedinUrl.trim() 
-      : `https://${linkedinUrl.trim()}`;
-
     const existsResult = await InspirationsService.checkUrlExists(userId, fullUrl);
     if (existsResult.error) {
-      return existsResult; // Return the error from the check
+      return existsResult;
     }
     
     if (existsResult.data) {
       return { error: 'This LinkedIn profile is already in your inspirations' };
     }
 
-    // Add the inspiration
     return InspirationsService.addInspiration(userId, { linkedinUrl: fullUrl });
   },
 

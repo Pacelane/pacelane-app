@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/api/useAuth';
 import { useContent } from '@/hooks/api/useContent';
 import { useTheme } from '@/services/theme-context';
 import { supabase } from '@/integrations/supabase/client';

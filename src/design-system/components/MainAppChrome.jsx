@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTheme } from '@/services/theme-context';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/api/useAuth';
 import { spacing } from '@/design-system/tokens/spacing';
 import HomeSidebar from '@/design-system/components/HomeSidebar';
 
