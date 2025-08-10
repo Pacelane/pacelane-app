@@ -91,7 +91,7 @@ const Badge = ({
     alignItems: 'center',
     position: 'relative',
     backgroundColor: colorConfig.backgroundColor,
-    border: border ? `${stroke.default} solid ${colorConfig.borderColor}` : 'none',
+    border: border ? `${stroke.DEFAULT} solid ${colorConfig.borderColor}` : 'none',
     cursor: onClick ? 'pointer' : 'default',
     transition: 'all 0.2s ease',
     padding: `${currentSizeConfig.padding.vertical} ${currentSizeConfig.padding.horizontal}`,

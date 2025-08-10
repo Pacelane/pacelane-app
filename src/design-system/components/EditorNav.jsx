@@ -67,7 +67,7 @@ const EditorNav = ({
   // Container styles
   const containerStyles = {
     backgroundColor: colors.bg.default,
-    borderBottom: `${stroke.default} solid ${colors.border.default}`,
+    borderBottom: `${stroke.DEFAULT} solid ${colors.border.default}`,
     paddingLeft: spacing.spacing[40],
     paddingRight: spacing.spacing[40],
     paddingTop: spacing.spacing[16],

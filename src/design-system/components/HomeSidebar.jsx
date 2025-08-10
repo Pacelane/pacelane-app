@@ -112,7 +112,7 @@ const HomeSidebar = ({
     height: '100vh',
     width: isCollapsed ? '72px' : '240px',
     backgroundColor: colors.bg.sidebar.subtle,
-    borderRight: `${stroke.default} solid ${colors.border.default}`,
+    borderRight: `${stroke.DEFAULT} solid ${colors.border.default}`,
     transition: 'width 0.3s cubic-bezier(0.4, 0.0, 0.2, 1)', // Smooth width transition
     zIndex: 1000, // Ensure sidebar is above content
   };
@@ -124,7 +124,7 @@ const HomeSidebar = ({
     justifyContent: isCollapsed ? 'center' : 'flex-start',
     padding: `${spacing.spacing[12]} ${spacing.spacing[16]}`,
     backgroundColor: colors.bg.sidebar.subtle,
-    borderBottom: `${stroke.default} solid ${colors.border.default}`,
+    borderBottom: `${stroke.DEFAULT} solid ${colors.border.default}`,
     transition: 'justify-content 0.3s cubic-bezier(0.4, 0.0, 0.2, 1)',
   };
 
@@ -135,7 +135,7 @@ const HomeSidebar = ({
     right: `-${spacing.spacing[16]}`, // Half outside the sidebar
     zIndex: 10,
     backgroundColor: colors.bg.default,
-    border: `${stroke.default} solid ${colors.border.default}`,
+    border: `${stroke.DEFAULT} solid ${colors.border.default}`,
     borderRadius: cornerRadius.borderRadius.full,
     padding: spacing.spacing[8],
     cursor: 'pointer',
@@ -151,7 +151,7 @@ const HomeSidebar = ({
     padding: `${spacing.spacing[12]} ${spacing.spacing[16]}`,
     backgroundColor: isAvatarHovered ? colors.bg.state.ghostHover : colors.bg.sidebar.subtle,
     border: 'none',
-    borderBottom: `${stroke.default} solid ${colors.border.default}`,
+    borderBottom: `${stroke.DEFAULT} solid ${colors.border.default}`,
     width: '100%',
     cursor: 'pointer',
     transition: 'background-color 0.15s ease-out, justify-content 0.3s cubic-bezier(0.4, 0.0, 0.2, 1), gap 0.3s cubic-bezier(0.4, 0.0, 0.2, 1)',
@@ -163,7 +163,7 @@ const HomeSidebar = ({
     width: '24px',
     height: '24px',
     borderRadius: cornerRadius.borderRadius.sm,
-    border: `${stroke.default} solid ${colors.border.default}`,
+    border: `${stroke.DEFAULT} solid ${colors.border.default}`,
     objectFit: 'cover',
   };
 
@@ -198,7 +198,7 @@ const HomeSidebar = ({
     gap: isCollapsed ? 0 : 'auto',
     padding: spacing.spacing[16],
     backgroundColor: colors.bg.sidebar.subtle,
-    borderTop: `${stroke.default} solid ${colors.border.default}`,
+    borderTop: `${stroke.DEFAULT} solid ${colors.border.default}`,
     transition: 'justify-content 0.3s cubic-bezier(0.4, 0.0, 0.2, 1)',
   };
 

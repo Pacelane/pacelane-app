@@ -34,3 +34,18 @@
   font-style: normal;
   font-display: swap;
 }
+
+/* Global CSS to prevent scrollbar layout shifts */
+html {
+  /* Force scrollbar to always be visible to prevent layout shifts */
+  overflow-y: scroll;
+  /* Alternative: Use scrollbar-gutter to reserve space for scrollbar */
+  scrollbar-gutter: stable;
+}
+
+body {
+  /* Remove default margins and ensure consistent layout */
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}

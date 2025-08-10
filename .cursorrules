@@ -716,4 +716,171 @@ src/design-system/components/
 - **Design Tokens**: Use design system tokens for all styling (no hardcoded values)
 - **Motion**: Include appropriate hover/focus animations using design system patterns
 - **Accessibility**: Follow accessibility best practices with proper ARIA labels and keyboard navigation
-- **Documentation**: Include clear prop interfaces and usage examples 
+- **Documentation**: Include clear prop interfaces and usage examples
+
+## Application Layout & Navigation
+
+### MainAppChrome Component
+
+The `MainAppChrome` component is the **primary layout wrapper** for all authenticated application pages. It provides consistent chrome with sidebar navigation and content structure.
+
+#### Usage Pattern
+```jsx
+// In App.tsx - MainAppChrome wraps all authenticated routes
+<Route
+  element={
+    <ProtectedRoute>
+      <MainAppChrome>
+        <Outlet />
+      </MainAppChrome>
+    </ProtectedRoute>
+  }
+>
+  <Route path="/product-home" element={<ProductHome />} />
+  <Route path="/knowledge" element={<KnowledgeBase />} />
+  <Route path="/profile" element={<Profile />} />
+  <Route path="/content-editor" element={<ContentEditor />} />
+  <Route path="/posts" element={<Posts />} />
+  <Route path="/pacing" element={<PacingPage />} />
+  <Route path="/notifications" element={<NotificationsPage />} />
+  <Route path="/plan-billing" element={<PlanBillingPage />} />
+</Route>
+```
+
+#### Layout Structure
+MainAppChrome provides:
+
+1. **Theme-Aware Background**: Uses `colors.bg.subtle` from theme context
+2. **Sidebar Navigation**: `HomeSidebar` component on the left (collapsible)
+3. **Centered Content Container**: 840px max-width with proper padding
+4. **Conditional Layout**: Hides sidebar for content editor route
+
+#### Content Container Specifications
+```javascript
+// Standard content wrapper (all pages except content editor)
+const contentWrapperStyles = {
+  width: '100%',
+  maxWidth: '840px',           // Fixed max width for consistency
+  margin: '0 auto',            // Center the content
+  paddingTop: spacing.spacing[40],      // 40px top padding
+  paddingBottom: spacing.spacing[80],   // 80px bottom padding  
+  paddingLeft: spacing.spacing[24],     // 24px left padding
+  paddingRight: spacing.spacing[24],    // 24px right padding
+  backgroundColor: 'transparent',       // Transparent for theme background
+  boxSizing: 'border-box',
+};
+```
+
+#### Route-to-Menu Mapping
+The component automatically sets active navigation state based on current route:
+
+```javascript
+// Active menu item detection
+const activeMenuItem = (() => {
+  if (location.pathname.startsWith('/product-home')) return 'home';
+  if (location.pathname.startsWith('/knowledge')) return 'knowledge';
+  if (location.pathname.startsWith('/profile')) return 'profile';
+  if (location.pathname.startsWith('/posts')) return 'history';
+  if (location.pathname.startsWith('/pacing')) return 'pacing';
+  if (location.pathname.startsWith('/notifications')) return 'notifications';
+  if (location.pathname.startsWith('/plan-billing')) return 'plan-billing';
+  return 'home'; // Default fallback
+})();
+```
+
+#### Navigation Handlers
+MainAppChrome handles all navigation through centralized menu handlers:
+
+```javascript
+const handleMenuItemClick = (menuId) => {
+  switch (menuId) {
+    case 'home': navigate('/product-home'); break;
+    case 'profile': navigate('/profile'); break;
+    case 'knowledge': navigate('/knowledge'); break;
+    case 'history': navigate('/posts'); break;
+    case 'pacing': navigate('/pacing'); break;
+    case 'notifications': navigate('/notifications'); break;
+    case 'plan-billing': navigate('/plan-billing'); break;
+    default: break;
+  }
+};
+
+// Special navigation handlers
+const handleCreateNewClick = () => navigate('/content-editor');
+const handleAvatarClick = () => navigate('/profile');
+```
+
+### Page Development Guidelines
+
+#### When Creating New Pages
+
+1. **Add Route to App.tsx**: Include the new page route inside the MainAppChrome wrapper
+2. **Import the Page Component**: Add proper import statement
+3. **Update MainAppChrome**: Add route mapping in `activeMenuItem` logic and `handleMenuItemClick` function
+4. **Page Content Structure**: All pages automatically get the 840px centered container
+
+#### Content Editor Exception
+The content editor route (`/content-editor`) has special handling:
+- **No sidebar**: `hideSidebar = location.pathname === '/content-editor'`
+- **No content wrapper**: Full-width layout for editor interface
+- **Direct children rendering**: Content is not wrapped in the centered container
+
+#### Page Implementation Pattern
+```jsx
+// All pages should follow this pattern (except content editor)
+const MyPage = () => {
+  const { colors } = useTheme();
+  
+  // Page content should be transparent - MainAppChrome provides background
+  const containerStyles = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacing.spacing[32],
+    backgroundColor: 'transparent', // ✅ Always transparent
+  };
+
+  return (
+    <div style={containerStyles}>
+      {/* Page content here */}
+      {/* MainAppChrome automatically provides 840px container + padding */}
+    </div>
+  );
+};
+```
+
+### Navigation Consistency Rules
+
+1. **Route Naming**: Use consistent path patterns (`/page-name`)
+2. **Menu ID Mapping**: Update both route detection and navigation handler
+3. **Active States**: Ensure proper active state highlighting in sidebar
+4. **Responsive Behavior**: Sidebar collapses on small screens
+5. **Theme Compatibility**: All navigation uses semantic colors
+
+### Current Route Structure
+```
+Protected Routes (wrapped by MainAppChrome):
+├── /product-home     → 'home' menu item
+├── /knowledge        → 'knowledge' menu item  
+├── /profile          → 'profile' menu item
+├── /posts            → 'history' menu item
+├── /content-editor   → Special (no sidebar)
+├── /pacing           → 'pacing' menu item
+├── /notifications    → 'notifications' menu item
+└── /plan-billing     → 'plan-billing' menu item
+
+Public Routes (no MainAppChrome):
+├── /                 → SignIn
+├── /signin           → SignIn
+└── /onboarding/*     → Onboarding flow
+```
+
+### Adding New Routes Checklist
+When adding a new authenticated page:
+
+- [ ] Add route to MainAppChrome wrapper in `App.tsx`
+- [ ] Import the new page component
+- [ ] Add route pattern to `activeMenuItem` logic in `MainAppChrome.jsx`
+- [ ] Add navigation case to `handleMenuItemClick` function
+- [ ] Ensure page uses transparent background (not hardcoded colors)
+- [ ] Test sidebar active state highlighting
+- [ ] Verify proper responsive behavior 

@@ -135,7 +135,7 @@ const TextArea = forwardRef(({
     padding: spacing.spacing[8],
     backgroundColor: getBackgroundColor(),
     borderRadius: cornerRadius.borderRadius.md,
-    border: `${stroke.default} solid ${getBorderColor()}`,
+    border: `${stroke.DEFAULT} solid ${getBorderColor()}`,
     boxShadow: getBoxShadow(),
     cursor: disabled ? 'not-allowed' : 'text',
     transition: 'all 0.15s ease-in-out',

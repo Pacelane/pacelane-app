@@ -1,9 +1,11 @@
 import { ToastProvider } from "@/design-system/components/Toast";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Outlet } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/services/theme-context";
 import ProtectedRoute from "@/design-system/components/ProtectedRoute";
+import MainAppChrome from "@/design-system/components/MainAppChrome";
 
 import ProductHome from "./pages/ProductHome";
 
@@ -32,6 +34,7 @@ const App = () => (
         <ToastProvider>
           <BrowserRouter>
           <Routes>
+            {/* Public routes */}
             <Route path="/" element={<SignIn />} />
             <Route path="/signin" element={<SignIn />} />
             <Route path="/onboarding/welcome" element={<Welcome />} />
@@ -43,48 +46,25 @@ const App = () => (
             <Route path="/onboarding/pacing" element={<Pacing />} />
             <Route path="/onboarding/contact" element={<Contact />} />
             <Route path="/onboarding/ready" element={<Ready />} />
-            <Route
-              path="/product-home" 
-              element={
-                <ProtectedRoute>
-                  <ProductHome />
-                </ProtectedRoute>
-              } 
-            />
 
-            <Route 
-              path="/knowledge" 
+            {/* Protected app chrome with sidebar and centered content */}
+            <Route
               element={
                 <ProtectedRoute>
-                  <KnowledgeBase />
+                  <MainAppChrome>
+                    <Outlet />
+                  </MainAppChrome>
                 </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/profile" 
-              element={
-                <ProtectedRoute>
-                  <Profile />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/content-editor" 
-              element={
-                <ProtectedRoute>
-                  <ContentEditor />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/posts" 
-              element={
-                <ProtectedRoute>
-                  <Posts />
-                </ProtectedRoute>
-              } 
-            />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              }
+            >
+              <Route path="/product-home" element={<ProductHome />} />
+              <Route path="/knowledge" element={<KnowledgeBase />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/content-editor" element={<ContentEditor />} />
+              <Route path="/posts" element={<Posts />} />
+            </Route>
+
+            {/* Catch-all */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

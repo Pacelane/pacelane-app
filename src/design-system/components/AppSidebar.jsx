@@ -35,7 +35,7 @@ const AppSidebar = ({
     height: '100vh',
     width: isCollapsed ? '72px' : '280px',
     backgroundColor: colors.bg.card.default,
-    borderRight: `${stroke.default} solid ${colors.border.default}`,
+    borderRight: `${stroke.DEFAULT} solid ${colors.border.default}`,
     transition: 'width 0.3s ease-in-out',
     overflow: 'hidden',
   };
@@ -46,7 +46,7 @@ const AppSidebar = ({
     alignItems: 'center',
     gap: spacing.spacing[12],
     padding: spacing.spacing[16],
-    borderBottom: `${stroke.default} solid ${colors.border.default}`,
+    borderBottom: `${stroke.DEFAULT} solid ${colors.border.default}`,
     minHeight: '64px',
   };
 
@@ -87,7 +87,7 @@ const AppSidebar = ({
     justifyContent: 'space-between',
     gap: spacing.spacing[8],
     padding: spacing.spacing[16],
-    borderTop: `${stroke.default} solid ${colors.border.default}`,
+    borderTop: `${stroke.DEFAULT} solid ${colors.border.default}`,
   };
 
   // User menu button
