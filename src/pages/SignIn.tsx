@@ -67,7 +67,7 @@ const SignIn = () => {
           password: data.password,
           options: {
             data: {
-              display_name: data.name
+              display_name: (data as SignUpFormData).name
             }
           }
         });
@@ -112,7 +112,7 @@ const SignIn = () => {
   };
 
   // Page container styles
-  const pageContainerStyles = {
+  const pageContainerStyles: React.CSSProperties = {
     height: '100vh',
     width: '100%',
     display: 'flex',
@@ -121,15 +121,15 @@ const SignIn = () => {
   };
 
   // Left column styles (50% width, 720px container)
-  const leftColumnStyles = {
+  const leftColumnStyles: React.CSSProperties = {
     width: '50%',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacing.spacing[40],
-    boxSizing: 'border-box' as const,
-    position: 'relative' as const,
+    boxSizing: 'border-box',
+    position: 'relative',
     zIndex: 5,
   };
 
@@ -211,11 +211,6 @@ const SignIn = () => {
             <div style={formContainerStyles}>
               {/* Heading Container */}
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: spacing.spacing[4] }}>
-                {/* Bichaurinho 31 */}
-                <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                  <Bichaurinho variant={31} size={32} />
-                </div>
-
                 <h1 style={{
                   ...textStyles['2xl'].semibold,
                   color: colors.text.default,
@@ -249,8 +244,8 @@ const SignIn = () => {
                       onChange={(e) => form.setValue('name', e.target.value, { shouldValidate: true })}
                       required
                       size="lg"
-                      failed={!!form.formState.errors.name}
-                      caption={form.formState.errors.name?.message}
+                      failed={!!(form.formState.errors as any).name}
+                      caption={(form.formState.errors as any).name?.message}
                     />
                   )}
 
