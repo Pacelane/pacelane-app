@@ -30,6 +30,11 @@
       "source": "/content-editor",
       "destination": "/content-editor/",
       "permanent": true
+    },
+    {
+      "source": "/auth/google-calendar/callback",
+      "destination": "/auth/google-calendar/callback/",
+      "permanent": true
     }
   ],
   "headers": [
