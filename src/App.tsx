@@ -98,11 +98,7 @@ const App = () => (
             />
             <Route 
               path="/auth/google-calendar/callback" 
-              element={
-                <ProtectedRoute>
-                  <GoogleCalendarCallback />
-                </ProtectedRoute>
-              } 
+              element={<GoogleCalendarCallback />} 
             />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

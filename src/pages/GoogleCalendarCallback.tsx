@@ -12,6 +12,10 @@ export const GoogleCalendarCallback: React.FC = () => {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('Processing Google Calendar authorization...');
 
+  // Debug logging
+  console.log('GoogleCalendarCallback component mounted');
+  console.log('Search params:', searchParams.toString());
+
   useEffect(() => {
     const handleCallback = async () => {
       try {
