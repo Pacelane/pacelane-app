@@ -1,7 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { google } from 'https://esm.sh/googleapis@128.0.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -164,13 +163,20 @@ async function handleCallback(req: Request, supabase: any) {
     throw new Error('User ID not provided in state parameter');
   }
 
-  // Get user's primary calendar
-  const calendar = google.calendar({ version: 'v3' });
-  const calendarResponse = await calendar.calendarList.list({
-    access_token: tokens.access_token,
+  // Get user's primary calendar using direct API call
+  const calendarResponse = await fetch('https://www.googleapis.com/calendar/v3/users/me/calendarList', {
+    headers: {
+      'Authorization': `Bearer ${tokens.access_token}`,
+      'Content-Type': 'application/json',
+    },
   });
 
-  const primaryCalendar = calendarResponse.data.items?.find(cal => cal.primary);
+  if (!calendarResponse.ok) {
+    throw new Error('Failed to fetch calendar list');
+  }
+
+  const calendarData = await calendarResponse.json();
+  const primaryCalendar = calendarData.items?.find((cal: any) => cal.primary);
   
   if (!primaryCalendar) {
     throw new Error('No primary calendar found');
@@ -236,7 +242,6 @@ async function handleSync(req: Request, supabase: any) {
   }
 
   let totalEvents = 0;
-  const calendar = google.calendar({ version: 'v3' });
 
   for (const userCalendar of calendars) {
     // Check if token needs refresh
@@ -260,16 +265,26 @@ async function handleSync(req: Request, supabase: any) {
     const timeMax = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
     try {
-      const eventsResponse = await calendar.events.list({
-        calendarId: userCalendar.calendar_id,
-        timeMin,
-        timeMax,
-        singleEvents: true,
-        orderBy: 'startTime',
-        access_token: userCalendar.access_token,
+      // Build the API URL with query parameters
+      const eventsUrl = new URL(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(userCalendar.calendar_id)}/events`);
+      eventsUrl.searchParams.set('timeMin', timeMin);
+      eventsUrl.searchParams.set('timeMax', timeMax);
+      eventsUrl.searchParams.set('singleEvents', 'true');
+      eventsUrl.searchParams.set('orderBy', 'startTime');
+
+      const eventsResponse = await fetch(eventsUrl.toString(), {
+        headers: {
+          'Authorization': `Bearer ${userCalendar.access_token}`,
+          'Content-Type': 'application/json',
+        },
       });
 
-      const events = eventsResponse.data.items || [];
+      if (!eventsResponse.ok) {
+        throw new Error(`Failed to fetch events: ${eventsResponse.statusText}`);
+      }
+
+      const eventsData = await eventsResponse.json();
+      const events = eventsData.items || [];
       
       // Process and store events
       for (const event of events) {

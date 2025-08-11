@@ -13,6 +13,7 @@ import KnowledgeBase from "./pages/KnowledgeBase";
 import SignIn from "./pages/SignIn";
 import Profile from "./pages/Profile";
 import ContentEditor from "./pages/ContentEditor";
+import { GoogleCalendarCallback } from "./pages/GoogleCalendarCallback";
 import Posts from "./pages/Posts";
 import Welcome from "./pages/Onboarding/Welcome";
 import FirstThingsFirst from "./pages/Onboarding/FirstThingsFirst";
@@ -92,6 +93,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Posts />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/auth/google-calendar/callback" 
+              element={
+                <ProtectedRoute>
+                  <GoogleCalendarCallback />
                 </ProtectedRoute>
               } 
             />

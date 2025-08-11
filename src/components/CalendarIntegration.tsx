@@ -63,8 +63,8 @@ export const CalendarIntegration: React.FC<CalendarIntegrationProps> = ({ onMeet
           const authUrl = new URL(result.authUrl);
           authUrl.searchParams.set('state', userId);
           
-          // Open OAuth flow in new window
-          window.open(authUrl.toString(), '_blank', 'width=500,height=600');
+          // Redirect in the same window instead of popup for better OAuth handling
+          window.location.href = authUrl.toString();
           
           toast({
             title: "Calendar Connection",
