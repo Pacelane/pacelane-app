@@ -41,13 +41,21 @@ export class CalendarService {
   // Get OAuth URL for Google Calendar connection
   static async getAuthUrl(): Promise<{ success: boolean; authUrl?: string; error?: string }> {
     try {
+      console.log('CalendarService: Calling google-calendar-sync with action: auth-url');
+      
       const { data, error } = await supabase.functions.invoke('google-calendar-sync', {
         body: { action: 'auth-url' }
       });
 
+      console.log('CalendarService: Edge function response:', { data, error });
+
       if (error) {
         console.error('CalendarService: getAuthUrl error:', error);
         throw error;
+      }
+
+      if (!data || !data.authUrl) {
+        throw new Error('No auth URL returned from Edge Function');
       }
 
       return { success: true, authUrl: data.authUrl };

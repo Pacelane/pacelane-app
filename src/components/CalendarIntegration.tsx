@@ -6,6 +6,7 @@ import { Calendar, RefreshCw, Link, Unlink, Clock, Users, MapPin } from 'lucide-
 import { CalendarService, CalendarConnection, CalendarEvent } from '@/services/calendarService';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface CalendarIntegrationProps {
   onMeetingSelect?: (meeting: CalendarEvent) => void;
@@ -19,6 +20,7 @@ export const CalendarIntegration: React.FC<CalendarIntegrationProps> = ({ onMeet
   const [recentMeetings, setRecentMeetings] = useState<CalendarEvent[]>([]);
   const [hasCalendars, setHasCalendars] = useState(false);
   const { toast } = useToast();
+  const { user, loading } = useAuth();
 
   useEffect(() => {
     checkCalendarStatus();
@@ -52,27 +54,27 @@ export const CalendarIntegration: React.FC<CalendarIntegrationProps> = ({ onMeet
   const handleConnectCalendar = async () => {
     setIsConnecting(true);
     try {
+      if (loading) {
+        throw new Error('Authentication loading...');
+      }
+      
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
       const result = await CalendarService.getAuthUrl();
       if (result.success && result.authUrl) {
-        // Store user ID in localStorage for the callback
-        const user = JSON.parse(localStorage.getItem('supabase.auth.token') || '{}');
-        const userId = user?.currentSession?.user?.id;
+        // Add user ID to state parameter for OAuth callback
+        const authUrl = new URL(result.authUrl);
+        authUrl.searchParams.set('state', user.id);
         
-        if (userId) {
-          // Add user ID to state parameter for OAuth callback
-          const authUrl = new URL(result.authUrl);
-          authUrl.searchParams.set('state', userId);
-          
-          // Redirect in the same window instead of popup for better OAuth handling
-          window.location.href = authUrl.toString();
-          
-          toast({
-            title: "Calendar Connection",
-            description: "Please complete the Google Calendar authorization in the new window.",
-          });
-        } else {
-          throw new Error('User not authenticated');
-        }
+        // Redirect in the same window instead of popup for better OAuth handling
+        window.location.href = authUrl.toString();
+        
+        toast({
+          title: "Calendar Connection",
+          description: "Please complete the Google Calendar authorization in the new window.",
+        });
       } else {
         throw new Error(result.error || 'Failed to get auth URL');
       }
@@ -168,7 +170,7 @@ export const CalendarIntegration: React.FC<CalendarIntegrationProps> = ({ onMeet
         <CardContent>
           <Button 
             onClick={handleConnectCalendar} 
-            disabled={isConnecting}
+            disabled={isConnecting || loading || !user}
             className="w-full"
           >
             {isConnecting ? (
