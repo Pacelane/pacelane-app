@@ -42,8 +42,7 @@ export class CalendarService {
   static async getAuthUrl(): Promise<{ success: boolean; authUrl?: string; error?: string }> {
     try {
       const { data, error } = await supabase.functions.invoke('google-calendar-sync', {
-        body: {},
-        query: { action: 'auth-url' }
+        body: { action: 'auth-url' }
       });
 
       if (error) {
@@ -62,8 +61,7 @@ export class CalendarService {
   static async handleCallback(code: string, state: string): Promise<{ success: boolean; message?: string; error?: string }> {
     try {
       const { data, error } = await supabase.functions.invoke('google-calendar-sync', {
-        body: {},
-        query: { 
+        body: { 
           action: 'callback',
           code,
           state
@@ -86,8 +84,7 @@ export class CalendarService {
   static async syncCalendar(): Promise<CalendarSyncResult> {
     try {
       const { data, error } = await supabase.functions.invoke('google-calendar-sync', {
-        body: {},
-        query: { action: 'sync' }
+        body: { action: 'sync' }
       });
 
       if (error) {
@@ -119,14 +116,13 @@ export class CalendarService {
     limit?: number;
   }): Promise<CalendarEventsResult> {
     try {
-      const query: any = { action: 'events' };
-      if (options?.start) query.start = options.start;
-      if (options?.end) query.end = options.end;
-      if (options?.limit) query.limit = options.limit;
+      const body: any = { action: 'events' };
+      if (options?.start) body.start = options.start;
+      if (options?.end) body.end = options.end;
+      if (options?.limit) body.limit = options.limit;
 
       const { data, error } = await supabase.functions.invoke('google-calendar-sync', {
-        body: {},
-        query
+        body
       });
 
       if (error) {
@@ -172,12 +168,11 @@ export class CalendarService {
   // Disconnect calendar
   static async disconnectCalendar(calendarId?: string): Promise<{ success: boolean; message?: string; error?: string }> {
     try {
-      const query: any = { action: 'disconnect' };
-      if (calendarId) query.calendar_id = calendarId;
+      const body: any = { action: 'disconnect' };
+      if (calendarId) body.calendar_id = calendarId;
 
       const { data, error } = await supabase.functions.invoke('google-calendar-sync', {
-        body: {},
-        query
+        body
       });
 
       if (error) {

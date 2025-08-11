@@ -44,8 +44,19 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Try to get action from URL params first, then from body
     const url = new URL(req.url);
-    const action = url.searchParams.get('action');
+    let action = url.searchParams.get('action');
+    
+    // If no action in URL, try to get it from request body
+    if (!action && req.method === 'POST') {
+      try {
+        const body = await req.json();
+        action = body.action;
+      } catch (e) {
+        console.log('Could not parse request body as JSON');
+      }
+    }
 
     switch (action) {
       case 'auth-url':
@@ -118,8 +129,19 @@ async function handleAuthUrl(req: Request) {
 // Handle OAuth callback and store tokens
 async function handleCallback(req: Request, supabase: any) {
   const url = new URL(req.url);
-  const code = url.searchParams.get('code');
-  const state = url.searchParams.get('state'); // Could include user_id
+  let code = url.searchParams.get('code');
+  let state = url.searchParams.get('state');
+  
+  // If not in URL params, try to get from request body
+  if (!code && req.method === 'POST') {
+    try {
+      const body = await req.json();
+      code = body.code;
+      state = body.state;
+    } catch (e) {
+      console.log('Could not parse callback request body');
+    }
+  }
   
   if (!code) {
     throw new Error('Authorization code not provided');
@@ -355,9 +377,21 @@ async function handleGetEvents(req: Request, supabase: any) {
   }
 
   const url = new URL(req.url);
-  const startDate = url.searchParams.get('start');
-  const endDate = url.searchParams.get('end');
-  const limit = parseInt(url.searchParams.get('limit') || '50');
+  let startDate = url.searchParams.get('start');
+  let endDate = url.searchParams.get('end');
+  let limit = parseInt(url.searchParams.get('limit') || '50');
+  
+  // If not in URL params, try to get from request body
+  if (req.method === 'POST') {
+    try {
+      const body = await req.json();
+      startDate = body.start || startDate;
+      endDate = body.end || endDate;
+      limit = body.limit || limit;
+    } catch (e) {
+      console.log('Could not parse events request body');
+    }
+  }
 
   let query = supabase
     .from('calendar_events')
@@ -411,7 +445,17 @@ async function handleDisconnect(req: Request, supabase: any) {
   }
 
   const url = new URL(req.url);
-  const calendarId = url.searchParams.get('calendar_id');
+  let calendarId = url.searchParams.get('calendar_id');
+  
+  // If not in URL params, try to get from request body
+  if (!calendarId && req.method === 'POST') {
+    try {
+      const body = await req.json();
+      calendarId = body.calendar_id;
+    } catch (e) {
+      console.log('Could not parse disconnect request body');
+    }
+  }
 
   if (calendarId) {
     // Disconnect specific calendar
