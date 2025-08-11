@@ -47,12 +47,13 @@ serve(async (req) => {
     // Try to get action from URL params first, then from body
     const url = new URL(req.url);
     let action = url.searchParams.get('action');
+    let requestBody: any = null;
     
     // If no action in URL, try to get it from request body
     if (!action && req.method === 'POST') {
       try {
-        const body = await req.json();
-        action = body.action;
+        requestBody = await req.json();
+        action = requestBody.action;
       } catch (e) {
         console.log('Could not parse request body as JSON');
       }
@@ -63,7 +64,7 @@ serve(async (req) => {
         return await handleAuthUrl(req);
       
       case 'callback':
-        return await handleCallback(req, supabase);
+        return await handleCallback(req, supabase, requestBody);
       
       case 'sync':
         return await handleSync(req, supabase);
@@ -127,21 +128,19 @@ async function handleAuthUrl(req: Request) {
 }
 
 // Handle OAuth callback and store tokens
-async function handleCallback(req: Request, supabase: any) {
+async function handleCallback(req: Request, supabase: any, requestBody?: any) {
   const url = new URL(req.url);
   let code = url.searchParams.get('code');
   let state = url.searchParams.get('state');
   
   // If not in URL params, try to get from request body
-  if (!code && req.method === 'POST') {
-    try {
-      const body = await req.json();
-      code = body.code;
-      state = body.state;
-    } catch (e) {
-      console.log('Could not parse callback request body');
-    }
+  if (!code && requestBody) {
+    code = requestBody.code;
+    state = requestBody.state;
   }
+  
+  console.log('Callback - code:', code ? 'present' : 'missing');
+  console.log('Callback - state:', state ? 'present' : 'missing');
   
   if (!code) {
     throw new Error('Authorization code not provided');

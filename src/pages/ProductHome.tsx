@@ -29,6 +29,7 @@ import { ChevronRight, Search } from 'lucide-react';
 
 // Additional Components
 import { CalendarIntegration } from '@/components/CalendarIntegration';
+import { ReadAiIntegration } from '@/components/ReadAiIntegration';
 
 const ProductHome = () => {
   const navigate = useNavigate();
@@ -581,6 +582,14 @@ const ProductHome = () => {
             onMeetingSelect={(meeting) => {
               console.log('Meeting selected:', meeting);
               navigate('/content-editor', { state: { meeting } });
+            }}
+          />
+
+          {/* Read.ai Integration Section */}
+          <ReadAiIntegration 
+            onMeetingSelect={(meeting) => {
+              console.log('Read.ai meeting selected:', meeting);
+              navigate('/content-editor', { state: { readAiMeeting: meeting } });
             }}
           />
 
