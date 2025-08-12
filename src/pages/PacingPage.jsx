@@ -8,12 +8,12 @@ import { textStyles } from '../design-system/styles/typography/typography-styles
 
 // Design System Components
 import Button from '../design-system/components/Button.jsx';
-import ButtonGroup from '../design-system/components/ButtonGroup.jsx';
+import DropdownButton from '../design-system/components/DropdownButton.jsx';
 import Checkbox from '../design-system/components/Checkbox.jsx';
 import SidebarMenuItem from '../design-system/components/SidebarMenuItem.jsx';
 
 // Icons
-import { ChevronDown, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
 
 const PacingPage = () => {
   const { colors } = useTheme();
@@ -120,23 +120,14 @@ const PacingPage = () => {
     }, 2000);
   };
 
-  const DropdownButton = ({ value, options, onChange, placeholder = "Select an option" }) => (
-    <div style={{ position: 'relative' }}>
-      <Button
-        label={value || placeholder}
-        style="secondary"
-        size="sm"
-        tailIcon={<ChevronDown size={14} />}
-        onClick={() => {
-          // In a real implementation, this would open a dropdown
-          // For now, we'll cycle through options
-          const currentIndex = options.indexOf(value);
-          const nextIndex = (currentIndex + 1) % options.length;
-          onChange(options[nextIndex]);
-        }}
-      />
-    </div>
-  );
+  // Helper function to create dropdown items from options
+  const createDropdownItems = (options, onChange) => {
+    return options.map((option) => ({
+      id: option,
+      label: option,
+      onClick: () => onChange(option)
+    }));
+  };
 
 
 
@@ -204,9 +195,9 @@ const PacingPage = () => {
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[16] }}>
               <DropdownButton
-                value={dailySummaryTime}
-                options={timeOptions}
-                onChange={setDailySummaryTime}
+                label={dailySummaryTime}
+                items={createDropdownItems(timeOptions, setDailySummaryTime)}
+                size="sm"
               />
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[8] }}>
@@ -214,9 +205,9 @@ const PacingPage = () => {
                   Follow-Ups
                 </h4>
                 <DropdownButton
-                  value={followUps}
-                  options={followUpOptions}
-                  onChange={setFollowUps}
+                  label={followUps}
+                  items={createDropdownItems(followUpOptions, setFollowUps)}
+                  size="sm"
                 />
                 <p style={{ ...textStyles.xs.normal, color: colors.text.subtle, margin: 0 }}>
                   Define how many follow-ups should we make in case you don't respond to our first message
@@ -250,9 +241,9 @@ const PacingPage = () => {
             </div>
             
             <DropdownButton
-              value={recommendationsTime}
-              options={recommendationOptions}
-              onChange={setRecommendationsTime}
+              label={recommendationsTime}
+              items={createDropdownItems(recommendationOptions, setRecommendationsTime)}
+              size="sm"
             />
 
             <div style={{ alignSelf: 'flex-start' }}>
@@ -281,9 +272,9 @@ const PacingPage = () => {
             </div>
             
             <DropdownButton
-              value={contextSessionsTime}
-              options={contextOptions}
-              onChange={setContextSessionsTime}
+              label={contextSessionsTime}
+              items={createDropdownItems(contextOptions, setContextSessionsTime)}
+              size="sm"
             />
 
             <div style={{ alignSelf: 'flex-start' }}>

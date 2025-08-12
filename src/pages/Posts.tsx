@@ -9,8 +9,10 @@ import { useToast } from '@/design-system/components/Toast';
 // Design System Components (sidebar provided by MainAppChrome)
 import ContentCard from '@/design-system/components/ContentCard';
 import Input from '@/design-system/components/Input';
-import DropdownMenu from '@/design-system/components/DropdownMenu';
+import DropdownButton from '@/design-system/components/DropdownButton';
 import Button from '@/design-system/components/Button';
+import EmptyState from '@/design-system/components/EmptyState';
+import Tabs from '@/design-system/components/Tabs';
 
 // Design System Tokens
 import { spacing } from '@/design-system/tokens/spacing';
@@ -20,7 +22,7 @@ import { cornerRadius } from '@/design-system/tokens/corner-radius';
 import { getShadow } from '@/design-system/tokens/shadows';
 
 // Icons
-import { Search, ChevronDown, Plus, FileText } from 'lucide-react';
+import { Search, Plus, FileText } from 'lucide-react';
 
 const Posts = () => {
   const navigate = useNavigate();
@@ -43,12 +45,11 @@ const Posts = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'draft' | 'published' | 'archived'>('all');
   const [sortBy, setSortBy] = useState('lastEdited');
-  const [showSortDropdown, setShowSortDropdown] = useState(false);
 
   // Content container is wrapped by MainAppChrome
 
   // Content container styles
-  const containerStyles = {
+  const containerStyles: React.CSSProperties = {
     width: '100%',
     maxWidth: '1200px',
     margin: '0 auto',
@@ -93,6 +94,18 @@ const Posts = () => {
     { label: 'Z-A', onClick: () => setSortBy('nameDesc') },
   ];
 
+  // Get current sort label
+  const getCurrentSortLabel = () => {
+    const option = sortOptions.find(opt => 
+      (sortBy === 'lastEdited' && opt.label === 'Last Edited') ||
+      (sortBy === 'newest' && opt.label === 'Newest First') ||
+      (sortBy === 'oldest' && opt.label === 'Oldest First') ||
+      (sortBy === 'nameAsc' && opt.label === 'A-Z') ||
+      (sortBy === 'nameDesc' && opt.label === 'Z-A')
+    );
+    return option?.label || 'Last Edited';
+  };
+
   // Filter drafts based on search and filter
   const getFilteredDrafts = () => {
     return savedDrafts.filter(draft => {
@@ -111,9 +124,9 @@ const Posts = () => {
       case 'nameDesc':
         return [...drafts].sort((a, b) => (b.title || '').localeCompare(a.title || ''));
       case 'newest':
-        return [...drafts].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+        return [...drafts].sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
       case 'oldest':
-        return [...drafts].sort((a, b) => new Date(a.updated_at) - new Date(b.updated_at));
+        return [...drafts].sort((a, b) => new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime());
       case 'lastEdited':
       default:
         return drafts; // Already sorted by updated_at from backend
@@ -267,7 +280,7 @@ const Posts = () => {
   };
 
   // Section styles
-  const sectionStyles = {
+  const sectionStyles: React.CSSProperties = {
     display: 'flex',
     flexDirection: 'column',
     gap: spacing.spacing[16],
@@ -295,27 +308,13 @@ const Posts = () => {
           {/* Controls Row - Filter Tabs, Search and Sort */}
           <div style={controlRowStyles}>
             {/* Left: Filter Tabs */}
-            <div style={{ display: 'flex', gap: spacing.spacing[8] }}>
-              {filterTabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  style={{
-                    padding: `${spacing.spacing[8]} ${spacing.spacing[12]}`,
-                    backgroundColor: selectedFilter === tab.id ? colors.bg.state.ghostHover : colors.bg.card.default,
-                    border: `1px solid ${selectedFilter === tab.id ? colors.border.highlight : colors.border.default}`,
-                    borderRadius: cornerRadius.borderRadius.sm,
-                    color: selectedFilter === tab.id ? colors.text.default : colors.text.subtle,
-                    fontSize: textStyles.sm.normal.fontSize,
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease-in-out',
-                    textTransform: 'capitalize',
-                  }}
-                  onClick={() => setSelectedFilter(tab.id as any)}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
+            <Tabs
+              style="segmented"
+              type="default"
+              tabs={filterTabs}
+              activeTab={selectedFilter}
+              onTabChange={setSelectedFilter}
+            />
 
             {/* Right: Search and Sort */}
             <div style={rightSectionStyles}>
@@ -332,41 +331,13 @@ const Posts = () => {
               </div>
 
               {/* Sort Dropdown */}
-              <div style={{ position: 'relative' }}>
-                <button
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: spacing.spacing[8],
-                    padding: `${spacing.spacing[8]} ${spacing.spacing[12]}`,
-                    backgroundColor: colors.bg.card.default,
-                    border: `1px solid ${colors.border.default}`,
-                    borderRadius: cornerRadius.borderRadius.sm,
-                    color: colors.text.default,
-                    fontSize: textStyles.sm.normal.fontSize,
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease-in-out',
-                  }}
-                  onClick={() => setShowSortDropdown(!showSortDropdown)}
-                >
-                  {sortOptions.find(opt => 
-                    (sortBy === 'lastEdited' && opt.label === 'Last Edited') ||
-                    (sortBy === 'newest' && opt.label === 'Newest First') ||
-                    (sortBy === 'oldest' && opt.label === 'Oldest First') ||
-                    (sortBy === 'nameAsc' && opt.label === 'A-Z') ||
-                    (sortBy === 'nameDesc' && opt.label === 'Z-A')
-                  )?.label || 'Last Edited'}
-                  <ChevronDown size={12} />
-                </button>
-                
-                <DropdownMenu
-                  isOpen={showSortDropdown}
-                  onClose={() => setShowSortDropdown(false)}
-                  items={sortOptions}
-                  position="bottom-right"
-                  minWidth="160px"
-                />
-              </div>
+              <DropdownButton
+                label={getCurrentSortLabel()}
+                items={sortOptions}
+                size="lg"
+                position="bottom-right"
+                minWidth="160px"
+              />
                                   </div>
                                 </div>
 
@@ -393,38 +364,18 @@ const Posts = () => {
 
           {/* Content Sections */}
           {!isLoading && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[32] }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[32] } as React.CSSProperties}>
               {/* Saved Drafts Section */}
               <div style={sectionStyles}>
                 <h2 style={sectionTitleStyle}>Saved Drafts</h2>
                 
                 {draftCards.length === 0 ? (
-                  <div style={{
-                    backgroundColor: colors.bg.card.default,
-                    border: `1px solid ${colors.border.default}`,
-                    borderRadius: cornerRadius.borderRadius.lg,
-                    boxShadow: getShadow('regular.card', colors, { withBorder: true }),
-                    padding: spacing.spacing[32],
-                    textAlign: 'center',
-                  }}>
-                    <FileText style={{ 
-                      width: '48px', 
-                      height: '48px', 
-                      color: colors.text.muted,
-                      margin: '0 auto',
-                      marginBottom: spacing.spacing[16],
-                    }} />
-                    <p style={{ ...textStyles.sm.medium, color: colors.text.subtle, margin: 0, marginBottom: spacing.spacing[16] }}>
-                      No drafts found. Start writing to create your first draft!
-                    </p>
-                    <Button
-                      label="Create New Post"
-                      style="primary"
-                      size="sm"
-                      leadIcon={<Plus size={16} />}
-                      onClick={handleCreateNewClick}
-                    />
-                              </div>
+                  <EmptyState
+                    title="No drafts found"
+                    subtitle="Start writing to create your first draft!"
+                    buttonLabel="Create New Post"
+                    onButtonClick={handleCreateNewClick}
+                  />
                 ) : (
                   <div style={contentGridStyles}>
                     {draftCards.map((draft) => (
@@ -450,18 +401,10 @@ const Posts = () => {
                 <h2 style={sectionTitleStyle}>Unused Content Suggestions</h2>
                 
                 {suggestionCards.length === 0 ? (
-                  <div style={{
-                    backgroundColor: colors.bg.card.default,
-                    border: `1px solid ${colors.border.default}`,
-                    borderRadius: cornerRadius.borderRadius.lg,
-                    boxShadow: getShadow('regular.card', colors, { withBorder: true }),
-                    padding: spacing.spacing[32],
-                    textAlign: 'center',
-                  }}>
-                    <p style={{ ...textStyles.sm.medium, color: colors.text.subtle, margin: 0 }}>
-                      No unused suggestions available.
-                    </p>
-                                </div>
+                  <EmptyState
+                    title="No unused suggestions available"
+                    subtitle="All content suggestions have been used or there are none yet"
+                  />
                 ) : (
                   <div style={contentGridStyles}>
                     {suggestionCards.map((suggestion) => (

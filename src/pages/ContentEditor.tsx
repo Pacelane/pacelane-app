@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/api/useAuth';
 import { useContent } from '@/hooks/api/useContent';
 import { useTheme } from '@/services/theme-context';
+import { useHelp } from '../services/help-context';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/design-system/components/Toast';
 
@@ -13,6 +14,7 @@ import ButtonGroup from '@/design-system/components/ButtonGroup';
 import SidebarMenuItem from '@/design-system/components/SidebarMenuItem';
 import Input from '@/design-system/components/Input';
 import Bichaurinho from '@/design-system/components/Bichaurinho';
+import EmptyState from '@/design-system/components/EmptyState';
 
 // Design System Tokens
 import { spacing } from '@/design-system/tokens/spacing';
@@ -61,6 +63,7 @@ const ContentEditor = () => {
   const location = useLocation();
   const { user } = useAuth();
   const { colors, themePreference, setTheme } = useTheme();
+  const { openHelp } = useHelp();
   
   // ========== CLEAN CONTENT STATE MANAGEMENT ==========
   const {
@@ -834,7 +837,10 @@ const ContentEditor = () => {
               style="dashed"
               size="xs"
               leadIcon={<HelpCircle size={12} />}
-              onClick={() => console.log('Help clicked')}
+              onClick={() => openHelp({
+                section: 'Content Editor',
+                action: 'Clicked help button from content editor'
+              })}
             />
         </div>
       </div>

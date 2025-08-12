@@ -4,16 +4,23 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Outlet } from "react-router-dom";
 
 import { ThemeProvider } from "@/services/theme-context";
-import ProtectedRoute from "@/design-system/components/ProtectedRoute";
-import MainAppChrome from "@/design-system/components/MainAppChrome";
+import { HelpProvider } from "./services/help-context";
+import ProtectedRoute from "./design-system/components/ProtectedRoute";
+import MainAppChrome from "./design-system/components/MainAppChrome";
+import HelpModal from "./design-system/components/HelpModal";
 
 import ProductHome from "./pages/ProductHome";
+import Templates from "./pages/Templates";
 
 import KnowledgeBase from "./pages/KnowledgeBase";
 import SignIn from "./pages/SignIn";
 import Profile from "./pages/Profile";
 import ContentEditor from "./pages/ContentEditor";
 import Posts from "./pages/Posts";
+import PacingPage from "./pages/PacingPage";
+import IntegrationsPage from "./pages/IntegrationsPage";
+import PlanBillingPage from "./pages/PlanBillingPage";
+import NotificationsPage from "./pages/NotificationsPage";
 import Welcome from "./pages/Onboarding/Welcome";
 import FirstThingsFirst from "./pages/Onboarding/FirstThingsFirst";
 import Inspirations from "./pages/Onboarding/Inspirations";
@@ -30,8 +37,9 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
-      <ToastProvider>
-        <BrowserRouter>
+      <HelpProvider>
+        <ToastProvider>
+          <BrowserRouter>
         <Routes>
           {/* Public routes */}
           <Route path="/" element={<SignIn />} />
@@ -57,17 +65,26 @@ const App = () => (
             }
           >
             <Route path="/product-home" element={<ProductHome />} />
+            <Route path="/templates" element={<Templates />} />
             <Route path="/knowledge" element={<KnowledgeBase />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/content-editor" element={<ContentEditor />} />
             <Route path="/posts" element={<Posts />} />
+            <Route path="/pacing" element={<PacingPage />} />
+            <Route path="/integrations" element={<IntegrationsPage />} />
+            <Route path="/notifications" element={<NotificationsPage />} />
+            <Route path="/plan-billing" element={<PlanBillingPage />} />
           </Route>
 
           {/* Catch-all */}
           <Route path="*" element={<NotFound />} />
         </Routes>
+        
+        {/* Global Help Modal */}
+        <HelpModal />
       </BrowserRouter>
       </ToastProvider>
+      </HelpProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );

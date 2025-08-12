@@ -3,29 +3,190 @@ import { useTheme } from '../services/theme-context.jsx';
 import { spacing } from '../design-system/tokens/spacing.js';
 import { textStyles } from '../design-system/styles/typography/typography-styles.js';
 import { typography } from '../design-system/tokens/typography.js';
-import { 
-  getNotifications, 
-  getNotificationCounts, 
-  markNotificationAsRead, 
-  markAllNotificationsAsRead
-} from '../data/index.js';
 
 // Design System Components
 import Button from '../design-system/components/Button.jsx';
 import Tabs from '../design-system/components/Tabs.jsx';
 import Input from '../design-system/components/Input.jsx';
 import DropdownMenu from '../design-system/components/DropdownMenu.jsx';
-import NotificationItem from '../design-system/components/NotificationItem.jsx';
+import EmptyState from '../design-system/components/EmptyState.jsx';
 
 // Icons
 import { 
   Search, 
   ChevronDown, 
   CheckCheck,
+  Bell,
+  FileText,
+  Users,
+  Settings,
+  CreditCard,
+  CheckCircle,
+  AlertTriangle,
   Info
 } from 'lucide-react';
 
+// Mock notification data
+const mockNotifications = [
+  {
+    id: '1',
+    title: 'Content published successfully',
+    message: 'Your post "10 Marketing Tips" has been published and is now live.',
+    category: 'content',
+    type: 'success',
+    isRead: false,
+    timestamp: new Date(Date.now() - 30 * 60 * 1000), // 30 minutes ago
+    icon: FileText
+  },
+  {
+    id: '2',
+    title: 'New team member added',
+    message: 'Sarah Johnson has joined your workspace and can now collaborate on projects.',
+    category: 'collaboration',
+    type: 'info',
+    isRead: false,
+    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
+    icon: Users
+  },
+  {
+    id: '3',
+    title: 'Content suggestion available',
+    message: 'We\'ve generated 5 new content ideas based on your recent activity.',
+    category: 'content',
+    type: 'info',
+    isRead: true,
+    timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000), // 4 hours ago
+    icon: Bell
+  },
+  {
+    id: '4',
+    title: 'System maintenance scheduled',
+    message: 'Planned maintenance will occur tomorrow from 2-4 AM UTC. No action required.',
+    category: 'system',
+    type: 'warning',
+    isRead: false,
+    timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000), // 6 hours ago
+    icon: Settings
+  },
+  {
+    id: '5',
+    title: 'Payment processed',
+    message: 'Your monthly subscription payment of $29.99 has been processed successfully.',
+    category: 'account',
+    type: 'success',
+    isRead: true,
+    timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
+    icon: CreditCard
+  },
+  {
+    id: '6',
+    title: 'Weekly analytics ready',
+    message: 'Your content performance report for this week is now available in the dashboard.',
+    category: 'content',
+    type: 'info',
+    isRead: true,
+    timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
+    icon: FileText
+  }
+];
 
+// NotificationItem component - inline since it's page-specific
+const NotificationItem = ({ notification, onRead }) => {
+  const { colors } = useTheme();
+  const IconComponent = notification.icon;
+  
+  const getTypeColor = () => {
+    switch (notification.type) {
+      case 'success': return colors.icon.success;
+      case 'warning': return colors.icon.warning;
+      case 'error': return colors.text.destructive;
+      default: return colors.icon.default;
+    }
+  };
+  
+  const formatTimeAgo = (timestamp) => {
+    const now = new Date();
+    const diffMs = now - timestamp;
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    return `${diffDays}d ago`;
+  };
+  
+  const containerStyles = {
+    display: 'flex',
+    gap: spacing.spacing[12],
+    padding: spacing.spacing[16],
+    backgroundColor: notification.isRead ? 'transparent' : colors.bg.card.subtle,
+    borderRadius: '8px',
+    border: `1px solid ${colors.border.default}`,
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    opacity: notification.isRead ? 0.7 : 1
+  };
+  
+  const handleClick = () => {
+    if (!notification.isRead) {
+      onRead(notification.id);
+    }
+  };
+  
+  return (
+    <div style={containerStyles} onClick={handleClick}>
+      <div style={{ flexShrink: 0, marginTop: spacing.spacing[4] }}>
+        <IconComponent size={20} color={getTypeColor()} />
+      </div>
+      
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'flex-start',
+          gap: spacing.spacing[8]
+        }}>
+          <h4 style={{
+            ...textStyles.sm.semibold,
+            color: colors.text.default,
+            margin: 0
+          }}>
+            {notification.title}
+          </h4>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: spacing.spacing[8] }}>
+            <span style={{
+              ...textStyles.xs.medium,
+              color: colors.text.muted,
+              flexShrink: 0
+            }}>
+              {formatTimeAgo(notification.timestamp)}
+            </span>
+            
+            {!notification.isRead && (
+              <div style={{
+                width: '6px',
+                height: '6px',
+                borderRadius: '50%',
+                backgroundColor: colors.text.accent,
+                flexShrink: 0
+              }} />
+            )}
+          </div>
+        </div>
+        
+        <p style={{
+          ...textStyles.sm.normal,
+          color: colors.text.subtle,
+          margin: `${spacing.spacing[4]}px 0 0 0`
+        }}>
+          {notification.message}
+        </p>
+      </div>
+    </div>
+  );
+};
 
 /**
  * NotificationsPage component - Notifications management page
@@ -38,17 +199,25 @@ const NotificationsPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const [showSortDropdown, setShowSortDropdown] = useState(false);
-  const [notifications, setNotifications] = useState(() => getNotifications());
+  const [notifications, setNotifications] = useState(mockNotifications);
   
   // Get notification counts for tab badges
-  const notificationCounts = useMemo(() => getNotificationCounts(), [notifications]);
+  const notificationCounts = useMemo(() => {
+    const total = notifications.length;
+    const unread = notifications.filter(n => !n.isRead).length;
+    return { total, unread };
+  }, [notifications]);
   
   // Filter and sort notifications
   const filteredNotifications = useMemo(() => {
-    let filtered = getNotifications({
-      unreadOnly: activeTab === 'unread',
-      category: activeTab === 'all' || activeTab === 'unread' ? undefined : activeTab
-    });
+    let filtered = notifications;
+    
+    // Filter by tab
+    if (activeTab === 'unread') {
+      filtered = filtered.filter(n => !n.isRead);
+    } else if (activeTab !== 'all') {
+      filtered = filtered.filter(n => n.category === activeTab);
+    }
     
     // Apply search filter
     if (searchQuery) {
@@ -72,11 +241,9 @@ const NotificationsPage = () => {
   
   // Content is wrapped by MainAppChrome 840px container; keep transparent background
   const containerStyles = {
-    paddingTop: spacing.spacing[40],
-    paddingBottom: spacing.spacing[80],
     display: 'flex',
     flexDirection: 'column',
-    gap: spacing.spacing[24],
+    gap: spacing.spacing[32],
     backgroundColor: 'transparent',
   };
   
@@ -164,13 +331,19 @@ const NotificationsPage = () => {
   };
   
   const handleMarkAsRead = (notificationId) => {
-    markNotificationAsRead(notificationId);
-    setNotifications(getNotifications());
+    setNotifications(prev => 
+      prev.map(notification => 
+        notification.id === notificationId 
+          ? { ...notification, isRead: true }
+          : notification
+      )
+    );
   };
   
   const handleMarkAllAsRead = () => {
-    markAllNotificationsAsRead();
-    setNotifications(getNotifications());
+    setNotifications(prev => 
+      prev.map(notification => ({ ...notification, isRead: true }))
+    );
   };
   
 
@@ -247,27 +420,20 @@ const NotificationsPage = () => {
           ))}
         </div>
       ) : (
-        <div style={emptyStateStyle}>
-          <Info size={48} color={colors.icon.muted} />
-          <div>
-            <h3 style={{ ...textStyles.lg.semibold, color: colors.text.default, margin: 0 }}>
-              {searchQuery 
-                ? 'No notifications found' 
-                : activeTab === 'unread' 
-                  ? 'No unread notifications' 
-                  : 'No notifications yet'
-              }
-            </h3>
-            <p style={{ ...textStyles.md.normal, color: colors.text.subtle, margin: spacing.spacing[8] + 'px 0 0 0' }}>
-              {searchQuery 
-                ? 'Try adjusting your search terms or filters' 
-                : activeTab === 'unread' 
-                  ? 'All caught up! Check back later for new updates.' 
-                  : 'When you receive notifications, they\'ll appear here.'
-              }
-            </p>
-          </div>
-        </div>
+        <EmptyState
+          title={searchQuery 
+            ? 'No notifications found' 
+            : activeTab === 'unread' 
+              ? 'No unread notifications' 
+              : 'No notifications yet'
+          }
+          subtitle={searchQuery 
+            ? 'Try adjusting your search terms or filters' 
+            : activeTab === 'unread' 
+              ? 'All caught up! Check back later for new updates.' 
+              : 'When you receive notifications, they\'ll appear here.'
+          }
+        />
       )}
     </div>
   );

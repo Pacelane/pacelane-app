@@ -25,9 +25,11 @@ const MainAppChrome = ({ className = '', children, ...rest }) => {
   // Active menu mapping based on current route
   const activeMenuItem = (() => {
     if (location.pathname.startsWith('/product-home')) return 'home';
+    if (location.pathname.startsWith('/templates')) return 'home'; // Templates is part of home flow
     if (location.pathname.startsWith('/knowledge')) return 'knowledge';
     if (location.pathname.startsWith('/profile')) return 'profile';
     if (location.pathname.startsWith('/posts')) return 'history';
+    if (location.pathname.startsWith('/integrations')) return 'integrations';
     if (location.pathname.startsWith('/pacing')) return 'pacing';
     if (location.pathname.startsWith('/notifications')) return 'notifications';
     if (location.pathname.startsWith('/plan-billing')) return 'plan-billing';
@@ -47,6 +49,9 @@ const MainAppChrome = ({ className = '', children, ...rest }) => {
         break;
       case 'history':
         navigate('/posts');
+        break;
+      case 'integrations':
+        navigate('/integrations');
         break;
       case 'pacing':
         navigate('/pacing');

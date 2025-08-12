@@ -10,8 +10,9 @@ import { useToast } from '@/design-system/components/Toast';
 import FileUpload from '@/design-system/components/FileUpload';
 import FileCard from '@/design-system/components/FileCard';
 import Tabs from '@/design-system/components/Tabs';
-import DropdownMenu from '@/design-system/components/DropdownMenu';
+import DropdownButton from '@/design-system/components/DropdownButton';
 import Input from '@/design-system/components/Input';
+import EmptyState from '@/design-system/components/EmptyState';
 
 // Design System Tokens
 import { spacing } from '@/design-system/tokens/spacing';
@@ -21,7 +22,7 @@ import { cornerRadius } from '@/design-system/tokens/corner-radius';
 import { getShadow } from '@/design-system/tokens/shadows';
 
 // Icons
-import { Search, ChevronDown } from 'lucide-react';
+import { Search } from 'lucide-react';
 
 const KnowledgeBase = () => {
   const navigate = useNavigate();
@@ -59,8 +60,10 @@ const KnowledgeBase = () => {
   const [sortBy, setSortBy] = useState('lastAdded');
   const [selectedAudioFile, setSelectedAudioFile] = useState(null);
   const [showAudioModal, setShowAudioModal] = useState(false);
-  const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [urlInput, setUrlInput] = useState('');
+  
+  // Ref for FileUpload component to trigger file selection
+  const fileUploadRef = useRef(null);
 
   // Content container wrapped by MainAppChrome 840px container
 
@@ -110,6 +113,18 @@ const KnowledgeBase = () => {
     { label: 'Size (Largest)', onClick: () => setSortBy('sizeLarge') },
     { label: 'Size (Smallest)', onClick: () => setSortBy('sizeSmall') },
   ];
+
+  // Get current sort label
+  const getCurrentSortLabel = () => {
+    const option = sortOptions.find(opt => 
+      (sortBy === 'lastAdded' && opt.label === 'Last Added') ||
+      (sortBy === 'nameAsc' && opt.label === 'Name A-Z') ||
+      (sortBy === 'nameDesc' && opt.label === 'Name Z-A') ||
+      (sortBy === 'sizeLarge' && opt.label === 'Size (Largest)') ||
+      (sortBy === 'sizeSmall' && opt.label === 'Size (Smallest)')
+    );
+    return option?.label || 'Last Added';
+  };
 
   // Transform knowledge files to FileCard format
   const getFileCards = () => {
@@ -396,6 +411,7 @@ const KnowledgeBase = () => {
 
           {/* File Upload Area */}
           <FileUpload
+            ref={fileUploadRef}
             onFileSelect={handleFileSelect}
             onUrlSubmit={handleUrlSubmit}
             urlValue={urlInput}
@@ -432,41 +448,13 @@ const KnowledgeBase = () => {
               </div>
 
               {/* Sort Dropdown */}
-              <div style={{ position: 'relative' }}>
-                <button
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: spacing.spacing[8],
-                    padding: `${spacing.spacing[8]} ${spacing.spacing[12]}`,
-                    backgroundColor: colors.bg.card.default,
-                    border: `1px solid ${colors.border.default}`,
-                    borderRadius: cornerRadius.borderRadius.sm,
-                    color: colors.text.default,
-                    fontSize: textStyles.sm.normal.fontSize,
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease-in-out',
-                  }}
-                  onClick={() => setShowSortDropdown(!showSortDropdown)}
-                >
-                  {sortOptions.find(opt => 
-                    (sortBy === 'lastAdded' && opt.label === 'Last Added') ||
-                    (sortBy === 'nameAsc' && opt.label === 'Name A-Z') ||
-                    (sortBy === 'nameDesc' && opt.label === 'Name Z-A') ||
-                    (sortBy === 'sizeLarge' && opt.label === 'Size (Largest)') ||
-                    (sortBy === 'sizeSmall' && opt.label === 'Size (Smallest)')
-                  )?.label || 'Last Added'}
-                  <ChevronDown size={12} />
-                </button>
-                
-                <DropdownMenu
-                  isOpen={showSortDropdown}
-                  onClose={() => setShowSortDropdown(false)}
-                  items={sortOptions}
-                  position="bottom-right"
-                  minWidth="160px"
-                />
-              </div>
+              <DropdownButton
+                label={getCurrentSortLabel()}
+                items={sortOptions}
+                size="lg"
+                position="bottom-right"
+                minWidth="160px"
+              />
             </div>
           </div>
 
@@ -520,16 +508,17 @@ const KnowledgeBase = () => {
             searchQuery === '' || 
             file.title.toLowerCase().includes(searchQuery.toLowerCase())
           ).length === 0 && (
-            <div style={{
-              textAlign: 'center',
-              padding: spacing.spacing[48],
-              color: colors.text.muted,
-            }}>
-              <p style={textStyles.lg.medium}>No files found</p>
-              <p style={textStyles.sm.normal}>
-                {searchQuery ? 'Try adjusting your search or filter' : 'Upload some files to get started'}
-              </p>
-            </div>
+            <EmptyState
+              title="No files found"
+              subtitle={searchQuery ? 'Try adjusting your search or filter' : 'Upload some files to get started'}
+              buttonLabel={!searchQuery ? 'Upload Files' : undefined}
+              onButtonClick={!searchQuery ? () => {
+                // Trigger file selection dialog
+                if (fileUploadRef.current?.triggerFileSelect) {
+                  fileUploadRef.current.triggerFileSelect();
+                }
+              } : undefined}
+            />
           )}
 
           {/* Audio Transcription Modal */}

@@ -103,14 +103,23 @@ const PlanBillingPage = () => {
     backgroundColor: 'transparent',
   };
 
-  // Page title style
-  const pageTitleStyle = {
+  // Title style - REQUIRED: Awesome Serif font with 4xl size and semibold weight
+  const titleStyle = {
     fontFamily: typography.fontFamily['awesome-serif'],
     fontSize: typography.desktop.size['4xl'],
     fontWeight: typography.desktop.weight.semibold,
     lineHeight: typography.desktop.lineHeight.leading7,
+    letterSpacing: typography.desktop.letterSpacing.normal,
     color: colors.text.default,
-    marginBottom: spacing.spacing[24],
+    margin: 0,
+  };
+
+  // Subtitle style - REQUIRED: small medium text with subtle color
+  const subtitleStyle = {
+    ...textStyles.sm.medium,
+    color: colors.text.subtle,
+    margin: 0,
+    marginTop: spacing.spacing[8], // REQUIRED: 8px gap between title and subtitle
   };
 
   // Row styles for two-column layout
@@ -364,8 +373,13 @@ const PlanBillingPage = () => {
 
   return (
     <div style={containerStyles}>
-      {/* Page Title */}
-      <h1 style={pageTitleStyle}>Plan & Billing</h1>
+      {/* REQUIRED: Header Section */}
+      <div>
+        <h1 style={titleStyle}>Plan & Billing</h1>
+        <p style={subtitleStyle}>
+          Manage your subscription, track credit usage, and upgrade your plan
+        </p>
+      </div>
 
       {/* First Row: Current Plan + Credits */}
       <div style={rowStyles}>

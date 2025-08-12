@@ -16,6 +16,7 @@ import SuggestionCard from '@/design-system/components/SuggestionCard';
 import TemplateCard from '@/design-system/components/TemplateCard';
 import ContentCard from '@/design-system/components/ContentCard';
 import Input from '@/design-system/components/Input';
+import EmptyState from '@/design-system/components/EmptyState';
 
 // Design System Tokens
 import { spacing } from '@/design-system/tokens/spacing';
@@ -517,7 +518,7 @@ const ProductHome = () => {
                 cursor: 'pointer',
                 fontSize: '14px',
               }}
-              onClick={() => navigate('/content-editor')}
+              onClick={() => navigate('/templates')}
             >
               see all templates
               <ChevronRight size={12} />
@@ -584,13 +585,18 @@ const ProductHome = () => {
               ))}
                 </div>
           ) : (
-            <div style={{ 
-              textAlign: 'center', 
-              padding: spacing.spacing[48],
-              color: colors?.text?.subtle || '#666666'
-            }}>
-              <p>No content yet. Start creating with the templates above!</p>
-              </div>
+            <EmptyState
+              title="No content yet"
+              subtitle="Start creating with the templates above!"
+              buttonLabel="Browse Templates"
+              onButtonClick={() => {
+                // Scroll to templates section
+                const templatesSection = document.querySelector('[data-section="templates"]');
+                if (templatesSection) {
+                  templatesSection.scrollIntoView({ behavior: 'smooth' });
+                }
+              }}
+            />
           )}
 
           {/* Error Message */}

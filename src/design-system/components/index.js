@@ -12,10 +12,12 @@ export { default as Input } from './Input.jsx';
 export { default as ProgressBar } from './ProgressBar.jsx';
 export { default as ContentCard } from './ContentCard.jsx';
 export { default as FileCard } from './FileCard.jsx';
+export { default as DropdownButton } from './DropdownButton.jsx';
 export { default as DropdownMenu } from './DropdownMenu.jsx';
 export { default as Badge } from './Badge.jsx';
 export { default as FileUpload } from './FileUpload.jsx';
 export { default as Divider } from './Divider.jsx';
+export { default as EmptyState } from './EmptyState.jsx';
 export { default as SidebarMenuItem } from './SidebarMenuItem.jsx';
 export { default as HomeSidebar } from './HomeSidebar.jsx';
 export { default as StatsSummaryCard } from './StatsSummaryCard.jsx';
@@ -26,6 +28,10 @@ export { default as MainAppChrome } from './MainAppChrome.jsx';
 export { default as SuggestionCard } from './SuggestionCard.jsx';
 export { default as NotificationItem } from './NotificationItem.jsx';
 export { default as ProtectedRoute } from './ProtectedRoute.tsx';
+export { default as Toggle } from './Toggle.jsx';
+export { default as IntegrationCard } from './IntegrationCard.jsx';
+export { default as Modal } from './Modal.jsx';
+export { default as HelpModal } from './HelpModal.jsx';
 
 // Pages
 export { default as HomePage } from './pages/HomePage.jsx'; 

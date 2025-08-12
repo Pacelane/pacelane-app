@@ -83,25 +83,34 @@ const SignIn = () => {
           // Handle specific Supabase errors with user-friendly messages
           let errorMessage = result.error;
           
-          if (result.error.includes('already registered')) {
+          console.error('Sign-up error:', result.error);
+          
+          if (result.error.includes('already registered') || result.error.includes('User already registered')) {
             errorMessage = 'An account with this email already exists. Please sign in instead.';
           } else if (result.error.includes('Password should be at least')) {
-            errorMessage = 'Password must be at least 6 characters long.';
+            errorMessage = 'Password must be at least 8 characters long with uppercase, lowercase, and number.';
           } else if (result.error.includes('Invalid email')) {
             errorMessage = 'Please enter a valid email address.';
-          } else if (result.error.includes('weak password')) {
-            errorMessage = 'Password is too weak. Please choose a stronger password.';
+          } else if (result.error.includes('weak password') || result.error.includes('Password is too weak')) {
+            errorMessage = 'Password must contain at least one uppercase letter, one lowercase letter, and one number.';
+          } else if (result.error.includes('signup is disabled')) {
+            errorMessage = 'Account creation is currently disabled. Please contact support.';
+          } else if (result.error.includes('rate limit')) {
+            errorMessage = 'Too many sign-up attempts. Please wait a moment and try again.';
+          } else {
+            // Default error handler for unexpected errors
+            console.error('Unexpected sign-up error:', result.error);
+            errorMessage = 'Unable to create account. Please try again or contact support if the problem persists.';
           }
           
           toast.error(errorMessage);
           return;
         }
         
-        toast.success('Account created! Please check your email for the confirmation link.');
+        toast.success('Account created successfully!');
         
-        // Reset form and switch to sign-in mode
-        form.reset({ email: '', password: '', name: '' });
-        setIsSignUp(false);
+        // Navigate to onboarding flow
+        navigate('/onboarding/welcome');
         
       } else {
         // Show loading toast for sign in
@@ -135,7 +144,23 @@ const SignIn = () => {
       }
     } catch (error: any) {
       console.error('Authentication error:', error);
-      toast.error('Something went wrong. Please try again.');
+      
+      // Enhanced error handling for different types of errors
+      let errorMessage = 'Something went wrong. Please try again.';
+      
+      if (error.name === 'NetworkError' || error.message?.includes('network')) {
+        errorMessage = 'Network error. Please check your internet connection and try again.';
+      } else if (error.message?.includes('timeout')) {
+        errorMessage = 'Request timed out. Please try again.';
+      } else if (error.message?.includes('CORS')) {
+        errorMessage = 'Connection error. Please try again in a moment.';
+      } else if (error.message) {
+        // Log the actual error message for debugging but show a user-friendly message
+        console.error('Detailed error:', error.message);
+        errorMessage = 'Unable to process your request. Please try again or contact support.';
+      }
+      
+      toast.error(errorMessage);
     }
   };
 
@@ -196,6 +221,13 @@ const SignIn = () => {
 
     // Check minimum password length
     if (password.length < (isSignUp ? 8 : 6)) return false;
+
+    // For sign-up, check additional password requirements to match schema
+    if (isSignUp) {
+      if (!/[A-Z]/.test(password)) return false; // At least one uppercase letter
+      if (!/[a-z]/.test(password)) return false; // At least one lowercase letter
+      if (!/\d/.test(password)) return false;    // At least one number
+    }
 
     // Basic email format check (simple regex)
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -354,17 +386,28 @@ const SignIn = () => {
                     caption={form.formState.errors.email?.message}
                   />
 
-                  <Input
-                    type="password"
-                    label="Password"
-                    placeholder="Enter your password"
-                    value={form.watch('password') || ''}
-                    onChange={(e) => form.setValue('password', e.target.value)}
-                    required
-                    size="lg"
-                    failed={!!form.formState.errors.password}
-                    caption={form.formState.errors.password?.message}
-                  />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[4] }}>
+                    <Input
+                      type="password"
+                      label="Password"
+                      placeholder="Enter your password"
+                      value={form.watch('password') || ''}
+                      onChange={(e) => form.setValue('password', e.target.value)}
+                      required
+                      size="lg"
+                      failed={!!form.formState.errors.password}
+                      caption={form.formState.errors.password?.message}
+                    />
+                    {isSignUp && (
+                      <p style={{
+                        ...textStyles.xs.normal,
+                        color: colors.text.muted,
+                        margin: 0,
+                      }}>
+                        At least 8 characters, 1 uppercase, 1 lowercase, 1 number
+                      </p>
+                    )}
+                  </div>
 
                   {/* Sign In/Up Button */}
                   <Button

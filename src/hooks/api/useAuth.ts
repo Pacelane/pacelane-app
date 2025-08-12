@@ -73,10 +73,10 @@ export const useAuth = (): AuthState & AuthActions => {
 
   /**
    * Sign up a new user
-   * @param data - Email and password
+   * @param data - SignUpData with email, password, and optional options
    * @returns Promise with result
    */
-  const signUp = async (data: { email: string; password: string }) => {
+  const signUp = async (data: { email: string; password: string; options?: { data?: { display_name?: string; }; }; }) => {
     console.log('useAuth: Attempting to sign up user:', data.email);
     return authApi.signUp(data);
   };

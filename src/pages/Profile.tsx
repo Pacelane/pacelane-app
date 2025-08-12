@@ -11,6 +11,7 @@ import Button from '@/design-system/components/Button';
 import Input from '@/design-system/components/Input';
 import SidebarMenuItem from '@/design-system/components/SidebarMenuItem';
 import Chips from '@/design-system/components/Chips';
+import EmptyState from '@/design-system/components/EmptyState';
 
 // Design System Tokens
 import { spacing } from '@/design-system/tokens/spacing';
@@ -78,7 +79,7 @@ const Profile = () => {
       setCompanyInfo({
         name: profile.linkedin_company || '',
         industry: profile.linkedin_headline || '',
-        avatar: 'https://images.unsplash.com/photo-1549923746-c502d488b3ea?w=96&h=96&fit=crop',
+        avatar: 'https://images.unsplash.com/photo-1549923746-c502d488b3ea?w=96&h=96&fit=crop&crop=center',
         about: ''
       });
 
@@ -380,17 +381,32 @@ const Profile = () => {
 
   // Avatar component
   const Avatar = ({ src, alt, size = '64px' }) => (
-    <img
-      src={src}
-      alt={alt}
+    <div
       style={{
         width: size,
         height: size,
-        borderRadius: cornerRadius.borderRadius.full,
-        objectFit: 'cover',
+        borderRadius: '50%',
+        overflow: 'hidden', // Ensures any image overflow is hidden
         border: `2px solid ${colors.border.default}`,
+        flexShrink: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colors.bg.subtle, // Fallback background color
       }}
-    />
+    >
+      <img
+        src={src}
+        alt={alt}
+        style={{
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          objectPosition: 'center',
+          display: 'block',
+        }}
+      />
+    </div>
   );
 
   // Main content container is wrapped by MainAppChrome 840px container
@@ -456,6 +472,12 @@ const Profile = () => {
                   onClick={() => removeGoalChip(goal.id)}
                 />
               ))}
+              {goals.filter(goal => goal.value.trim()).length === 0 && (
+                <EmptyState
+                  title="No goals set yet"
+                  fullSpace={true}
+                />
+              )}
             </div>
 
             <Input
@@ -514,6 +536,12 @@ const Profile = () => {
                   onClick={() => removeGuideChip(guide.id)}
                 />
               ))}
+              {guides.filter(guide => guide.value.trim()).length === 0 && (
+                <EmptyState
+                  title="No guides defined yet"
+                  fullSpace={true}
+                />
+              )}
             </div>
 
             <Input
@@ -572,6 +600,12 @@ const Profile = () => {
                   onClick={() => removePillarChip(pillar.id)}
                 />
               ))}
+              {pillars.filter(pillar => pillar.value.trim()).length === 0 && (
+                <EmptyState
+                  title="No pillars established yet"
+                  fullSpace={true}
+                />
+              )}
             </div>
 
             <Input
@@ -879,9 +913,10 @@ const Profile = () => {
                     </div>
 
                     {inspirations.filter(inspiration => inspiration.value.trim()).length === 0 && (
-                      <p style={{ ...textStyles.xs.normal, color: colors.text.muted, margin: 0, textAlign: 'center' }}>
-                        No inspirations added yet. Add some during onboarding or edit your profile.
-                      </p>
+                      <EmptyState
+                        title="No inspirations yet"
+                        fullSpace={true}
+                      />
                     )}
                   </div>
                 </div>

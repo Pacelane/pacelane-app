@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTheme } from '../../services/theme-context.jsx';
+import { useHelp } from '../../services/help-context.jsx';
 import { spacing } from '../tokens/spacing.js';
 import { textStyles } from '../styles/typography/typography-styles.js';
 import { stroke } from '../tokens/stroke.js';
@@ -21,7 +22,8 @@ import {
   Home,
   User,
   BookOpen,
-  RotateCcw,
+  FileText,
+  Plug,
   Gauge,
   Bell,
   CreditCard,
@@ -62,6 +64,7 @@ const HomeSidebar = ({
   ...rest
 }) => {
   const { colors, themePreference, setTheme } = useTheme();
+  const { openHelp } = useHelp();
   const [isAvatarHovered, setIsAvatarHovered] = useState(false);
 
   // Handle theme selection
@@ -84,7 +87,9 @@ const HomeSidebar = ({
     { id: 'home', label: 'Home', icon: <Home />, section: 'main' },
     { id: 'profile', label: 'Profile', icon: <User />, section: 'main' },
     { id: 'knowledge', label: 'Knowledge', icon: <BookOpen />, section: 'main' },
-    { id: 'history', label: 'History', icon: <RotateCcw />, section: 'main' },
+    { id: 'history', label: 'Posts', icon: <FileText />, section: 'main' },
+    { id: 'pacing', label: 'Pacing', icon: <Gauge />, section: 'main' },
+    { id: 'integrations', label: 'Integrations', icon: <Plug />, section: 'main' },
   ];
 
   const secondaryMenuItems = [
@@ -343,7 +348,16 @@ const HomeSidebar = ({
             style="dashed"
             size="xs"
             leadIcon={<HelpCircle size={12} />}
-            onClick={onHelpClick}
+            onClick={() => {
+              if (onHelpClick) {
+                onHelpClick();
+              } else {
+                openHelp({
+                  section: 'Sidebar',
+                  action: 'Clicked help button from sidebar'
+                });
+              }
+            }}
           />
         )}
       </div>

@@ -66,7 +66,18 @@ export class AuthService {
       return { data };
     } catch (error: any) {
       console.error('AuthService: signUp failed:', error);
-      return { error: error.message || 'Failed to sign up' };
+      
+      // Enhanced error handling with fallbacks
+      let errorMessage = error.message || 'Failed to sign up';
+      
+      // Handle specific error types
+      if (!error.message) {
+        errorMessage = 'An unexpected error occurred during sign-up. Please try again.';
+      } else if (typeof error.message !== 'string') {
+        errorMessage = 'Sign-up service is temporarily unavailable. Please try again later.';
+      }
+      
+      return { error: errorMessage };
     }
   }
 
