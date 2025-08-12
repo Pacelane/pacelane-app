@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 // Sidebar is provided by MainAppChrome
 import Button from '@/design-system/components/Button';
 import Input from '@/design-system/components/Input';
+import TextArea from '@/design-system/components/TextArea';
 import SidebarMenuItem from '@/design-system/components/SidebarMenuItem';
 import Chips from '@/design-system/components/Chips';
 import EmptyState from '@/design-system/components/EmptyState';
@@ -365,6 +366,24 @@ const Profile = () => {
     }
   };
 
+  // Competitors management functions
+  const removeCompetitor = (competitorId) => {
+    setCompetitors(prev => prev.filter(comp => comp.id !== competitorId));
+  };
+
+  const addCompetitor = () => {
+    const newId = Math.max(...competitors.map(comp => comp.id), 0) + 1;
+    setCompetitors(prev => [...prev, { id: newId, url: '' }]);
+  };
+
+  const updateCompetitor = (competitorId, url) => {
+    setCompetitors(prev => 
+      prev.map(comp => 
+        comp.id === competitorId ? { ...comp, url } : comp
+      )
+    );
+  };
+
   const handlePersonalInfoChange = (field, value) => {
     setPersonalInfo(prev => ({
       ...prev,
@@ -411,14 +430,12 @@ const Profile = () => {
 
   // Main content container is wrapped by MainAppChrome 840px container
 
-  // Content container styles
+  // Content container styles - MainAppChrome provides the 840px container
   const containerStyles = {
-    width: '100%',
-    maxWidth: '1200px',
-    margin: '0 auto',
     display: 'flex',
     flexDirection: 'column' as const,
     gap: spacing.spacing[48],
+    backgroundColor: 'transparent', // MainAppChrome provides background
   };
 
   // Title and subtitle styles
@@ -493,6 +510,23 @@ const Profile = () => {
               }}
             />
 
+            {/* Divider */}
+            <div style={{
+              width: '100%',
+              height: '1px',
+              backgroundColor: colors.border.default
+            }} />
+
+            {/* Give me some ideas button */}
+            <Button
+              label="Give me some ideas"
+              style="dashed"
+              size="md"
+              leadIcon={<Sparkles size={16} />}
+              tailIcon={<Info size={16} />}
+              onClick={() => console.log('Generate goal ideas')}
+            />
+
             <div style={{ alignSelf: 'flex-start' }}>
               <Button
                 label={savedStates.goals ? "Saved!" : "Save"}
@@ -557,6 +591,23 @@ const Profile = () => {
               }}
             />
 
+            {/* Divider */}
+            <div style={{
+              width: '100%',
+              height: '1px',
+              backgroundColor: colors.border.default
+            }} />
+
+            {/* Give me some ideas button */}
+            <Button
+              label="Give me some ideas"
+              style="dashed"
+              size="md"
+              leadIcon={<Sparkles size={16} />}
+              tailIcon={<Info size={16} />}
+              onClick={() => console.log('Generate guide ideas')}
+            />
+
             <div style={{ alignSelf: 'flex-start' }}>
               <Button
                 label={savedStates.guides ? "Saved!" : "Save"}
@@ -619,6 +670,23 @@ const Profile = () => {
                 onClick: addPillarChip,
                 disabled: !newPillar.trim()
               }}
+            />
+
+            {/* Divider */}
+            <div style={{
+              width: '100%',
+              height: '1px',
+              backgroundColor: colors.border.default
+            }} />
+
+            {/* Give me some ideas button */}
+            <Button
+              label="Give me some ideas"
+              style="dashed"
+              size="md"
+              leadIcon={<Sparkles size={16} />}
+              tailIcon={<Info size={16} />}
+              onClick={() => console.log('Generate pillar ideas')}
             />
 
             <div style={{ alignSelf: 'flex-start' }}>
@@ -790,74 +858,205 @@ const Profile = () => {
                       />
                     </div>
                   </div>
+
+                  {/* Bio Card */}
+                  <div style={{
+                    backgroundColor: colors.bg.card.default,
+                    border: `1px solid ${colors.border.default}`,
+                    borderRadius: cornerRadius.borderRadius.lg,
+                    boxShadow: getShadow('regular.card', colors, { withBorder: true }),
+                    padding: spacing.spacing[20],
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: spacing.spacing[12],
+                  }}>
+                    <h4 style={{ ...textStyles.sm.semibold, color: colors.text.default, margin: 0 }}>
+                      Bio
+                    </h4>
+                    <TextArea
+                      placeholder="Tell us about yourself..."
+                      value={personalInfo.bio}
+                      onChange={(e) => handlePersonalInfoChange('bio', e.target.value)}
+                      rows={3}
+                      autoResize={true}
+                      minRows={3}
+                      maxRows={6}
+                    />
+                    <div style={{ alignSelf: 'flex-start' }}>
+                      <Button
+                        label={savedStates.bio ? "Saved!" : "Save"}
+                        style="primary"
+                        size="sm"
+                        leadIcon={savedStates.bio ? <Check size={16} /> : undefined}
+                        onClick={() => handleSave('bio')}
+                        disabled={savedStates.bio}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Address Card */}
+                  <div style={{
+                    backgroundColor: colors.bg.card.default,
+                    border: `1px solid ${colors.border.default}`,
+                    borderRadius: cornerRadius.borderRadius.lg,
+                    boxShadow: getShadow('regular.card', colors, { withBorder: true }),
+                    padding: spacing.spacing[20],
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: spacing.spacing[12],
+                  }}>
+                    <h4 style={{ ...textStyles.sm.semibold, color: colors.text.default, margin: 0 }}>
+                      Address
+                    </h4>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[12] }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[4] }}>
+                        <label style={{
+                          ...textStyles.xs.medium,
+                          color: colors.text.default,
+                          margin: 0
+                        }}>
+                          City
+                        </label>
+                        <Input
+                          placeholder="Enter your city"
+                          value={personalInfo.city}
+                          onChange={(e) => handlePersonalInfoChange('city', e.target.value)}
+                          style="default"
+                        />
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[4] }}>
+                        <label style={{
+                          ...textStyles.xs.medium,
+                          color: colors.text.default,
+                          margin: 0
+                        }}>
+                          Country
+                        </label>
+                        <Input
+                          placeholder="Enter your country"
+                          value={personalInfo.country}
+                          onChange={(e) => handlePersonalInfoChange('country', e.target.value)}
+                          style="default"
+                        />
+                      </div>
+                    </div>
+                    <div style={{ alignSelf: 'flex-start' }}>
+                      <Button
+                        label={savedStates.address ? "Saved!" : "Save"}
+                        style="primary"
+                        size="sm"
+                        leadIcon={savedStates.address ? <Check size={16} /> : undefined}
+                        onClick={() => handleSave('address')}
+                        disabled={savedStates.address}
+                      />
+                    </div>
+                  </div>
                 </>
               )}
 
               {/* Company Information Cards */}
               {activeSection === 'company' && (
-                <div style={{
-                  backgroundColor: colors.bg.card.default,
-                  border: `1px solid ${colors.border.default}`,
-                  borderRadius: cornerRadius.borderRadius.lg,
-                  boxShadow: getShadow('regular.card', colors, { withBorder: true }),
-                  padding: spacing.spacing[20],
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: spacing.spacing[12],
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: spacing.spacing[16] }}>
-                    <Avatar
-                      src={companyInfo.avatar}
-                      alt={companyInfo.name}
-                      size="64px"
-                    />
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: spacing.spacing[12] }}>
-                      <div>
-                        <h2 style={{
-                          fontFamily: typography.fontFamily['awesome-serif'],
-                          fontSize: typography.desktop.size['2xl'],
-                          fontWeight: typography.desktop.weight.semibold,
-                          color: colors.text.default,
-                          margin: 0,
-                        }}>
-                          {companyInfo.name || 'Your Company'}
-                        </h2>
-                        <p style={{
-                          ...textStyles.sm.normal,
-                          color: colors.text.subtle,
-                          margin: 0,
-                          marginTop: spacing.spacing[4],
-                        }}>
-                          {companyInfo.industry || 'Industry'}
-                        </p>
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[8] }}>
-                        <Input
-                          placeholder="Company Name"
-                          value={companyInfo.name}
-                          onChange={(e) => handleCompanyInfoChange('name', e.target.value)}
-                          style="default"
-                        />
-                        <Input
-                          placeholder="Industry / Field"
-                          value={companyInfo.industry}
-                          onChange={(e) => handleCompanyInfoChange('industry', e.target.value)}
-                          style="default"
-                        />
+                <>
+                  {/* Company Profile Card */}
+                  <div style={{
+                    backgroundColor: colors.bg.card.default,
+                    border: `1px solid ${colors.border.default}`,
+                    borderRadius: cornerRadius.borderRadius.lg,
+                    boxShadow: getShadow('regular.card', colors, { withBorder: true }),
+                    padding: spacing.spacing[20],
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: spacing.spacing[12],
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: spacing.spacing[16] }}>
+                      <Avatar
+                        src={companyInfo.avatar}
+                        alt={companyInfo.name}
+                        size="64px"
+                      />
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: spacing.spacing[12] }}>
+                        <div>
+                          <h2 style={{
+                            fontFamily: typography.fontFamily['awesome-serif'],
+                            fontSize: typography.desktop.size['2xl'],
+                            fontWeight: typography.desktop.weight.semibold,
+                            color: colors.text.default,
+                            margin: 0,
+                          }}>
+                            {companyInfo.name || 'Your Company'}
+                          </h2>
+                          <p style={{
+                            ...textStyles.sm.normal,
+                            color: colors.text.subtle,
+                            margin: 0,
+                            marginTop: spacing.spacing[4],
+                          }}>
+                            {companyInfo.industry || 'Industry'}
+                          </p>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[8] }}>
+                          <Input
+                            placeholder="Company Name"
+                            value={companyInfo.name}
+                            onChange={(e) => handleCompanyInfoChange('name', e.target.value)}
+                            style="default"
+                          />
+                          <Input
+                            placeholder="Industry / Field"
+                            value={companyInfo.industry}
+                            onChange={(e) => handleCompanyInfoChange('industry', e.target.value)}
+                            style="default"
+                          />
+                        </div>
                       </div>
                     </div>
+                    <div style={{ alignSelf: 'flex-start' }}>
+                      <Button 
+                        label={savedStates.companyProfile ? "Saved!" : "Save"}
+                        style="primary"
+                        size="sm"
+                        leadIcon={savedStates.companyProfile ? <Check size={16} /> : undefined}
+                        onClick={() => handleSave('companyProfile')}
+                        disabled={savedStates.companyProfile}
+                      />
+                    </div>
                   </div>
-                  <div style={{ alignSelf: 'flex-start' }}>
-                  <Button 
-                      label={savedStates.companyProfile ? "Saved!" : "Save"}
-                      style="primary"
-                      size="sm"
-                      leadIcon={savedStates.companyProfile ? <Check size={16} /> : undefined}
-                      onClick={() => handleSave('companyProfile')}
-                      disabled={savedStates.companyProfile}
+
+                  {/* About Company Card */}
+                  <div style={{
+                    backgroundColor: colors.bg.card.default,
+                    border: `1px solid ${colors.border.default}`,
+                    borderRadius: cornerRadius.borderRadius.lg,
+                    boxShadow: getShadow('regular.card', colors, { withBorder: true }),
+                    padding: spacing.spacing[20],
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: spacing.spacing[12],
+                  }}>
+                    <h4 style={{ ...textStyles.sm.semibold, color: colors.text.default, margin: 0 }}>
+                      About the Company
+                    </h4>
+                    <TextArea
+                      placeholder="Tell us about your company..."
+                      value={companyInfo.about}
+                      onChange={(e) => handleCompanyInfoChange('about', e.target.value)}
+                      rows={3}
+                      autoResize={true}
+                      minRows={3}
+                      maxRows={6}
                     />
+                    <div style={{ alignSelf: 'flex-start' }}>
+                      <Button
+                        label={savedStates.companyAbout ? "Saved!" : "Save"}
+                        style="primary"
+                        size="sm"
+                        leadIcon={savedStates.companyAbout ? <Check size={16} /> : undefined}
+                        onClick={() => handleSave('companyAbout')}
+                        disabled={savedStates.companyAbout}
+                      />
+                    </div>
                   </div>
-                </div>
+                </>
               )}
 
               {/* Dynamic Sections (Goals, Guides, Pillars) */}
@@ -875,51 +1074,178 @@ const Profile = () => {
 
               {/* Inspirations Section */}
               {activeSection === 'inspirations' && (
-                <div style={{
-                  backgroundColor: colors.bg.card.default,
-                  border: `1px solid ${colors.border.default}`,
-                  borderRadius: cornerRadius.borderRadius.lg,
-                  boxShadow: getShadow('regular.card', colors, { withBorder: true }),
-                  padding: spacing.spacing[24],
-                }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[16] }}>
+                <>
+                  {/* Inspirations List Card */}
+                  <div style={{ 
+                    backgroundColor: colors.bg.card.default,
+                    border: `1px solid ${colors.border.default}`,
+                    borderRadius: cornerRadius.borderRadius.lg,
+                    boxShadow: getShadow('regular.card', colors, { withBorder: true }),
+                    padding: spacing.spacing[24],
+                  }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[20] }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[4] }}>
+                        <h3 style={{ ...textStyles.sm.semibold, color: colors.text.default, margin: 0 }}>
+                          Inspirations
+                        </h3>
+                        <p style={{ ...textStyles.xs.normal, color: colors.text.subtle, margin: 0 }}>
+                          Who are the people that inspire your work and thinking?
+                        </p>
+                      </div>
+                      
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[8] }}>
+                        {inspirations.map((item) => (
+                          <Input
+                            key={item.id}
+                            placeholder="Enter someone who inspires you..."
+                            value={item.value}
+                            onChange={(e) => updateListItem('inspirations', setInspirations, item.id, e.target.value)}
+                            style="tail-action"
+                            tailAction={{
+                              icon: <Trash2 size={14} />,
+                              onClick: () => removeListItem('inspirations', setInspirations, item.id)
+                            }}
+                          />
+                        ))}
+                        
+                        <div style={{ marginTop: spacing.spacing[8] }}>
+                          <Button
+                            label="Add Inspirations"
+                            style="secondary"
+                            size="sm"
+                            leadIcon={<Plus size={14} />}
+                            onClick={() => addListItem('inspirations', setInspirations)}
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ alignSelf: 'flex-start' }}>
+                        <Button
+                          label={savedStates.inspirations ? "Saved!" : "Save"}
+                          style="primary"
+                          size="sm"
+                          leadIcon={savedStates.inspirations ? <Check size={16} /> : undefined}
+                          onClick={() => handleSave('inspirations')}
+                          disabled={savedStates.inspirations}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Target Persona Card */}
+                  <div style={{ 
+                    backgroundColor: colors.bg.card.default,
+                    border: `1px solid ${colors.border.default}`,
+                    borderRadius: cornerRadius.borderRadius.lg,
+                    boxShadow: getShadow('regular.card', colors, { withBorder: true }),
+                    padding: spacing.spacing[24],
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: spacing.spacing[16],
+                  }}>
+                    {/* Header */}
                     <div>
-                      <h3 style={{ ...textStyles.sm.semibold, color: colors.text.default, margin: 0 }}>
-                        Inspirations
+                      <h3 style={{ 
+                        ...textStyles.sm.semibold, 
+                        color: colors.text.default, 
+                        margin: 0 
+                      }}>
+                        Target Persona
                       </h3>
                       <p style={{ ...textStyles.xs.normal, color: colors.text.subtle, margin: 0 }}>
-                        LinkedIn profiles that inspire your content creation
+                        Describe your ideal audience and who you're creating content for
                       </p>
                     </div>
 
-                    <div style={{ 
-                      display: 'flex', 
-                      flexWrap: 'wrap', 
-                      gap: spacing.spacing[8],
-                      minHeight: '44px',
-                      alignItems: 'flex-start'
-                    }}>
-                      {inspirations.filter(inspiration => inspiration.value.trim()).map((inspiration) => (
-                        <Chips
-                          key={inspiration.id}
-                          label={inspiration.value}
-                          style="default"
-                          size="lg"
-                          selected={true}
-                          leadingIcon={<X size={16} />}
-                          onClick={() => removeListItem('inspirations', setInspirations, inspiration.id)}
-                        />
-                      ))}
+                    {/* TextArea */}
+                    <TextArea
+                      placeholder="Describe your target persona..."
+                      value={targetPersona}
+                      onChange={(e) => setTargetPersona(e.target.value)}
+                      rows={4}
+                      autoResize={true}
+                      minRows={4}
+                      maxRows={8}
+                    />
+
+                    {/* Save Button */}
+                    <div style={{ alignSelf: 'flex-start' }}>
+                      <Button
+                        label={savedStates.targetPersona ? "Saved!" : "Save"}
+                        style="primary"
+                        size="sm"
+                        leadIcon={savedStates.targetPersona ? <Check size={16} /> : undefined}
+                        onClick={() => handleSave('targetPersona')}
+                        disabled={savedStates.targetPersona}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Competitors Card */}
+                  <div style={{ 
+                    backgroundColor: colors.bg.card.default,
+                    border: `1px solid ${colors.border.default}`,
+                    borderRadius: cornerRadius.borderRadius.lg,
+                    boxShadow: getShadow('regular.card', colors, { withBorder: true }),
+                    padding: spacing.spacing[24],
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: spacing.spacing[16]
+                  }}>
+                    {/* Header */}
+                    <div>
+                      <h3 style={{ 
+                        ...textStyles.sm.semibold, 
+                        color: colors.text.default, 
+                        margin: 0 
+                      }}>
+                        Competitors
+                      </h3>
+                      <p style={{ ...textStyles.xs.normal, color: colors.text.subtle, margin: 0 }}>
+                        Keep track of competitor websites and industry leaders
+                      </p>
                     </div>
 
-                    {inspirations.filter(inspiration => inspiration.value.trim()).length === 0 && (
-                      <EmptyState
-                        title="No inspirations yet"
-                        fullSpace={true}
+                    {/* Competitors List */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[8] }}>
+                      {competitors.map((competitor) => (
+                        <Input
+                          key={competitor.id}
+                          placeholder="Enter competitor website URL..."
+                          value={competitor.url}
+                          onChange={(e) => updateCompetitor(competitor.id, e.target.value)}
+                          style="tail-action"
+                          tailAction={{
+                            icon: <Trash2 size={14} />,
+                            onClick: () => removeCompetitor(competitor.id)
+                          }}
+                        />
+                      ))}
+                      
+                      <div style={{ marginTop: spacing.spacing[8] }}>
+                        <Button
+                          label="Add Competitors"
+                          style="secondary"
+                          size="sm"
+                          leadIcon={<Plus size={14} />}
+                          onClick={addCompetitor}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Save Button */}
+                    <div style={{ alignSelf: 'flex-start' }}>
+                      <Button
+                        label={savedStates.competitors ? "Saved!" : "Save"}
+                        style="primary"
+                        size="sm"
+                        leadIcon={savedStates.competitors ? <Check size={16} /> : undefined}
+                        onClick={() => handleSave('competitors')}
+                        disabled={savedStates.competitors}
                       />
-                    )}
+                    </div>
                   </div>
-                </div>
+                </>
               )}
             </div>
           </div>

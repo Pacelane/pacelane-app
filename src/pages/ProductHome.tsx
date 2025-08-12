@@ -589,13 +589,7 @@ const ProductHome = () => {
               title="No content yet"
               subtitle="Start creating with the templates above!"
               buttonLabel="Browse Templates"
-              onButtonClick={() => {
-                // Scroll to templates section
-                const templatesSection = document.querySelector('[data-section="templates"]');
-                if (templatesSection) {
-                  templatesSection.scrollIntoView({ behavior: 'smooth' });
-                }
-              }}
+              onButtonClick={() => navigate('/templates')}
             />
           )}
 

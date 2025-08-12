@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/api/useAuth';
 import { useTheme } from '@/services/theme-context';
@@ -15,15 +15,61 @@ import { spacing } from '@/design-system/tokens/spacing';
 import { cornerRadius } from '@/design-system/tokens/corner-radius';
 import { getShadow } from '@/design-system/tokens/shadows';
 import { typography } from '@/design-system/tokens/typography';
+import { colors as primitiveColors } from '@/design-system/tokens/primitive-colors';
 
 // Icons
 import { ArrowLeft, ArrowRight, Sparkles } from 'lucide-react';
+
+// Confetti piece component
+const ConfettiPiece = ({ delay, duration, left, color }) => {
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        top: '-24px',
+        left: `${left}%`,
+        width: '24px',
+        height: '12px',
+        backgroundColor: color,
+        borderRadius: '4px',
+        animation: `confetti-fall ${duration}s linear ${delay}s infinite`,
+        zIndex: 1,
+      }}
+    />
+  );
+};
 
 const Ready = () => {
   const navigate = useNavigate();
   const { user, refreshProfile } = useAuth();
   const { colors } = useTheme();
+  const toast = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [confettiPieces, setConfettiPieces] = useState([]);
+
+  // Generate confetti pieces
+  useEffect(() => {
+    const confettiColors = [
+      primitiveColors.blue[500],    // Blue
+      primitiveColors.green[500],   // Green
+      primitiveColors.orange[500],  // Orange
+      primitiveColors.red[500],     // Red
+      primitiveColors.violet[500],  // Purple
+      primitiveColors.cyan[500],    // Cyan
+      primitiveColors.emerald[500], // Emerald
+      primitiveColors.rose[500],    // Rose
+    ];
+
+    const pieces = Array.from({ length: 50 }, (_, i) => ({
+      id: i,
+      delay: Math.random() * 3,
+      duration: 3 + Math.random() * 2,
+      left: Math.random() * 100,
+      color: confettiColors[Math.floor(Math.random() * confettiColors.length)],
+    }));
+
+    setConfettiPieces(pieces);
+  }, []);
 
   const handleGoBack = () => {
     navigate('/onboarding/contact');
@@ -144,8 +190,49 @@ const Ready = () => {
         backgroundColor: colors.bg.default,
         display: 'flex',
         flexDirection: 'column',
+        position: 'relative',
+        overflow: 'hidden',
       }}
     >
+      {/* Confetti Animation Styles */}
+      <style>
+        {`
+          @keyframes confetti-fall {
+            0% {
+              transform: translateY(-10px) rotate(0deg);
+              opacity: 1;
+            }
+            100% {
+              transform: translateY(100vh) rotate(360deg);
+              opacity: 0;
+            }
+          }
+        `}
+      </style>
+
+      {/* Confetti Container */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          pointerEvents: 'none',
+          zIndex: 1,
+        }}
+      >
+        {confettiPieces.map((piece) => (
+          <ConfettiPiece
+            key={piece.id}
+            delay={piece.delay}
+            duration={piece.duration}
+            left={piece.left}
+            color={piece.color}
+          />
+        ))}
+      </div>
+
       {/* Top Navigation */}
       <TopNav />
 

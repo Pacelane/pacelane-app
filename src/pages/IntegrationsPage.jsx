@@ -53,26 +53,26 @@ const IntegrationsPage = () => {
     {
       key: 'whatsapp',
       name: 'WhatsApp',
-      description: 'Send content directly to WhatsApp and manage your posting schedule',
+      description: 'Add files to your knowledge base from WhatsApp and create content directly from messages',
       icon: <MessageCircle size={32} />,
       iconColor: '#25D366',
-      features: ['Auto-posting', 'Schedule messages', 'Content formatting'],
+      features: ['Knowledge base integration', 'Content creation', 'File management'],
     },
     {
       key: 'readai',
       name: 'Read.ai',
-      description: 'Automatically transcribe meetings and generate content from conversations',
+      description: 'Add meeting transcripts to your knowledge base for enhanced content creation',
       icon: <PlayCircle size={32} />,
       iconColor: '#6366F1',
-      features: ['Meeting transcription', 'Content generation', 'Smart summaries'],
+      features: ['Meeting transcription', 'Knowledge base sync', 'Content insights'],
     },
     {
       key: 'googleCalendar',
       name: 'Google Calendar',
-      description: 'Sync your calendar to optimize content posting times and schedules',
+      description: 'Sync your calendar to understand your routines and create more relevant content',
       icon: <Calendar size={32} />,
       iconColor: '#4285F4',
-      features: ['Calendar sync', 'Optimal timing', 'Event-based content'],
+      features: ['Calendar sync', 'Routine analysis', 'Context-aware content'],
     },
   ];
 
