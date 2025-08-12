@@ -13,8 +13,11 @@ const corsHeaders = {
 const SUPPORTED_EVENTS = ['message_created'];
 const WHATSAPP_CHANNEL = 'Channel::Whatsapp';
 
+// Chatwoot API configuration
+const CHATWOOT_API_VERSION = 'v1';
+
 // Intent detection types
-type MessageIntent = 'NOTE' | 'ORDER';
+type MessageIntent = 'NOTE' | 'ORDER' | 'CONVERSATION_RESPONSE';
 
 interface IntentResult {
   intent: MessageIntent;
@@ -29,6 +32,22 @@ interface OrderParams {
   angle?: string;
   refs?: string[];
   topic?: string;
+}
+
+// Chatwoot message templates for minimal policy
+interface ChatwootMessageTemplate {
+  content: string;
+  message_type: 'outgoing';
+  content_type?: 'text' | 'template';
+  content_attributes?: {
+    quick_reply?: {
+      type: 'quick_reply';
+      values: Array<{
+        title: string;
+        value: string;
+      }>;
+    };
+  };
 }
 
 interface ChatwootWebhookPayload {
@@ -82,6 +101,8 @@ interface OpenAIConfig {
 
 interface ChatwootConfig {
   baseUrl: string;
+  apiAccessToken: string;
+  accountId: string;
 }
 
 interface AudioAttachment {
@@ -132,7 +153,9 @@ class ChatwootWebhookProcessor {
 
     // Initialize Chatwoot configuration
     this.chatwootConfig = {
-      baseUrl: Deno.env.get('CHATWOOT_BASE_URL') ?? ''
+      baseUrl: Deno.env.get('CHATWOOT_BASE_URL') ?? '',
+      apiAccessToken: Deno.env.get('CHATWOOT_API_ACCESS_TOKEN') ?? '',
+      accountId: Deno.env.get('CHATWOOT_ACCOUNT_ID') ?? '',
     };
   }
 
@@ -1186,7 +1209,7 @@ Return only valid JSON:
     userId: string | null, 
     contactId: string,
     parsedParams: OrderParams
-  ): Promise<{ success: boolean; message: string }> {
+  ): Promise<{ success: boolean; message: string; orderId?: string }> {
     try {
       if (!userId) {
         // Cannot process ORDER without identified user
@@ -1195,16 +1218,36 @@ Return only valid JSON:
         return { success: false, message: 'User not identified for ORDER processing' };
       }
 
-      // Create content_order
+      // Check for missing non-defaultable fields
+      const missingFields: string[] = [];
+      const requiredFields = ['platform', 'length', 'tone', 'topic'];
+      
+      for (const field of requiredFields) {
+        if (!parsedParams[field as keyof OrderParams]) {
+          missingFields.push(field);
+        }
+      }
+
+      // If critical fields are missing, send blocking clarification and stop processing
+      if (missingFields.length > 0) {
+        console.log(`❌ Missing required fields for ORDER: ${missingFields.join(', ')}`);
+        await this.sendBlockingClarification(payload, missingFields, parsedParams);
+        return { 
+          success: false, 
+          message: `Missing required fields: ${missingFields.join(', ')}. Sent clarification message.` 
+        };
+      }
+
+      // Create content_order with complete parameters
       const orderData = {
         user_id: userId,
         source: 'whatsapp',
         params_json: {
-          platform: parsedParams.platform || 'linkedin',
-          length: parsedParams.length || 'medium',
-          tone: parsedParams.tone || 'professional',
+          platform: parsedParams.platform!,
+          length: parsedParams.length!,
+          tone: parsedParams.tone!,
           angle: parsedParams.angle,
-          topic: parsedParams.topic,
+          topic: parsedParams.topic!,
           refs: parsedParams.refs || [],
           original_content: payload.content,
           context: {
@@ -1226,6 +1269,8 @@ Return only valid JSON:
 
       if (orderError) {
         console.error('Error creating content_order:', orderError);
+        // Send ingestion failure notification
+        await this.sendIngestionFailureNotification(payload, 'Failed to create content order');
         return { success: false, message: 'Failed to create content order' };
       }
 
@@ -1247,10 +1292,15 @@ Return only valid JSON:
 
       if (jobError) {
         console.error('Error creating agent_job:', jobError);
+        // Send ingestion failure notification
+        await this.sendIngestionFailureNotification(payload, 'Failed to enqueue processing job');
         return { success: false, message: 'Failed to enqueue processing job' };
       }
 
       console.log('✅ ORDER created and job enqueued:', orderResult.id);
+      
+      // Minimal policy: Only send confirmation for successful ORDER creation
+      // No extraneous messages for smooth ORDER flows
       return { 
         success: true, 
         message: `Content order created and processing started`,
@@ -1259,6 +1309,8 @@ Return only valid JSON:
 
     } catch (error) {
       console.error('Error processing ORDER intent:', error);
+      // Send ingestion failure notification
+      await this.sendIngestionFailureNotification(payload, 'Failed to process content order');
       return { success: false, message: 'Failed to process content order' };
     }
   }
@@ -1268,26 +1320,238 @@ Return only valid JSON:
    */
   private async sendClarificationMessage(payload: ChatwootWebhookPayload, message: string): Promise<boolean> {
     try {
-      // This would integrate with Chatwoot's API to send messages
-      // For now, just log the intent to send
-      console.log(`📤 Would send clarification message: ${message}`);
-      // TODO: Implement actual Chatwoot API call when needed
-      return true;
+      // Use the new Chatwoot API method
+      const messageTemplate: ChatwootMessageTemplate = {
+        content: message,
+        message_type: 'outgoing',
+        content_type: 'text'
+      };
+
+      console.log(`📤 Sending clarification message: ${message}`);
+      return await this.sendChatwootMessage(payload.conversation.id, messageTemplate);
+
     } catch (error) {
-      console.error('Error sending clarification message:', error);
+      console.error('❌ Error sending clarification message:', error);
       return false;
     }
   }
 
   /**
+   * Send message via Chatwoot API
+   */
+  private async sendChatwootMessage(
+    conversationId: number, 
+    message: ChatwootMessageTemplate
+  ): Promise<boolean> {
+    try {
+      if (!this.chatwootConfig.baseUrl || !this.chatwootConfig.apiAccessToken || !this.chatwootConfig.accountId) {
+        console.error('❌ Chatwoot API configuration missing');
+        return false;
+      }
+
+      const url = `${this.chatwootConfig.baseUrl}/api/${CHATWOOT_API_VERSION}/accounts/${this.chatwootConfig.accountId}/conversations/${conversationId}/messages`;
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'api_access_token': this.chatwootConfig.apiAccessToken,
+        },
+        body: JSON.stringify(message),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`❌ Failed to send Chatwoot message: ${response.status} ${errorText}`);
+        return false;
+      }
+
+      const result = await response.json();
+      console.log(`✅ Chatwoot message sent successfully: ${result.id}`);
+      return true;
+    } catch (error) {
+      console.error('❌ Error sending Chatwoot message:', error);
+      return false;
+    }
+  }
+
+  // Removed old conversation management methods - replaced with smart AI + preferences approach
+
+  /**
+   * Send ingestion failure notification
+   */
+  private async sendIngestionFailureNotification(
+    payload: ChatwootWebhookPayload, 
+    error: string
+  ): Promise<boolean> {
+    try {
+      const messageTemplate: ChatwootMessageTemplate = {
+        content: `❌ Sorry, I couldn't process your message: ${error}\n\n💡 Try sending it again or contact support if the issue persists.`,
+        message_type: 'outgoing',
+        content_type: 'text'
+      };
+
+      console.log(`📤 Sending ingestion failure notification`);
+      return await this.sendChatwootMessage(payload.conversation.id, messageTemplate);
+
+    } catch (error) {
+      console.error('❌ Error sending ingestion failure notification:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Send ready notice (only when opted-in)
+   */
+  private async sendReadyNotice(
+    payload: ChatwootWebhookPayload, 
+    orderId: string
+  ): Promise<boolean> {
+    try {
+      // Check if user has opted in for ready notices
+      const { data: userPrefs } = await this.supabase
+        .from('user_bucket_mapping')
+        .select('notify_on_ready')
+        .eq('contact_id', `contact_${payload.sender.id}_account_${payload.account.id}`)
+        .single();
+
+      if (!userPrefs?.notify_on_ready) {
+        console.log(`📱 User not opted in for ready notices, skipping`);
+        return true;
+      }
+
+      const messageTemplate: ChatwootMessageTemplate = {
+        content: `✅ Your content is ready!\n\n📱 Open the Pacelane app to view and edit your draft.\n\n🆔 Order ID: ${orderId}`,
+        message_type: 'outgoing',
+        content_type: 'text'
+      };
+
+      console.log(`📤 Sending ready notice for order ${orderId}`);
+      return await this.sendChatwootMessage(payload.conversation.id, messageTemplate);
+
+    } catch (error) {
+      console.error('❌ Error sending ready notice:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Handle quick reply responses to complete missing order parameters
+   */
+  private async handleQuickReplyResponse(
+    payload: ChatwootWebhookPayload,
+    quickReplyValue: string,
+    conversationId: number
+  ): Promise<boolean> {
+    try {
+      // Get the conversation context to see what we're clarifying
+      const { data: conversation } = await this.supabase
+        .from('conversations')
+        .select('context_json')
+        .eq('chatwoot_conversation_id', conversationId)
+        .single();
+
+      if (!conversation?.context_json?.clarifyingField) {
+        console.log('❌ No clarification context found for conversation');
+        return false;
+      }
+
+      const { clarifyingField, orderParams } = conversation.context_json;
+      
+      // Update the order parameters based on the quick reply
+      const updatedParams = { ...orderParams };
+      
+      switch (clarifyingField) {
+        case 'platform':
+          updatedParams.platform = quickReplyValue;
+          break;
+        case 'length':
+          updatedParams.length = quickReplyValue;
+          break;
+        case 'tone':
+          updatedParams.tone = quickReplyValue;
+          break;
+        case 'topic':
+          updatedParams.topic = quickReplyValue;
+          break;
+        default:
+          console.log(`❌ Unknown clarifying field: ${clarifyingField}`);
+          return false;
+      }
+
+      // Check if we now have all required fields
+      const requiredFields = ['platform', 'length', 'tone', 'topic'];
+      const missingFields = requiredFields.filter(field => !updatedParams[field as keyof OrderParams]);
+
+      if (missingFields.length === 0) {
+        // All fields complete, create the order
+        console.log('✅ All required fields complete, creating order');
+        
+        // Clear the clarification context
+        await this.supabase
+          .from('conversations')
+          .update({ 
+            context_json: { ...conversation.context_json, clarifyingField: null },
+            updated_at: new Date().toISOString()
+          })
+          .eq('chatwoot_conversation_id', conversationId);
+
+        // Create the order with complete parameters
+        const orderResult = await this.processOrderIntent(payload, conversation.context_json.userId, conversation.context_json.contactId, updatedParams);
+        
+        if (orderResult.success) {
+          // Send confirmation that order was created
+          const messageTemplate: ChatwootMessageTemplate = {
+            content: `✅ Perfect! Your content order has been created and is being processed.\n\n📱 Check the Pacelane app for updates.`,
+            message_type: 'outgoing',
+            content_type: 'text'
+          };
+          
+          return await this.sendChatwootMessage(conversationId, messageTemplate);
+        } else {
+          // Send error notification
+          return await this.sendIngestionFailureNotification(payload, 'Failed to create order after clarification');
+        }
+      } else {
+        // Still missing fields, ask for the next one
+        console.log(`❌ Still missing fields: ${missingFields.join(', ')}`);
+        await this.sendBlockingClarification(payload, missingFields, updatedParams);
+        
+        // Update conversation context with new parameters
+        await this.supabase
+          .from('conversations')
+          .update({ 
+            context_json: { ...conversation.context_json, orderParams: updatedParams },
+            updated_at: new Date().toISOString()
+          })
+          .eq('chatwoot_conversation_id', conversationId);
+        
+        return true;
+      }
+
+    } catch (error) {
+      console.error('❌ Error handling quick reply response:', error);
+      return false;
+    }
+  }
+
+  // Removed all conversation management methods - replaced with smart AI + preferences approach
+
+  /**
    * Process incoming webhook payload
    */
-  async processWebhook(payload: ChatwootWebhookPayload): Promise<{ success: boolean; message: string }> {
+  async processWebhook(payload: ChatwootWebhookPayload): Promise<{ success: boolean; message: string; intent?: string }> {
     console.log('Processing Chatwoot webhook:', payload.event, payload.id);
 
     // Validate payload
     if (!this.validatePayload(payload)) {
       return { success: false, message: 'Invalid webhook payload structure' };
+    }
+
+    // CRITICAL FIX: Only process INCOMING messages to prevent infinite loops
+    if (payload.message_type !== 'incoming') {
+      console.log(`⏭️ Skipping ${payload.message_type} message to prevent infinite loop`);
+      return { success: true, message: `Skipped ${payload.message_type} message` };
     }
 
     // Check if this is a WhatsApp message
@@ -1303,19 +1567,21 @@ Return only valid JSON:
     const bucketResult = await this.identifyUserAndSetupBucket(whatsappNumber, contactId);
     
     if (!bucketResult.success) {
+      // Send ingestion failure notification for bucket setup issues
+      await this.sendIngestionFailureNotification(payload, 'Failed to setup storage bucket');
       return { success: false, message: bucketResult.error || 'Failed to setup bucket' };
     }
 
     const { userId, bucketName, contactId: finalContactId } = bucketResult.data;
 
-    // PCL-13a: AI-powered intent detection and routing
+    // AI-powered intent detection and routing
     const intentResult = await this.detectIntent(payload.content || '');
     console.log(`🎯 Intent detected: ${intentResult.intent} (confidence: ${intentResult.confidence})`);
 
     // Route based on intent
     if (intentResult.intent === 'ORDER') {
-      // Process as content order
-      const orderResult = await this.processOrderIntent(payload, userId, finalContactId, intentResult.parsedParams || {});
+      // Process as content order with smart defaults from user preferences
+      const orderResult = await this.processOrderWithSmartDefaults(payload, userId, finalContactId, intentResult.parsedParams || {});
       
       // Still store in GCS for audit trail
       const gcsPath = this.generateGCSPath(payload, bucketName);
@@ -1338,7 +1604,7 @@ Return only valid JSON:
       };
 
     } else {
-      // Process as NOTE (default)
+      // Process as NOTE (default) - NO messages sent for NOTES
       const noteResult = await this.processNoteIntent(payload, userId, finalContactId);
       
       // Store in GCS for audit trail
@@ -1351,6 +1617,8 @@ Return only valid JSON:
         await this.processAudioAttachments(payload, bucketName, userId, finalContactId, gcsPath);
       }
 
+      // Minimal policy: NOTES are processed silently, no WhatsApp messages sent
+      console.log(`📝 NOTE processed silently (minimal policy)`);
       return {
         success: noteResult.success,
         message: noteResult.message,
@@ -1782,6 +2050,292 @@ Return only valid JSON:
 
     } catch (error) {
       console.error('Error adding audio to knowledge base:', error);
+    }
+  }
+
+  /**
+   * Determine the intent of the incoming message
+   */
+  private async determineIntent(content: string, userId: string): Promise<{ intent: 'NOTE' | 'ORDER' | 'CONVERSATION_RESPONSE'; confidence: number }> {
+    try {
+      // First, check if this is a response to an active clarification
+      // We'll do this by checking if there's an active conversation context
+      // This check will be done in the main webhook processing
+      
+      // For now, use the existing AI intent detection
+      const response = await fetch(`${this.supabaseUrl}/functions/v1/ai-assistant`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.supabaseServiceKey}`,
+        },
+        body: JSON.stringify({
+          message: content,
+          userId: userId,
+          context: 'intent_detection'
+        })
+      });
+
+      if (!response.ok) {
+        console.error('❌ AI intent detection failed:', response.statusText);
+        // Default to NOTE if AI detection fails
+        return { intent: 'NOTE', confidence: 0.5 };
+      }
+
+      const result = await response.json();
+      console.log(`🤖 AI Intent Detection Result:`, result);
+      
+      return {
+        intent: result.intent || 'NOTE',
+        confidence: result.confidence || 0.5
+      };
+    } catch (error) {
+      console.error('❌ Error determining intent:', error);
+      return { intent: 'NOTE', confidence: 0.5 };
+    }
+  }
+
+  /**
+   * Process order with smart defaults from user preferences
+   */
+  private async processOrderWithSmartDefaults(
+    payload: ChatwootWebhookPayload,
+    userId: string,
+    contactId: string,
+    providedParams: any
+  ): Promise<{ success: boolean; message: string; orderId?: string }> {
+    try {
+      console.log(`🤖 Processing order with smart defaults for user ${userId}`);
+      
+      // Step 1: Get user preferences from onboarding
+      const userPreferences = await this.getUserPreferences(userId);
+      console.log(`👤 User preferences:`, userPreferences);
+      
+      // Step 2: Analyze message content with AI to extract any provided parameters
+      const aiAnalysis = await this.analyzeMessageContent(payload.content || '');
+      console.log(`🧠 AI analysis:`, aiAnalysis);
+      
+      // Step 3: Merge provided params, AI analysis, and user preferences
+      const finalParams = this.mergeOrderParameters(providedParams, aiAnalysis, userPreferences);
+      console.log(`🔧 Final order parameters:`, finalParams);
+      
+      // Step 4: Create the order
+      const orderResult = await this.processOrderIntent(payload, userId, contactId, finalParams);
+      
+      if (orderResult.success) {
+        // Step 5: Send confirmation message with what was understood
+        const confirmationMessage = this.buildConfirmationMessage(finalParams, aiAnalysis);
+        await this.sendOrderConfirmation(payload, confirmationMessage);
+        
+        return {
+          success: true,
+          message: 'Order created successfully with smart defaults',
+          orderId: orderResult.orderId
+        };
+      } else {
+        // Send error notification
+        await this.sendIngestionFailureNotification(payload, orderResult.message);
+        return {
+          success: false,
+          message: orderResult.message
+        };
+      }
+      
+    } catch (error) {
+      console.error('❌ Error processing order with smart defaults:', error);
+      await this.sendIngestionFailureNotification(payload, 'Failed to process order with smart defaults');
+      return {
+        success: false,
+        message: `Internal error: ${error.message}`
+      };
+    }
+  }
+
+  /**
+   * Get user preferences from onboarding data
+   */
+  private async getUserPreferences(userId: string): Promise<any> {
+    try {
+      console.log(`👤 Getting preferences for user: ${userId}`);
+      
+      // Get user profile data
+      const { data: profile, error: profileError } = await this.supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle(); // Use maybeSingle() instead of single() to avoid errors
+
+      if (profileError) {
+        console.log(`⚠️ Profile lookup error (using defaults):`, profileError.message);
+      } else if (profile) {
+        console.log(`✅ Found user profile:`, profile);
+      } else {
+        console.log(`📝 No profile found, using defaults`);
+      }
+
+      // Get user goals and preferences
+      const { data: goals, error: goalsError } = await this.supabase
+        .from('goals')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (goalsError) {
+        console.log(`⚠️ Goals lookup error (using defaults):`, goalsError.message);
+      } else if (goals) {
+        console.log(`✅ Found user goals:`, goals);
+      } else {
+        console.log(`📝 No goals found, using defaults`);
+      }
+
+      // Get user pacing preferences
+      const { data: pacing, error: pacingError } = await this.supabase
+        .from('pacing_preferences')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (pacingError) {
+        console.log(`⚠️ Pacing lookup error (using defaults):`, pacingError.message);
+      } else if (pacing) {
+        console.log(`✅ Found user pacing:`, pacing);
+      } else {
+        console.log(`📝 No pacing found, using defaults`);
+      }
+
+      // Extract key preferences with sensible defaults
+      const preferences = {
+        profile: profile || {},
+        goals: goals || {},
+        pacing: pacing || {},
+        // Extract key preferences with fallbacks
+        preferredPlatform: goals?.content_platform || 'linkedin',
+        preferredTone: goals?.content_tone || 'professional',
+        preferredLength: pacing?.content_length || 'medium',
+        preferredFrequency: pacing?.posting_frequency || 'weekly',
+        industry: profile?.industry || 'technology'
+      };
+
+      console.log(`🔧 Final preferences object:`, preferences);
+      return preferences;
+      
+    } catch (error) {
+      console.error('❌ Error getting user preferences:', error);
+      // Return sensible defaults if everything fails
+      return {
+        profile: {},
+        goals: {},
+        pacing: {},
+        preferredPlatform: 'linkedin',
+        preferredTone: 'professional',
+        preferredLength: 'medium',
+        preferredFrequency: 'weekly',
+        industry: 'technology'
+      };
+    }
+  }
+
+  /**
+   * Analyze message content with AI to extract parameters
+   */
+  private async analyzeMessageContent(content: string): Promise<any> {
+    try {
+      // Use the correct Supabase URL from environment
+      const supabaseUrl = Deno.env.get('SUPABASE_URL') || 'https://plbgeabtrkdhbrnjonje.supabase.co';
+      
+      const response = await fetch(`${supabaseUrl}/functions/v1/ai-assistant`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.supabaseServiceKey}`,
+        },
+        body: JSON.stringify({
+          message: content,
+          context: 'order_parameter_extraction',
+          task: 'Extract content creation parameters from user message'
+        })
+      });
+
+      if (!response.ok) {
+        console.error('❌ AI analysis failed:', response.statusText);
+        return {};
+      }
+
+      const result = await response.json();
+      console.log(`🧠 AI analysis result:`, result);
+      
+      return {
+        platform: result.platform || null,
+        topic: result.topic || null,
+        length: result.length || null,
+        tone: result.tone || null,
+        format: result.format || null,
+        urgency: result.urgency || null
+      };
+      
+    } catch (error) {
+      console.error('❌ Error analyzing message content:', error);
+      return {};
+    }
+  }
+
+  /**
+   * Merge provided parameters, AI analysis, and user preferences
+   */
+  private mergeOrderParameters(provided: any, aiAnalysis: any, preferences: any): any {
+    const merged = {
+      platform: provided.platform || aiAnalysis.platform || preferences.preferredPlatform || 'linkedin',
+      topic: provided.topic || aiAnalysis.topic || 'general',
+      length: provided.length || aiAnalysis.length || preferences.preferredLength || 'medium',
+      tone: provided.tone || aiAnalysis.tone || preferences.preferredTone || 'professional',
+      format: provided.format || aiAnalysis.format || 'post',
+      urgency: provided.urgency || aiAnalysis.urgency || 'normal'
+    };
+
+    console.log(`🔧 Merged parameters:`, merged);
+    return merged;
+  }
+
+  /**
+   * Build confirmation message showing what was understood
+   */
+  private buildConfirmationMessage(params: any, aiAnalysis: any): string {
+    const platform = params.platform.charAt(0).toUpperCase() + params.platform.slice(1);
+    const tone = params.tone.charAt(0).toUpperCase() + params.tone.slice(1);
+    const length = params.length.charAt(0).toUpperCase() + params.length.slice(1);
+    
+    let message = `✅ Order created successfully!\n\n`;
+    message += `📱 Platform: ${platform}\n`;
+    message += `📏 Length: ${length}\n`;
+    message += `🎭 Tone: ${tone}\n`;
+    message += `💡 Topic: ${params.topic}\n\n`;
+    message += `📱 Check the Pacelane app for updates and to edit your draft.`;
+    
+    // If AI filled in some fields, mention it
+    if (aiAnalysis.platform || aiAnalysis.tone || aiAnalysis.length) {
+      message += `\n\n💡 I used your preferred settings for missing details.`;
+    }
+    
+    return message;
+  }
+
+  /**
+   * Send order confirmation message
+   */
+  private async sendOrderConfirmation(payload: ChatwootWebhookPayload, message: string): Promise<boolean> {
+    try {
+      const messageTemplate: ChatwootMessageTemplate = {
+        content: message,
+        message_type: 'outgoing',
+        content_type: 'text'
+      };
+
+      console.log(`📤 Sending order confirmation`);
+      return await this.sendChatwootMessage(payload.conversation.id, messageTemplate);
+      
+    } catch (error) {
+      console.error('❌ Error sending order confirmation:', error);
+      return false;
     }
   }
 }
