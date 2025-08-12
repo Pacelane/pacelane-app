@@ -13,6 +13,7 @@ import Tabs from '@/design-system/components/Tabs';
 import DropdownButton from '@/design-system/components/DropdownButton';
 import Input from '@/design-system/components/Input';
 import EmptyState from '@/design-system/components/EmptyState';
+import SubtleLoadingSpinner from '@/design-system/components/SubtleLoadingSpinner';
 
 // Design System Tokens
 import { spacing } from '@/design-system/tokens/spacing';
@@ -461,21 +462,14 @@ const KnowledgeBase = () => {
           {/* Loading State */}
           {loading && (
             <div style={{
-              textAlign: 'center',
+              display: 'flex',
+              justifyContent: 'center',
               padding: spacing.spacing[48],
-              color: colors.text.muted,
             }}>
-              <div style={{
-                width: '32px',
-                height: '32px',
-                border: `2px solid ${colors.border.default}`,
-                borderTop: `2px solid ${colors.border.highlight}`,
-                borderRadius: '50%',
-                animation: 'spin 1s linear infinite',
-                margin: '0 auto',
-                marginBottom: spacing.spacing[16],
-              }} />
-              <p style={textStyles.sm.medium}>Loading your files...</p>
+              <SubtleLoadingSpinner 
+                title="Loading your files..."
+                size={16}
+              />
             </div>
           )}
 

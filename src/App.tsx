@@ -30,6 +30,7 @@ import ContentPillars from "./pages/Onboarding/ContentPillars";
 import Pacing from "./pages/Onboarding/Pacing";
 import Contact from "./pages/Onboarding/Contact";
 import Ready from "./pages/Onboarding/Ready";
+import LoadingPage from "./pages/LoadingPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -74,6 +75,7 @@ const App = () => (
             <Route path="/integrations" element={<IntegrationsPage />} />
             <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/plan-billing" element={<PlanBillingPage />} />
+            <Route path="/loading" element={<LoadingPage />} />
           </Route>
 
           {/* Catch-all */}

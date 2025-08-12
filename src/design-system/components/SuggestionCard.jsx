@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Sparkles, Info } from 'lucide-react';
+import { FileText, Sparkles, Info } from 'lucide-react';
 import { useTheme } from '../../services/theme-context.jsx';
 import { spacing } from '../tokens/spacing.js';
 import { cornerRadius } from '../tokens/corner-radius.js';
@@ -17,7 +17,7 @@ const SuggestionCard = ({
   contentCards = [],
   
   // Handlers
-  onCalendarClick,
+  onPostsClick,
   onGenerateClick,
   
   // Standard props
@@ -86,9 +86,9 @@ const SuggestionCard = ({
             <Button
               size="xs"
               style="dashed"
-              label="See Calendar"
-              leadIcon={<Calendar size={12} />}
-              onClick={onCalendarClick}
+              label="See All Your Posts"
+              leadIcon={<FileText size={12} />}
+              onClick={onPostsClick}
             />
           </div>
 
@@ -100,7 +100,7 @@ const SuggestionCard = ({
               backgroundColor: '#E1E7FD33',
               border: `1px solid ${colors.border.indigo}`,
               ...textStyles.sm.normal,
-              color: colors.bg.basic.indigo.contrast
+              color: colors.text.default
             }}
           >
             {description}

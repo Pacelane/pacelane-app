@@ -2,8 +2,8 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/api/useAuth';
 import { useTheme } from '@/services/theme-context';
-import { textStyles } from '@/design-system/styles/typography/typography-styles';
-import LoadingSpinner from '@/design-system/components/LoadingSpinner';
+import { spacing } from '@/design-system/tokens/spacing';
+import SpinningBichaurinho from '@/design-system/components/SpinningBichaurinho';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -22,10 +22,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
         alignItems: 'center',
         justifyContent: 'center',
         height: '100vh',
-        ...textStyles.md.normal,
-        color: colors.text.subtle
+        backgroundColor: colors.bg.default,
+        padding: spacing.spacing[24],
       }}>
-        <LoadingSpinner size="md" />
+        <SpinningBichaurinho title="Authenticating..." />
       </div>
     );
   }

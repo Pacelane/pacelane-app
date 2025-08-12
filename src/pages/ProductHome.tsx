@@ -16,7 +16,9 @@ import SuggestionCard from '@/design-system/components/SuggestionCard';
 import TemplateCard from '@/design-system/components/TemplateCard';
 import ContentCard from '@/design-system/components/ContentCard';
 import Input from '@/design-system/components/Input';
+import Button from '@/design-system/components/Button';
 import EmptyState from '@/design-system/components/EmptyState';
+import SubtleLoadingSpinner from '@/design-system/components/SubtleLoadingSpinner';
 
 // Design System Tokens
 import { spacing } from '@/design-system/tokens/spacing';
@@ -565,9 +567,16 @@ const ProductHome = () => {
 
           {/* Content Cards Grid */}
           {loadingDrafts && !hasLoadedInitialData ? (
-            <div style={{ textAlign: 'center', padding: spacing.spacing[32] }}>
-              <p style={{ color: colors?.text?.subtle || '#666666' }}>Loading your content...</p>
-              </div>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              padding: spacing.spacing[32],
+            }}>
+              <SubtleLoadingSpinner 
+                title="Loading your content..."
+                size={16}
+              />
+            </div>
           ) : filteredDrafts.length > 0 ? (
             <div style={{ 
               display: 'grid', 

@@ -1,10 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { useTheme } from '../../services/theme-context.jsx';
 import { spacing } from '../tokens/spacing.js';
 import { cornerRadius } from '../tokens/corner-radius.js';
 import { getShadow } from '../tokens/shadows.js';
 import { textStyles } from '../styles/typography/typography-styles.js';
 import { CheckCircle, XCircle, AlertCircle, Info, X } from 'lucide-react';
+import Bichaurinho from './Bichaurinho.jsx';
 
 // Toast Context
 const ToastContext = createContext();
@@ -69,6 +71,12 @@ export const ToastProvider = ({ children }) => {
     custom: (message, options = {}) => addToast({ 
       message, 
       type: 'custom', 
+      ...options 
+    }),
+    loading: (message, options = {}) => addToast({ 
+      message, 
+      type: 'loading', 
+      duration: 0, // Loading toasts don't auto-dismiss
       ...options 
     }),
   };
@@ -172,6 +180,19 @@ const ToastItem = ({ toast }) => {
         return <AlertCircle {...iconProps} color={colors.icon.warning} />;
       case 'info':
         return <Info {...iconProps} color={colors.icon.default} />;
+      case 'loading':
+        return (
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              ease: "linear"
+            }}
+          >
+            <Bichaurinho variant={16} size={20} />
+          </motion.div>
+        );
       default:
         return null;
     }

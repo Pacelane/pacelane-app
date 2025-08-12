@@ -12,6 +12,7 @@ import Input from '@/design-system/components/Input';
 import DropdownButton from '@/design-system/components/DropdownButton';
 import Button from '@/design-system/components/Button';
 import EmptyState from '@/design-system/components/EmptyState';
+import SubtleLoadingSpinner from '@/design-system/components/SubtleLoadingSpinner';
 import Tabs from '@/design-system/components/Tabs';
 
 // Design System Tokens
@@ -366,22 +367,15 @@ const Posts = () => {
           {/* Loading State */}
           {isLoading && (
             <div style={{
-              textAlign: 'center',
+              display: 'flex',
+              justifyContent: 'center',
               padding: spacing.spacing[48],
-              color: colors.text.muted,
             }}>
-              <div style={{
-                width: '32px',
-                height: '32px',
-                border: `2px solid ${colors.border.default}`,
-                borderTop: `2px solid ${colors.border.highlight}`,
-                borderRadius: '50%',
-                animation: 'spin 1s linear infinite',
-                margin: '0 auto',
-                marginBottom: spacing.spacing[16],
-              }} />
-              <p style={textStyles.sm.medium}>Loading your posts...</p>
-                                </div>
+              <SubtleLoadingSpinner 
+                title="Loading your posts..."
+                size={16}
+              />
+            </div>
           )}
 
           {/* Content Display */}
