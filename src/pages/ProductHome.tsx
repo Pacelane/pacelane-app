@@ -1,35 +1,35 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/api/useAuth';
-import { useContent } from '@/hooks/api/useContent';
-import { useAnalytics } from '@/hooks/api/useAnalytics';
-import { useTheme } from '@/services/theme-context';
-import * as templatesApi from '@/api/templates';
-import type { Template } from '@/api/templates';
-import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '../hooks/api/useAuth';
+import { useContent } from '../hooks/api/useContent';
+import { useAnalytics } from '../hooks/api/useAnalytics';
+import { useTheme } from '../services/theme-context';
+import * as templatesApi from '../api/templates';
+import type { Template } from '../api/templates';
+import { supabase } from '../integrations/supabase/client';
 
 // Design System Components
 // Sidebar is now provided by MainAppChrome
-import StreakCard from '@/design-system/components/StreakCard';
-import StatsSummaryCard from '@/design-system/components/StatsSummaryCard';
-import SuggestionCard from '@/design-system/components/SuggestionCard';
-import TemplateCard from '@/design-system/components/TemplateCard';
-import ContentCard from '@/design-system/components/ContentCard';
-import Input from '@/design-system/components/Input';
+import StreakCard from '../design-system/components/StreakCard';
+import StatsSummaryCard from '../design-system/components/StatsSummaryCard';
+import SuggestionCard from '../design-system/components/SuggestionCard';
+import TemplateCard from '../design-system/components/TemplateCard';
+import ContentCard from '../design-system/components/ContentCard';
+import Input from '../design-system/components/Input';
 
 // Design System Tokens
-import { spacing } from '@/design-system/tokens/spacing';
-import { textStyles } from '@/design-system/styles/typography/typography-styles';
-import { typography } from '@/design-system/tokens/typography';
-import { cornerRadius } from '@/design-system/tokens/corner-radius';
-import { shadows, getShadow } from '@/design-system/tokens/shadows';
+import { spacing } from '../design-system/tokens/spacing';
+import { textStyles } from '../design-system/styles/typography/typography-styles';
+import { typography } from '../design-system/tokens/typography';
+import { cornerRadius } from '../design-system/tokens/corner-radius';
+import { shadows, getShadow } from '../design-system/tokens/shadows';
 
 // Icons
 import { ChevronRight, Search } from 'lucide-react';
 
 // Additional Components
-import { CalendarIntegration } from '@/components/CalendarIntegration';
-import { ReadAiIntegration } from '@/components/ReadAiIntegration';
+import { CalendarIntegration } from '../components/CalendarIntegration';
+import { ReadAiIntegration } from '../components/ReadAiIntegration';
 
 const ProductHome = () => {
   const navigate = useNavigate();
