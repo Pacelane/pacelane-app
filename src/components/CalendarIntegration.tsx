@@ -2,11 +2,19 @@ import React, { useState, useEffect } from 'react';
 import Button from '../design-system/components/Button.jsx';
 import Card, { CardHeader, CardTitle, CardDescription, CardContent } from '../design-system/components/Card.jsx';
 import Badge from '../design-system/components/Badge.jsx';
+import Toggle from '../design-system/components/Toggle.jsx';
 import { Calendar, RefreshCw, Link, Unlink, Clock, Users, MapPin } from 'lucide-react';
 import { CalendarService, CalendarConnection, CalendarEvent } from '../services/calendarService';
 import { useToast } from '../design-system/components/Toast.jsx';
 import { format } from 'date-fns';
 import { useAuth } from '../hooks/api/useAuth';
+
+// Design System Tokens
+import { useTheme } from '../services/theme-context';
+import { spacing } from '../design-system/tokens/spacing';
+import { textStyles } from '../design-system/styles/typography/typography-styles';
+import { cornerRadius } from '../design-system/tokens/corner-radius';
+import { shadows, getShadow } from '../design-system/tokens/shadows';
 
 interface CalendarIntegrationProps {
   onMeetingSelect?: (meeting: CalendarEvent) => void;
@@ -21,6 +29,7 @@ export const CalendarIntegration: React.FC<CalendarIntegrationProps> = ({ onMeet
   const [hasCalendars, setHasCalendars] = useState(false);
   const { toast } = useToast();
   const { user, loading } = useAuth();
+  const { colors } = useTheme();
 
   useEffect(() => {
     checkCalendarStatus();
@@ -157,10 +166,10 @@ export const CalendarIntegration: React.FC<CalendarIntegrationProps> = ({ onMeet
 
   if (!hasCalendars) {
     return (
-      <Card className="w-full">
+      <Card style={{ width: '100%' }}>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
+          <CardTitle style={{ display: 'flex', alignItems: 'center', gap: spacing.spacing[8] }}>
+            <Calendar size={20} />
             Google Calendar Integration
           </CardTitle>
           <CardDescription>
@@ -171,16 +180,16 @@ export const CalendarIntegration: React.FC<CalendarIntegrationProps> = ({ onMeet
           <Button 
             onClick={handleConnectCalendar} 
             disabled={isConnecting || loading || !user}
-            className="w-full"
+            style={{ width: '100%' }}
           >
             {isConnecting ? (
               <>
-                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                <RefreshCw size={16} style={{ marginRight: spacing.spacing[8] }} />
                 Connecting...
               </>
             ) : (
               <>
-                <Link className="h-4 w-4 mr-2" />
+                <Link size={16} style={{ marginRight: spacing.spacing[8] }} />
                 Connect Google Calendar
               </>
             )}
@@ -191,12 +200,12 @@ export const CalendarIntegration: React.FC<CalendarIntegrationProps> = ({ onMeet
   }
 
   return (
-    <div className="space-y-6">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[24] }}>
       {/* Connected Calendars */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
+          <CardTitle style={{ display: 'flex', alignItems: 'center', gap: spacing.spacing[8] }}>
+            <Calendar size={20} />
             Connected Calendars
           </CardTitle>
           <CardDescription>
@@ -204,14 +213,27 @@ export const CalendarIntegration: React.FC<CalendarIntegrationProps> = ({ onMeet
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[12] }}>
             {connectedCalendars.map((calendar) => (
-              <div key={calendar.id} className="flex items-center justify-between p-3 border rounded-lg">
-                <div className="flex items-center gap-3">
-                  <Calendar className="h-4 w-4 text-blue-600" />
+              <div 
+                key={calendar.id} 
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: spacing.spacing[12],
+                  border: `1px solid ${colors.border.default}`,
+                  borderRadius: cornerRadius.borderRadius.lg,
+                  backgroundColor: colors.bg.card.subtle
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: spacing.spacing[12] }}>
+                  <Calendar size={16} style={{ color: colors.icon.highlight }} />
                   <div>
-                    <p className="font-medium">{calendar.calendar_name}</p>
-                    <p className="text-sm text-muted-foreground">
+                    <p style={{ ...textStyles.sm.medium, color: colors.text.default }}>
+                      {calendar.calendar_name}
+                    </p>
+                    <p style={{ ...textStyles.xs.normal, color: colors.text.subtle }}>
                       Last synced: {format(new Date(calendar.last_sync), 'MMM d, yyyy h:mm a')}
                     </p>
                   </div>
@@ -220,37 +242,37 @@ export const CalendarIntegration: React.FC<CalendarIntegrationProps> = ({ onMeet
                   )}
                 </div>
                 <Button
-                  variant="outline"
+                  style="secondary"
                   size="sm"
                   onClick={() => handleDisconnectCalendar(calendar.calendar_id)}
                 >
-                  <Unlink className="h-4 w-4 mr-2" />
+                  <Unlink size={16} style={{ marginRight: spacing.spacing[8] }} />
                   Disconnect
                 </Button>
               </div>
             ))}
           </div>
           
-          <div className="flex gap-2 mt-4">
+          <div style={{ display: 'flex', gap: spacing.spacing[8], marginTop: spacing.spacing[16] }}>
             <Button onClick={handleSyncCalendar} disabled={isSyncing}>
               {isSyncing ? (
                 <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  <RefreshCw size={16} style={{ marginRight: spacing.spacing[8] }} />
                   Syncing...
                 </>
               ) : (
                 <>
-                  <RefreshCw className="h-4 w-4 mr-2" />
+                  <RefreshCw size={16} style={{ marginRight: spacing.spacing[8] }} />
                   Sync Now
                 </>
               )}
             </Button>
             
             <Button 
-              variant="outline" 
+              style="secondary"
               onClick={() => handleDisconnectCalendar()}
             >
-              <Unlink className="h-4 w-4 mr-2" />
+              <Unlink size={16} style={{ marginRight: spacing.spacing[8] }} />
               Disconnect All
             </Button>
           </div>
@@ -260,50 +282,83 @@ export const CalendarIntegration: React.FC<CalendarIntegrationProps> = ({ onMeet
       {/* Upcoming Meetings */}
       {upcomingMeetings.length > 0 && (
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              Upcoming Meetings
-            </CardTitle>
-            <CardDescription>
-              Select a meeting to generate content from
-            </CardDescription>
-          </CardHeader>
+                  <CardHeader>
+          <CardTitle style={{ display: 'flex', alignItems: 'center', gap: spacing.spacing[8] }}>
+            <Clock size={20} />
+            Upcoming Meetings
+          </CardTitle>
+          <CardDescription>
+            Select a meeting to generate content from
+          </CardDescription>
+        </CardHeader>
           <CardContent>
-            <div className="space-y-3">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[12] }}>
               {upcomingMeetings.map((meeting) => (
                 <div 
                   key={meeting.id} 
-                  className="p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                  style={{
+                    padding: spacing.spacing[12],
+                    border: `1px solid ${colors.border.default}`,
+                    borderRadius: cornerRadius.borderRadius.lg,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    backgroundColor: colors.bg.card.subtle
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = colors.bg.card.default;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = colors.bg.card.subtle;
+                  }}
                   onClick={() => handleMeetingSelect(meeting)}
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h4 className="font-medium">{meeting.title}</h4>
-                      <p className="text-sm text-muted-foreground">
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                    <div style={{ flex: 1 }}>
+                      <h4 style={{ ...textStyles.sm.medium, color: colors.text.default }}>
+                        {meeting.title}
+                      </h4>
+                      <p style={{ ...textStyles.xs.normal, color: colors.text.subtle }}>
                         {formatMeetingTime(meeting.start_time, meeting.end_time)}
                       </p>
                       {meeting.description && (
-                        <p className="text-sm mt-2 text-muted-foreground line-clamp-2">
+                        <p style={{ 
+                          ...textStyles.xs.normal, 
+                          marginTop: spacing.spacing[8], 
+                          color: colors.text.subtle,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical'
+                        }}>
                           {meeting.description}
                         </p>
                       )}
-                      <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: spacing.spacing[16], 
+                        marginTop: spacing.spacing[8] 
+                      }}>
                         {meeting.attendees && meeting.attendees.length > 0 && (
-                          <span className="flex items-center gap-1">
-                            <Users className="h-3 w-3" />
-                            {meeting.attendees.length} attendees
+                          <span style={{ display: 'flex', alignItems: 'center', gap: spacing.spacing[4] }}>
+                            <Users size={12} />
+                            <span style={{ ...textStyles.xs.normal, color: colors.text.subtle }}>
+                              {meeting.attendees.length} attendees
+                            </span>
                           </span>
                         )}
                         {meeting.location && (
-                          <span className="flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
-                            {meeting.location}
+                          <span style={{ display: 'flex', alignItems: 'center', gap: spacing.spacing[4] }}>
+                            <MapPin size={12} />
+                            <span style={{ ...textStyles.xs.normal, color: colors.text.subtle }}>
+                              {meeting.location}
+                            </span>
                           </span>
                         )}
                       </div>
                     </div>
-                    <Button size="sm" variant="outline">
+                    <Button size="sm" style="secondary">
                       Generate Content
                     </Button>
                   </div>
@@ -317,36 +372,60 @@ export const CalendarIntegration: React.FC<CalendarIntegrationProps> = ({ onMeet
       {/* Recent Meetings */}
       {recentMeetings.length > 0 && (
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              Recent Meetings
-            </CardTitle>
-            <CardDescription>
-              Generate follow-up content from recent meetings
-            </CardDescription>
-          </CardHeader>
+                  <CardHeader>
+          <CardTitle style={{ display: 'flex', alignItems: 'center', gap: spacing.spacing[8] }}>
+            <Clock size={20} />
+            Recent Meetings
+          </CardTitle>
+          <CardDescription>
+            Generate follow-up content from recent meetings
+          </CardDescription>
+        </CardHeader>
           <CardContent>
-            <div className="space-y-3">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[12] }}>
               {recentMeetings.map((meeting) => (
                 <div 
                   key={meeting.id} 
-                  className="p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                  style={{
+                    padding: spacing.spacing[12],
+                    border: `1px solid ${colors.border.default}`,
+                    borderRadius: cornerRadius.borderRadius.lg,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    backgroundColor: colors.bg.card.subtle
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = colors.bg.card.default;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = colors.bg.card.subtle;
+                  }}
                   onClick={() => handleMeetingSelect(meeting)}
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h4 className="font-medium">{meeting.title}</h4>
-                      <p className="text-sm text-muted-foreground">
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                    <div style={{ flex: 1 }}>
+                      <h4 style={{ ...textStyles.sm.medium, color: colors.text.default }}>
+                        {meeting.title}
+                      </h4>
+                      <p style={{ ...textStyles.xs.normal, color: colors.text.subtle }}>
                         {formatMeetingTime(meeting.start_time, meeting.end_time)}
                       </p>
                       {meeting.description && (
-                        <p className="text-sm mt-2 text-muted-foreground line-clamp-2">
+                        <p style={{ 
+                          ...textStyles.xs.normal, 
+                          marginTop: spacing.spacing[8], 
+                          color: colors.text.subtle,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical'
+                        }}>
                           {meeting.description}
                         </p>
                       )}
                     </div>
-                    <Button size="sm" variant="outline">
+                    <Button size="sm" style="secondary">
                       Generate Follow-up
                     </Button>
                   </div>
