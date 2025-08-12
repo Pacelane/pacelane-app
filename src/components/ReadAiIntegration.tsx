@@ -20,6 +20,13 @@ import { ReadAIService, ReadAIMeeting, ReadAIActionItem, MeetingInsights } from 
 import { useToast } from '../design-system/components/Toast.jsx';
 import { format } from 'date-fns';
 
+// Design System Tokens
+import { useTheme } from '../services/theme-context';
+import { spacing } from '../design-system/tokens/spacing';
+import { textStyles } from '../design-system/styles/typography/typography-styles';
+import { cornerRadius } from '../design-system/tokens/corner-radius';
+import { shadows, getShadow } from '../design-system/tokens/shadows';
+
 interface ReadAiIntegrationProps {
   onMeetingSelect?: (meeting: ReadAIMeeting) => void;
 }
@@ -37,6 +44,7 @@ export const ReadAiIntegration: React.FC<ReadAiIntegrationProps> = ({ onMeetingS
     { id: 'insights', label: 'Insights' }
   ];
   const { toast } = useToast();
+  const { colors } = useTheme();
 
   useEffect(() => {
     loadData();
