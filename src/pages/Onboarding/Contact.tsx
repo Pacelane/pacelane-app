@@ -25,6 +25,7 @@ const Contact = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { colors } = useTheme();
+  const { toast } = useToast();
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
