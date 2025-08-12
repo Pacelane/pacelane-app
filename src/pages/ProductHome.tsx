@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/api/useAuth';
 import { useContent } from '@/hooks/api/useContent';
 import { useAnalytics } from '@/hooks/api/useAnalytics';
 import { useTheme } from '@/services/theme-context';
@@ -9,7 +9,7 @@ import type { Template } from '@/api/templates';
 import { supabase } from '@/integrations/supabase/client';
 
 // Design System Components
-import HomeSidebar from '@/design-system/components/HomeSidebar';
+// Sidebar is now provided by MainAppChrome
 import StreakCard from '@/design-system/components/StreakCard';
 import StatsSummaryCard from '@/design-system/components/StatsSummaryCard';
 import SuggestionCard from '@/design-system/components/SuggestionCard';
@@ -39,7 +39,7 @@ const ProductHome = () => {
   const { colors } = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
   const [hasLoadedInitialData, setHasLoadedInitialData] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  // Sidebar handled by MainAppChrome layout
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
   const [generationProgress, setGenerationProgress] = useState<{
@@ -257,15 +257,7 @@ const ProductHome = () => {
     };
   };
 
-  // Main container styles (accounting for sidebar)
-  const mainContainerStyles = {
-    marginLeft: isSidebarCollapsed ? '72px' : '240px',
-    transition: 'margin-left 0.3s cubic-bezier(0.4, 0.0, 0.2, 1)',
-    minHeight: '100vh',
-    backgroundColor: colors?.bg?.default || '#ffffff',
-    width: `calc(100vw - ${isSidebarCollapsed ? '72px' : '240px'})`,
-    position: 'relative',
-  };
+  // Main content container (wrapped by MainAppChrome 840px container)
 
   // Content container styles
   const contentContainerStyles = {
@@ -294,37 +286,7 @@ const ProductHome = () => {
     draft.content.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Sidebar event handlers
-  const handleMenuItemClick = (menuId: string) => {
-    switch (menuId) {
-      case 'home':
-        // Already on home, do nothing or scroll to top
-        break;
-      case 'profile':
-        navigate('/profile');
-        break;
-      case 'knowledge':
-        navigate('/knowledge');
-        break;
-      case 'history':
-        navigate('/posts');
-        break;
-      case 'pacing':
-        // Navigate to pacing page when implemented
-        console.log('Pacing page - coming soon');
-        break;
-      case 'notifications':
-        // Navigate to notifications page when implemented
-        console.log('Notifications page - coming soon');
-        break;
-      case 'plan-billing':
-        // Navigate to billing page when implemented
-        console.log('Plan & Billing page - coming soon');
-        break;
-      default:
-        console.log('Unknown menu item:', menuId);
-    }
-  };
+  // Navigation handled by MainAppChrome sidebar
 
   const handleCreateNewClick = async () => {
     // Track activity when user creates new content
@@ -386,73 +348,31 @@ const ProductHome = () => {
   // Show loading state only on initial load
   if (!hasLoadedInitialData && !error) {
     return (
-      <div style={{ display: 'flex', minHeight: '100vh' }}>
-        {/* HomeSidebar */}
-        <HomeSidebar
-          isCollapsed={isSidebarCollapsed}
-          onToggleCollapsed={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-          userName={getUserName()}
-          userAvatar={getUserAvatar()}
-          activeMenuItem="home"
-          onMenuItemClick={handleMenuItemClick}
-          onCreateNewClick={handleCreateNewClick}
-          onAvatarClick={handleAvatarClick}
-          onThemeChange={handleThemeChange}
-          onHelpClick={handleHelpClick}
-        />
+      <div style={contentContainerStyles}>
+        {/* Welcome Heading */}
+        <h1 style={welcomeHeadingStyle}>
+          Welcome, {getUserName()}!
+        </h1>
 
-        {/* Main Content Area */}
-        <div style={mainContainerStyles}>
-          <div style={contentContainerStyles}>
-            {/* Welcome Heading */}
-            <h1 style={welcomeHeadingStyle}>
-              Welcome, {getUserName()}!
-            </h1>
-
-            {/* Loading indicator */}
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'center', 
-              alignItems: 'center', 
-              padding: spacing.spacing[40],
-              flexDirection: 'column',
-              gap: spacing.spacing[16]
-            }}>
-              <div style={{ color: colors?.text?.subtle || '#666666' }}>Loading your dashboard...</div>
-            </div>
-          </div>
+        {/* Loading indicator */}
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          padding: spacing.spacing[40],
+          flexDirection: 'column',
+          gap: spacing.spacing[16]
+        }}>
+          <div style={{ color: colors?.text?.subtle || '#666666' }}>Loading your dashboard...</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
-      <style>
-        {`
-          @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-          }
-        `}
-      </style>
-      {/* HomeSidebar */}
-      <HomeSidebar
-        isCollapsed={isSidebarCollapsed}
-        onToggleCollapsed={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-        userName={getUserName()}
-        userAvatar={getUserAvatar()}
-        activeMenuItem="home"
-        onMenuItemClick={handleMenuItemClick}
-        onCreateNewClick={handleCreateNewClick}
-        onAvatarClick={handleAvatarClick}
-        onThemeChange={handleThemeChange}
-        onHelpClick={handleHelpClick}
-      />
-
-      {/* Main Content Area */}
-      <div style={mainContainerStyles}>
-        <div style={contentContainerStyles}>
+    <div>
+      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+      <div style={contentContainerStyles}>
           {/* Welcome Heading */}
           <h1 style={welcomeHeadingStyle}>
             Welcome, {getUserName()}!
@@ -699,9 +619,8 @@ const ProductHome = () => {
               <p>Some features may be limited due to connection issues.</p>
             </div>
           )}
-          </div>
+        </div>
       </div>
-    </div>
   );
 };
 

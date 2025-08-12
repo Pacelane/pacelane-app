@@ -62,7 +62,7 @@ const TopNav = ({
   // Container styles
   const containerStyles = {
     backgroundColor: colors.bg.default,
-    borderBottom: `${stroke.default} solid ${colors.border.default}`,
+    borderBottom: `${stroke.DEFAULT} solid ${colors.border.default}`,
     paddingLeft: spacing.spacing[40],
     paddingRight: spacing.spacing[40],
     height: '80px',

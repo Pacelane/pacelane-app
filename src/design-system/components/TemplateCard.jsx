@@ -53,7 +53,7 @@ const TemplateCard = ({
       case 'empty':
         return {
           ...baseCardStyles,
-          border: `${stroke.default} dashed ${colors.border.darker}`,
+          border: `${stroke.DEFAULT} dashed ${colors.border.darker}`,
           boxShadow: 'none',
           alignItems: 'center',
           justifyContent: 'center',
@@ -63,14 +63,14 @@ const TemplateCard = ({
       case 'hover':
         return {
           ...baseCardStyles,
-          border: `${stroke.default} solid ${colors.border.default}`,
+          border: `${stroke.DEFAULT} solid ${colors.border.default}`,
           boxShadow: getShadow('regular.modalSm', colors, { withBorder: false }),
         };
       
       default: // 'default'
         return {
           ...baseCardStyles,
-          border: `${stroke.default} solid ${colors.border.default}`,
+          border: `${stroke.DEFAULT} solid ${colors.border.default}`,
           boxShadow: getShadow('regular.card', colors, { withBorder: false }),
         };
     }

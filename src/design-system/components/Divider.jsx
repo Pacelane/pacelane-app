@@ -35,7 +35,7 @@ const Divider = ({
       <div
         style={{
           flex: 1,
-          height: stroke.default,
+          height: stroke.DEFAULT,
           backgroundColor: colors.border.default,
         }}
       />
@@ -55,7 +55,7 @@ const Divider = ({
       <div
         style={{
           flex: 1,
-          height: stroke.default,
+          height: stroke.DEFAULT,
           backgroundColor: colors.border.default,
         }}
       />

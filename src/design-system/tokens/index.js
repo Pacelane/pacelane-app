@@ -6,7 +6,6 @@ import { cornerRadius } from './corner-radius.js';
 import { stroke } from './stroke.js';
 import { shadows } from './shadows.js';
 import { themes } from './semantic-colors.js';
-import { ThemeProvider, useTheme, withTheme } from '../../services/theme-context.jsx';
 
 // Combine all design tokens
 export const tokens = {
@@ -34,8 +33,8 @@ export { stroke } from './stroke.js';
 export { shadows } from './shadows.js';
 export { themes } from './semantic-colors.js';
 
-// Export theme system
-export { ThemeProvider, useTheme, withTheme } from '../../services/theme-context.jsx';
+// Note: Theme system (ThemeProvider, useTheme, withTheme) should be imported directly from:
+// import { ThemeProvider, useTheme, withTheme } from '../../services/theme-context.jsx';
 
 // Export default tokens object
 export default tokens; 

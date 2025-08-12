@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/api/useAuth';
 import { useContent } from '@/hooks/api/useContent';
 import { useTheme } from '@/services/theme-context';
-import { toast } from 'sonner';
+import { useToast } from '@/design-system/components/Toast';
 
 // Design System Components
-import HomeSidebar from '@/design-system/components/HomeSidebar';
+// Sidebar is provided by MainAppChrome layout
 import FileUpload from '@/design-system/components/FileUpload';
 import FileCard from '@/design-system/components/FileCard';
 import Tabs from '@/design-system/components/Tabs';
@@ -53,7 +53,7 @@ const KnowledgeBase = () => {
   } = useContent();
 
   // ========== LOCAL COMPONENT STATE ==========
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  // Sidebar handled by layout
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('lastAdded');
@@ -62,19 +62,7 @@ const KnowledgeBase = () => {
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [urlInput, setUrlInput] = useState('');
 
-  // Main container styles - accounting for sidebar
-  const mainContainerStyles = {
-    marginLeft: isSidebarCollapsed ? '72px' : '240px',
-    transition: 'margin-left 0.3s cubic-bezier(0.4, 0.0, 0.2, 1)',
-    minHeight: '100vh',
-    backgroundColor: colors?.bg?.default || '#ffffff',
-    width: `calc(100vw - ${isSidebarCollapsed ? '72px' : '240px'})`,
-    position: 'relative',
-    paddingTop: spacing.spacing[80],
-    paddingBottom: spacing.spacing[160],
-    paddingLeft: spacing.spacing[32],
-    paddingRight: spacing.spacing[32],
-  };
+  // Content container wrapped by MainAppChrome 840px container
 
   // Content container styles
   const containerStyles = {
@@ -397,24 +385,7 @@ const KnowledgeBase = () => {
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
-      {/* HomeSidebar */}
-      <HomeSidebar
-        isCollapsed={isSidebarCollapsed}
-        onToggleCollapsed={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-        userName={getUserName()}
-        userAvatar={getUserAvatar()}
-        activeMenuItem="knowledge"
-        onMenuItemClick={handleMenuItemClick}
-        onCreateNewClick={handleCreateNewClick}
-        onAvatarClick={handleAvatarClick}
-        onThemeChange={(theme) => console.log('Theme changed:', theme)}
-        onHelpClick={() => console.log('Help clicked')}
-      />
-
-      {/* Main Content */}
-      <div style={mainContainerStyles}>
-        <div style={containerStyles}>
+    <div style={containerStyles}>
           {/* Header Section */}
           <div>
             <h1 style={titleStyle}>Knowledge Base</h1>
@@ -671,8 +642,6 @@ const KnowledgeBase = () => {
               </div>
             </div>
           )}
-        </div>
-      </div>
     </div>
   );
 };

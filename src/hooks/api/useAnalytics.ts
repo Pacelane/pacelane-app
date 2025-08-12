@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import * as analyticsApi from '@/api/analytics';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/api/useAuth';
 import type { ActivityData, UserStreak, DashboardStats, WeekActivity } from '@/api/analytics';
 
 // ========== TYPE DEFINITIONS ==========

@@ -1,21 +1,28 @@
 // Auth API Layer - Frontend Interface
-// This is where frontend developers will mainly work
-// It wraps the AuthService and adds frontend-specific logic
+// This layer adds frontend-specific logic like default URLs and validation
 
 import { AuthService } from '@/services/authService';
+import { signInSchema, signUpSchema, validateData } from '@/api/schemas';
 import type { SignInData, SignUpData } from '@/types/auth';
 
 /**
  * Frontend API for authentication operations
- * This layer adds frontend-specific logic like default URLs
+ * Adds validation and frontend-specific logic
  */
 export const authApi = {
   /**
    * Sign in a user with email and password
+   * Includes frontend validation
    * @param credentials - Email and password
    * @returns Promise with auth result
    */
   async signIn(credentials: SignInData) {
+    // Validate input data
+    const validation = validateData(signInSchema, credentials);
+    if (!validation.success) {
+      return { error: Object.values(validation.errors!)[0] };
+    }
+
     return AuthService.signIn(credentials);
   },
 
@@ -26,6 +33,12 @@ export const authApi = {
    * @returns Promise with auth result
    */
   async signUp(credentials: SignUpData) {
+    // Validate input data
+    const validation = validateData(signUpSchema, credentials);
+    if (!validation.success) {
+      return { error: Object.values(validation.errors!)[0] };
+    }
+
     // Add frontend-specific logic: default redirect URL
     const credentialsWithRedirect = {
       ...credentials,
@@ -54,13 +67,10 @@ export const authApi = {
     return AuthService.signOut();
   },
 
-  // Note: Profile operations have been moved to profileApi
-  // Use profileApi for all profile-related operations
-
-  // ========== UTILITY FUNCTIONS ==========
+  // ========== UTILITY FUNCTIONS (FOR HOOKS) ==========
   
   /**
-   * Get current session (mainly for internal use)
+   * Get current session (for useAuth hook)
    * @returns Current session data
    */
   getCurrentSession() {
@@ -68,7 +78,7 @@ export const authApi = {
   },
 
   /**
-   * Listen for auth state changes (mainly for internal use)
+   * Listen for auth state changes (for useAuth hook)
    * @param callback - Function to call when auth changes
    * @returns Subscription to unsubscribe later
    */
@@ -77,12 +87,12 @@ export const authApi = {
   }
 };
 
-// You can also export individual functions if preferred:
+// Export individual functions for convenience
 export const {
   signIn,
   signUp, 
   signInWithGoogle,
   signOut,
-  fetchProfile,
-  updateProfile
+  getCurrentSession,
+  onAuthStateChange
 } = authApi; 
