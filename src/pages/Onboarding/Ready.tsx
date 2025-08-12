@@ -23,6 +23,7 @@ const Ready = () => {
   const navigate = useNavigate();
   const { user, refreshProfile } = useAuth();
   const { colors } = useTheme();
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
   const handleGoBack = () => {
@@ -86,22 +87,31 @@ const Ready = () => {
   };
 
   const completeOnboarding = async () => {
-    if (!user) return;
+    if (!user) return null;
 
     try {
-      const { error } = await supabase
+      console.log('Ready: Updating profile with onboarding_completed: true');
+      
+      const { data, error } = await supabase
         .from('profiles')
         .update({ 
           onboarding_completed: true,
           updated_at: new Date().toISOString()
         })
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .select()
+        .single();
 
-      if (error) throw error;
-      return true;
+      if (error) {
+        console.error('Ready: Error updating profile:', error);
+        throw error;
+      }
+      
+      console.log('Ready: Profile updated successfully:', data);
+      return data;
     } catch (error) {
       console.error('Error completing onboarding:', error);
-      return false;
+      return null;
     }
   };
 
@@ -111,27 +121,28 @@ const Ready = () => {
     setIsLoading(true);
     
     try {
-      // Create user bucket first
-      const bucketCreated = await createUserBucket();
-      if (!bucketCreated) {
-        console.warn('Failed to create user bucket, but continuing with onboarding');
-      }
-
-      // Complete onboarding
-      const success = await completeOnboarding();
+      console.log('Ready: Starting onboarding completion...');
       
-      if (!success) {
-        throw new Error('Failed to complete onboarding');
+      // Complete onboarding - simple and direct
+      const { error } = await supabase
+        .from('profiles')
+        .update({ 
+          onboarding_completed: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error completing onboarding:', error);
+        throw error;
       }
-
-      // Refresh profile to get updated onboarding_completed status
-      await refreshProfile();
-
-      // Generate initial content suggestions in the background
-      generateInitialContentSuggestions();
-
+      
+      console.log('Ready: Onboarding completed successfully');
+      
+      // Navigate directly - no complex verification
       toast.success('Welcome to Pacelane! Your content strategy is ready.');
       navigate('/product-home');
+      
     } catch (error) {
       console.error('Error starting:', error);
       toast.error('Failed to complete setup. Please try again.');

@@ -113,7 +113,7 @@ export const validateData = <T>(schema: z.ZodSchema<T>, data: unknown) => {
     const validatedData = schema.parse(data);
     return { success: true, data: validatedData, errors: null };
   } catch (error) {
-    if (error instanceof z.ZodError) {
+    if (error instanceof z.ZodError && error.errors) {
       return {
         success: false,
         data: null,

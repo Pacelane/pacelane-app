@@ -70,6 +70,7 @@ const SignIn = () => {
         toast.info('Creating your account...');
         
         const result = await signUp({
+          name: (data as SignUpFormData).name,
           email: data.email,
           password: data.password,
           options: {
@@ -131,7 +132,8 @@ const SignIn = () => {
         }
         
         toast.success('Welcome back!');
-        navigate('/product-home');
+        // Don't navigate directly - let the auth state change listener handle onboarding validation
+        // navigate('/product-home');
       }
     } catch (error: any) {
       console.error('Authentication error:', error);

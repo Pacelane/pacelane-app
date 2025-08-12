@@ -26,6 +26,14 @@ export const useAuth = (): AuthState & AuthActions => {
   // ========== HELPER FUNCTIONS ==========
 
   /**
+   * Check if user has completed onboarding
+   * @returns boolean indicating onboarding completion status
+   */
+  const isOnboardingComplete = (): boolean => {
+    return authState.profile?.onboarding_completed === true;
+  };
+
+  /**
    * Fetch and set user profile
    * @param userId - User ID from Supabase auth
    */
@@ -40,12 +48,22 @@ export const useAuth = (): AuthState & AuthActions => {
         ...prev, 
         profile: result.data! 
       }));
+      
+      // Check if onboarding is complete (for logging purposes only)
+      const isOnboardingComplete = result.data.onboarding_completed;
+      console.log('useAuth: Onboarding status:', isOnboardingComplete ? 'Complete' : 'Incomplete');
+      
+      // Note: We don't redirect here anymore - let ProtectedRoute handle it
+      // This prevents conflicts between automatic redirects and route guards
     } else {
       console.error('useAuth: Failed to load profile:', result.error);
       setAuthState(prev => ({ 
         ...prev, 
         profile: null 
       }));
+      
+      // Note: We don't redirect here anymore - let ProtectedRoute handle it
+      // This prevents conflicts between automatic redirects and route guards
     }
   };
 
@@ -73,10 +91,10 @@ export const useAuth = (): AuthState & AuthActions => {
 
   /**
    * Sign up a new user
-   * @param data - Email and password
+   * @param data - Name, email and password
    * @returns Promise with result
    */
-  const signUp = async (data: { email: string; password: string }) => {
+  const signUp = async (data: { name: string; email: string; password: string }) => {
     console.log('useAuth: Attempting to sign up user:', data.email);
     return authApi.signUp(data);
   };
@@ -172,5 +190,8 @@ export const useAuth = (): AuthState & AuthActions => {
     signInWithGoogle,
     signOut,
     refreshProfile,
+    
+    // Helper functions
+    isOnboardingComplete,
   };
 }; 
