@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import { inspirationsApi } from '@/api/inspirations';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/api/useAuth';
 import type { 
   InspirationsState,
   InspirationsActions,

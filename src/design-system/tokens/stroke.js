@@ -1,7 +1,7 @@
 // Stroke Design Tokens
 export const stroke = {
   sm: '0.5px',
-  default: '1px',
+  DEFAULT: '1px',
   md: '1.5px',
   lg: '2px',
   xl: '3px',

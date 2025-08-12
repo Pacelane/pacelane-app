@@ -61,7 +61,7 @@ const ButtonGroup = ({
   // Container styles for ButtonGroup
   const containerStyles = {
     backgroundColor: colors.bg.state.secondary,
-    border: `${stroke.default} solid ${colors.border.darker}`,
+    border: `${stroke.DEFAULT} solid ${colors.border.darker}`,
     borderRadius: cornerRadius.borderRadius.md,
     boxShadow: shadows.component.default,
     display: 'inline-flex',
@@ -200,7 +200,7 @@ const ButtonGroup = ({
             {!isLastItem && (
               <div
                 style={{
-                  width: stroke.default,
+                  width: stroke.DEFAULT,
                   backgroundColor: colors.border.default,
                   alignSelf: 'stretch',
                 }}

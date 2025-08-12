@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
-import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/design-system/components/Toast';
+import { useAuth } from '@/hooks/api/useAuth';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { signInSchema, signUpSchema, type SignInFormData, type SignUpFormData } from '@/lib/validationSchemas';
+import { signInSchema, signUpSchema, type SignInFormData, type SignUpFormData } from '@/api/schemas';
 
 // Design System Components
 import { useTheme } from '@/services/theme-context';
@@ -30,10 +30,13 @@ const SignIn = () => {
   const navigate = useNavigate();
   const { user, signIn, signUp, signInWithGoogle } = useAuth();
   const { colors } = useTheme();
+  const { toast } = useToast();
 
   // Use a single form instance with dynamic schema
   const form = useForm<SignInFormData | SignUpFormData>({
     resolver: zodResolver(isSignUp ? signUpSchema : signInSchema),
+    mode: 'onSubmit', // Only validate on submit, not on change
+    reValidateMode: 'onSubmit', // Only re-validate on submit
     defaultValues: {
       email: '',
       password: '',
@@ -50,58 +53,128 @@ const SignIn = () => {
 
   // Update form validation when switching modes
   useEffect(() => {
+    // Clear errors and reset with current values
+    const currentValues = form.getValues();
     form.clearErrors();
     form.reset({
-      email: form.getValues('email'),
-      password: form.getValues('password'),
-      ...(isSignUp && { name: form.getValues('name') || '' }),
+      email: currentValues.email || '',
+      password: currentValues.password || '',
+      ...(isSignUp && { name: (currentValues as any).name || '' }),
     });
   }, [isSignUp, form]);
 
   const onSubmit = async (data: SignInFormData | SignUpFormData) => {
     try {
       if (isSignUp) {
+        // Show loading toast for sign up
+        toast.info('Creating your account...');
+        
         const result = await signUp({
           email: data.email,
           password: data.password,
           options: {
             data: {
-              display_name: data.name
+              display_name: (data as SignUpFormData).name
             }
           }
         });
         
-        if (result.error) throw new Error(result.error);
+        if (result.error) {
+          // Handle specific Supabase errors with user-friendly messages
+          let errorMessage = result.error;
+          
+          if (result.error.includes('already registered')) {
+            errorMessage = 'An account with this email already exists. Please sign in instead.';
+          } else if (result.error.includes('Password should be at least')) {
+            errorMessage = 'Password must be at least 6 characters long.';
+          } else if (result.error.includes('Invalid email')) {
+            errorMessage = 'Please enter a valid email address.';
+          } else if (result.error.includes('weak password')) {
+            errorMessage = 'Password is too weak. Please choose a stronger password.';
+          }
+          
+          toast.error(errorMessage);
+          return;
+        }
         
-        toast.success('Check your email for the confirmation link!');
+        toast.success('Account created! Please check your email for the confirmation link.');
         
         // Reset form and switch to sign-in mode
         form.reset({ email: '', password: '', name: '' });
         setIsSignUp(false);
+        
       } else {
+        // Show loading toast for sign in
+        toast.info('Signing you in...');
+        
         const result = await signIn({
           email: data.email,
           password: data.password,
         });
         
-        if (result.error) throw new Error(result.error);
+        if (result.error) {
+          // Handle specific Supabase errors with user-friendly messages
+          let errorMessage = result.error;
+          
+          if (result.error.includes('Invalid login credentials')) {
+            errorMessage = 'Invalid email or password. Please check your credentials and try again.';
+          } else if (result.error.includes('Email not confirmed')) {
+            errorMessage = 'Please check your email and click the confirmation link before signing in.';
+          } else if (result.error.includes('Too many requests')) {
+            errorMessage = 'Too many login attempts. Please wait a moment and try again.';
+          } else if (result.error.includes('Invalid email')) {
+            errorMessage = 'Please enter a valid email address.';
+          }
+          
+          toast.error(errorMessage);
+          return;
+        }
         
         toast.success('Welcome back!');
         navigate('/product-home');
       }
     } catch (error: any) {
       console.error('Authentication error:', error);
-      toast.error(error.message || 'Authentication failed');
+      toast.error('Something went wrong. Please try again.');
+    }
+  };
+
+  // Handle form submission with proper error handling
+  const handleFormSubmit = async () => {
+    try {
+      await form.handleSubmit(onSubmit)();
+    } catch (error) {
+      // This catches validation errors from Zod
+      console.log('Validation failed - errors are shown in form fields');
+      // Errors are already handled by React Hook Form and displayed in the UI
     }
   };
 
   const handleGoogleSignIn = async () => {
     try {
+      toast.info('Redirecting to Google...');
+      
       const result = await signInWithGoogle();
       
-      if (result.error) throw new Error(result.error);
+      if (result.error) {
+        let errorMessage = result.error;
+        
+        if (result.error.includes('popup_closed_by_user')) {
+          errorMessage = 'Google sign-in was cancelled. Please try again.';
+        } else if (result.error.includes('access_denied')) {
+          errorMessage = 'Google sign-in access denied. Please try again.';
+        } else if (result.error.includes('network')) {
+          errorMessage = 'Network error. Please check your connection and try again.';
+        }
+        
+        toast.error(errorMessage);
+        return;
+      }
+      
+      // Success case is handled by the auth state change listener
     } catch (error: any) {
-      toast.error(error.message || 'Google sign in failed');
+      console.error('Google sign-in error:', error);
+      toast.error('Failed to sign in with Google. Please try again.');
     }
   };
 
@@ -110,8 +183,29 @@ const SignIn = () => {
     form.clearErrors();
   };
 
+  // Check if form has required values and is valid for submission
+  const formValues = form.watch();
+  const isFormValid = (() => {
+    const email = formValues.email?.trim();
+    const password = formValues.password?.trim();
+    const name = (formValues as any).name?.trim();
+
+    // Basic validation: check if required fields have values
+    if (!email || !password) return false;
+    if (isSignUp && !name) return false;
+
+    // Check minimum password length
+    if (password.length < (isSignUp ? 8 : 6)) return false;
+
+    // Basic email format check (simple regex)
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) return false;
+
+    return true;
+  })();
+
   // Page container styles
-  const pageContainerStyles = {
+  const pageContainerStyles: React.CSSProperties = {
     height: '100vh',
     width: '100%',
     display: 'flex',
@@ -120,15 +214,15 @@ const SignIn = () => {
   };
 
   // Left column styles (50% width, 720px container)
-  const leftColumnStyles = {
+  const leftColumnStyles: React.CSSProperties = {
     width: '50%',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacing.spacing[40],
-    boxSizing: 'border-box' as const,
-    position: 'relative' as const,
+    boxSizing: 'border-box',
+    position: 'relative',
     zIndex: 5,
   };
 
@@ -210,11 +304,6 @@ const SignIn = () => {
             <div style={formContainerStyles}>
               {/* Heading Container */}
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: spacing.spacing[4] }}>
-                {/* Bichaurinho 31 */}
-                <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                  <Bichaurinho variant={31} size={32} />
-                </div>
-
                 <h1 style={{
                   ...textStyles['2xl'].semibold,
                   color: colors.text.default,
@@ -245,11 +334,11 @@ const SignIn = () => {
                       label="Full Name"
                       placeholder="Enter your full name"
                       value={form.watch('name') || ''}
-                      onChange={(e) => form.setValue('name', e.target.value, { shouldValidate: true })}
+                      onChange={(e) => form.setValue('name', e.target.value)}
                       required
                       size="lg"
-                      failed={!!form.formState.errors.name}
-                      caption={form.formState.errors.name?.message}
+                      failed={!!(form.formState.errors as any).name}
+                      caption={(form.formState.errors as any).name?.message}
                     />
                   )}
 
@@ -258,7 +347,7 @@ const SignIn = () => {
                     label="Email address"
                     placeholder="Enter your email"
                     value={form.watch('email') || ''}
-                    onChange={(e) => form.setValue('email', e.target.value, { shouldValidate: true })}
+                    onChange={(e) => form.setValue('email', e.target.value)}
                     required
                     size="lg"
                     failed={!!form.formState.errors.email}
@@ -270,7 +359,7 @@ const SignIn = () => {
                     label="Password"
                     placeholder="Enter your password"
                     value={form.watch('password') || ''}
-                    onChange={(e) => form.setValue('password', e.target.value, { shouldValidate: true })}
+                    onChange={(e) => form.setValue('password', e.target.value)}
                     required
                     size="lg"
                     failed={!!form.formState.errors.password}
@@ -282,9 +371,9 @@ const SignIn = () => {
                     label={form.formState.isSubmitting ? 'Loading...' : (isSignUp ? 'Create account' : 'Sign In')}
                     style="primary"
                     size="lg"
-                    onClick={form.handleSubmit(onSubmit)}
+                    onClick={handleFormSubmit}
                     loading={form.formState.isSubmitting}
-                    disabled={form.formState.isSubmitting}
+                    disabled={form.formState.isSubmitting || !isFormValid}
                     className="w-full"
                   />
                 </form>

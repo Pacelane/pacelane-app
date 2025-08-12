@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/api/useAuth';
 import { useProfile } from '@/hooks/api/useProfile';
 import { useTheme } from '@/services/theme-context';
 import { supabase } from '@/integrations/supabase/client';
 
 // Design System Components
-import HomeSidebar from '@/design-system/components/HomeSidebar';
+// Sidebar is provided by MainAppChrome
 import Button from '@/design-system/components/Button';
 import Input from '@/design-system/components/Input';
 import SidebarMenuItem from '@/design-system/components/SidebarMenuItem';
@@ -36,7 +36,7 @@ const Profile = () => {
   const { colors } = useTheme();
   
   // Sidebar state
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  // Sidebar handled by layout
   
   // State for active section in side menu
   const [activeSection, setActiveSection] = useState('personal');
@@ -393,19 +393,7 @@ const Profile = () => {
     />
   );
 
-  // Main container styles - accounting for sidebar
-  const mainContainerStyles = {
-    marginLeft: isSidebarCollapsed ? '72px' : '240px',
-    transition: 'margin-left 0.3s cubic-bezier(0.4, 0.0, 0.2, 1)',
-    minHeight: '100vh',
-    backgroundColor: colors?.bg?.default || '#ffffff',
-    width: `calc(100vw - ${isSidebarCollapsed ? '72px' : '240px'})`,
-    position: 'relative',
-    paddingTop: spacing.spacing[80],
-    paddingBottom: spacing.spacing[160],
-    paddingLeft: spacing.spacing[32],
-    paddingRight: spacing.spacing[32],
-  };
+  // Main content container is wrapped by MainAppChrome 840px container
 
   // Content container styles
   const containerStyles = {
@@ -413,7 +401,7 @@ const Profile = () => {
     maxWidth: '1200px',
     margin: '0 auto',
     display: 'flex',
-    flexDirection: 'column',
+    flexDirection: 'column' as const,
     gap: spacing.spacing[48],
   };
 
@@ -618,24 +606,7 @@ const Profile = () => {
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
-      {/* HomeSidebar */}
-      <HomeSidebar
-        isCollapsed={isSidebarCollapsed}
-        onToggleCollapsed={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-        userName={getUserName()}
-        userAvatar={getUserAvatar()}
-        activeMenuItem="profile"
-        onMenuItemClick={handleMenuItemClick}
-        onCreateNewClick={handleCreateNewClick}
-        onAvatarClick={handleAvatarClick}
-        onThemeChange={(theme) => console.log('Theme changed:', theme)}
-        onHelpClick={() => console.log('Help clicked')}
-      />
-
-      {/* Main Content */}
-      <div style={mainContainerStyles}>
-        <div style={containerStyles}>
+    <div style={containerStyles}>
           {/* Header */}
           <div>
             <h1 style={titleStyle}>Profile Settings</h1>
@@ -927,8 +898,6 @@ const Profile = () => {
               onClick={handleSignOut}
             />
           </div>
-        </div>
-      </div>
     </div>
   );
 };

@@ -4,7 +4,7 @@
 
 import { useState } from 'react';
 import { profileApi } from '@/api/profile';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/api/useAuth';
 import type { 
   ProfileState,
   ProfileActions,

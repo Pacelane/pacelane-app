@@ -1,7 +1,5 @@
-// Spacing Design Tokens
-export const spacing = {
-  // Base spacing scale (px units)
-  spacing: {
+// Spacing Design Tokens  
+const spacingValues = {
     none: '0px',
     1: '1px',
     2: '2px',
@@ -37,6 +35,8 @@ export const spacing = {
     288: '288px',
     320: '320px',
     384: '384px'
-  },
+};
 
+export const spacing = {
+  spacing: spacingValues
 };

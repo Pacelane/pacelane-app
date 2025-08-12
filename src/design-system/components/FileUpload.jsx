@@ -145,7 +145,7 @@ const FileUpload = ({
           padding: `${spacing.spacing[32]} ${spacing.spacing[24]}`,
           borderRadius: cornerRadius.borderRadius.sm,
           backgroundColor: getBackgroundColor(),
-          border: `${stroke.default} dashed ${getBorderColor()}`,
+          border: `${stroke.DEFAULT} dashed ${getBorderColor()}`,
           boxShadow: getBoxShadow(),
           cursor: disabled ? 'not-allowed' : 'pointer',
           transition: 'background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out',

@@ -1,8 +1,14 @@
 // Profile API Layer - Frontend Interface
-// This is where frontend developers will mainly work for profile operations
-// It wraps the ProfileService and adds frontend-specific logic
+// This layer adds frontend-specific logic and validation
 
 import { ProfileService } from '@/services/profileService';
+import { 
+  linkedInProfileSchema, 
+  profileUpdateSchema,
+  contentPillarsSchema,
+  contactSchema,
+  validateData 
+} from '@/api/schemas';
 import type { 
   BasicProfileUpdate,
   LinkedInProfileUpdate,
