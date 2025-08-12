@@ -1,11 +1,11 @@
-import { ToastProvider } from "@/design-system/components/Toast";
+import { ToastProvider } from "./design-system/components/Toast";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Outlet } from "react-router-dom";
 
-import { ThemeProvider } from "@/services/theme-context";
-import ProtectedRoute from "@/design-system/components/ProtectedRoute";
-import MainAppChrome from "@/design-system/components/MainAppChrome";
+import { ThemeProvider } from "./services/theme-context";
+import ProtectedRoute from "./design-system/components/ProtectedRoute";
+import MainAppChrome from "./design-system/components/MainAppChrome";
 
 import ProductHome from "./pages/ProductHome";
 
@@ -24,6 +24,7 @@ import Pacing from "./pages/Onboarding/Pacing";
 import Contact from "./pages/Onboarding/Contact";
 import Ready from "./pages/Onboarding/Ready";
 import NotFound from "./pages/NotFound";
+import GoogleCalendarCallback from "./pages/GoogleCalendarCallback";
 
 const queryClient = new QueryClient();
 
@@ -45,6 +46,9 @@ const App = () => (
           <Route path="/onboarding/pacing" element={<Pacing />} />
           <Route path="/onboarding/contact" element={<Contact />} />
           <Route path="/onboarding/ready" element={<Ready />} />
+          
+          {/* OAuth callbacks */}
+          <Route path="/auth/google/callback" element={<GoogleCalendarCallback />} />
 
           {/* Protected app chrome with sidebar and centered content */}
           <Route
