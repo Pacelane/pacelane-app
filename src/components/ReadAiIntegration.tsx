@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import Button from '../design-system/components/Button.jsx';
+import Badge from '../design-system/components/Badge.jsx';
+import Tabs from '../design-system/components/Tabs.jsx';
+import Card, { CardHeader, CardTitle, CardDescription, CardContent } from '../design-system/components/Card.jsx';
 import { 
   Brain, 
   Calendar, 
@@ -16,8 +16,8 @@ import {
   FileText,
   Target
 } from 'lucide-react';
-import { ReadAIService, ReadAIMeeting, ReadAIActionItem, MeetingInsights } from '@/services/readAiService';
-import { useToast } from '@/hooks/use-toast';
+import { ReadAIService, ReadAIMeeting, ReadAIActionItem, MeetingInsights } from '../services/readAiService';
+import { useToast } from '../design-system/components/Toast.jsx';
 import { format } from 'date-fns';
 
 interface ReadAiIntegrationProps {
@@ -30,6 +30,12 @@ export const ReadAiIntegration: React.FC<ReadAiIntegrationProps> = ({ onMeetingS
   const [insights, setInsights] = useState<MeetingInsights | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('meetings');
+
+  const tabsConfig = [
+    { id: 'meetings', label: 'Recent Meetings' },
+    { id: 'action-items', label: 'Action Items' },
+    { id: 'insights', label: 'Insights' }
+  ];
   const { toast } = useToast();
 
   useEffect(() => {
@@ -246,14 +252,16 @@ export const ReadAiIntegration: React.FC<ReadAiIntegrationProps> = ({ onMeetingS
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="meetings">Recent Meetings</TabsTrigger>
-              <TabsTrigger value="action-items">Action Items</TabsTrigger>
-              <TabsTrigger value="insights">Insights</TabsTrigger>
-            </TabsList>
+          <Tabs 
+            tabs={tabsConfig}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            style="pill"
+            type="fixed"
+          />
 
-            <TabsContent value="meetings" className="space-y-4">
+          <div style={{ marginTop: '24px' }}>
+            {activeTab === 'meetings' && (
               <div className="space-y-4">
                 {meetings.map((meeting) => (
                   <Card 
@@ -311,9 +319,9 @@ export const ReadAiIntegration: React.FC<ReadAiIntegrationProps> = ({ onMeetingS
                   </Card>
                 ))}
               </div>
-            </TabsContent>
+            )}
 
-            <TabsContent value="action-items" className="space-y-4">
+            {activeTab === 'action-items' && (
               <div className="space-y-4">
                 {actionItems.map((item) => (
                   <Card key={item.id}>
@@ -368,10 +376,9 @@ export const ReadAiIntegration: React.FC<ReadAiIntegrationProps> = ({ onMeetingS
                   </Card>
                 ))}
               </div>
-            </TabsContent>
+            )}
 
-            <TabsContent value="insights" className="space-y-4">
-              {insights && (
+            {activeTab === 'insights' && insights && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <Card>
                     <CardHeader>
@@ -443,9 +450,8 @@ export const ReadAiIntegration: React.FC<ReadAiIntegrationProps> = ({ onMeetingS
                     </Card>
                   )}
                 </div>
-              )}
-            </TabsContent>
-          </Tabs>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>

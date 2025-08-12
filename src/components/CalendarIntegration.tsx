@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import Button from '../design-system/components/Button.jsx';
+import Card, { CardHeader, CardTitle, CardDescription, CardContent } from '../design-system/components/Card.jsx';
+import Badge from '../design-system/components/Badge.jsx';
 import { Calendar, RefreshCw, Link, Unlink, Clock, Users, MapPin } from 'lucide-react';
-import { CalendarService, CalendarConnection, CalendarEvent } from '@/services/calendarService';
-import { useToast } from '@/hooks/use-toast';
+import { CalendarService, CalendarConnection, CalendarEvent } from '../services/calendarService';
+import { useToast } from '../design-system/components/Toast.jsx';
 import { format } from 'date-fns';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '../hooks/api/useAuth';
 
 interface CalendarIntegrationProps {
   onMeetingSelect?: (meeting: CalendarEvent) => void;
