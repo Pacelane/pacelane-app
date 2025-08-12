@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useTheme } from '../../services/theme-context.jsx';
-import { useHelp } from '../../services/help-context.jsx';
+import { useTheme } from '@/services/theme-context';
+import { useHelp } from '@/services/help-context';
 import { spacing } from '../tokens/spacing.js';
 import { textStyles } from '../styles/typography/typography-styles.js';
 import { stroke } from '../tokens/stroke.js';

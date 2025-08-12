@@ -72,7 +72,7 @@ const Modal = ({
   const overlayStyles = {
     position: 'fixed',
     inset: 0,
-    zIndex: 50,
+    zIndex: 9999, // High z-index to ensure modal appears above all other content
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -133,15 +133,16 @@ const Modal = ({
             {...props}
           >
             {showCloseButton && (
-              <Button
-                variant="iconOnly"
-                style="ghost"
-                size="sm"
-                leadIcon={<X size={16} />}
-                onClick={handleClose}
-                style={closeButtonStyles}
-                aria-label="Close modal"
-              />
+              <div style={closeButtonStyles}>
+                <Button
+                  variant="iconOnly"
+                  style="ghost"
+                  size="sm"
+                  leadIcon={<X size={16} />}
+                  onClick={handleClose}
+                  aria-label="Close modal"
+                />
+              </div>
             )}
             
             <div style={contentWrapperStyles}>

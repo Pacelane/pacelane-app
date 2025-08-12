@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTheme } from '@/services/theme-context';
+import { useHelp } from '@/services/help-context';
 import { useAuth } from '@/hooks/api/useAuth';
 import { spacing } from '@/design-system/tokens/spacing';
 import HomeSidebar from '@/design-system/components/HomeSidebar';
@@ -13,6 +14,7 @@ import HomeSidebar from '@/design-system/components/HomeSidebar';
  */
 const MainAppChrome = ({ className = '', children, ...rest }) => {
   const { colors } = useTheme();
+  const { openHelp } = useHelp();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -69,7 +71,13 @@ const MainAppChrome = ({ className = '', children, ...rest }) => {
 
   const handleCreateNewClick = () => navigate('/content-editor');
   const handleAvatarClick = () => navigate('/profile');
-  const handleHelpClick = () => console.log('Help clicked');
+  const handleHelpClick = () => {
+    openHelp({
+      page: location.pathname,
+      section: 'MainAppChrome',
+      action: 'Clicked help button from main app chrome'
+    });
+  };
   const handleThemeChange = () => {};
 
   // Layout styles

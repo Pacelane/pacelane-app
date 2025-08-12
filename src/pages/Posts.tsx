@@ -106,55 +106,80 @@ const Posts = () => {
     return option?.label || 'Last Edited';
   };
 
-  // Filter drafts based on search and filter
-  const getFilteredDrafts = () => {
-    return savedDrafts.filter(draft => {
-      const matchesSearch = draft.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                           draft.content.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesFilter = selectedFilter === 'all' || draft.status === selectedFilter;
-    return matchesSearch && matchesFilter;
-  });
-  };
-
-  // Sort drafts based on sortBy
-  const getSortedDrafts = (drafts) => {
-    switch (sortBy) {
-      case 'nameAsc':
-        return [...drafts].sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-      case 'nameDesc':
-        return [...drafts].sort((a, b) => (b.title || '').localeCompare(a.title || ''));
-      case 'newest':
-        return [...drafts].sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
-      case 'oldest':
-        return [...drafts].sort((a, b) => new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime());
-      case 'lastEdited':
-      default:
-        return drafts; // Already sorted by updated_at from backend
-    }
-  };
-
-  // Transform drafts to ContentCard format
-  const getDraftCards = () => {
-    return getSortedDrafts(getFilteredDrafts()).map(draft => ({
+  // Get all content items (drafts + suggestions)
+  const getAllContentItems = () => {
+    const draftItems = savedDrafts.map(draft => ({
       id: draft.id,
       title: draft.title || 'Untitled',
       subtitle: `Last edited ${new Date(draft.updated_at).toLocaleDateString()}`,
       content: draft.content.substring(0, 200) + (draft.content.length > 200 ? '...' : ''),
       variant: 'gradient',
       status: draft.status,
+      type: 'draft',
+      originalData: draft,
+      updatedAt: new Date(draft.updated_at),
     }));
-  };
 
-  // Transform suggestions to ContentCard format
-  const getSuggestionCards = () => {
-    return contentSuggestions.map(suggestion => ({
+    const suggestionItems = contentSuggestions.map(suggestion => ({
       id: suggestion.id,
       title: suggestion.title,
       subtitle: 'Content suggestion',
       content: suggestion.description || suggestion.suggested_outline?.substring(0, 200) || 'No description available',
       variant: 'image',
       status: 'suggestion',
+      type: 'suggestion',
+      originalData: suggestion,
+      updatedAt: new Date(suggestion.created_at || Date.now()),
     }));
+
+    return [...draftItems, ...suggestionItems];
+  };
+
+  // Filter content based on search and filter
+  const getFilteredContent = () => {
+    const allItems = getAllContentItems();
+    
+    return allItems.filter(item => {
+      const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                           item.content.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      let matchesFilter = false;
+      switch (selectedFilter) {
+        case 'all':
+          matchesFilter = true;
+          break;
+        case 'draft':
+          matchesFilter = item.type === 'draft' && item.status === 'draft';
+          break;
+        case 'published':
+          matchesFilter = item.type === 'draft' && item.status === 'published';
+          break;
+        case 'archived':
+          matchesFilter = item.type === 'draft' && item.status === 'archived';
+          break;
+        default:
+          matchesFilter = true;
+      }
+      
+      return matchesSearch && matchesFilter;
+    });
+  };
+
+  // Sort content based on sortBy
+  const getSortedContent = (items) => {
+    switch (sortBy) {
+      case 'nameAsc':
+        return [...items].sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+      case 'nameDesc':
+        return [...items].sort((a, b) => (b.title || '').localeCompare(a.title || ''));
+      case 'newest':
+        return [...items].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+      case 'oldest':
+        return [...items].sort((a, b) => a.updatedAt.getTime() - b.updatedAt.getTime());
+      case 'lastEdited':
+      default:
+        return [...items].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+    }
   };
 
   // Event handlers
@@ -191,28 +216,26 @@ const Posts = () => {
     });
   };
 
-  const handleDraftAction = (action, draftId) => {
-    const draft = savedDrafts.find(d => d.id === draftId);
-    if (!draft) return;
+  const handleContentAction = (action, itemId) => {
+    const allItems = getAllContentItems();
+    const item = allItems.find(i => i.id === itemId);
+    if (!item) return;
 
-    switch (action) {
-      case 'edit':
-        handleEditDraft(draft);
-        break;
-      case 'delete':
-        handleDeleteDraft(draftId);
-        break;
-    }
-  };
-
-  const handleSuggestionAction = (action, suggestionId) => {
-    const suggestion = contentSuggestions.find(s => s.id === suggestionId);
-    if (!suggestion) return;
-
-    switch (action) {
-      case 'create':
-        handleCreateFromSuggestion(suggestion);
-        break;
+    if (item.type === 'draft') {
+      switch (action) {
+        case 'edit':
+          handleEditDraft(item.originalData);
+          break;
+        case 'delete':
+          handleDeleteDraft(itemId);
+          break;
+      }
+    } else if (item.type === 'suggestion') {
+      switch (action) {
+        case 'create':
+          handleCreateFromSuggestion(item.originalData);
+          break;
+      }
     }
   };
 
@@ -292,8 +315,7 @@ const Posts = () => {
     margin: 0,
   };
 
-  const draftCards = getDraftCards();
-  const suggestionCards = getSuggestionCards();
+  const contentItems = getSortedContent(getFilteredContent());
 
   return (
     <div style={containerStyles}>
@@ -362,69 +384,41 @@ const Posts = () => {
                                 </div>
           )}
 
-          {/* Content Sections */}
+          {/* Content Display */}
           {!isLoading && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[32] } as React.CSSProperties}>
-              {/* Saved Drafts Section */}
-              <div style={sectionStyles}>
-                <h2 style={sectionTitleStyle}>Saved Drafts</h2>
-                
-                {draftCards.length === 0 ? (
-                  <EmptyState
-                    title="No drafts found"
-                    subtitle="Start writing to create your first draft!"
-                    buttonLabel="Create New Post"
-                    onButtonClick={handleCreateNewClick}
-                  />
-                ) : (
-                  <div style={contentGridStyles}>
-                    {draftCards.map((draft) => (
-                      <ContentCard
-                        key={draft.id}
-                        variant={draft.variant}
-                        title={draft.title}
-                        subtitle={draft.subtitle}
-                        content={draft.content}
-                        onClick={() => {
-                          const originalDraft = savedDrafts.find(d => d.id === draft.id);
-                          if (originalDraft) handleEditDraft(originalDraft);
-                        }}
-                        onMenuAction={(action) => handleDraftAction(action, draft.id)}
-                      />
-                    ))}
-                  </div>
-                )}
-                  </div>
-
-                  {/* Content Suggestions Section */}
-              <div style={sectionStyles}>
-                <h2 style={sectionTitleStyle}>Unused Content Suggestions</h2>
-                
-                {suggestionCards.length === 0 ? (
-                  <EmptyState
-                    title="No unused suggestions available"
-                    subtitle="All content suggestions have been used or there are none yet"
-                  />
-                ) : (
-                  <div style={contentGridStyles}>
-                    {suggestionCards.map((suggestion) => (
-                      <ContentCard
-                        key={suggestion.id}
-                        variant={suggestion.variant}
-                        title={suggestion.title}
-                        subtitle={suggestion.subtitle}
-                        content={suggestion.content}
-                        onClick={() => {
-                          const originalSuggestion = contentSuggestions.find(s => s.id === suggestion.id);
-                          if (originalSuggestion) handleCreateFromSuggestion(originalSuggestion);
-                        }}
-                        onMenuAction={(action) => handleSuggestionAction(action, suggestion.id)}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
+            <>
+              {contentItems.length === 0 ? (
+                <EmptyState
+                  title="No content found"
+                  subtitle={selectedFilter === 'all' 
+                    ? "Start writing to create your first post or wait for content suggestions!"
+                    : `No ${selectedFilter} content found. Try changing the filter or search terms.`
+                  }
+                  buttonLabel="Create New Post"
+                  onButtonClick={handleCreateNewClick}
+                />
+              ) : (
+                <div style={contentGridStyles}>
+                  {contentItems.map((item) => (
+                    <ContentCard
+                      key={item.id}
+                      variant={item.variant}
+                      title={item.title}
+                      subtitle={item.subtitle}
+                      content={item.content}
+                      onClick={() => {
+                        if (item.type === 'draft') {
+                          handleEditDraft(item.originalData);
+                        } else if (item.type === 'suggestion') {
+                          handleCreateFromSuggestion(item.originalData);
+                        }
+                      }}
+                      onMenuAction={(action) => handleContentAction(action, item.id)}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
           )}
     </div>
   );

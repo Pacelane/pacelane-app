@@ -94,9 +94,10 @@ const Templates = () => {
   // Grid container styles for 3 columns
   const gridStyles = {
     display: 'grid',
-    gridTemplateColumns: 'repeat(3, 1fr)',
-    gap: spacing.spacing[16],
+    gridTemplateColumns: 'repeat(auto-fit, 240px)',
+    gap: spacing.spacing[12],
     width: '100%',
+    justifyContent: 'start',
   };
 
   // Show loading state
@@ -104,13 +105,15 @@ const Templates = () => {
     return (
       <div style={containerStyles}>
         {/* Back Button */}
-        <Button 
-          style="dashed"
-          size="xs"
-          leadIcon={<ArrowLeft size={16} />}
-          label="Go Back"
-          onClick={handleGoBack}
-        />
+        <div style={{ alignSelf: 'flex-start' }}>
+          <Button 
+            style="dashed"
+            size="xs"
+            leadIcon={<ArrowLeft size={16} />}
+            label="Go Back"
+            onClick={handleGoBack}
+          />
+        </div>
 
         {/* Page Header */}
         <div>
@@ -138,13 +141,15 @@ const Templates = () => {
   return (
     <div style={containerStyles}>
       {/* Back Button */}
-      <Button 
-        style="dashed"
-        size="xs"
-        leadIcon={<ArrowLeft size={16} />}
-        label="Go Back"
-        onClick={handleGoBack}
-      />
+      <div style={{ alignSelf: 'flex-start' }}>
+        <Button 
+          style="dashed"
+          size="xs"
+          leadIcon={<ArrowLeft size={16} />}
+          label="Go Back"
+          onClick={handleGoBack}
+        />
+      </div>
 
       {/* REQUIRED: Page Header Section */}
       <div>

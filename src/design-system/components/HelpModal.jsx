@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Send, Loader2 } from 'lucide-react';
-import { useTheme } from '../../services/theme-context.jsx';
-import { useHelp } from '../../services/help-context.jsx';
+import { useTheme } from '@/services/theme-context';
+import { useHelp } from '@/services/help-context';
 import { spacing } from '../tokens/spacing.js';
 import { textStyles } from '../styles/typography/typography-styles.js';
 import { typography } from '../tokens/typography.js';
@@ -31,7 +31,6 @@ const HelpModal = () => {
     type: 'question',
     subject: '',
     message: '',
-    priority: 'medium',
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -47,12 +46,7 @@ const HelpModal = () => {
     { value: 'other', label: 'Other' },
   ];
 
-  const priorityOptions = [
-    { value: 'low', label: 'Low' },
-    { value: 'medium', label: 'Medium' },
-    { value: 'high', label: 'High' },
-    { value: 'urgent', label: 'Urgent' },
-  ];
+
 
   // Handle input changes
   const handleInputChange = (field, value) => {
@@ -103,7 +97,6 @@ const HelpModal = () => {
           type: 'question',
           subject: '',
           message: '',
-          priority: 'medium',
         });
         setErrors({});
       } else {
@@ -126,7 +119,6 @@ const HelpModal = () => {
         type: 'question',
         subject: '',
         message: '',
-        priority: 'medium',
       });
       setErrors({});
     }
@@ -172,14 +164,7 @@ const HelpModal = () => {
     gap: spacing.spacing[16],
   };
 
-  const contextInfoStyles = {
-    ...textStyles.xs.normal,
-    color: colors.text.muted,
-    padding: spacing.spacing[12],
-    backgroundColor: colors.bg.muted,
-    borderRadius: '6px',
-    fontFamily: typography.fontFamily.code,
-  };
+
 
   const errorStyles = {
     ...textStyles.sm.normal,
@@ -245,35 +230,9 @@ const HelpModal = () => {
           )}
         </div>
 
-        {/* Priority */}
-        <div>
-          <Select
-            label="Priority"
-            value={formData.priority}
-            onValueChange={(value) => handleInputChange('priority', value)}
-            options={priorityOptions}
-            required
-          />
-        </div>
 
-        {/* Context Information */}
-        {helpContext.page && (
-          <div>
-            <label style={{
-              ...textStyles.sm.medium,
-              color: colors.text.default,
-              display: 'block',
-              marginBottom: spacing.spacing[8],
-            }}>
-              Page Context (automatically included)
-            </label>
-            <div style={contextInfoStyles}>
-              Page: {helpContext.page}
-              {helpContext.section && <><br />Section: {helpContext.section}</>}
-              {helpContext.action && <><br />Action: {helpContext.action}</>}
-            </div>
-          </div>
-        )}
+
+
 
         {/* Submit Error */}
         {errors.submit && (
