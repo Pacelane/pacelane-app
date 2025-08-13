@@ -29,6 +29,7 @@ const KnowledgeBase = () => {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
   const { colors } = useTheme();
+  const toast = useToast();
   
   console.log('KnowledgeBase: Component rendered, user:', user?.id, 'profile:', profile?.id);
   
@@ -69,13 +70,11 @@ const KnowledgeBase = () => {
   // Content container wrapped by MainAppChrome 840px container
 
   // Content container styles
-  const containerStyles = {
-    width: '100%',
-    maxWidth: '1200px',
-    margin: '0 auto',
+  const containerStyles: React.CSSProperties = {
     display: 'flex',
     flexDirection: 'column',
     gap: spacing.spacing[24],
+    backgroundColor: 'transparent',
   };
 
   // Title style using awesome serif font, 4xl semi bold
@@ -170,8 +169,9 @@ const KnowledgeBase = () => {
       let subtitle = '';
       
       if (item.type === 'audio') {
-        const transcriptionStatus = item.extraction_metadata?.transcription_status || 'unknown';
-        const hasTranscription = item.extracted_content && item.extracted_content.length > 0;
+        const extendedItem = item as any; // Type assertion for extended fields
+        const transcriptionStatus = extendedItem.extraction_metadata?.transcription_status || 'unknown';
+        const hasTranscription = extendedItem.extracted_content && extendedItem.extracted_content.length > 0;
         
         subtitle = `${item.size ? `${(item.size / 1024).toFixed(1)} KB` : ''} • ${item.created_at ? new Date(item.created_at).toLocaleDateString() : 'Unknown Date'}`;
         
@@ -186,7 +186,7 @@ const KnowledgeBase = () => {
         }
         
         // Add source info if available
-        if (item.metadata?.source === 'whatsapp') {
+        if (extendedItem.metadata?.source === 'whatsapp') {
           subtitle += ` • WhatsApp`;
         }
       } else {
@@ -208,18 +208,18 @@ const KnowledgeBase = () => {
           status: 'ready',
           fileSize: item.size || 0,
           metadata: item.type === 'audio' ? {
-            transcription: item.extracted_content,
-            transcriptionStatus: item.extraction_metadata?.transcription_status,
-            source: item.metadata?.source,
-            contactId: item.metadata?.contact_identifier
+            transcription: (item as any).extracted_content,
+            transcriptionStatus: (item as any).extraction_metadata?.transcription_status,
+            source: (item as any).metadata?.source,
+            contactId: (item as any).metadata?.contact_identifier
           } : undefined
         }),
         // Add additional metadata for audio files
         metadata: item.type === 'audio' ? {
-          transcription: item.extracted_content,
-          transcriptionStatus: item.extraction_metadata?.transcription_status,
-          source: item.metadata?.source,
-          contactId: item.metadata?.contact_identifier
+          transcription: (item as any).extracted_content,
+          transcriptionStatus: (item as any).extraction_metadata?.transcription_status,
+          source: (item as any).metadata?.source,
+          contactId: (item as any).metadata?.contact_identifier
         } : undefined
       };
     });
@@ -376,12 +376,15 @@ const KnowledgeBase = () => {
     return 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=48&h=48&fit=crop&crop=face';
   };
 
-  // Grid styles for file cards - 2 columns
+  // Grid styles for file cards - 2 columns with fixed equal widths
   const gridStyles = {
     display: 'grid',
     gridTemplateColumns: 'repeat(2, 1fr)',
     gap: spacing.spacing[20],
     width: '100%',
+    // Ensure children don't affect grid sizing
+    minHeight: 0,
+    minWidth: 0,
   };
 
   // Row styles for tabs and search
@@ -492,6 +495,11 @@ const KnowledgeBase = () => {
                     fileSize={file.fileSize}
                     onMenuAction={(action) => handleFileAction(action, file.id)}
                     onClick={file.onClick}
+                    style={{
+                      width: '100%',
+                      minWidth: 0, // Allow shrinking below content size
+                      maxWidth: '100%', // Prevent growing beyond grid cell
+                    }}
                   />
                 ))}
             </div>

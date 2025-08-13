@@ -138,7 +138,10 @@ const CalendarSnippetsCard = ({
   const meetingTitleStyle = {
     ...textStyles.sm.semibold,
     color: colors.text.default,
-    margin: 0
+    margin: 0,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap'
   };
 
   const meetingMetaStyles = {

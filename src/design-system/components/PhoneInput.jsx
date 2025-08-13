@@ -135,6 +135,7 @@ const PhoneInput = ({
   // Core props
   value = '',
   onChange,
+  onCleanNumberChange, // Callback for clean phone number (backend format)
   placeholder,
   
   // Country selection
@@ -200,6 +201,13 @@ const PhoneInput = ({
   const removeMask = (maskedValue) => {
     return maskedValue.replace(/\D/g, '');
   };
+
+  // Get clean phone number for backend (dial code + numbers only)
+  const getCleanPhoneNumber = () => {
+    if (!phoneNumber) return '';
+    const cleanNumber = removeMask(phoneNumber);
+    return cleanNumber ? `${countryData.dialCode}${cleanNumber}` : '';
+  };
   
   // Handle phone number input change
   const handlePhoneChange = (e) => {
@@ -209,9 +217,13 @@ const PhoneInput = ({
     
     setPhoneNumber(maskedValue);
     
-    // Build full international phone number
+    // Build full international phone number for display
     const fullNumber = maskedValue ? `${countryData.dialCode} ${maskedValue}` : '';
     onChange?.(fullNumber);
+    
+    // Build clean phone number for backend
+    const cleanNumber = cleanValue ? `${countryData.dialCode}${cleanValue}` : '';
+    onCleanNumberChange?.(cleanNumber);
   };
   
   // Handle country selection change
@@ -222,6 +234,7 @@ const PhoneInput = ({
     // Clear phone number when changing country
     setPhoneNumber('');
     onChange?.('');
+    onCleanNumberChange?.('');
     
     onCountryChange?.(newCountryData);
   };

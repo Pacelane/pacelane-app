@@ -12,6 +12,12 @@ import Button from '@/design-system/components/Button';
 // Icons
 import { Copy, Check, ExternalLink, Video } from 'lucide-react';
 
+// Integration setup images
+import integrationsPageImage from '@/assets/images/integrations-page.png';
+import addWebhookImage from '@/assets/images/add-webhook.png';
+import addWebhookNameImage from '@/assets/images/add-webhook-name.png';
+import testWebhookImage from '@/assets/images/test webhook.png';
+
 /**
  * ReadAiConfigModal - Modal for configuring Read.ai webhook integration
  * 
@@ -89,10 +95,9 @@ const ReadAiConfigModal = ({
   const contentStyles = {
     display: 'flex',
     flexDirection: 'column',
-    gap: spacing.spacing[20],
+    gap: spacing.spacing[16],
     padding: `0 ${spacing.spacing[24]}`,
     flex: 1,
-    maxHeight: '500px',
     overflowY: 'auto',
   };
 
@@ -100,8 +105,7 @@ const ReadAiConfigModal = ({
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: spacing.spacing[24],
-    paddingTop: spacing.spacing[16],
+    padding: `${spacing.spacing[16]} ${spacing.spacing[24]} ${spacing.spacing[20]} ${spacing.spacing[24]}`,
     borderTop: `1px solid ${colors.border.default}`,
   };
 
@@ -109,10 +113,10 @@ const ReadAiConfigModal = ({
     backgroundColor: colors.bg.card.subtle,
     border: `1px solid ${colors.border.default}`,
     borderRadius: cornerRadius.borderRadius.md,
-    padding: spacing.spacing[20],
+    padding: spacing.spacing[16],
     display: 'flex',
     flexDirection: 'column',
-    gap: spacing.spacing[16],
+    gap: spacing.spacing[12],
   };
 
   const urlBoxStyles = {
@@ -147,16 +151,14 @@ const ReadAiConfigModal = ({
     fontWeight: typography.desktop.weight.semibold,
   };
 
-  const mockImageStyles = {
+  const imageStyles = {
     width: '100%',
-    height: '200px',
-    backgroundColor: colors.bg.muted,
+    height: 'auto',
     border: `1px solid ${colors.border.default}`,
     borderRadius: cornerRadius.borderRadius.sm,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
     marginTop: spacing.spacing[12],
+    objectFit: 'contain',
+    backgroundColor: colors.bg.subtle,
   };
 
   // Step content
@@ -179,15 +181,11 @@ const ReadAiConfigModal = ({
             }}>
               In your Read.ai account, click on the account menu and navigate to the Integrations page.
             </p>
-            <div style={mockImageStyles}>
-              <p style={{
-                ...textStyles.sm.normal,
-                color: colors.text.muted,
-                textAlign: 'center',
-              }}>
-                [Mock Image: Read.ai Account Menu → Integrations]
-              </p>
-            </div>
+            <img 
+              src={integrationsPageImage} 
+              alt="Read.ai Account Menu → Integrations" 
+              style={imageStyles}
+            />
           </div>
         );
 
@@ -208,15 +206,11 @@ const ReadAiConfigModal = ({
             }}>
               Once on the integrations page, look for the webhook section and click "Add Webhook" to create a new webhook integration.
             </p>
-            <div style={mockImageStyles}>
-              <p style={{
-                ...textStyles.sm.normal,
-                color: colors.text.muted,
-                textAlign: 'center',
-              }}>
-                [Mock Image: Integrations Page with "Add Webhook" Button]
-              </p>
-            </div>
+            <img 
+              src={addWebhookImage} 
+              alt="Integrations Page with Add Webhook Button" 
+              style={imageStyles}
+            />
           </div>
         );
 
@@ -269,15 +263,11 @@ const ReadAiConfigModal = ({
               </div>
             </div>
 
-            <div style={mockImageStyles}>
-              <p style={{
-                ...textStyles.sm.normal,
-                color: colors.text.muted,
-                textAlign: 'center',
-              }}>
-                [Mock Image: Webhook Configuration Form]
-              </p>
-            </div>
+            <img 
+              src={addWebhookNameImage} 
+              alt="Webhook Configuration Form" 
+              style={imageStyles}
+            />
           </div>
         );
 
@@ -298,15 +288,11 @@ const ReadAiConfigModal = ({
             }}>
               Before saving, use the "Test" button to send a test request to verify your webhook is properly configured and responding.
             </p>
-            <div style={mockImageStyles}>
-              <p style={{
-                ...textStyles.sm.normal,
-                color: colors.text.muted,
-                textAlign: 'center',
-              }}>
-                [Mock Image: Webhook Test Button and Success Response]
-              </p>
-            </div>
+            <img 
+              src={testWebhookImage} 
+              alt="Webhook Test Button and Success Response" 
+              style={imageStyles}
+            />
           </div>
         );
 
@@ -399,52 +385,18 @@ const ReadAiConfigModal = ({
 
         {/* Step Content */}
         {getStepContent()}
-
-        {/* Quick reference box */}
-        {currentStep === 3 && (
-          <div style={{
-            backgroundColor: colors.bg.input.soft,
-            border: `1px solid ${colors.border.default}`,
-            borderRadius: cornerRadius.borderRadius.sm,
-            padding: spacing.spacing[12],
-            display: 'flex',
-            flexDirection: 'column',
-            gap: spacing.spacing[8],
-          }}>
-            <h4 style={{
-              ...textStyles.xs.semibold,
-              color: colors.text.default,
-              margin: 0,
-            }}>
-              Quick Reference:
-            </h4>
-            <p style={{
-              ...textStyles.xs.normal,
-              color: colors.text.muted,
-              margin: 0,
-            }}>
-              • Webhook Name: "Pacelane Integration" (or any name you prefer)
-            </p>
-            <p style={{
-              ...textStyles.xs.normal,
-              color: colors.text.muted,
-              margin: 0,
-            }}>
-              • Copy the URL above exactly as shown
-            </p>
-            <p style={{
-              ...textStyles.xs.normal,
-              color: colors.text.muted,
-              margin: 0,
-            }}>
-              • Webhook integrations require Pro or Enterprise plans
-            </p>
-          </div>
-        )}
       </div>
 
       {/* Footer */}
       <div style={footerStyles}>
+        <Button
+          label="Read.ai Documentation"
+          style="ghost"
+          size="sm"
+          leadIcon={<ExternalLink size={16} />}
+          onClick={() => window.open('https://support.read.ai/hc/en-us/articles/16352415827219-Getting-Started-with-Webhooks', '_blank')}
+        />
+
         <div style={{ display: 'flex', gap: spacing.spacing[12] }}>
           {currentStep > 1 && (
             <Button
@@ -454,22 +406,6 @@ const ReadAiConfigModal = ({
               onClick={handlePreviousStep}
             />
           )}
-          <Button
-            label="Cancel"
-            style="secondary"
-            size="sm"
-            onClick={onClose}
-          />
-        </div>
-
-        <div style={{ display: 'flex', gap: spacing.spacing[12] }}>
-          <Button
-            label="Read.ai Documentation"
-            style="ghost"
-            size="sm"
-            leadIcon={<ExternalLink size={16} />}
-            onClick={() => window.open('https://support.read.ai/hc/en-us/articles/16352415827219-Getting-Started-with-Webhooks', '_blank')}
-          />
           {currentStep < 5 ? (
             <Button
               label="Next Step"
