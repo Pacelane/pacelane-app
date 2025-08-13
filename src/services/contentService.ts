@@ -39,6 +39,7 @@ export class ContentService {
       // Call the GCS edge function to list files
       const { data, error } = await supabase.functions.invoke('knowledge-base-storage', {
         body: {
+          userId: userId, // Add missing userId field
           action: 'list'
         },
         headers: {
@@ -88,6 +89,7 @@ export class ContentService {
       // Call the GCS edge function
       const { data, error } = await supabase.functions.invoke('knowledge-base-storage', {
         body: {
+          userId: fileData.userId, // Add missing userId field
           action: 'upload',
           file: {
             name: fileData.file.name,
@@ -142,6 +144,7 @@ export class ContentService {
       // Call the GCS edge function to delete file
       const { data, error } = await supabase.functions.invoke('knowledge-base-storage', {
         body: {
+          userId: userId, // Add missing userId field
           action: 'delete',
           fileName: fileName
         },

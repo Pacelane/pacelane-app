@@ -122,12 +122,18 @@ class ChatwootWebhookProcessor {
   private gcsConfig: GCSConfig;
   private openaiConfig: OpenAIConfig;
   private chatwootConfig: ChatwootConfig;
+  private supabaseUrl: string;
+  private supabaseServiceKey: string;
 
   constructor() {
+    // Initialize Supabase configuration
+    this.supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    this.supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+    
     // Initialize Supabase client with service role key for admin access
     this.supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      this.supabaseUrl,
+      this.supabaseServiceKey,
       {
         auth: {
           autoRefreshToken: false,
@@ -702,7 +708,7 @@ class ChatwootWebhookProcessor {
         return { userId: existingMeetingMapping[0].user_id, contactId };
       }
 
-      console.log(`No user found for WhatsApp number: ${normalizedNumber}`);
+      console.log(`No user found for WhatsApp number: ${whatsappNumber}`);
       return { userId: null, contactId };
 
     } catch (error) {
@@ -744,15 +750,6 @@ class ChatwootWebhookProcessor {
       const whatsappNumber = payload.conversation.additional_attributes.phone_number;
       if (whatsappNumber) {
         console.log('Found WhatsApp number in conversation.additional_attributes:', whatsappNumber);
-        return whatsappNumber;
-      }
-    }
-
-    // 5. From account metadata (fallback)
-    if (payload.account && payload.account.additional_attributes) {
-      const whatsappNumber = payload.account.additional_attributes.phone_number;
-      if (whatsappNumber) {
-        console.log('Found WhatsApp number in account.additional_attributes:', whatsappNumber);
         return whatsappNumber;
       }
     }
@@ -1202,6 +1199,66 @@ Return only valid JSON:
   }
 
   /**
+   * Process NOTE intent with transcription - store in meeting_notes with actual transcribed content
+   */
+  private async processNoteIntentWithTranscription(
+    payload: ChatwootWebhookPayload, 
+    userId: string | null, 
+    contactId: string,
+    transcriptionResult: { text: string; error?: string } | null
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      // Get text content - prioritize transcription for audio messages
+      let textContent = payload.content || '';
+      
+      if (this.hasAudioAttachments(payload) && transcriptionResult?.text) {
+        textContent = transcriptionResult.text;
+        console.log(`📝 Using transcribed content for NOTE: "${textContent.substring(0, 100)}..."`);
+      } else if (this.hasAudioAttachments(payload)) {
+        textContent = textContent || '[Audio message - transcription failed or empty]';
+      }
+
+      if (!textContent.trim()) {
+        return { success: true, message: 'Empty content, skipping NOTE processing' };
+      }
+
+      // Store in meeting_notes with transcribed content
+      const noteData = {
+        user_id: userId,
+        chatwoot_conversation_id: payload.conversation.id.toString(),
+        content: textContent,
+        source_type: 'whatsapp',
+        metadata: {
+          chatwoot_message_id: payload.id,
+          contact_id: contactId,
+          sender_name: payload.sender.name,
+          created_at: payload.created_at,
+          content_type: payload.content_type || 'text',
+          has_transcription: !!transcriptionResult?.text,
+          transcription_status: transcriptionResult?.error ? 'error' : (transcriptionResult?.text ? 'completed' : 'none'),
+          processed_at: new Date().toISOString()
+        }
+      };
+
+      const { error } = await this.supabase
+        .from('meeting_notes')
+        .insert([noteData]);
+
+      if (error) {
+        console.error('Error storing NOTE in meeting_notes:', error);
+        return { success: false, message: 'Failed to store note in knowledge base' };
+      }
+
+      console.log('✅ NOTE with transcription stored in meeting_notes');
+      return { success: true, message: 'Note with transcription stored in knowledge base' };
+
+    } catch (error) {
+      console.error('Error processing NOTE intent with transcription:', error);
+      return { success: false, message: 'Failed to process note' };
+    }
+  }
+
+  /**
    * Process ORDER intent - create content_order and agent_job
    */
   private async processOrderIntent(
@@ -1228,14 +1285,10 @@ Return only valid JSON:
         }
       }
 
-      // If critical fields are missing, send blocking clarification and stop processing
+      // If critical fields are missing, log and continue processing with defaults
       if (missingFields.length > 0) {
-        console.log(`❌ Missing required fields for ORDER: ${missingFields.join(', ')}`);
-        await this.sendBlockingClarification(payload, missingFields, parsedParams);
-        return { 
-          success: false, 
-          message: `Missing required fields: ${missingFields.join(', ')}. Sent clarification message.` 
-        };
+        console.log(`⚠️ Missing required fields for ORDER: ${missingFields.join(', ')}, using defaults`);
+        // Note: Smart defaults will be applied in the mergeOrderParameters step
       }
 
       // Create content_order with complete parameters
@@ -1565,9 +1618,8 @@ Return only valid JSON:
           return await this.sendIngestionFailureNotification(payload, 'Failed to create order after clarification');
         }
       } else {
-        // Still missing fields, ask for the next one
-        console.log(`❌ Still missing fields: ${missingFields.join(', ')}`);
-        await this.sendBlockingClarification(payload, missingFields, updatedParams);
+        // Still missing fields, use defaults for now
+        console.log(`⚠️ Still missing fields: ${missingFields.join(', ')}, using defaults`);
         
         // Update conversation context with new parameters
         await this.supabase
@@ -1592,7 +1644,7 @@ Return only valid JSON:
   /**
    * Process incoming webhook payload
    */
-  async processWebhook(payload: ChatwootWebhookPayload): Promise<{ success: boolean; message: string; intent?: string }> {
+  async processWebhook(payload: ChatwootWebhookPayload): Promise<{ success: boolean; message: string; intent?: string; userId?: string | null; bucketName?: string; whatsappNumber?: string | null; orderId?: string | null }> {
     console.log('Processing Chatwoot webhook:', payload.event, payload.id);
 
     // Validate payload
@@ -1631,23 +1683,41 @@ Return only valid JSON:
       await this.ensureConversationExists(userId, payload.conversation.id);
     }
 
-    // AI-powered intent detection and routing
-    const intentResult = await this.detectIntent(payload.content || '');
+    // AUDIO FIX: For audio messages, transcribe first, then detect intent
+    let contentForIntent = payload.content || '';
+    let transcriptionResult: { text: string; error?: string } | null = null;
+    
+    if (this.hasAudioAttachments(payload)) {
+      console.log('📢 Audio message detected - processing transcription first for intent detection');
+      transcriptionResult = await this.transcribeAudioForIntent(payload);
+      
+      if (transcriptionResult?.text) {
+        contentForIntent = transcriptionResult.text;
+        console.log(`🎤 Using transcribed text for intent: "${contentForIntent.substring(0, 100)}..."`);
+      } else {
+        console.log('⚠️ Transcription failed or empty, using original content for intent');
+      }
+    }
+
+    // AI-powered intent detection and routing with proper content
+    const intentResult = await this.detectIntent(contentForIntent);
     console.log(`🎯 Intent detected: ${intentResult.intent} (confidence: ${intentResult.confidence})`);
+
+    // Store in GCS and database first (needed for audio processing)
+    const gcsPath = this.generateGCSPath(payload, bucketName);
+    await this.storeInGCS(gcsPath, payload);
+    await this.storeInDatabase(payload, gcsPath, userId, finalContactId);
 
     // Route based on intent
     if (intentResult.intent === 'ORDER') {
+      console.log('🎯 Processing as ORDER');
+      
       // Process as content order with smart defaults from user preferences
       const orderResult = await this.processOrderWithSmartDefaults(payload, userId, finalContactId, intentResult.parsedParams || {});
       
-      // Still store in GCS for audit trail
-      const gcsPath = this.generateGCSPath(payload, bucketName);
-      await this.storeInGCS(gcsPath, payload);
-      await this.storeInDatabase(payload, gcsPath, userId, finalContactId);
-      
-      // Process audio attachments if present
+      // Process audio attachments if present (store files and update meeting notes)
       if (this.hasAudioAttachments(payload)) {
-        await this.processAudioAttachments(payload, bucketName, userId, finalContactId, gcsPath);
+        await this.processAudioAttachmentsWithTranscription(payload, bucketName, userId, finalContactId, gcsPath, transcriptionResult);
       }
 
       return {
@@ -1661,17 +1731,14 @@ Return only valid JSON:
       };
 
     } else {
-      // Process as NOTE (default) - NO messages sent for NOTES
-      const noteResult = await this.processNoteIntent(payload, userId, finalContactId);
+      console.log('📝 Processing as NOTE');
       
-      // Store in GCS for audit trail
-      const gcsPath = this.generateGCSPath(payload, bucketName);
-      await this.storeInGCS(gcsPath, payload);
-      await this.storeInDatabase(payload, gcsPath, userId, finalContactId);
+      // Process as NOTE (default) - NO messages sent for NOTES
+      const noteResult = await this.processNoteIntentWithTranscription(payload, userId, finalContactId, transcriptionResult);
       
       // Process audio attachments if present (will add to knowledge_files)
       if (this.hasAudioAttachments(payload)) {
-        await this.processAudioAttachments(payload, bucketName, userId, finalContactId, gcsPath);
+        await this.processAudioAttachmentsWithTranscription(payload, bucketName, userId, finalContactId, gcsPath, transcriptionResult);
       }
 
       // Minimal policy: NOTES are processed silently, no WhatsApp messages sent
@@ -1742,6 +1809,40 @@ Return only valid JSON:
   }
 
   /**
+   * Transcribe audio specifically for intent detection (fast path)
+   */
+  private async transcribeAudioForIntent(payload: ChatwootWebhookPayload): Promise<{ text: string; error?: string } | null> {
+    try {
+      if (!payload.attachments) return null;
+
+      const audioAttachment = payload.attachments.find(att => att.file_type === 'audio');
+      if (!audioAttachment) return null;
+
+      console.log(`🎤 Transcribing audio for intent detection: ${audioAttachment.data_url}`);
+
+      // Download audio file
+      const audioBlob = await this.downloadAudioFile(audioAttachment.data_url);
+      if (!audioBlob) {
+        console.error('Failed to download audio for transcription');
+        return null;
+      }
+
+      // Transcribe with OpenAI
+      const transcription = await this.transcribeWithOpenAI(audioBlob);
+      
+      if (transcription?.text) {
+        console.log(`✅ Transcription completed for intent: "${transcription.text.substring(0, 100)}..."`);
+      }
+
+      return transcription;
+
+    } catch (error) {
+      console.error('Error transcribing audio for intent:', error);
+      return null;
+    }
+  }
+
+  /**
    * Process all audio attachments in a message
    */
   private async processAudioAttachments(
@@ -1767,6 +1868,47 @@ Return only valid JSON:
           userId, 
           contactId,
           messageGcsPath
+        );
+        if (!audioSuccess) {
+          allSuccessful = false;
+        }
+      } catch (error) {
+        console.error(`Error processing audio attachment ${attachment.id}:`, error);
+        allSuccessful = false;
+      }
+    }
+
+    return allSuccessful;
+  }
+
+  /**
+   * Process audio attachments with pre-computed transcription (avoids re-transcribing)
+   */
+  private async processAudioAttachmentsWithTranscription(
+    payload: ChatwootWebhookPayload, 
+    bucketName: string, 
+    userId: string | null, 
+    contactId: string,
+    messageGcsPath: string,
+    transcriptionResult: { text: string; error?: string } | null
+  ): Promise<boolean> {
+    if (!payload.attachments) return true;
+
+    const audioAttachments = payload.attachments.filter(att => att.file_type === 'audio');
+    console.log(`Processing ${audioAttachments.length} audio attachments with pre-computed transcription`);
+
+    let allSuccessful = true;
+
+    for (const attachment of audioAttachments) {
+      try {
+        const audioSuccess = await this.processSingleAudioAttachmentWithTranscription(
+          attachment, 
+          payload, 
+          bucketName, 
+          userId, 
+          contactId,
+          messageGcsPath,
+          transcriptionResult
         );
         if (!audioSuccess) {
           allSuccessful = false;
@@ -1835,6 +1977,66 @@ Return only valid JSON:
 
     } catch (error) {
       console.error(`Error in processSingleAudioAttachment:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Process a single audio attachment with pre-computed transcription
+   */
+  private async processSingleAudioAttachmentWithTranscription(
+    attachment: AudioAttachment,
+    payload: ChatwootWebhookPayload,
+    bucketName: string,
+    userId: string | null,
+    contactId: string,
+    messageGcsPath: string,
+    transcriptionResult: { text: string; error?: string } | null
+  ): Promise<boolean> {
+    try {
+      console.log(`Processing audio attachment ${attachment.id} with pre-computed transcription`);
+
+      // Download audio file from Chatwoot
+      const audioBlob = await this.downloadAudioFile(attachment.data_url);
+      if (!audioBlob) {
+        console.error(`Failed to download audio file: ${attachment.data_url}`);
+        return false;
+      }
+
+      // Generate GCS path for audio file
+      const audioGcsPath = this.generateAudioGCSPath(payload, bucketName, attachment);
+
+      // Store audio file in GCS
+      const audioStored = await this.storeAudioInGCS(audioGcsPath, audioBlob);
+      if (!audioStored) {
+        console.error(`Failed to store audio in GCS: ${audioGcsPath}`);
+        return false;
+      }
+
+      // Use pre-computed transcription (avoid re-transcribing)
+      console.log(`📝 Using pre-computed transcription for storage`);
+
+      // Store audio record in database with existing transcription
+      const audioRecordStored = await this.storeAudioRecord(
+        attachment,
+        payload,
+        audioGcsPath,
+        transcriptionResult,
+        userId,
+        contactId,
+        messageGcsPath
+      );
+
+      if (!audioRecordStored) {
+        console.error(`Failed to store audio record in database`);
+        return false;
+      }
+
+      console.log(`Successfully processed audio attachment ${attachment.id} with pre-computed transcription`);
+      return true;
+
+    } catch (error) {
+      console.error(`Error in processSingleAudioAttachmentWithTranscription:`, error);
       return false;
     }
   }
