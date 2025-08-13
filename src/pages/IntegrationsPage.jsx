@@ -6,6 +6,7 @@ import { spacing } from '@/design-system/tokens/spacing';
 import { textStyles } from '@/design-system/styles/typography/typography-styles';
 import { typography } from '@/design-system/tokens/typography';
 import { useToast } from '@/design-system/components/Toast';
+import { CalendarService } from '@/services/calendarService';
 
 // Design System Components
 import IntegrationCard from '@/design-system/components/IntegrationCard';
@@ -198,15 +199,30 @@ const IntegrationsPage = () => {
   };
 
   // Handle configure button clicks
-  const handleConfigureClick = (integrationKey) => {
+  const handleConfigureClick = async (integrationKey) => {
     if (integrationKey === 'whatsapp') {
       setWhatsappModalOpen(true);
-    } else if (integrationKey === 'readai') {
-      setReadaiModalOpen(true);
-    } else {
-      // For other integrations, you can add specific handling here
-      console.log(`Configure ${integrationKey} integration`);
+      return;
     }
+    if (integrationKey === 'readai') {
+      setReadaiModalOpen(true);
+      return;
+    }
+    if (integrationKey === 'googleCalendar') {
+      try {
+        const result = await CalendarService.getAuthUrl();
+        if (result.success && result.authUrl) {
+          window.location.href = result.authUrl;
+        } else {
+          toast.error(result.error || 'Failed to start Google Calendar connection');
+        }
+      } catch (e) {
+        toast.error('Failed to start Google Calendar connection');
+      }
+      return;
+    }
+    // Fallback
+    console.log(`Configure ${integrationKey} integration`);
   };
 
   // Handle Read.ai setup completion
