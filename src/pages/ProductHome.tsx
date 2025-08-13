@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/api/useAuth';
-import { useContent } from '@/hooks/api/useContent';
-import { useAnalytics } from '@/hooks/api/useAnalytics';
-import { useTheme } from '@/services/theme-context';
-import * as templatesApi from '@/api/templates';
-import type { Template } from '@/api/templates';
-import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '../hooks/api/useAuth';
+import { useContent } from '../hooks/api/useContent';
+import { useAnalytics } from '../hooks/api/useAnalytics';
+import { useTheme } from '../services/theme-context';
+import * as templatesApi from '../api/templates';
+import type { Template } from '../api/templates';
+import { supabase } from '../integrations/supabase/client';
 
 // First-time user utilities
 import { isFirstTimeUser } from '@/utils/firstTimeUserDetection';
@@ -26,14 +26,18 @@ import SubtleLoadingSpinner from '@/design-system/components/SubtleLoadingSpinne
 import FirstTimeUserHome from '@/design-system/components/FirstTimeUserHome';
 
 // Design System Tokens
-import { spacing } from '@/design-system/tokens/spacing';
-import { textStyles } from '@/design-system/styles/typography/typography-styles';
-import { typography } from '@/design-system/tokens/typography';
-import { cornerRadius } from '@/design-system/tokens/corner-radius';
-import { shadows, getShadow } from '@/design-system/tokens/shadows';
+import { spacing } from '../design-system/tokens/spacing';
+import { textStyles } from '../design-system/styles/typography/typography-styles';
+import { typography } from '../design-system/tokens/typography';
+import { cornerRadius } from '../design-system/tokens/corner-radius';
+import { shadows, getShadow } from '../design-system/tokens/shadows';
 
 // Icons
 import { ChevronRight, Search } from 'lucide-react';
+
+// Additional Components
+import { CalendarIntegration } from '../components/CalendarIntegration';
+import { ReadAiIntegration } from '../components/ReadAiIntegration';
 
 const ProductHome = () => {
   const navigate = useNavigate();
@@ -108,60 +112,55 @@ const ProductHome = () => {
     // Start progress tracking
     setGenerationProgress({
       isGenerating: true,
-      currentStep: 'Analyzing your context...',
+      currentStep: 'Creating content order...',
       progress: 10
     });
     
     try {
-      console.log('Generating new content suggestions with multi-agent system...');
+      console.log('Creating content order with new agent pipeline...');
       
-      // Get the current session token
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-      
-      if (!token) {
-        throw new Error('No auth token available');
-      }
-
       // Update progress
       setGenerationProgress(prev => ({
         ...prev,
-        currentStep: 'Generating content strategy...',
-        progress: 30
+        currentStep: 'Building content brief...',
+        progress: 20
       }));
 
-      // Call the enhanced edge function
-      const { data, error } = await supabase.functions.invoke('generate-enhanced-content-suggestions', {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+      // Create a content order using the new agent pipeline
+      const result = await createUIContentOrder({
+        platform: 'linkedin',
+        length: 'medium',
+        tone: 'professional',
+        angle: 'insights',
+        topic: 'Professional insights and industry trends',
+        context: 'Generate content based on user profile and knowledge base'
       });
 
-      if (error) {
-        console.error('Enhanced edge function error:', error);
-        throw error;
+      if (result.error) {
+        console.error('Content order creation error:', result.error);
+        throw new Error(result.error);
       }
 
       // Update progress
       setGenerationProgress(prev => ({
         ...prev,
-        currentStep: 'Finalizing your posts...',
-        progress: 80
+        currentStep: 'Agent pipeline processing...',
+        progress: 50
       }));
 
-      if (data?.suggestions) {
-        console.log('Generated enhanced suggestions:', data.suggestions);
-        // Reload content suggestions to get the new ones
-        await loadContentSuggestions();
-        console.log('Content suggestions after reload:', contentSuggestions);
-      } else {
-        console.log('No suggestions generated, but no error occurred');
-      }
+      console.log('Content order created successfully:', result.data);
+
+      // Update progress
+      setGenerationProgress(prev => ({
+        ...prev,
+        currentStep: 'Finalizing content...',
+        progress: 80
+      }));
 
       // Complete progress
       setGenerationProgress(prev => ({
         ...prev,
-        currentStep: 'Done!',
+        currentStep: 'Done! Content created in drafts.',
         progress: 100
       }));
 
@@ -172,10 +171,10 @@ const ProductHome = () => {
           currentStep: '',
           progress: 0
         });
-      }, 1000);
+      }, 2000);
       
     } catch (err) {
-      console.error('Failed to generate enhanced content suggestions:', err);
+      console.error('Failed to create content order:', err);
       setGenerationProgress({
         isGenerating: false,
         currentStep: '',
@@ -529,6 +528,22 @@ const ProductHome = () => {
               />
             </>
           )}
+
+          {/* Calendar Integration Section */}
+          <CalendarIntegration 
+            onMeetingSelect={(meeting) => {
+              console.log('Meeting selected:', meeting);
+              navigate('/content-editor', { state: { meeting } });
+            }}
+          />
+
+          {/* Read.ai Integration Section */}
+          <ReadAiIntegration 
+            onMeetingSelect={(meeting) => {
+              console.log('Read.ai meeting selected:', meeting);
+              navigate('/content-editor', { state: { readAiMeeting: meeting } });
+            }}
+          />
 
           {/* Templates Section */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

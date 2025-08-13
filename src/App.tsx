@@ -1,4 +1,4 @@
-import { ToastProvider } from "@/design-system/components/Toast";
+import { ToastProvider } from "./design-system/components/Toast";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Outlet } from "react-router-dom";
@@ -32,6 +32,7 @@ import Contact from "./pages/Onboarding/Contact";
 import Ready from "./pages/Onboarding/Ready";
 import LoadingPage from "./pages/LoadingPage";
 import NotFound from "./pages/NotFound";
+import GoogleCalendarCallback from "./pages/GoogleCalendarCallback";
 
 const queryClient = new QueryClient();
 
@@ -54,6 +55,9 @@ const App = () => (
           <Route path="/onboarding/pacing" element={<Pacing />} />
           <Route path="/onboarding/contact" element={<Contact />} />
           <Route path="/onboarding/ready" element={<Ready />} />
+          
+          {/* OAuth callbacks */}
+          <Route path="/auth/google/callback" element={<GoogleCalendarCallback />} />
 
           {/* Protected app chrome with sidebar and centered content */}
           <Route

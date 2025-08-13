@@ -113,13 +113,16 @@ const Ready = () => {
         return false;
       }
 
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-user-bucket`, {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/user-bucket-service`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ userId: user.id }),
+        body: JSON.stringify({ 
+          action: 'identify-and-ensure-bucket',
+          userId: user.id 
+        }),
       });
 
       if (!response.ok) {
@@ -138,22 +141,31 @@ const Ready = () => {
   };
 
   const completeOnboarding = async () => {
-    if (!user) return;
+    if (!user) return null;
 
     try {
-      const { error } = await supabase
+      console.log('Ready: Updating profile with onboarding_completed: true');
+      
+      const { data, error } = await supabase
         .from('profiles')
         .update({ 
           onboarding_completed: true,
           updated_at: new Date().toISOString()
         })
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .select()
+        .single();
 
-      if (error) throw error;
-      return true;
+      if (error) {
+        console.error('Ready: Error updating profile:', error);
+        throw error;
+      }
+      
+      console.log('Ready: Profile updated successfully:', data);
+      return data;
     } catch (error) {
       console.error('Error completing onboarding:', error);
-      return false;
+      return null;
     }
   };
 
@@ -163,27 +175,28 @@ const Ready = () => {
     setIsLoading(true);
     
     try {
-      // Create user bucket first
-      const bucketCreated = await createUserBucket();
-      if (!bucketCreated) {
-        console.warn('Failed to create user bucket, but continuing with onboarding');
-      }
-
-      // Complete onboarding
-      const success = await completeOnboarding();
+      console.log('Ready: Starting onboarding completion...');
       
-      if (!success) {
-        throw new Error('Failed to complete onboarding');
+      // Complete onboarding - simple and direct
+      const { error } = await supabase
+        .from('profiles')
+        .update({ 
+          onboarding_completed: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error completing onboarding:', error);
+        throw error;
       }
-
-      // Refresh profile to get updated onboarding_completed status
-      await refreshProfile();
-
-      // Generate initial content suggestions in the background
-      generateInitialContentSuggestions();
-
+      
+      console.log('Ready: Onboarding completed successfully');
+      
+      // Navigate directly - no complex verification
       toast.success('Welcome to Pacelane! Your content strategy is ready.');
       navigate('/product-home');
+      
     } catch (error) {
       console.error('Error starting:', error);
       toast.error('Failed to complete setup. Please try again.');

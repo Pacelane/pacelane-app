@@ -35,6 +35,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     return <Navigate to="/signin" state={{ from: location }} replace />;
   }
 
+  // If user is authenticated, allow access to everything
+  // No complex onboarding checks - just let them through
   return <>{children}</>;
 };
 

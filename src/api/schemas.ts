@@ -114,24 +114,23 @@ export const validateData = <T>(schema: z.ZodSchema<T>, data: unknown) => {
     return { success: true, data: validatedData, errors: null };
   } catch (error) {
     if (error instanceof z.ZodError) {
-      // Use the issues property which contains validation errors
-      if (error.issues && Array.isArray(error.issues)) {
+      const issues = (error as any).issues ?? (error as any).errors ?? [];
+      if (Array.isArray(issues)) {
         return {
           success: false,
           data: null,
-          errors: error.issues.reduce((acc, curr) => {
-            const field = curr.path.join('.');
-            acc[field] = curr.message;
+          errors: issues.reduce((acc: Record<string, string>, curr: any) => {
+            const field = Array.isArray(curr.path) ? curr.path.join('.') : 'general';
+            acc[field] = curr.message || 'Invalid value';
             return acc;
-          }, {} as Record<string, string>)
-        };
-      } else {
-        return {
-          success: false,
-          data: null,
-          errors: { general: 'Validation failed - invalid error format' }
+          }, {})
         };
       }
+      return {
+        success: false,
+        data: null,
+        errors: { general: 'Validation failed - invalid error format' }
+      };
     }
     return {
       success: false,

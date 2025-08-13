@@ -39,6 +39,7 @@ export class ContentService {
       // Call the GCS edge function to list files
       const { data, error } = await supabase.functions.invoke('knowledge-base-storage', {
         body: {
+          userId: userId, // Add missing userId field
           action: 'list'
         },
         headers: {
@@ -88,6 +89,7 @@ export class ContentService {
       // Call the GCS edge function
       const { data, error } = await supabase.functions.invoke('knowledge-base-storage', {
         body: {
+          userId: fileData.userId, // Add missing userId field
           action: 'upload',
           file: {
             name: fileData.file.name,
@@ -142,6 +144,7 @@ export class ContentService {
       // Call the GCS edge function to delete file
       const { data, error } = await supabase.functions.invoke('knowledge-base-storage', {
         body: {
+          userId: userId, // Add missing userId field
           action: 'delete',
           fileName: fileName
         },
@@ -434,6 +437,47 @@ export class ContentService {
     } catch (error: any) {
       console.error('ContentService: sendAIMessage failed:', error);
       return { error: error.message || 'Failed to send AI message' };
+    }
+  }
+
+  // ========== UI CONTENT ORDER OPERATIONS ==========
+
+  /**
+   * Create a content order from UI to trigger the agent pipeline
+   * @param orderData - Content order parameters
+   * @returns Promise with order creation result
+   */
+  static async createUIContentOrder(orderData: {
+    platform: string;
+    length: string;
+    tone: string;
+    angle: string;
+    refs?: string[];
+    original_content?: string;
+    context?: string;
+    topic?: string;
+  }): Promise<ApiResponse<{
+    orderId: string;
+    jobId: string;
+    message: string;
+  }>> {
+    try {
+      console.log('ContentService: Creating UI content order');
+
+      const { data, error } = await supabase.functions.invoke('ui-content-order', {
+        body: orderData
+      });
+
+      if (error) {
+        console.error('ContentService: UI content order error:', error);
+        throw error;
+      }
+
+      console.log('ContentService: UI content order created successfully');
+      return { data };
+    } catch (error: any) {
+      console.error('ContentService: createUIContentOrder failed:', error);
+      return { error: error.message || 'Failed to create content order' };
     }
   }
 

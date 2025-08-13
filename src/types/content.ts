@@ -145,6 +145,18 @@ export interface ContentActions {
   clearConversation: () => void;
   loadConversationMessages: (conversationId: string) => Promise<any>;
   
+  // UI Content Order Actions
+  createUIContentOrder: (orderData: {
+    platform: string;
+    length: string;
+    tone: string;
+    angle: string;
+    refs?: string[];
+    original_content?: string;
+    context?: string;
+    topic?: string;
+  }) => Promise<any>;
+  
   // Utility Actions
   clearError: () => void;
   getFileTypeFromName: (filename: string) => FileType;

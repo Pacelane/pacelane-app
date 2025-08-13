@@ -269,6 +269,24 @@ export const contentApi = {
     return ContentService.sendAIMessage(messageData);
   },
 
+  /**
+   * Create a content order from UI to trigger the agent pipeline
+   * @param orderData - Content order parameters
+   * @returns Promise with order creation result
+   */
+  async createUIContentOrder(orderData: {
+    platform: string;
+    length: string;
+    tone: string;
+    angle: string;
+    refs?: string[];
+    original_content?: string;
+    context?: string;
+    topic?: string;
+  }) {
+    return ContentService.createUIContentOrder(orderData);
+  },
+
   // ========== UTILITY FUNCTIONS ==========
 
   /**
@@ -388,6 +406,7 @@ export const {
   loadContentSuggestions,
   markSuggestionAsUsed,
   sendAIMessage,
+  createUIContentOrder,
   getFileTypeFromName,
   validateFileType,
   generateFileUrl,
