@@ -8,6 +8,9 @@ import * as templatesApi from '@/api/templates';
 import type { Template } from '@/api/templates';
 import { supabase } from '@/integrations/supabase/client';
 
+// First-time user utilities
+import { isFirstTimeUser } from '@/utils/firstTimeUserDetection';
+
 // Design System Components
 // Sidebar is now provided by MainAppChrome
 import StreakCard from '@/design-system/components/StreakCard';
@@ -20,6 +23,7 @@ import Input from '@/design-system/components/Input';
 import Button from '@/design-system/components/Button';
 import EmptyState from '@/design-system/components/EmptyState';
 import SubtleLoadingSpinner from '@/design-system/components/SubtleLoadingSpinner';
+import FirstTimeUserHome from '@/design-system/components/FirstTimeUserHome';
 
 // Design System Tokens
 import { spacing } from '@/design-system/tokens/spacing';
@@ -34,11 +38,14 @@ import { ChevronRight, Search } from 'lucide-react';
 const ProductHome = () => {
   const navigate = useNavigate();
   const { user, profile, signOut } = useAuth();
-  const { savedDrafts, contentSuggestions, loadSavedDrafts, loadContentSuggestions, loadingDrafts, loadingSuggestions, error } = useContent();
+  const { savedDrafts, contentSuggestions, knowledgeFiles, loadSavedDrafts, loadContentSuggestions, loadingDrafts, loadingSuggestions, error } = useContent();
   const { streak, stats, weekActivity, loading: analyticsLoading, trackActivity } = useAnalytics();
   const { colors } = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
   const [hasLoadedInitialData, setHasLoadedInitialData] = useState(false);
+
+  // Check if user is a first-time user
+  const isNewUser = isFirstTimeUser(profile, savedDrafts, contentSuggestions, knowledgeFiles);
   // Sidebar handled by MainAppChrome layout
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
@@ -383,6 +390,12 @@ const ProductHome = () => {
       </div>
     );
   }
+
+  // Show first-time user experience if user is new
+  // Temporarily disabled - will be re-enabled later
+  // if (hasLoadedInitialData && isNewUser) {
+  //   return <FirstTimeUserHome />;
+  // }
 
   return (
     <div>

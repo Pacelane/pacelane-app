@@ -12,6 +12,7 @@ export { default as ButtonGroup } from './ButtonGroup.jsx';
 export { default as Checkbox } from './Checkbox.jsx';
 export { default as InlineTip } from './InlineTip.jsx';
 export { default as Input } from './Input.jsx';
+export { default as PhoneInput } from './PhoneInput.jsx';
 export { default as ProgressBar } from './ProgressBar.jsx';
 export { default as ContentCard } from './ContentCard.jsx';
 export { default as FileCard } from './FileCard.jsx';
@@ -37,6 +38,9 @@ export { default as IntegrationCard } from './IntegrationCard.jsx';
 export { default as Modal } from './Modal.jsx';
 export { default as HelpModal } from './HelpModal.jsx';
 export { default as ReadAiConfigModal } from './ReadAiConfigModal.jsx';
+export { default as WhatsAppConfigModal } from './WhatsAppConfigModal.jsx';
+export { default as SetupCard } from './SetupCard.jsx';
+export { default as FirstTimeUserHome } from './FirstTimeUserHome.jsx';
 
 // Pages
 export { default as HomePage } from './pages/HomePage.jsx'; 

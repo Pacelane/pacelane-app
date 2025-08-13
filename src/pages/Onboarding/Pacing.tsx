@@ -27,6 +27,7 @@ const Pacing = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { colors } = useTheme();
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
   // State for pace selection
@@ -253,12 +254,12 @@ const Pacing = () => {
                   flexDirection: 'column',
                   alignItems: 'flex-start',
                   gap: spacing.spacing[16],
-                  marginBottom: spacing.spacing[20],
+                  marginBottom: spacing.spacing[8],
                 }}
               >
                 {/* Bichaurinho */}
                 <div>
-                  <Bichaurinho variant={9} size={48} />
+                  <Bichaurinho variant={25} size={48} />
                 </div>
 
                 {/* Title and Subtitle Container */}
@@ -282,7 +283,7 @@ const Pacing = () => {
                       textAlign: 'left',
                     }}
                   >
-                    Your<br />Pacing
+                    Your Pacing
                   </h1>
 
                   {/* Subtitle */}
@@ -323,7 +324,7 @@ const Pacing = () => {
                   style={{
                     display: 'flex',
                     gap: spacing.spacing[8],
-                    justifyContent: 'space-between',
+                    justifyContent: 'flex-start',
                   }}
                 >
                   {weekdays.map((weekday) => (

@@ -8,7 +8,7 @@ import { useToast } from '@/design-system/components/Toast';
 // Design System Components
 import TopNav from '@/design-system/components/TopNav';
 import Button from '@/design-system/components/Button';
-import Chips from '@/design-system/components/Chips';
+import Input from '@/design-system/components/Input';
 import ProgressBar from '@/design-system/components/ProgressBar';
 import Bichaurinho from '@/design-system/components/Bichaurinho';
 
@@ -19,42 +19,51 @@ import { getShadow } from '@/design-system/tokens/shadows';
 import { typography } from '@/design-system/tokens/typography';
 
 // Icons
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Plus, Trash2 } from 'lucide-react';
+
+interface Guide {
+  id: number;
+  value: string;
+  isPreSelected: boolean;
+}
 
 const Guides = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { colors } = useTheme();
-  const [selectedGuides, setSelectedGuides] = useState<string[]>([]);
+  const toast = useToast();
+
   const [isLoading, setIsLoading] = useState(false);
 
-  // Available guide options
-  const guideOptions = [
-    'Personal Brand Building',
-    'Leadership & Management',
-    'Industry News & Trends',
-    'Career Development',
-    'Networking & Relationships',
-    'Business Growth',
-    'Innovation & Technology',
-    'Marketing & Sales',
-    'Entrepreneurship',
-    'Work-Life Balance'
-  ];
+  // Initialize with 3 pre-selected guides
+  const [guides, setGuides] = useState<Guide[]>([
+    { id: 1, value: 'Be authentic', isPreSelected: true },
+    { id: 2, value: 'Share your experience', isPreSelected: true },
+    { id: 3, value: 'Avoid hype', isPreSelected: true }
+  ]);
+
+  const addGuide = () => {
+    const newId = Math.max(...guides.map(g => g.id)) + 1;
+    setGuides(prev => [...prev, { id: newId, value: '', isPreSelected: false }]);
+  };
+
+  const removeGuide = (id: number) => {
+    setGuides(prev => prev.filter(guide => guide.id !== id));
+  };
+
+  const updateGuide = (id: number, value: string) => {
+    setGuides(prev =>
+      prev.map(guide =>
+        guide.id === id ? { ...guide, value } : guide
+      )
+    );
+  };
 
   const handleGoBack = () => {
     navigate('/onboarding/goals');
   };
 
-  const toggleGuide = (guide: string) => {
-    setSelectedGuides(prev => {
-      if (prev.includes(guide)) {
-        return prev.filter(g => g !== guide);
-      } else {
-        return [...prev, guide];
-      }
-    });
-  };
+
 
   const handleContinue = async () => {
     if (!user) return;
@@ -62,9 +71,14 @@ const Guides = () => {
     setIsLoading(true);
     
     try {
+      // Filter out empty guides and save to database
+      const validGuides = guides
+        .filter(g => g.value.trim())
+        .map(g => g.value.trim());
+
       const { error } = await supabase
         .from('profiles')
-        .update({ guides: selectedGuides })
+        .update({ content_guides: validGuides })
         .eq('user_id', user.id);
 
       if (error) throw error;
@@ -78,8 +92,8 @@ const Guides = () => {
     }
   };
 
-  // Check if at least one guide is selected
-  const canContinue = selectedGuides.length > 0;
+  // Check if we have at least one guide with content
+  const canContinue = guides.some(guide => guide.value.trim());
 
   return (
     <div
@@ -176,7 +190,7 @@ const Guides = () => {
               >
                 {/* Bichaurinho */}
                 <div>
-                  <Bichaurinho variant={10} size={48} />
+                  <Bichaurinho variant={30} size={48} />
                 </div>
 
                 {/* Title and Subtitle Container - 12px gap between title and subtitle */}
@@ -200,7 +214,7 @@ const Guides = () => {
                       textAlign: 'left',
                     }}
                   >
-                    Content<br />Guides
+                    What Are<br />Your Guides?
                   </h1>
 
                   {/* Subtitle */}
@@ -215,31 +229,48 @@ const Guides = () => {
                       textAlign: 'left',
                     }}
                   >
-                    Content Topics. What topics are you most interested in sharing about?
+                    What values guide the way you want to create content? (For example: be authentic, share your experience, avoid hype)
                   </p>
                 </div>
               </div>
 
-              {/* Guides Chips Container */}
+              {/* Dynamic Guide Inputs Container */}
               <div
                 style={{
                   display: 'flex',
-                  flexWrap: 'wrap',
-                  gap: spacing.spacing[8],
-                  alignItems: 'flex-start',
-                  justifyContent: 'flex-start',
+                  flexDirection: 'column',
+                  gap: spacing.spacing[12],
                 }}
               >
-                {guideOptions.map((guide) => (
-                  <Chips
-                    key={guide}
-                    label={guide}
-                    style="default"
-                    size="lg"
-                    selected={selectedGuides.includes(guide)}
-                    onClick={() => toggleGuide(guide)}
-                  />
+                {guides.map((guide) => (
+                  <div key={guide.id}>
+                    <Input
+                      placeholder="Enter your content guide"
+                      value={guide.value}
+                      onChange={(e) => updateGuide(guide.id, e.target.value)}
+                      style="tail-action"
+                      size="lg"
+                      disabled={isLoading}
+                      tailAction={{
+                        icon: <Trash2 size={16} />,
+                        onClick: () => removeGuide(guide.id)
+                      }}
+                    />
+                  </div>
                 ))}
+
+                {/* Add Guide Button */}
+                <div style={{ marginTop: spacing.spacing[8], width: '100%' }}>
+                  <Button
+                    label="Add Guide"
+                    style="secondary"
+                    size="sm"
+                    leadIcon={<Plus size={16} />}
+                    onClick={addGuide}
+                    disabled={isLoading}
+                    className="w-full"
+                  />
+                </div>
               </div>
             </div>
 
@@ -264,9 +295,9 @@ const Guides = () => {
                   textAlign: 'center',
                 }}
               >
-                {selectedGuides.length === 0 
-                  ? "Select your areas of interest to continue."
-                  : `${selectedGuides.length} topic${selectedGuides.length === 1 ? '' : 's'} selected.`
+                {!canContinue 
+                  ? "Please add at least one guide to continue."
+                  : `${guides.filter(g => g.value.trim()).length} guide${guides.filter(g => g.value.trim()).length === 1 ? '' : 's'} ready.`
                 }
               </p>
             </div>
