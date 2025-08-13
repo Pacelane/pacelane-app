@@ -12,6 +12,7 @@ import ButtonGroup from '@/design-system/components/ButtonGroup';
 import Checkbox from '@/design-system/components/Checkbox';
 import ProgressBar from '@/design-system/components/ProgressBar';
 import Bichaurinho from '@/design-system/components/Bichaurinho';
+import DropdownButton from '@/design-system/components/DropdownButton';
 
 // Design System Tokens
 import { spacing } from '@/design-system/tokens/spacing';
@@ -20,7 +21,7 @@ import { getShadow } from '@/design-system/tokens/shadows';
 import { typography } from '@/design-system/tokens/typography';
 
 // Icons
-import { ArrowLeft, ArrowRight, ChevronDown } from 'lucide-react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 const Pacing = () => {
   const navigate = useNavigate();
@@ -36,9 +37,8 @@ const Pacing = () => {
   
   // State for dropdowns
   const [dailySummaryTime, setDailySummaryTime] = useState('Evening (6-8 PM)');
-  const [followUps, setFollowUps] = useState('Two more times the same day');
+  const [followUps, setFollowUps] = useState('One more time the same day');
   const [recommendationsTime, setRecommendationsTime] = useState('Morning (8-10 AM)');
-  const [contextSessionsTime, setContextSessionsTime] = useState('Weekly');
 
   const weekdays = [
     { id: 'monday', label: 'M', day: 'Monday' },
@@ -51,26 +51,24 @@ const Pacing = () => {
   ];
 
   const timeOptions = [
+    'Early Morning (6-8 AM)',
     'Morning (8-10 AM)',
-    'Afternoon (12-2 PM)', 
+    'Late Morning (10-12 PM)',
+    'Afternoon (12-2 PM)',
+    'Late Afternoon (2-4 PM)',
+    'Early Evening (4-6 PM)',
     'Evening (6-8 PM)',
-    'Night (8-10 PM)'
+    'Night (8-10 PM)',
+    'Late Night (10-12 AM)'
   ];
 
   const followUpOptions = [
     'No follow-ups',
     'One more time the same day',
-    'Two more times the same day',
-    'Next day if no response'
+    'Two more times the same day'
   ];
 
-  const contextOptions = [
-    'Daily',
-    'Every 3 days',
-    'Weekly',
-    'Bi-weekly',
-    'Monthly'
-  ];
+
 
   const paceOptions = [
     { id: 'light', label: 'Light' },
@@ -103,8 +101,7 @@ const Pacing = () => {
         frequency: selectedDays,
         daily_summary_time: dailySummaryTime,
         followups_frequency: followUps,
-        recommendations_time: recommendationsTime,
-        context_sessions_time: contextSessionsTime
+        recommendations_time: recommendationsTime
       };
 
       const { error } = await supabase
@@ -164,27 +161,7 @@ const Pacing = () => {
     </div>
   );
 
-  const DropdownButton = ({ value, options, onChange, placeholder = "Select an option" }: { 
-    value: string; 
-    options: string[]; 
-    onChange: (value: string) => void; 
-    placeholder?: string; 
-  }) => (
-    <div style={{ position: 'relative' }}>
-      <Button
-        label={value || placeholder}
-        style="secondary"
-        size="sm"
-        tailIcon={<ChevronDown size={14} />}
-        onClick={() => {
-          // Cycle through options for demo
-          const currentIndex = options.indexOf(value);
-          const nextIndex = (currentIndex + 1) % options.length;
-          onChange(options[nextIndex]);
-        }}
-      />
-    </div>
-  );
+
 
   return (
     <div
@@ -276,7 +253,7 @@ const Pacing = () => {
                   flexDirection: 'column',
                   alignItems: 'flex-start',
                   gap: spacing.spacing[16],
-                  marginBottom: spacing.spacing[32],
+                  marginBottom: spacing.spacing[20],
                 }}
               >
                 {/* Bichaurinho */}
@@ -326,19 +303,14 @@ const Pacing = () => {
               </div>
 
               {/* Pace Selection */}
-              <InnerSection
-                title="Choose Your Pace"
-                subtitle="How often would you like to share content?"
-              >
-                <ButtonGroup
-                  buttons={paceOptions.map(option => ({
-                    id: option.id,
-                    label: option.label,
-                    selected: selectedPace === option.id,
-                    onClick: () => setSelectedPace(option.id)
-                  }))}
-                />
-              </InnerSection>
+              <ButtonGroup
+                buttons={paceOptions.map(option => ({
+                  id: option.id,
+                  label: option.label,
+                  selected: selectedPace === option.id,
+                  onClick: () => setSelectedPace(option.id)
+                }))}
+              />
 
               <div style={{ height: spacing.spacing[16] }} />
 
@@ -391,9 +363,12 @@ const Pacing = () => {
                 subtitle="When should we send you a daily summary?"
               >
                 <DropdownButton
-                  value={dailySummaryTime}
-                  options={timeOptions}
-                  onChange={setDailySummaryTime}
+                  label={dailySummaryTime}
+                  size="sm"
+                  items={timeOptions.map(option => ({
+                    label: option,
+                    onClick: () => setDailySummaryTime(option)
+                  }))}
                 />
               </InnerSection>
 
@@ -404,9 +379,12 @@ const Pacing = () => {
                 subtitle="How often should we follow up on your posts?"
               >
                 <DropdownButton
-                  value={followUps}
-                  options={followUpOptions}
-                  onChange={setFollowUps}
+                  label={followUps}
+                  size="sm"
+                  items={followUpOptions.map(option => ({
+                    label: option,
+                    onClick: () => setFollowUps(option)
+                  }))}
                 />
               </InnerSection>
 
@@ -417,24 +395,16 @@ const Pacing = () => {
                 subtitle="When should we suggest new content ideas?"
               >
                 <DropdownButton
-                  value={recommendationsTime}
-                  options={timeOptions}
-                  onChange={setRecommendationsTime}
+                  label={recommendationsTime}
+                  size="sm"
+                  items={timeOptions.map(option => ({
+                    label: option,
+                    onClick: () => setRecommendationsTime(option)
+                  }))}
                 />
               </InnerSection>
 
-              <div style={{ height: spacing.spacing[12] }} />
 
-              <InnerSection
-                title="Context Sessions"
-                subtitle="How often should we review your content strategy?"
-              >
-                <DropdownButton
-                  value={contextSessionsTime}
-                  options={contextOptions}
-                  onChange={setContextSessionsTime}
-                />
-              </InnerSection>
             </div>
 
             {/* Text Container */}

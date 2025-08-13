@@ -1,18 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '@/services/theme-context';
+import { useAuth } from '@/hooks/api/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { spacing } from '@/design-system/tokens/spacing';
 import { textStyles } from '@/design-system/styles/typography/typography-styles';
 import { typography } from '@/design-system/tokens/typography';
+import { useToast } from '@/design-system/components/Toast';
 
 // Design System Components
 import IntegrationCard from '@/design-system/components/IntegrationCard';
+import WhatsAppConfigModal from '@/design-system/components/WhatsAppConfigModal';
 
-// Icons
-import { 
-  MessageCircle, 
-  Calendar, 
-  PlayCircle
-} from 'lucide-react';
+// Integration logo images
+import whatsappLogo from '@/assets/images/whatsapp-logo.png';
+import readaiLogo from '@/assets/images/readai-logo.webp';
+import googleCalendarLogo from '@/assets/images/google-calendar-logo.png';
 
 /**
  * IntegrationsPage - Manage third-party integrations
@@ -20,8 +22,15 @@ import {
  */
 const IntegrationsPage = () => {
   const { colors } = useTheme();
+  const { user } = useAuth();
+  const { toast } = useToast();
 
-  // Integration states (in a real app, these would come from API/context)
+  // WhatsApp modal state
+  const [whatsappModalOpen, setWhatsappModalOpen] = useState(false);
+  const [whatsappNumber, setWhatsappNumber] = useState('');
+  const [savingWhatsapp, setSavingWhatsapp] = useState(false);
+
+  // Integration states
   const [integrations, setIntegrations] = useState({
     whatsapp: {
       enabled: false,
@@ -37,6 +46,40 @@ const IntegrationsPage = () => {
     },
   });
 
+  // Fetch WhatsApp number on component mount
+  useEffect(() => {
+    const fetchWhatsAppNumber = async () => {
+      if (!user) return;
+
+      try {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('whatsapp_number')
+          .eq('user_id', user.id)
+          .single();
+
+        if (error) throw error;
+
+        const hasNumber = profile?.whatsapp_number?.trim();
+        setWhatsappNumber(hasNumber || '');
+        
+        // Update WhatsApp integration status
+        setIntegrations(prev => ({
+          ...prev,
+          whatsapp: {
+            ...prev.whatsapp,
+            connected: !!hasNumber,
+            enabled: !!hasNumber, // Enable if number exists
+          }
+        }));
+      } catch (error) {
+        console.error('Error fetching WhatsApp number:', error);
+      }
+    };
+
+    fetchWhatsAppNumber();
+  }, [user]);
+
   // Handle toggle changes
   const handleToggleChange = (integrationKey, newValue) => {
     setIntegrations(prev => ({
@@ -48,13 +91,55 @@ const IntegrationsPage = () => {
     }));
   };
 
+  // Handle WhatsApp number save
+  const handleWhatsAppSave = async (number) => {
+    if (!user) return;
+
+    setSavingWhatsapp(true);
+    
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ whatsapp_number: number.trim() || null })
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      const hasNumber = number.trim();
+      setWhatsappNumber(hasNumber);
+      
+      // Update integration status
+      setIntegrations(prev => ({
+        ...prev,
+        whatsapp: {
+          ...prev.whatsapp,
+          connected: !!hasNumber,
+          enabled: !!hasNumber, // Enable if number exists, disable if removed
+        }
+      }));
+
+      setWhatsappModalOpen(false);
+      
+      if (hasNumber) {
+        toast.success('WhatsApp number saved successfully!');
+      } else {
+        toast.success('WhatsApp number removed successfully!');
+      }
+    } catch (error) {
+      console.error('Error saving WhatsApp number:', error);
+      toast.error('Failed to save WhatsApp number. Please try again.');
+    } finally {
+      setSavingWhatsapp(false);
+    }
+  };
+
   // Integration configuration
   const integrationConfig = [
     {
       key: 'whatsapp',
       name: 'WhatsApp',
       description: 'Add files to your knowledge base from WhatsApp and create content directly from messages',
-      icon: <MessageCircle size={32} />,
+      icon: <img src={whatsappLogo} alt="WhatsApp" style={{ width: 24, height: 24 }} />,
       iconColor: '#25D366',
       features: ['Knowledge base integration', 'Content creation', 'File management'],
     },
@@ -62,7 +147,7 @@ const IntegrationsPage = () => {
       key: 'readai',
       name: 'Read.ai',
       description: 'Add meeting transcripts to your knowledge base for enhanced content creation',
-      icon: <PlayCircle size={32} />,
+      icon: <img src={readaiLogo} alt="Read.ai" style={{ width: 24, height: 24 }} />,
       iconColor: '#6366F1',
       features: ['Meeting transcription', 'Knowledge base sync', 'Content insights'],
     },
@@ -70,7 +155,7 @@ const IntegrationsPage = () => {
       key: 'googleCalendar',
       name: 'Google Calendar',
       description: 'Sync your calendar to understand your routines and create more relevant content',
-      icon: <Calendar size={32} />,
+      icon: <img src={googleCalendarLogo} alt="Google Calendar" style={{ width: 24, height: 24 }} />,
       iconColor: '#4285F4',
       features: ['Calendar sync', 'Routine analysis', 'Context-aware content'],
     },
@@ -112,8 +197,12 @@ const IntegrationsPage = () => {
 
   // Handle configure button clicks
   const handleConfigureClick = (integrationKey) => {
-    // In a real app, this would open configuration modal or navigate to settings
-    console.log(`Configure ${integrationKey} integration`);
+    if (integrationKey === 'whatsapp') {
+      setWhatsappModalOpen(true);
+    } else {
+      // For other integrations, you can add specific handling here
+      console.log(`Configure ${integrationKey} integration`);
+    }
   };
 
   return (
@@ -143,6 +232,15 @@ const IntegrationsPage = () => {
           />
         ))}
       </div>
+
+      {/* WhatsApp Configuration Modal */}
+      <WhatsAppConfigModal
+        isOpen={whatsappModalOpen}
+        onClose={() => setWhatsappModalOpen(false)}
+        currentNumber={whatsappNumber}
+        onSave={handleWhatsAppSave}
+        loading={savingWhatsapp}
+      />
     </div>
   );
 };

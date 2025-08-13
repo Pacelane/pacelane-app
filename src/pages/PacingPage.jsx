@@ -24,16 +24,14 @@ const PacingPage = () => {
   // State for each section's data
   const [selectedDays, setSelectedDays] = useState(['monday', 'wednesday', 'friday']);
   const [dailySummaryTime, setDailySummaryTime] = useState('Evening (6-8 PM)');
-  const [followUps, setFollowUps] = useState('Two more times the same day');
+  const [followUps, setFollowUps] = useState('One more time the same day');
   const [recommendationsTime, setRecommendationsTime] = useState('Morning (8-10 AM)');
-  const [contextSessionsTime, setContextSessionsTime] = useState('Weekly');
 
   // Saved states for each section
   const [savedStates, setSavedStates] = useState({
     frequency: false,
     dailySummary: false,
-    recommendations: false,
-    contextSessions: false
+    recommendations: false
   });
 
   const weekdays = [
@@ -47,33 +45,36 @@ const PacingPage = () => {
   ];
 
   const timeOptions = [
+    'Early Morning (6-8 AM)',
     'Morning (8-10 AM)',
-    'Afternoon (12-2 PM)', 
+    'Late Morning (10-12 PM)',
+    'Afternoon (12-2 PM)',
+    'Late Afternoon (2-4 PM)',
+    'Early Evening (4-6 PM)',
     'Evening (6-8 PM)',
-    'Night (8-10 PM)'
+    'Night (8-10 PM)',
+    'Late Night (10-12 AM)'
   ];
 
   const followUpOptions = [
     'No follow-ups',
     'One more time the same day',
-    'Two more times the same day',
-    'Next day if no response'
+    'Two more times the same day'
   ];
 
   const recommendationOptions = [
+    'Early Morning (6-8 AM)',
     'Morning (8-10 AM)',
+    'Late Morning (10-12 PM)',
     'Afternoon (12-2 PM)',
+    'Late Afternoon (2-4 PM)',
+    'Early Evening (4-6 PM)',
     'Evening (6-8 PM)',
-    'Night (8-10 PM)'
+    'Night (8-10 PM)',
+    'Late Night (10-12 AM)'
   ];
 
-  const contextOptions = [
-    'Daily',
-    'Every 3 days',
-    'Weekly',
-    'Bi-weekly',
-    'Monthly'
-  ];
+
 
   // Side menu items
   const menuItems = [
@@ -88,10 +89,6 @@ const PacingPage = () => {
     { 
       id: 'recommendations', 
       label: 'Recommendations'
-    },
-    { 
-      id: 'contextSessions', 
-      label: 'Context Sessions'
     }
   ];
 
@@ -259,36 +256,7 @@ const PacingPage = () => {
           </div>
         );
 
-      case 'contextSessions':
-        return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[20] }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[4] }}>
-              <h3 style={{ ...textStyles.sm.semibold, color: colors.text.default, margin: 0 }}>
-                Context Sessions
-              </h3>
-              <p style={{ ...textStyles.xs.normal, color: colors.text.subtle, margin: 0 }}>
-                We will ask you a few questions to tailor your strategy and get more context around some topics
-              </p>
-            </div>
-            
-            <DropdownButton
-              label={contextSessionsTime}
-              items={createDropdownItems(contextOptions, setContextSessionsTime)}
-              size="sm"
-            />
 
-            <div style={{ alignSelf: 'flex-start' }}>
-              <Button
-                label={savedStates.contextSessions ? "Saved!" : "Save"}
-                style="primary"
-                size="sm"
-                leadIcon={savedStates.contextSessions ? <Check size={16} /> : undefined}
-                onClick={() => handleSave('contextSessions')}
-                disabled={savedStates.contextSessions}
-              />
-            </div>
-          </div>
-        );
 
       default:
         return null;

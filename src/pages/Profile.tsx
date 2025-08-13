@@ -28,7 +28,8 @@ import {
   Check,
   X,
   Sparkles,
-  Info
+  Info,
+  LogOut
 } from 'lucide-react';
 
 const Profile = () => {
@@ -49,7 +50,6 @@ const Profile = () => {
     profession: '',
     avatar: '',
     linkedinUrl: '',
-    whatsapp: '',
     bio: '',
     city: '',
     country: ''
@@ -71,7 +71,7 @@ const Profile = () => {
         profession: profile.linkedin_headline || '',
         avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=96&h=96&fit=crop&crop=face',
         linkedinUrl: profile.linkedin_profile || '',
-        whatsapp: profile.whatsapp_number || profile.phone_number || '',
+
         bio: profile.linkedin_about || '',
         city: '',
         country: ''
@@ -138,7 +138,6 @@ const Profile = () => {
   // Saved states for each section
   const [savedStates, setSavedStates] = useState({
     profile: false,
-    whatsapp: false,
     bio: false,
     address: false,
     companyProfile: false,
@@ -224,11 +223,7 @@ const Profile = () => {
             linkedin_profile: personalInfo.linkedinUrl
           };
           break;
-        case 'whatsapp':
-          updateData = {
-            whatsapp_number: personalInfo.whatsapp
-          };
-          break;
+
         case 'goals':
           updateData = {
             goals: goals.filter(g => g.value.trim()).map(g => g.value)
@@ -710,12 +705,21 @@ const Profile = () => {
   return (
     <div style={containerStyles}>
           {/* Header */}
-          <div>
-            <h1 style={titleStyle}>Profile Settings</h1>
-            <p style={subtitleStyle}>
-              Manage your personal information, company details, and content preferences
-                </p>
-              </div>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+            <div>
+              <h1 style={titleStyle}>Profile Settings</h1>
+              <p style={subtitleStyle}>
+                Manage your personal information, company details, and content preferences
+              </p>
+            </div>
+            <Button
+              label="Sign Out"
+              style="secondary"
+              size="sm"
+              leadIcon={<LogOut size={16} />}
+              onClick={handleSignOut}
+            />
+          </div>
 
           {/* Main Content Layout */}
           <div style={{ display: 'flex', gap: spacing.spacing[32], width: '100%' }}>
@@ -820,44 +824,7 @@ const Profile = () => {
                     </div>
                   </div>
 
-                  {/* WhatsApp Card */}
-                  <div style={{
-                    backgroundColor: colors.bg.card.default,
-                    border: `1px solid ${colors.border.default}`,
-                    borderRadius: cornerRadius.borderRadius.lg,
-                    boxShadow: getShadow('regular.card', colors, { withBorder: true }),
-                    padding: spacing.spacing[20],
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: spacing.spacing[12],
-                  }}>
-                    <h4 style={{ ...textStyles.sm.semibold, color: colors.text.default, margin: 0 }}>
-                      WhatsApp Number
-                    </h4>
-                    <Input
-                      placeholder="+55 11 99999-9999"
-                      value={personalInfo.whatsapp}
-                      onChange={(e) => handlePersonalInfoChange('whatsapp', e.target.value)}
-                      style="default"
-                    />
-                    <p style={{
-                      ...textStyles.xs.normal,
-                      color: colors.text.muted,
-                      margin: 0,
-                    }}>
-                      Use international format: +55 11 99999-9999 (Brazil) or +1 555 123-4567 (US)
-                    </p>
-                    <div style={{ alignSelf: 'flex-start' }}>
-                      <Button
-                        label={savedStates.whatsapp ? "Saved!" : "Save"}
-                        style="primary"
-                        size="sm"
-                        leadIcon={savedStates.whatsapp ? <Check size={16} /> : undefined}
-                        onClick={() => handleSave('whatsapp')}
-                        disabled={savedStates.whatsapp || saving}
-                      />
-                    </div>
-                  </div>
+
 
                   {/* Bio Card */}
                   <div style={{
@@ -1248,16 +1215,6 @@ const Profile = () => {
                 </>
               )}
             </div>
-          </div>
-
-          {/* Sign Out Section */}
-          <div style={{ paddingTop: spacing.spacing[32], borderTop: `1px solid ${colors.border.default}` }}>
-            <Button
-              label="Sign Out"
-              style="destructive"
-              size="md"
-              onClick={handleSignOut}
-            />
           </div>
     </div>
   );

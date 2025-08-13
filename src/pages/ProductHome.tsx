@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import StreakCard from '@/design-system/components/StreakCard';
 import StatsSummaryCard from '@/design-system/components/StatsSummaryCard';
 import SuggestionCard from '@/design-system/components/SuggestionCard';
+import CalendarSnippetsCard from '@/design-system/components/CalendarSnippetsCard';
 import TemplateCard from '@/design-system/components/TemplateCard';
 import ContentCard from '@/design-system/components/ContentCard';
 import Input from '@/design-system/components/Input';
@@ -324,14 +325,24 @@ const ProductHome = () => {
     navigate('/content-editor', { state: { draftId } });
   };
 
+  const handleMeetingClick = async (meeting: any) => {
+    // Track activity when user creates content from meeting
+    if (trackActivity) {
+      await trackActivity('content_creation');
+    }
+    navigate('/content-editor', { state: { meeting } });
+  };
+
   // Function to create a preview of the post content
   const createPostPreview = (suggestion: any) => {
-    if (!suggestion.full_content) {
-      return suggestion.description || 'No content available';
+    // Check for various content properties that might exist
+    let content = suggestion.suggested_outline || suggestion.description || '';
+    
+    if (!content) {
+      return 'AI-generated content suggestion - click to start creating';
     }
     
     // Get the first paragraph or first 200 characters
-    const content = suggestion.full_content;
     const firstParagraph = content.split('\n\n')[0] || content;
     const preview = firstParagraph.length > 200 
       ? firstParagraph.substring(0, 200) + '...'
@@ -473,14 +484,10 @@ const ProductHome = () => {
                 contentCards={
                   contentSuggestions.length > 0 
                     ? contentSuggestions.slice(0, 3).map(suggestion => {
-                        const hashtags = suggestion.hashtags?.length > 0 
-                          ? suggestion.hashtags.slice(0, 3).join(' ') 
-                          : '';
-                        
                         return {
                           variant: 'gradient' as const,
                           title: suggestion.title,
-                          subtitle: `Quality Score: ${suggestion.quality_score || 'N/A'}/10${hashtags ? ` • ${hashtags}` : ''}`,
+                          subtitle: suggestion.description || 'AI-generated content suggestion',
                           content: createPostPreview(suggestion),
                           onClick: () => navigate('/content-editor', { state: { suggestion } })
                         };
@@ -496,6 +503,15 @@ const ProductHome = () => {
                 }
                 onCalendarClick={() => console.log('Calendar clicked')}
                 onGenerateClick={handleGenerateContent}
+                style={{ width: '100%' }}
+              />
+
+              {/* Calendar Snippets Card */}
+              <CalendarSnippetsCard 
+                title="Past Meetings"
+                subtitle="Turn your recent meetings into content"
+                onMeetingClick={handleMeetingClick}
+                onViewAllClick={() => console.log('View all meetings clicked')}
                 style={{ width: '100%' }}
               />
             </>

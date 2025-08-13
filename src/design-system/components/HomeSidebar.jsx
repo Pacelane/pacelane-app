@@ -12,6 +12,7 @@ import ButtonGroup from './ButtonGroup.jsx';
 import SidebarMenuItem from './SidebarMenuItem.jsx';
 import Logo from './Logo.jsx';
 import LogoSymbol from './LogoSymbol.jsx';
+import DropdownMenu from './DropdownMenu.jsx';
 
 // Icons
 import {
@@ -30,7 +31,9 @@ import {
   Sun,
   Moon,
   Monitor,
-  HelpCircle
+  HelpCircle,
+  Settings,
+  LogOut
 } from 'lucide-react';
 
 /**
@@ -47,6 +50,7 @@ import {
  * @param {function} [props.onThemeChange] - Callback when theme is changed
  * @param {function} [props.onHelpClick] - Callback when Help button is clicked
  * @param {function} [props.onAvatarClick] - Callback when avatar container is clicked (for profile navigation)
+ * @param {function} [props.onSignOut] - Callback when sign out is clicked
  * @param {string} [props.className] - Additional CSS classes
  */
 const HomeSidebar = ({
@@ -60,12 +64,14 @@ const HomeSidebar = ({
   onThemeChange,
   onHelpClick,
   onAvatarClick,
+  onSignOut,
   className = '',
   ...rest
 }) => {
   const { colors, themePreference, setTheme } = useTheme();
   const { openHelp } = useHelp();
   const [isAvatarHovered, setIsAvatarHovered] = useState(false);
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
 
   // Handle theme selection
   const handleThemeSelect = (item, index) => {
@@ -81,6 +87,36 @@ const HomeSidebar = ({
     setTheme(newTheme);
     onThemeChange?.(newTheme);
   };
+
+  // Handle user dropdown toggle
+  const handleAvatarClick = () => {
+    if (isCollapsed) {
+      // If collapsed, go directly to profile
+      onAvatarClick?.();
+    } else {
+      // If expanded, toggle dropdown
+      setIsUserDropdownOpen(!isUserDropdownOpen);
+    }
+  };
+
+  // User dropdown menu items
+  const userDropdownItems = [
+    {
+      label: 'Profile Settings',
+      onClick: () => {
+        setIsUserDropdownOpen(false);
+        onAvatarClick?.();
+      }
+    },
+    {
+      label: 'Sign Out',
+      type: 'destructive',
+      onClick: () => {
+        setIsUserDropdownOpen(false);
+        onSignOut?.();
+      }
+    }
+  ];
 
   // Menu items configuration
   const mainMenuItems = [
@@ -149,6 +185,7 @@ const HomeSidebar = ({
 
   // Avatar container styles (clickable button)
   const avatarContainerStyles = {
+    position: 'relative',
     display: 'flex',
     alignItems: 'center',
     justifyContent: isCollapsed ? 'center' : 'flex-start',
@@ -237,10 +274,10 @@ const HomeSidebar = ({
       {/* Avatar Container */}
       <button
         style={avatarContainerStyles}
-        onClick={onAvatarClick}
+        onClick={handleAvatarClick}
         onMouseEnter={() => setIsAvatarHovered(true)}
         onMouseLeave={() => setIsAvatarHovered(false)}
-        aria-label={isCollapsed ? `View ${userName}'s profile` : `View profile`}
+        aria-label={isCollapsed ? `View ${userName}'s profile` : `User menu`}
         type="button"
       >
         <img
@@ -270,9 +307,21 @@ const HomeSidebar = ({
               style={{
                 opacity: isCollapsed ? 0 : 1,
                 transition: 'opacity 0.3s cubic-bezier(0.4, 0.0, 0.2, 1)',
+                transform: isUserDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
               }}
             />
           </>
+        )}
+
+        {/* User Dropdown Menu */}
+        {!isCollapsed && (
+          <DropdownMenu
+            isOpen={isUserDropdownOpen}
+            onClose={() => setIsUserDropdownOpen(false)}
+            items={userDropdownItems}
+            position="bottom-right"
+            minWidth="160px"
+          />
         )}
       </button>
 

@@ -43,7 +43,7 @@ const Ready = () => {
   const navigate = useNavigate();
   const { user, refreshProfile } = useAuth();
   const { colors } = useTheme();
-  const toast = useToast();
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [confettiPieces, setConfettiPieces] = useState([]);
 
@@ -78,7 +78,10 @@ const Ready = () => {
   const generateInitialContentSuggestions = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+      if (!session) {
+        console.warn('No session available for content suggestions');
+        return;
+      }
 
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-content-suggestions`, {
         method: 'POST',
@@ -90,11 +93,13 @@ const Ready = () => {
       });
 
       if (!response.ok) {
-        console.warn('Failed to generate initial content suggestions');
+        const errorText = await response.text();
+        console.warn('Failed to generate initial content suggestions:', response.status, errorText);
         return;
       }
 
-      console.log('Initial content suggestions generated successfully');
+      const result = await response.json();
+      console.log('Initial content suggestions generated successfully:', result);
     } catch (error) {
       console.warn('Error generating initial content suggestions:', error);
     }
@@ -103,7 +108,10 @@ const Ready = () => {
   const createUserBucket = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return false;
+      if (!session) {
+        console.warn('No session available for bucket creation');
+        return false;
+      }
 
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-user-bucket`, {
         method: 'POST',
@@ -115,7 +123,8 @@ const Ready = () => {
       });
 
       if (!response.ok) {
-        console.warn('Failed to create user bucket');
+        const errorText = await response.text();
+        console.warn('Failed to create user bucket:', response.status, errorText);
         return false;
       }
 

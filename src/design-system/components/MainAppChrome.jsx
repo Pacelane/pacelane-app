@@ -79,6 +79,12 @@ const MainAppChrome = ({ className = '', children, ...rest }) => {
     });
   };
   const handleThemeChange = () => {};
+  const handleSignOut = async () => {
+    const result = await signOut();
+    if (!result.error) {
+      navigate('/signin');
+    }
+  };
 
   // Layout styles
   const rootStyles = {
@@ -120,6 +126,7 @@ const MainAppChrome = ({ className = '', children, ...rest }) => {
           onThemeChange={handleThemeChange}
           onHelpClick={handleHelpClick}
           onAvatarClick={handleAvatarClick}
+          onSignOut={handleSignOut}
           userName={user?.email?.split('@')[0] || 'User'}
           userAvatar="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=48&h=48&fit=crop&crop=face"
         />
