@@ -24,6 +24,7 @@ import Button from '@/design-system/components/Button';
 import EmptyState from '@/design-system/components/EmptyState';
 import SubtleLoadingSpinner from '@/design-system/components/SubtleLoadingSpinner';
 import FirstTimeUserHome from '@/design-system/components/FirstTimeUserHome';
+ 
 
 // Design System Tokens
 import { spacing } from '../design-system/tokens/spacing';
@@ -42,7 +43,7 @@ import { ReadAiIntegration } from '../components/ReadAiIntegration';
 const ProductHome = () => {
   const navigate = useNavigate();
   const { user, profile, signOut } = useAuth();
-  const { savedDrafts, contentSuggestions, knowledgeFiles, loadSavedDrafts, loadContentSuggestions, loadingDrafts, loadingSuggestions, error } = useContent();
+  const { savedDrafts, contentSuggestions, knowledgeFiles, loadSavedDrafts, loadContentSuggestions, loadingDrafts, loadingSuggestions, error, createUIContentOrder } = useContent();
   const { streak, stats, weekActivity, loading: analyticsLoading, trackActivity } = useAnalytics();
   const { colors } = useTheme();
   const [searchQuery, setSearchQuery] = useState('');

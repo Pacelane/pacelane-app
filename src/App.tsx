@@ -8,6 +8,7 @@ import { HelpProvider } from "./services/help-context";
 import ProtectedRoute from "./design-system/components/ProtectedRoute";
 import MainAppChrome from "./design-system/components/MainAppChrome";
 import HelpModal from "./design-system/components/HelpModal";
+ 
 
 import ProductHome from "./pages/ProductHome";
 import Templates from "./pages/Templates";

@@ -70,6 +70,9 @@ async function buildContentBrief(supabaseClient: any, orderId: string): Promise<
     throw new Error(`Content order not found: ${orderId}`)
   }
 
+  // Analyze original order message for deeper context
+  const orderContext = await analyzeOrderContext(order.params_json?.original_content || '', order.user_id, supabaseClient)
+
   // Get user profile and preferences
   const { data: profile, error: profileError } = await supabaseClient
     .from('profiles')
@@ -89,16 +92,22 @@ async function buildContentBrief(supabaseClient: any, orderId: string): Promise<
   // Extract parameters from order
   const params = order.params_json || {}
   
-  // Build the content brief
+  // Build the content brief with order context
   const brief: ContentBrief = {
     platform: params.platform || preferences.prefer_platform || 'linkedin',
     length: params.length || preferences.default_length || 'medium',
     tone: params.tone || preferences.default_tone || 'professional',
-    angle: params.angle || 'insight',
+    angle: params.angle || orderContext.suggestedAngle || 'insight',
     topic: params.topic || 'general business insights',
     refs: params.refs || [],
     content_guides: contentGuides,
-    original_content: params.original_content
+    original_content: params.original_content,
+    // Enhanced context from order analysis
+    order_context: orderContext,
+    business_context: orderContext.businessContext,
+    emotional_tone: orderContext.emotionalTone,
+    content_type: orderContext.contentType,
+    urgency: orderContext.urgency
   }
 
   // Add target audience if available
@@ -212,5 +221,154 @@ Return only valid JSON:
   } catch (error) {
     console.error('Error enhancing brief with AI:', error)
     return brief // Return original brief if AI enhancement fails
+  }
+}
+
+/**
+ * Analyze original order message for deeper context and intent
+ */
+async function analyzeOrderContext(originalMessage: string, userId: string, supabaseClient: any): Promise<any> {
+  if (!originalMessage || originalMessage.trim() === '') {
+    return {
+      explicitRequests: [],
+      businessContext: 'general business content',
+      emotionalTone: 'neutral',
+      implicitNeeds: [],
+      urgency: 'normal',
+      contentType: 'informational'
+    }
+  }
+
+  const openaiApiKey = Deno.env.get('OPENAI_API_KEY')
+  if (!openaiApiKey) {
+    console.warn('OPENAI_API_KEY not found, using basic order analysis')
+    return analyzeOrderBasic(originalMessage)
+  }
+
+  try {
+    // Get user context for better analysis
+    const { data: profile } = await supabaseClient
+      .from('profiles')
+      .select('linkedin_headline, company_linkedin, industry, goals')
+      .eq('user_id', userId)
+      .single()
+
+    const userContext = profile ? {
+      role: profile.linkedin_headline || 'Professional',
+      company: profile.company_linkedin || 'Company',
+      industry: profile.industry || 'Business',
+      goals: profile.goals || {}
+    } : {}
+
+    const prompt = `Analyze this content creation request for deep context and intent.
+
+Original Message: "${originalMessage}"
+
+User Context:
+- Role: ${userContext.role}
+- Company: ${userContext.company}
+- Industry: ${userContext.industry}
+
+Extract and analyze:
+1. Explicit requests (what they directly asked for)
+2. Business context (what business situation prompted this)
+3. Emotional tone (urgency, excitement, concern, etc.)
+4. Implicit needs (what they might need but didn't ask for)
+5. Content purpose (educate, promote, share experience, etc.)
+
+Return only valid JSON:
+{
+  "explicitRequests": ["request1", "request2"],
+  "businessContext": "description of business situation",
+  "emotionalTone": "tone description",
+  "implicitNeeds": ["need1", "need2"],
+  "urgency": "low|normal|high",
+  "contentType": "educational|promotional|personal|thought-leadership",
+  "keyInsights": ["insight1", "insight2"],
+  "suggestedAngle": "recommended content angle"
+}`
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${openaiApiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert at analyzing business communication and extracting context for content creation. Always return valid JSON.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.3,
+        max_tokens: 600,
+      }),
+    })
+
+    if (!response.ok) {
+      throw new Error(`OpenAI API error: ${response.status}`)
+    }
+
+    const data = await response.json()
+    const aiResponse = data.choices[0]?.message?.content
+
+    if (!aiResponse) {
+      throw new Error('No response from OpenAI')
+    }
+
+    const analysis = JSON.parse(aiResponse)
+    console.log('Order context analysis:', analysis)
+    
+    return analysis
+
+  } catch (error) {
+    console.error('Error in AI order analysis:', error)
+    return analyzeOrderBasic(originalMessage)
+  }
+}
+
+/**
+ * Basic rule-based order analysis fallback
+ */
+function analyzeOrderBasic(message: string): any {
+  const lowerMessage = message.toLowerCase()
+  
+  // Detect urgency
+  const urgencyWords = ['urgent', 'asap', 'quickly', 'immediately', 'soon', 'deadline']
+  const urgency = urgencyWords.some(word => lowerMessage.includes(word)) ? 'high' : 'normal'
+  
+  // Detect emotional tone
+  let emotionalTone = 'neutral'
+  if (lowerMessage.includes('excited') || lowerMessage.includes('great') || lowerMessage.includes('amazing')) {
+    emotionalTone = 'positive'
+  } else if (lowerMessage.includes('problem') || lowerMessage.includes('issue') || lowerMessage.includes('challenge')) {
+    emotionalTone = 'concerned'
+  }
+  
+  // Detect content type
+  let contentType = 'informational'
+  if (lowerMessage.includes('promote') || lowerMessage.includes('announce') || lowerMessage.includes('launch')) {
+    contentType = 'promotional'
+  } else if (lowerMessage.includes('experience') || lowerMessage.includes('story') || lowerMessage.includes('learned')) {
+    contentType = 'personal'
+  } else if (lowerMessage.includes('insight') || lowerMessage.includes('trend') || lowerMessage.includes('opinion')) {
+    contentType = 'thought-leadership'
+  }
+
+  return {
+    explicitRequests: [message],
+    businessContext: 'User requested content creation',
+    emotionalTone,
+    implicitNeeds: ['engaging content', 'professional voice'],
+    urgency,
+    contentType,
+    keyInsights: [],
+    suggestedAngle: 'professional perspective'
   }
 }
