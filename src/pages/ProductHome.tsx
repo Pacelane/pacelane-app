@@ -37,8 +37,7 @@ import { shadows, getShadow } from '../design-system/tokens/shadows';
 import { ChevronRight, Search } from 'lucide-react';
 
 // Additional Components
-import { CalendarIntegration } from '../components/CalendarIntegration';
-import { ReadAiIntegration } from '../components/ReadAiIntegration';
+import { CalendarService } from '@/services/calendarService';
 
 const ProductHome = () => {
   const navigate = useNavigate();
@@ -63,6 +62,7 @@ const ProductHome = () => {
     currentStep: '',
     progress: 0
   });
+  const [recentMeetings, setRecentMeetings] = useState<any[]>([]);
 
   // Load user data on component mount
   useEffect(() => {
@@ -72,7 +72,28 @@ const ProductHome = () => {
           await Promise.allSettled([
             loadSavedDrafts(),
             loadContentSuggestions(),
-            loadTemplates()
+            loadTemplates(),
+            (async () => {
+              const end = new Date();
+              const start = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+              const { success, events } = await CalendarService.getEvents({
+                start: start.toISOString(),
+                end: end.toISOString(),
+                limit: 6,
+              });
+              if (success && Array.isArray(events)) {
+                const mapped = events.map((e: any) => ({
+                  id: e.id || e.event_id,
+                  title: e.title || 'Untitled Event',
+                  date: e.start_time,
+                  time: new Date(e.start_time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
+                  attendees: Array.isArray(e.attendees) ? e.attendees.length : 0,
+                }));
+                setRecentMeetings(mapped);
+              } else {
+                setRecentMeetings([]);
+              }
+            })()
           ]);
         } catch (err) {
           console.log('Some data failed to load, but continuing...');
@@ -523,6 +544,7 @@ const ProductHome = () => {
               <CalendarSnippetsCard 
                 title="Past Meetings"
                 subtitle="Turn your recent meetings into content"
+                meetings={recentMeetings}
                 onMeetingClick={handleMeetingClick}
                 onViewAllClick={() => console.log('View all meetings clicked')}
                 style={{ width: '100%' }}
@@ -530,21 +552,7 @@ const ProductHome = () => {
             </>
           )}
 
-          {/* Calendar Integration Section */}
-          <CalendarIntegration 
-            onMeetingSelect={(meeting) => {
-              console.log('Meeting selected:', meeting);
-              navigate('/content-editor', { state: { meeting } });
-            }}
-          />
-
-          {/* Read.ai Integration Section */}
-          <ReadAiIntegration 
-            onMeetingSelect={(meeting) => {
-              console.log('Read.ai meeting selected:', meeting);
-              navigate('/content-editor', { state: { readAiMeeting: meeting } });
-            }}
-          />
+          {/* Removed lower placeholder sections */}
 
           {/* Templates Section */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

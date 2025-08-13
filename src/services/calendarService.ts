@@ -38,6 +38,15 @@ export interface CalendarEventsResult {
 }
 
 export class CalendarService {
+  // Get current authenticated user id
+  private static async getCurrentUserId(): Promise<string | null> {
+    try {
+      const { data } = await supabase.auth.getUser();
+      return data?.user?.id ?? null;
+    } catch (e) {
+      return null;
+    }
+  }
   // Get OAuth URL for Google Calendar connection
   static async getAuthUrl(): Promise<{ success: boolean; authUrl?: string; error?: string }> {
     try {
@@ -156,9 +165,13 @@ export class CalendarService {
   // Get user's connected calendars
   static async getConnectedCalendars(): Promise<{ success: boolean; calendars?: CalendarConnection[]; error?: string }> {
     try {
+      const userId = await CalendarService.getCurrentUserId();
+      if (!userId) return { success: true, calendars: [] };
+
       const { data, error } = await supabase
         .from('user_calendars')
         .select('*')
+        .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -198,12 +211,15 @@ export class CalendarService {
   // Get upcoming meetings for content generation
   static async getUpcomingMeetings(limit: number = 5): Promise<CalendarEvent[]> {
     try {
+      const userId = await CalendarService.getCurrentUserId();
+      if (!userId) return [];
       const now = new Date().toISOString();
       const endDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(); // Next 7 days
 
       const { data, error } = await supabase
         .from('calendar_events')
         .select('*')
+        .eq('user_id', userId)
         .gte('start_time', now)
         .lte('start_time', endDate)
         .order('start_time', { ascending: true })
@@ -224,12 +240,15 @@ export class CalendarService {
   // Get recent meetings for content generation
   static async getRecentMeetings(limit: number = 5): Promise<CalendarEvent[]> {
     try {
+      const userId = await CalendarService.getCurrentUserId();
+      if (!userId) return [];
       const now = new Date().toISOString();
       const startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(); // Last 7 days
 
       const { data, error } = await supabase
         .from('calendar_events')
         .select('*')
+        .eq('user_id', userId)
         .gte('start_time', startDate)
         .lte('start_time', now)
         .order('start_time', { ascending: false })
@@ -250,9 +269,13 @@ export class CalendarService {
   // Check if user has connected calendars
   static async hasConnectedCalendars(): Promise<boolean> {
     try {
+      const userId = await CalendarService.getCurrentUserId();
+      if (!userId) return false;
+
       const { data, error } = await supabase
         .from('user_calendars')
         .select('id')
+        .eq('user_id', userId)
         .limit(1);
 
       if (error) {
