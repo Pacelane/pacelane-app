@@ -36,6 +36,7 @@ export { default as Toggle } from './Toggle.jsx';
 export { default as IntegrationCard } from './IntegrationCard.jsx';
 export { default as Modal } from './Modal.jsx';
 export { default as HelpModal } from './HelpModal.jsx';
+export { default as ReadAiConfigModal } from './ReadAiConfigModal.jsx';
 
 // Pages
 export { default as HomePage } from './pages/HomePage.jsx'; 

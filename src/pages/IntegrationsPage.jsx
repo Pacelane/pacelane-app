@@ -10,6 +10,7 @@ import { useToast } from '@/design-system/components/Toast';
 // Design System Components
 import IntegrationCard from '@/design-system/components/IntegrationCard';
 import WhatsAppConfigModal from '@/design-system/components/WhatsAppConfigModal';
+import ReadAiConfigModal from '@/design-system/components/ReadAiConfigModal';
 
 // Integration logo images
 import whatsappLogo from '@/assets/images/whatsapp-logo.png';
@@ -25,8 +26,9 @@ const IntegrationsPage = () => {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  // WhatsApp modal state
+  // Modal states
   const [whatsappModalOpen, setWhatsappModalOpen] = useState(false);
+  const [readaiModalOpen, setReadaiModalOpen] = useState(false);
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [savingWhatsapp, setSavingWhatsapp] = useState(false);
 
@@ -199,10 +201,27 @@ const IntegrationsPage = () => {
   const handleConfigureClick = (integrationKey) => {
     if (integrationKey === 'whatsapp') {
       setWhatsappModalOpen(true);
+    } else if (integrationKey === 'readai') {
+      setReadaiModalOpen(true);
     } else {
       // For other integrations, you can add specific handling here
       console.log(`Configure ${integrationKey} integration`);
     }
+  };
+
+  // Handle Read.ai setup completion
+  const handleReadaiComplete = () => {
+    // Update integration status to connected and enabled
+    setIntegrations(prev => ({
+      ...prev,
+      readai: {
+        ...prev.readai,
+        connected: true,
+        enabled: true,
+      }
+    }));
+    
+    toast.success('Read.ai integration configured successfully!');
   };
 
   return (
@@ -240,6 +259,13 @@ const IntegrationsPage = () => {
         currentNumber={whatsappNumber}
         onSave={handleWhatsAppSave}
         loading={savingWhatsapp}
+      />
+
+      {/* Read.ai Configuration Modal */}
+      <ReadAiConfigModal
+        isOpen={readaiModalOpen}
+        onClose={() => setReadaiModalOpen(false)}
+        onComplete={handleReadaiComplete}
       />
     </div>
   );

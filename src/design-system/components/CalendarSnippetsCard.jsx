@@ -197,6 +197,10 @@ const CalendarSnippetsCard = ({
 
   const [scrollPosition, setScrollPosition] = React.useState(0);
   const scrollContainerRef = React.useRef(null);
+  
+  // Drag state
+  const [isDragging, setIsDragging] = React.useState(false);
+  const [dragStart, setDragStart] = React.useState({ x: 0, scrollLeft: 0 });
 
   // Scroll handlers
   const scrollLeft = () => {
@@ -225,6 +229,53 @@ const CalendarSnippetsCard = ({
       setScrollPosition(scrollContainerRef.current.scrollLeft);
     }
   };
+
+  // Drag handlers
+  const handleMouseDown = (e) => {
+    if (!scrollContainerRef.current) return;
+    
+    setIsDragging(true);
+    setDragStart({
+      x: e.pageX - scrollContainerRef.current.offsetLeft,
+      scrollLeft: scrollContainerRef.current.scrollLeft
+    });
+    
+    // Prevent text selection during drag
+    e.preventDefault();
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isDragging || !scrollContainerRef.current) return;
+    
+    e.preventDefault();
+    const x = e.pageX - scrollContainerRef.current.offsetLeft;
+    const walk = (x - dragStart.x) * 2; // Scroll speed multiplier
+    const newScrollLeft = dragStart.scrollLeft - walk;
+    
+    scrollContainerRef.current.scrollLeft = newScrollLeft;
+    setScrollPosition(newScrollLeft);
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseLeave = () => {
+    setIsDragging(false);
+  };
+
+  // Add global mouse events for dragging
+  React.useEffect(() => {
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isDragging, dragStart]);
 
   // Check if arrows should be visible
   const canScrollLeft = scrollPosition > 0;
@@ -402,6 +453,8 @@ const CalendarSnippetsCard = ({
         <div
           ref={scrollContainerRef}
           onScroll={handleScroll}
+          onMouseDown={handleMouseDown}
+          onMouseLeave={handleMouseLeave}
           style={{
             display: 'flex',
             gap: spacing.spacing[16],
@@ -410,13 +463,18 @@ const CalendarSnippetsCard = ({
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
             WebkitScrollbar: { display: 'none' },
-            paddingBottom: spacing.spacing[4]
+            paddingBottom: spacing.spacing[4],
+            cursor: isDragging ? 'grabbing' : 'grab',
+            userSelect: 'none' // Prevent text selection during drag
           }}
         >
           {displayMeetings.map((meeting) => (
             <div
               key={meeting.id}
-              style={meetingItemStyles}
+              style={{
+                ...meetingItemStyles,
+                pointerEvents: isDragging ? 'none' : 'auto' // Disable interactions while dragging
+              }}
             >
               {/* Meeting Header */}
               <div style={meetingHeaderStyles}>
