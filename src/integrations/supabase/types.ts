@@ -47,6 +47,9 @@ export type Database = {
           status: string
           type: string
           user_id: string
+          schedule_type: string | null
+          next_run_at: string | null
+          schedule_config: Json | null
         }
         Insert: {
           attempts?: number
@@ -60,6 +63,9 @@ export type Database = {
           status?: string
           type: string
           user_id: string
+          schedule_type?: string | null
+          next_run_at?: string | null
+          schedule_config?: Json | null
         }
         Update: {
           attempts?: number
@@ -73,6 +79,9 @@ export type Database = {
           status?: string
           type?: string
           user_id?: string
+          schedule_type?: string | null
+          next_run_at?: string | null
+          schedule_config?: Json | null
         }
         Relationships: []
       }
@@ -730,6 +739,8 @@ export type Database = {
           title: string
           updated_at: string
           user_id: string
+          whatsapp_notification_sent: boolean
+          whatsapp_notification_sent_at: string | null
         }
         Insert: {
           citations_json?: Json | null
@@ -742,6 +753,8 @@ export type Database = {
           title: string
           updated_at?: string
           user_id: string
+          whatsapp_notification_sent?: boolean
+          whatsapp_notification_sent_at?: string | null
         }
         Update: {
           citations_json?: Json | null
@@ -754,6 +767,8 @@ export type Database = {
           title?: string
           updated_at?: string
           user_id?: string
+          whatsapp_notification_sent?: boolean
+          whatsapp_notification_sent_at?: string | null
         }
         Relationships: [
           {
@@ -914,6 +929,50 @@ export type Database = {
           whatsapp_number?: string
         }
         Relationships: []
+      }
+      pacing_schedules: {
+        Row: {
+          id: string
+          user_id: string
+          frequency: string
+          selected_days: string[]
+          preferred_time: string
+          is_active: boolean
+          last_triggered_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          frequency: string
+          selected_days: string[]
+          preferred_time: string
+          is_active?: boolean
+          last_triggered_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          frequency?: string
+          selected_days?: string[]
+          preferred_time?: string
+          is_active?: boolean
+          last_triggered_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pacing_schedules_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
       }
     }
     Views: {

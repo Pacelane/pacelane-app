@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/api/useAuth';
 import { useTheme } from '@/services/theme-context';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/design-system/components/Toast';
+import { PacingService } from '@/services/pacingService';
 
 // Design System Components
 import TopNav from '@/design-system/components/TopNav';
@@ -107,12 +108,24 @@ const Pacing = () => {
         context_sessions_time: contextSessionsTime
       };
 
-      const { error } = await supabase
+      // Save pacing preferences to profile
+      const { error: profileError } = await supabase
         .from('profiles')
         .update({ pacing_preferences: pacingData })
         .eq('user_id', user.id);
 
-      if (error) throw error;
+      if (profileError) throw profileError;
+
+      // Create pacing schedule for automated content generation
+      const scheduleData = PacingService.convertOnboardingToSchedule(user.id, pacingData);
+      const { error: scheduleError } = await PacingService.createPacingSchedule(user.id, scheduleData);
+      
+      if (scheduleError) {
+        console.warn('Failed to create pacing schedule:', scheduleError);
+        // Don't block onboarding if schedule creation fails
+      } else {
+        console.log('Pacing schedule created successfully');
+      }
 
       navigate('/onboarding/contact');
     } catch (error) {

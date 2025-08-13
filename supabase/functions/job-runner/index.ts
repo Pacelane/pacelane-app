@@ -184,6 +184,9 @@ async function executeJob(supabaseClient: any, job: AgentJob) {
       case 'pacing_check':
         result = await processPacingCheck(supabaseClient, job, steps)
         break
+      case 'pacing_content_generation':
+        result = await processPacingContentGeneration(supabaseClient, job, steps)
+        break
       case 'draft_review':
         result = await processDraftReview(supabaseClient, job, steps)
         break
@@ -303,6 +306,128 @@ async function processPacingCheck(supabaseClient: any, job: AgentJob, steps: any
   // TODO: Implement pacing check logic
   steps.push({ step: 'pacing_check', message: 'Not implemented yet', timestamp: new Date().toISOString() })
   return { message: 'Pacing check not implemented yet' }
+}
+
+async function processPacingContentGeneration(supabaseClient: any, job: AgentJob, steps: any[]) {
+  const { schedule_id, frequency, selected_days, preferred_time } = job.payload_json
+  
+  steps.push({ step: 'start', schedule_id, frequency, selected_days, preferred_time, timestamp: new Date().toISOString() })
+
+  // Get user's pacing preferences and content pillars
+  const { data: profile, error: profileError } = await supabaseClient
+    .from('profiles')
+    .select('pacing_preferences, content_pillars, goals')
+    .eq('user_id', job.user_id)
+    .single()
+
+  if (profileError || !profile) {
+    throw new Error(`Profile not found for user: ${job.user_id}`)
+  }
+
+  steps.push({ step: 'profile_retrieved', profile, timestamp: new Date().toISOString() })
+
+  // Create content order for pacing-based generation
+  const contentOrderData = {
+    user_id: job.user_id,
+    source: 'pacing',
+    params_json: {
+      platform: 'linkedin_post', // Default to LinkedIn, can be made configurable
+      length: 'Medium',
+      tone: 'Professional',
+      angle: 'Industry Insights',
+      topic: 'Auto-generated from pacing schedule',
+      refs: [],
+      context: {
+        schedule_id,
+        frequency,
+        selected_days,
+        preferred_time,
+        pacing_preferences: profile.pacing_preferences,
+        content_pillars: profile.content_pillars,
+        goals: profile.goals
+      }
+    },
+    triggered_by: 'pacing'
+  }
+
+  const { data: contentOrder, error: orderError } = await supabaseClient
+    .from('content_order')
+    .insert(contentOrderData)
+    .select()
+    .single()
+
+  if (orderError) {
+    throw new Error(`Failed to create content order: ${orderError.message}`)
+  }
+
+  steps.push({ step: 'content_order_created', order_id: contentOrder.id, timestamp: new Date().toISOString() })
+
+  // Step 1: Order Builder - Create content brief
+  const brief = await callOrderBuilder(supabaseClient, contentOrder.id, steps)
+  
+  // Step 2: Retrieval - Get relevant context
+  const citations = await callRetrievalAgent(supabaseClient, job.user_id, brief.topic, brief.platform, steps)
+  
+  // Step 3: Writer - Generate initial draft
+  const draft = await callWriterAgent(supabaseClient, brief, citations, job.user_id, steps)
+  
+  // Step 4: Editor - Refine and finalize
+  const finalDraft = await callEditorAgent(supabaseClient, draft, brief, job.user_id, steps)
+  
+  // Step 5: Save to saved_drafts
+  const { data: savedDraft, error: saveError } = await supabaseClient
+    .from('saved_drafts')
+    .insert({
+      title: finalDraft.title,
+      content: finalDraft.content,
+      user_id: job.user_id,
+      order_id: contentOrder.id,
+      citations_json: citations,
+      status: 'draft'
+    })
+    .select()
+    .single()
+
+  if (saveError) {
+    throw new Error(`Failed to save draft: ${saveError.message}`)
+  }
+
+  steps.push({ step: 'draft_saved', draft_id: savedDraft.id, timestamp: new Date().toISOString() })
+
+  // Step 6: Send WhatsApp notification
+  try {
+    console.log('📱 Sending WhatsApp notification for completed draft');
+    const notificationResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/whatsapp-notifications`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+      },
+      body: JSON.stringify({ draftId: savedDraft.id }),
+    });
+
+    if (notificationResponse.ok) {
+      const notificationResult = await notificationResponse.json();
+      console.log('✅ WhatsApp notification sent:', notificationResult);
+      steps.push({ step: 'whatsapp_notification_sent', timestamp: new Date().toISOString() });
+    } else {
+      console.warn('⚠️ Failed to send WhatsApp notification:', notificationResponse.status);
+      steps.push({ step: 'whatsapp_notification_failed', error: notificationResponse.status, timestamp: new Date().toISOString() });
+    }
+  } catch (notificationError) {
+    console.warn('⚠️ Error sending WhatsApp notification:', notificationError);
+    steps.push({ step: 'whatsapp_notification_error', error: notificationError.message, timestamp: new Date().toISOString() });
+    // Don't fail the job if notification fails
+  }
+
+  return {
+    draft_id: savedDraft.id,
+    title: savedDraft.title,
+    citations_count: citations.length,
+    schedule_id,
+    frequency,
+    selected_days
+  }
 }
 
 async function callOrderBuilder(supabaseClient: any, orderId: string, steps: any[]) {
