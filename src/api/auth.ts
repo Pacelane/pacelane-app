@@ -33,20 +33,35 @@ export const authApi = {
    * @returns Promise with auth result
    */
   async signUp(credentials: SignUpData) {
+    // Transform data for validation - extract name from options.data.display_name
+    const validationData = {
+      email: credentials.email,
+      password: credentials.password,
+      name: credentials.options?.data?.display_name || ''
+    };
+
     // Validate input data
-    const validation = validateData(signUpSchema, credentials);
+    const validation = validateData(signUpSchema, validationData);
     if (!validation.success) {
+      console.error('Auth API: Sign-up validation failed:', validation.errors);
       return { error: Object.values(validation.errors!)[0] };
     }
 
-    // Add frontend-specific logic: default redirect URL
-    const credentialsWithRedirect = {
-      ...credentials,
-      emailRedirectTo: credentials.emailRedirectTo || 
-        `${window.location.origin}/onboarding/welcome`
-    };
-    
-    return AuthService.signUp(credentialsWithRedirect);
+    try {
+      // Add frontend-specific logic: default redirect URL
+      const credentialsWithRedirect = {
+        ...credentials,
+        emailRedirectTo: credentials.emailRedirectTo || 
+          `${window.location.origin}/onboarding/welcome`
+      };
+      
+      return AuthService.signUp(credentialsWithRedirect);
+    } catch (error: any) {
+      console.error('Auth API: Unexpected error during sign-up:', error);
+      return { 
+        error: error.message || 'An unexpected error occurred. Please try again.' 
+      };
+    }
   },
 
   /**

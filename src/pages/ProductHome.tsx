@@ -8,14 +8,22 @@ import * as templatesApi from '../api/templates';
 import type { Template } from '../api/templates';
 import { supabase } from '../integrations/supabase/client';
 
+// First-time user utilities
+import { isFirstTimeUser } from '@/utils/firstTimeUserDetection';
+
 // Design System Components
 // Sidebar is now provided by MainAppChrome
-import StreakCard from '../design-system/components/StreakCard';
-import StatsSummaryCard from '../design-system/components/StatsSummaryCard';
-import SuggestionCard from '../design-system/components/SuggestionCard';
-import TemplateCard from '../design-system/components/TemplateCard';
-import ContentCard from '../design-system/components/ContentCard';
-import Input from '../design-system/components/Input';
+import StreakCard from '@/design-system/components/StreakCard';
+import StatsSummaryCard from '@/design-system/components/StatsSummaryCard';
+import SuggestionCard from '@/design-system/components/SuggestionCard';
+import CalendarSnippetsCard from '@/design-system/components/CalendarSnippetsCard';
+import TemplateCard from '@/design-system/components/TemplateCard';
+import ContentCard from '@/design-system/components/ContentCard';
+import Input from '@/design-system/components/Input';
+import Button from '@/design-system/components/Button';
+import EmptyState from '@/design-system/components/EmptyState';
+import SubtleLoadingSpinner from '@/design-system/components/SubtleLoadingSpinner';
+import FirstTimeUserHome from '@/design-system/components/FirstTimeUserHome';
 
 // Design System Tokens
 import { spacing } from '../design-system/tokens/spacing';
@@ -34,11 +42,14 @@ import { ReadAiIntegration } from '../components/ReadAiIntegration';
 const ProductHome = () => {
   const navigate = useNavigate();
   const { user, profile, signOut } = useAuth();
-  const { savedDrafts, contentSuggestions, loadSavedDrafts, loadContentSuggestions, loadingDrafts, loadingSuggestions, error, createUIContentOrder } = useContent();
+  const { savedDrafts, contentSuggestions, knowledgeFiles, loadSavedDrafts, loadContentSuggestions, loadingDrafts, loadingSuggestions, error } = useContent();
   const { streak, stats, weekActivity, loading: analyticsLoading, trackActivity } = useAnalytics();
   const { colors } = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
   const [hasLoadedInitialData, setHasLoadedInitialData] = useState(false);
+
+  // Check if user is a first-time user
+  const isNewUser = isFirstTimeUser(profile, savedDrafts, contentSuggestions, knowledgeFiles);
   // Sidebar handled by MainAppChrome layout
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
@@ -320,14 +331,24 @@ const ProductHome = () => {
     navigate('/content-editor', { state: { draftId } });
   };
 
+  const handleMeetingClick = async (meeting: any) => {
+    // Track activity when user creates content from meeting
+    if (trackActivity) {
+      await trackActivity('content_creation');
+    }
+    navigate('/content-editor', { state: { meeting } });
+  };
+
   // Function to create a preview of the post content
   const createPostPreview = (suggestion: any) => {
-    if (!suggestion.full_content) {
-      return suggestion.description || 'No content available';
+    // Check for various content properties that might exist
+    let content = suggestion.suggested_outline || suggestion.description || '';
+    
+    if (!content) {
+      return 'AI-generated content suggestion - click to start creating';
     }
     
     // Get the first paragraph or first 200 characters
-    const content = suggestion.full_content;
     const firstParagraph = content.split('\n\n')[0] || content;
     const preview = firstParagraph.length > 200 
       ? firstParagraph.substring(0, 200) + '...'
@@ -368,6 +389,12 @@ const ProductHome = () => {
       </div>
     );
   }
+
+  // Show first-time user experience if user is new
+  // Temporarily disabled - will be re-enabled later
+  // if (hasLoadedInitialData && isNewUser) {
+  //   return <FirstTimeUserHome />;
+  // }
 
   return (
     <div>
@@ -469,14 +496,10 @@ const ProductHome = () => {
                 contentCards={
                   contentSuggestions.length > 0 
                     ? contentSuggestions.slice(0, 3).map(suggestion => {
-                        const hashtags = suggestion.hashtags?.length > 0 
-                          ? suggestion.hashtags.slice(0, 3).join(' ') 
-                          : '';
-                        
                         return {
                           variant: 'gradient' as const,
                           title: suggestion.title,
-                          subtitle: `Quality Score: ${suggestion.quality_score || 'N/A'}/10${hashtags ? ` • ${hashtags}` : ''}`,
+                          subtitle: suggestion.description || 'AI-generated content suggestion',
                           content: createPostPreview(suggestion),
                           onClick: () => navigate('/content-editor', { state: { suggestion } })
                         };
@@ -492,6 +515,15 @@ const ProductHome = () => {
                 }
                 onCalendarClick={() => console.log('Calendar clicked')}
                 onGenerateClick={handleGenerateContent}
+                style={{ width: '100%' }}
+              />
+
+              {/* Calendar Snippets Card */}
+              <CalendarSnippetsCard 
+                title="Past Meetings"
+                subtitle="Turn your recent meetings into content"
+                onMeetingClick={handleMeetingClick}
+                onViewAllClick={() => console.log('View all meetings clicked')}
                 style={{ width: '100%' }}
               />
             </>
@@ -532,7 +564,7 @@ const ProductHome = () => {
                 cursor: 'pointer',
                 fontSize: '14px',
               }}
-              onClick={() => navigate('/content-editor')}
+              onClick={() => navigate('/templates')}
             >
               see all templates
               <ChevronRight size={12} />
@@ -579,9 +611,16 @@ const ProductHome = () => {
 
           {/* Content Cards Grid */}
           {loadingDrafts && !hasLoadedInitialData ? (
-            <div style={{ textAlign: 'center', padding: spacing.spacing[32] }}>
-              <p style={{ color: colors?.text?.subtle || '#666666' }}>Loading your content...</p>
-              </div>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              padding: spacing.spacing[32],
+            }}>
+              <SubtleLoadingSpinner 
+                title="Loading your content..."
+                size={16}
+              />
+            </div>
           ) : filteredDrafts.length > 0 ? (
             <div style={{ 
               display: 'grid', 
@@ -599,13 +638,12 @@ const ProductHome = () => {
               ))}
                 </div>
           ) : (
-            <div style={{ 
-              textAlign: 'center', 
-              padding: spacing.spacing[48],
-              color: colors?.text?.subtle || '#666666'
-            }}>
-              <p>No content yet. Start creating with the templates above!</p>
-              </div>
+            <EmptyState
+              title="No content yet"
+              subtitle="Start creating with the templates above!"
+              buttonLabel="Browse Templates"
+              onButtonClick={() => navigate('/templates')}
+            />
           )}
 
           {/* Error Message */}

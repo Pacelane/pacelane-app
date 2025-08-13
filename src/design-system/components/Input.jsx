@@ -413,7 +413,7 @@ const Input = forwardRef(({
   };
   
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[4] }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[8] }}>
       {label && (
         <label 
           htmlFor={id}

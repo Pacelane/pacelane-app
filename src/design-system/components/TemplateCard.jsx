@@ -266,6 +266,11 @@ const TemplateCard = ({
           margin: 0,
           pointerEvents: 'none',
           userSelect: 'none',
+          display: '-webkit-box',
+          WebkitLineClamp: 3,
+          WebkitBoxOrient: 'vertical',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
         }}>
           {description}
         </p>

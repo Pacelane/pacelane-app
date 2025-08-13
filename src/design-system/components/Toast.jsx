@@ -1,10 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { useTheme } from '../../services/theme-context.jsx';
 import { spacing } from '../tokens/spacing.js';
 import { cornerRadius } from '../tokens/corner-radius.js';
 import { getShadow } from '../tokens/shadows.js';
 import { textStyles } from '../styles/typography/typography-styles.js';
 import { CheckCircle, XCircle, AlertCircle, Info, X } from 'lucide-react';
+import Bichaurinho from './Bichaurinho.jsx';
 
 // Toast Context
 const ToastContext = createContext();
@@ -71,6 +73,12 @@ export const ToastProvider = ({ children }) => {
       type: 'custom', 
       ...options 
     }),
+    loading: (message, options = {}) => addToast({ 
+      message, 
+      type: 'loading', 
+      duration: 0, // Loading toasts don't auto-dismiss
+      ...options 
+    }),
   };
 
   return (
@@ -134,26 +142,30 @@ const ToastItem = ({ toast }) => {
       case 'success':
         return {
           ...baseStyles,
-          borderColor: colors.border.success,
-          backgroundColor: colors.bg.card.default,
+          backgroundColor: colors.bg.badge.green,
+          borderColor: colors.border.green,
+          color: colors.bg.basic.green.strong,
         };
       case 'error':
         return {
           ...baseStyles,
-          borderColor: colors.border.destructive,
-          backgroundColor: colors.bg.card.default,
+          backgroundColor: colors.bg.badge.red,
+          borderColor: colors.border.red,
+          color: colors.bg.basic.red.strong,
         };
       case 'warning':
         return {
           ...baseStyles,
-          borderColor: colors.border.warning,
-          backgroundColor: colors.bg.card.default,
+          backgroundColor: colors.bg.badge.orange,
+          borderColor: colors.border.orange,
+          color: colors.bg.basic.orange.strong,
         };
       case 'info':
         return {
           ...baseStyles,
-          borderColor: colors.border.highlight,
-          backgroundColor: colors.bg.card.default,
+          backgroundColor: colors.bg.badge.blue,
+          borderColor: colors.border.blue,
+          color: colors.bg.basic.blue.strong,
         };
       default:
         return baseStyles;
@@ -165,13 +177,26 @@ const ToastItem = ({ toast }) => {
     
     switch (toast.type) {
       case 'success':
-        return <CheckCircle {...iconProps} color={colors.icon.success} />;
+        return <CheckCircle {...iconProps} color={colors.bg.basic.green.strong} />;
       case 'error':
-        return <XCircle {...iconProps} color={colors.icon.destructive} />;
+        return <XCircle {...iconProps} color={colors.bg.basic.red.strong} />;
       case 'warning':
-        return <AlertCircle {...iconProps} color={colors.icon.warning} />;
+        return <AlertCircle {...iconProps} color={colors.bg.basic.orange.strong} />;
       case 'info':
-        return <Info {...iconProps} color={colors.icon.default} />;
+        return <Info {...iconProps} color={colors.bg.basic.blue.strong} />;
+      case 'loading':
+        return (
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              ease: "linear"
+            }}
+          >
+            <Bichaurinho variant={16} size={20} />
+          </motion.div>
+        );
       default:
         return null;
     }
@@ -200,7 +225,7 @@ const ToastItem = ({ toast }) => {
           <div
             style={{
               ...textStyles.sm.semibold,
-              color: colors.text.default,
+              color: getToastStyles().color,
               marginBottom: spacing.spacing[4],
             }}
           >
@@ -210,7 +235,8 @@ const ToastItem = ({ toast }) => {
         <div
           style={{
             ...textStyles.sm.normal,
-            color: colors.text.subtle,
+            color: getToastStyles().color,
+            opacity: 0.8,
           }}
         >
           {toast.message}
@@ -222,16 +248,17 @@ const ToastItem = ({ toast }) => {
           backgroundColor: 'transparent',
           border: 'none',
           cursor: 'pointer',
-          color: colors.icon.muted,
+          color: getToastStyles().color,
+          opacity: 0.6,
           padding: spacing.spacing[4],
           borderRadius: cornerRadius.borderRadius.sm,
-          transition: 'color 0.2s ease-in-out',
+          transition: 'opacity 0.2s ease-in-out',
         }}
         onMouseEnter={(e) => {
-          e.target.style.color = colors.icon.default;
+          e.target.style.opacity = '1';
         }}
         onMouseLeave={(e) => {
-          e.target.style.color = colors.icon.muted;
+          e.target.style.opacity = '0.6';
         }}
       >
         <X size={16} />

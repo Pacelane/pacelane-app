@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, forwardRef, useImperativeHandle } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '../../services/theme-context.jsx';
 import { spacing } from '../tokens/spacing.js';
@@ -10,7 +10,7 @@ import Input from './Input.jsx';
 import Divider from './Divider.jsx';
 import downloadIcon from '../../assets/icons/download--T.svg';
 
-const FileUpload = ({
+const FileUpload = forwardRef(({
   // Core props
   onFileSelect,
   onUrlSubmit,
@@ -28,11 +28,20 @@ const FileUpload = ({
   disabled = false,
   className,
   ...rest
-}) => {
+}, ref) => {
   const { colors } = useTheme();
   const [isHovered, setIsHovered] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef(null);
+  
+  // Expose methods to parent component
+  useImperativeHandle(ref, () => ({
+    triggerFileSelect: () => {
+      if (fileInputRef.current && !disabled) {
+        fileInputRef.current.click();
+      }
+    }
+  }));
   
   // Handle file drop
   const handleDrop = (e) => {
@@ -247,6 +256,9 @@ const FileUpload = ({
       </div>
     </div>
   );
-};
+});
+
+// Add display name for better debugging
+FileUpload.displayName = 'FileUpload';
 
 export default FileUpload;

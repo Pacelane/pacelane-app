@@ -10,27 +10,64 @@ The design system is located in `src/design-system/` with the following structur
 - `styles/` - Pre-defined style combinations and utilities
 - `services/theme-context.jsx` - Theme management and switching
 
+## Import Path Patterns
+
+**CRITICAL**: Always use the `@/` alias for imports. NEVER use `src/` prefix or relative paths.
+
+### Correct Import Patterns
+```javascript
+// ✅ ALWAYS use @/ alias
+import { useTheme } from '@/services/theme-context';
+import { spacing } from '@/design-system/tokens/spacing';
+import { Button } from '@/design-system/components/Button';
+import { useAuth } from '@/hooks/api/useAuth';
+
+// ✅ Omit file extensions (.js, .jsx, .ts, .tsx)
+import IntegrationCard from '@/design-system/components/IntegrationCard';
+```
+
+### Incorrect Import Patterns
+```javascript
+// ❌ NEVER use src/ prefix
+import { useTheme } from 'src/services/theme-context.jsx';
+import { spacing } from 'src/design-system/tokens/spacing.js';
+
+// ❌ NEVER use relative paths in pages or components
+import { useTheme } from '../services/theme-context.jsx';
+import { useTheme } from '../../services/theme-context.jsx';
+
+// ❌ NEVER include file extensions
+import Button from '@/design-system/components/Button.jsx';
+```
+
+### Import Rules
+1. **Always use `@/` alias** - This is configured in the project's path mapping
+2. **Never use `src/` prefix** - This causes module resolution errors
+3. **Never use relative paths** - Use absolute paths with `@/` for consistency
+4. **Omit file extensions** - Let the bundler resolve .js, .jsx, .ts, .tsx automatically
+5. **Be consistent** - All imports across the project should follow the same pattern
+
 ## Design Tokens Reference
 
 ### Import Design Tokens
 ```javascript
 // Import all tokens
-import { tokens } from 'src/design-system/tokens/index.js';
+import { tokens } from '@/design-system/tokens';
 
 // Import specific token categories
-import { colors } from 'src/design-system/tokens/primitive-colors.js';
-import { themes } from 'src/design-system/tokens/semantic-colors.js';
-import { typography } from 'src/design-system/tokens/typography.js';
-import { spacing } from 'src/design-system/tokens/spacing.js';
-import { cornerRadius } from 'src/design-system/tokens/corner-radius.js';
-import { stroke } from 'src/design-system/tokens/stroke.js';
-import { shadows, getShadow } from 'src/design-system/tokens/shadows.js';
+import { colors } from '@/design-system/tokens/primitive-colors';
+import { themes } from '@/design-system/tokens/semantic-colors';
+import { typography } from '@/design-system/tokens/typography';
+import { spacing } from '@/design-system/tokens/spacing';
+import { cornerRadius } from '@/design-system/tokens/corner-radius';
+import { stroke } from '@/design-system/tokens/stroke';
+import { shadows, getShadow } from '@/design-system/tokens/shadows';
 
 // Import theme context
-import { useTheme, ThemeProvider } from 'src/services/theme-context.jsx';
+import { useTheme, ThemeProvider } from '@/services/theme-context';
 
 // Import text styles
-import { textStyles } from 'src/design-system/styles/typography/typography-styles.js';
+import { textStyles } from '@/design-system/styles/typography/typography-styles';
 
 // Import Lucide icons
 import { IconName } from 'lucide-react';
@@ -184,8 +221,8 @@ Always use the design system shadow tokens for consistent shadows across all com
 
 ```javascript
 // Import shadows
-import { shadows, getShadow } from 'src/design-system/tokens/shadows.js';
-import { useTheme } from 'src/services/theme-context.jsx';
+import { shadows, getShadow } from '@/design-system/tokens/shadows';
+import { useTheme } from '@/services/theme-context';
 ```
 
 #### Regular Shadows
@@ -404,10 +441,10 @@ Always create components that work with both light and dark themes:
 
 ```jsx
 import React from 'react';
-import { useTheme } from 'src/services/theme-context.jsx';
-import { spacing } from 'src/design-system/tokens/spacing.js';
-import { cornerRadius } from 'src/design-system/tokens/corner-radius.js';
-import { getShadow } from 'src/design-system/tokens/shadows.js';
+import { useTheme } from '@/services/theme-context';
+import { spacing } from '@/design-system/tokens/spacing';
+import { cornerRadius } from '@/design-system/tokens/corner-radius';
+import { getShadow } from '@/design-system/tokens/shadows';
 
 const MyComponent = ({ children, variant = 'default', elevated = false }) => {
   const { colors } = useTheme();
@@ -456,7 +493,7 @@ const { colors } = useTheme();
 ### Typography Components
 ```jsx
 // Using pre-defined text styles
-import { textStyles } from 'src/design-system/styles/typography/typography-styles.js';
+import { textStyles } from '@/design-system/styles/typography/typography-styles';
 
 const Heading = ({ level = 1, children }) => {
   const styles = {
@@ -480,9 +517,9 @@ const Heading = ({ level = 1, children }) => {
 - `Logo`: Auto-switching logo for light/dark themes
 
 ```jsx
-import Button from 'src/design-system/components/Button.jsx';
-import Bichaurinho from 'src/design-system/components/Bichaurinho.jsx';
-import Logo from 'src/design-system/components/Logo.jsx';
+import Button from '@/design-system/components/Button';
+import Bichaurinho from '@/design-system/components/Bichaurinho';
+import Logo from '@/design-system/components/Logo';
 
 // Button usage - ALWAYS use this component for ANY button needs
 <Button 
@@ -525,32 +562,60 @@ The Button component provides 7 complete styles for different use cases:
 ## Rules for Cursor
 
 ### ALWAYS DO:
-1. **Use the Button component** for ALL button needs - never create custom buttons or use HTML `<button>` elements
-2. **Use Lucide React icons** for ALL icon needs - never create custom SVG icons
-3. **Import and use existing design tokens** instead of hardcoding values
-4. **Use semantic colors** (`colors.text.default`, `colors.bg.card.default`) for theme compatibility
-5. **Use the `useTheme()` hook** for theme-aware components
-6. **Reference `textStyles`** for typography instead of manual font/size combinations
-7. **Use spacing tokens** for consistent padding, margins, and gaps
-8. **Use cornerRadius tokens** for consistent border radius
-9. **Use design system shadow tokens** (`shadows.regular.card`, `shadows.component.default`) for all shadows
-10. **Use `getShadow()` helper** for theme-aware borders and focus rings
-11. **Use existing components** (`Button`, `Bichaurinho`, `Logo`, `DropdownMenu`) when appropriate
-12. **Follow the established patterns** shown in existing components
+1. **Use `@/` alias for ALL imports** - never use `src/` prefix or relative paths
+2. **Omit file extensions** in imports - let the bundler resolve .js, .jsx, .ts, .tsx automatically
+3. **Use the Button component** for ALL button needs - never create custom buttons or use HTML `<button>` elements
+4. **Use Lucide React icons** for ALL icon needs - never create custom SVG icons
+5. **Import and use existing design tokens** instead of hardcoding values
+6. **Use semantic colors** (`colors.text.default`, `colors.bg.card.default`) for theme compatibility
+7. **Use the `useTheme()` hook** for theme-aware components
+8. **Reference `textStyles`** for typography instead of manual font/size combinations
+9. **Use spacing tokens** for consistent padding, margins, and gaps
+10. **Use cornerRadius tokens** for consistent border radius
+11. **Use design system shadow tokens** (`shadows.regular.card`, `shadows.component.default`) for all shadows
+12. **Use `getShadow()` helper** for theme-aware borders and focus rings
+13. **Use existing components** (`Button`, `Bichaurinho`, `Logo`, `DropdownMenu`) when appropriate
+14. **Follow the established patterns** shown in existing components
 
 ### NEVER DO:
-1. **Create custom buttons or use HTML `<button>` elements** - always use the Button component
-2. **Create custom SVG icons** - always use Lucide React icons instead
-3. **Hardcode colors, fonts, spacing, or shadow values** - always use tokens
-4. **Create new design tokens** - use existing ones or ask for clarification
-5. **Use CSS color names or hex values directly** - use the color system
-6. **Ignore theme compatibility** - always consider light/dark mode
-7. **Create typography styles manually** - use `textStyles` or typography tokens
-8. **Use arbitrary Tailwind values** - use the extended theme values
-9. **Use Tailwind shadow classes** - use design system shadow tokens instead
-10. **Hardcode CSS box-shadow values** - use `shadows` tokens or `getShadow()` helper
+1. **Use `src/` prefix in imports** - always use `@/` alias instead
+2. **Use relative paths** (`../`, `../../`) in imports - always use `@/` alias
+3. **Include file extensions** (.js, .jsx, .ts, .tsx) in imports - omit them
+4. **Create custom buttons or use HTML `<button>` elements** - always use the Button component
+5. **Create custom SVG icons** - always use Lucide React icons instead
+6. **Hardcode colors, fonts, spacing, or shadow values** - always use tokens
+7. **Create new design tokens** - use existing ones or ask for clarification
+8. **Use CSS color names or hex values directly** - use the color system
+9. **Ignore theme compatibility** - always consider light/dark mode
+10. **Create typography styles manually** - use `textStyles` or typography tokens
+11. **Use arbitrary Tailwind values** - use the extended theme values
+12. **Use Tailwind shadow classes** - use design system shadow tokens instead
+13. **Hardcode CSS box-shadow values** - use `shadows` tokens or `getShadow()` helper
 
 ### Examples of Good vs Bad:
+
+❌ **DON'T** (Wrong Import Paths):
+```jsx
+// Never use src/ prefix
+import { useTheme } from 'src/services/theme-context.jsx';
+import { spacing } from 'src/design-system/tokens/spacing.js';
+
+// Never use relative paths
+import { useTheme } from '../services/theme-context.jsx';
+import Button from '../../design-system/components/Button.jsx';
+
+// Never include file extensions
+import IntegrationCard from '@/design-system/components/IntegrationCard.jsx';
+```
+
+✅ **DO** (Correct Import Paths):
+```jsx
+// Always use @/ alias without extensions
+import { useTheme } from '@/services/theme-context';
+import { spacing } from '@/design-system/tokens/spacing';
+import Button from '@/design-system/components/Button';
+import IntegrationCard from '@/design-system/components/IntegrationCard';
+```
 
 ❌ **DON'T** (Custom Buttons):
 ```jsx
@@ -646,6 +711,8 @@ import { MoreHorizontal } from 'lucide-react';
 ```
 
 ### Component Creation Checklist:
+- [ ] Uses `@/` alias for ALL imports (never `src/` prefix or relative paths)
+- [ ] Omits file extensions in imports (.js, .jsx, .ts, .tsx)
 - [ ] Uses the Button component for ANY button needs (never create custom buttons)
 - [ ] Uses Lucide React icons for ANY icon needs (never create custom SVG icons)
 - [ ] Uses semantic colors for theme compatibility
@@ -883,4 +950,153 @@ When adding a new authenticated page:
 - [ ] Add navigation case to `handleMenuItemClick` function
 - [ ] Ensure page uses transparent background (not hardcoded colors)
 - [ ] Test sidebar active state highlighting
-- [ ] Verify proper responsive behavior 
+- [ ] Verify proper responsive behavior
+
+## Page Title Standards
+
+### Required Page Header Structure
+ALL pages must include a standardized header section with title and subtitle following the established design pattern:
+
+```jsx
+// Required imports for page headers
+import { useTheme } from '@/services/theme-context';
+import { typography } from '@/design-system/tokens/typography';
+import { textStyles } from '@/design-system/styles/typography/typography-styles';
+import { spacing } from '@/design-system/tokens/spacing';
+
+// Page header implementation
+const MyPage = () => {
+  const { colors } = useTheme();
+
+  // Title style - ALWAYS use Awesome Serif font with 4xl size and semibold weight
+  const titleStyle = {
+    fontFamily: typography.fontFamily['awesome-serif'],
+    fontSize: typography.desktop.size['4xl'],
+    fontWeight: typography.desktop.weight.semibold,
+    lineHeight: typography.desktop.lineHeight.leading7,
+    letterSpacing: typography.desktop.letterSpacing.normal,
+    color: colors.text.default,
+    margin: 0,
+  };
+
+  // Subtitle style - ALWAYS use small medium text with subtle color
+  const subtitleStyle = {
+    ...textStyles.sm.medium,
+    color: colors.text.subtle,
+    margin: 0,
+    marginTop: spacing.spacing[8], // REQUIRED: 8px gap between title and subtitle
+  };
+
+  return (
+    <div style={containerStyles}>
+      {/* REQUIRED: Header Section */}
+      <div>
+        <h1 style={titleStyle}>Page Title</h1>
+        <p style={subtitleStyle}>
+          Clear, descriptive subtitle explaining the page's purpose and functionality
+        </p>
+      </div>
+
+      {/* Rest of page content */}
+    </div>
+  );
+};
+```
+
+### Page Title Requirements
+
+#### Title Specifications
+- **Font**: MUST use `typography.fontFamily['awesome-serif']` (Awesome Serif Variable font)
+- **Size**: MUST use `typography.desktop.size['4xl']` (36px)
+- **Weight**: MUST use `typography.desktop.weight.semibold` (600)
+- **Line Height**: MUST use `typography.desktop.lineHeight.leading7`
+- **Color**: MUST use `colors.text.default` from theme context
+- **Element**: MUST use `<h1>` tag for semantic HTML
+- **Margin**: MUST set `margin: 0` to prevent default browser margins
+
+#### Subtitle Specifications  
+- **Style**: MUST use `textStyles.sm.medium` (14px, 500 weight)
+- **Color**: MUST use `colors.text.subtle` from theme context
+- **Element**: MUST use `<p>` tag for semantic HTML
+- **Margin**: MUST set `margin: 0` and `marginTop: spacing.spacing[8]` for 8px gap
+- **Content**: MUST provide clear, descriptive text explaining page purpose
+
+#### Header Container
+- **Structure**: MUST wrap title and subtitle in a `<div>` container
+- **Gap**: The 8px gap is achieved through `marginTop: spacing.spacing[8]` on the subtitle
+- **Positioning**: Header should be the first element in the page content
+
+### Page Title Content Guidelines
+
+#### Title Writing Rules
+- **Be Specific**: Use clear, descriptive titles that immediately communicate the page's purpose
+- **Use Title Case**: Capitalize major words (nouns, verbs, adjectives, adverbs)
+- **Keep Concise**: Aim for 1-4 words maximum
+- **Avoid Generic Terms**: Instead of "Dashboard" use "Product Home", instead of "Settings" use "Profile"
+
+#### Subtitle Writing Rules
+- **Explain Purpose**: Clearly describe what users can do on this page
+- **Use Sentence Case**: Capitalize only the first word and proper nouns
+- **Be Actionable**: Include verbs that describe user actions (organize, manage, create, view)
+- **Keep Helpful**: Provide value to users by explaining benefits or functionality
+- **Optimal Length**: Aim for 8-15 words for readability
+
+### Examples of Proper Page Headers
+
+#### Good Examples
+```jsx
+// Knowledge Base
+<h1 style={titleStyle}>Knowledge Base</h1>
+<p style={subtitleStyle}>
+  Organize and access all your project files, documents, and resources in one place
+</p>
+
+// Product Home
+<h1 style={titleStyle}>Product Home</h1>
+<p style={subtitleStyle}>
+  Your content creation dashboard with insights, templates, and quick actions
+</p>
+
+// Profile Settings
+<h1 style={titleStyle}>Profile</h1>
+<p style={subtitleStyle}>
+  Manage your account settings, preferences, and personal information
+</p>
+```
+
+#### Bad Examples
+```jsx
+// ❌ Wrong font, size, or styling
+<h1 style={{ fontSize: '32px', fontWeight: 'bold' }}>Dashboard</h1>
+
+// ❌ Missing subtitle or wrong gap
+<h1 style={titleStyle}>Files</h1>
+<span style={{ marginTop: '16px', color: '#666' }}>Manage files</span>
+
+// ❌ Generic title and unhelpful subtitle
+<h1 style={titleStyle}>Page</h1>
+<p style={subtitleStyle}>This is a page</p>
+
+// ❌ Using textStyles instead of typography tokens for title
+<h1 style={textStyles['4xl'].semibold}>Settings</h1>
+```
+
+### Page Header Checklist
+When creating any new page, ensure:
+
+- [ ] Title uses Awesome Serif font (`typography.fontFamily['awesome-serif']`)
+- [ ] Title uses 4xl size and semibold weight from typography tokens
+- [ ] Title uses `colors.text.default` from theme context
+- [ ] Subtitle uses `textStyles.sm.medium` style
+- [ ] Subtitle uses `colors.text.subtle` from theme context  
+- [ ] Exactly 8px gap between title and subtitle (`spacing.spacing[8]`)
+- [ ] Header is wrapped in a container `<div>`
+- [ ] Header is positioned as first element in page content
+- [ ] Title is descriptive and specific to page purpose
+- [ ] Subtitle clearly explains page functionality
+- [ ] Both title and subtitle follow content writing guidelines
+
+### Theme Compatibility
+- **Title and subtitle colors automatically adapt** to light/dark themes through `useTheme()` hook
+- **Typography scales properly** on different screen sizes using design system tokens
+- **Consistent spacing maintained** across all pages using spacing tokens 
