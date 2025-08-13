@@ -676,22 +676,43 @@ class ChatwootWebhookProcessor {
         }
       }
 
-      // If no mapping exists, try to find user by WhatsApp number in profiles
+      // If no mapping exists, try to find user by WhatsApp number in profiles (whatsapp_number or phone_number)
       for (const variation of numberVariations) {
-      const { data: userProfile, error: profileError } = await this.supabase
-        .from('profiles')
-        .select('user_id, whatsapp_number')
+        // profiles.whatsapp_number
+        const { data: profileByWhatsApp, error: profileWhatsAppError } = await this.supabase
+          .from('profiles')
+          .select('user_id, whatsapp_number, phone_number')
           .eq('whatsapp_number', variation)
-        .single();
+          .single();
 
-      if (!profileError && userProfile) {
-          console.log(`Found user ${userProfile.user_id} for WhatsApp number: ${variation}`);
-        
-          // Create mapping for future use with the original normalized number
+        if (!profileWhatsAppError && profileByWhatsApp) {
+          console.log(`Found user ${profileByWhatsApp.user_id} for WhatsApp number: ${variation}`);
           const normalizedNumber = this.normalizeWhatsAppNumber(whatsappNumber);
-        await this.createWhatsAppMapping(userProfile.user_id, normalizedNumber, payload);
-        
-        return { userId: userProfile.user_id, contactId };
+          await this.createWhatsAppMapping(profileByWhatsApp.user_id, normalizedNumber, payload);
+          return { userId: profileByWhatsApp.user_id, contactId };
+        }
+
+        // profiles.phone_number fallback
+        const { data: profileByPhone, error: profilePhoneError } = await this.supabase
+          .from('profiles')
+          .select('user_id, whatsapp_number, phone_number')
+          .eq('phone_number', variation)
+          .single();
+
+        if (!profilePhoneError && profileByPhone) {
+          console.log(`Found user ${profileByPhone.user_id} via phone_number: ${variation}`);
+          const normalizedNumber = this.normalizeWhatsAppNumber(whatsappNumber);
+          // Best-effort: persist whatsapp_number for future direct matches
+          try {
+            if (!profileByPhone.whatsapp_number || profileByPhone.whatsapp_number.length === 0) {
+              await this.supabase
+                .from('profiles')
+                .update({ whatsapp_number: normalizedNumber })
+                .eq('user_id', profileByPhone.user_id);
+            }
+          } catch (_e) {}
+          await this.createWhatsAppMapping(profileByPhone.user_id, normalizedNumber, payload);
+          return { userId: profileByPhone.user_id, contactId };
         }
       }
 

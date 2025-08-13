@@ -22,38 +22,8 @@ const CalendarSnippetsCard = ({
 }) => {
   const { colors } = useTheme();
 
-  // Default mock meetings for MVP
-  const defaultMeetings = [
-    {
-      id: '1',
-      title: 'Product Strategy Review',
-      date: '2024-01-15',
-      time: '2:00 PM',
-      attendees: 5,
-      duration: '45min',
-      snippet: 'Discussed Q1 roadmap priorities, user feedback analysis, and new feature requirements...'
-    },
-    {
-      id: '2', 
-      title: 'Client Onboarding Call',
-      date: '2024-01-14',
-      time: '10:30 AM',
-      attendees: 3,
-      duration: '30min',
-      snippet: 'Walked through platform features, integration setup, and success metrics definition...'
-    },
-    {
-      id: '3',
-      title: 'Team Weekly Sync',
-      date: '2024-01-12',
-      time: '9:00 AM', 
-      attendees: 8,
-      duration: '60min',
-      snippet: 'Sprint review, blockers discussion, upcoming deadlines, and resource allocation...'
-    }
-  ];
-
-  const displayMeetings = meetings.length > 0 ? meetings : defaultMeetings;
+  // Use only provided meetings; show empty state when none
+  const displayMeetings = Array.isArray(meetings) ? meetings : [];
 
   // Card container styles
   const cardStyles = {

@@ -139,17 +139,47 @@ class UserBucketService {
       for (const variation of numberVariations) {
         const { data: profile, error } = await this.supabase
           .from('profiles')
-          .select('user_id, whatsapp_number')
+          .select('user_id, whatsapp_number, phone_number')
           .eq('whatsapp_number', variation)
           .single();
 
         if (!error && profile) {
-          console.log(`✅ Found user profile: ${profile.user_id} for number: ${variation}`);
+          console.log(`✅ Found user profile by whatsapp_number: ${profile.user_id} for number: ${variation}`);
           
           // Create mapping for future use
           await this.createWhatsAppMapping(profile.user_id, normalizedNumber);
           
           return { userId: profile.user_id, normalizedNumber };
+        }
+      }
+
+      // 2b. Fallback: Check user profiles by phone_number (some users only set phone_number)
+      for (const variation of numberVariations) {
+        const { data: profileByPhone, error: phoneErr } = await this.supabase
+          .from('profiles')
+          .select('user_id, whatsapp_number, phone_number')
+          .eq('phone_number', variation)
+          .single();
+
+        if (!phoneErr && profileByPhone) {
+          console.log(`✅ Found user profile by phone_number: ${profileByPhone.user_id} for number: ${variation}`);
+
+          // Best-effort: persist whatsapp_number so future lookups hit directly
+          try {
+            if (!profileByPhone.whatsapp_number || profileByPhone.whatsapp_number.length === 0) {
+              await this.supabase
+                .from('profiles')
+                .update({ whatsapp_number: normalizedNumber })
+                .eq('user_id', profileByPhone.user_id);
+            }
+          } catch (_e) {
+            // ignore non-critical update errors
+          }
+
+          // Create mapping for future use
+          await this.createWhatsAppMapping(profileByPhone.user_id, normalizedNumber);
+          
+          return { userId: profileByPhone.user_id, normalizedNumber };
         }
       }
 
