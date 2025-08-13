@@ -40,6 +40,12 @@ export const GoogleCalendarCallback: React.FC = () => {
         const result = await CalendarService.handleCallback(code, state);
         
         if (result.success) {
+          // Immediately sync events so tables are populated for the user
+          try {
+            setMessage('Syncing your calendar events...');
+            await CalendarService.syncCalendar();
+          } catch (_) {}
+
           setStatus('success');
           setMessage('Google Calendar connected successfully!');
           
@@ -48,9 +54,9 @@ export const GoogleCalendarCallback: React.FC = () => {
             description: "Your Google Calendar has been connected successfully.",
           });
 
-          // Redirect to dashboard after a short delay
+          // Redirect after a short delay
           setTimeout(() => {
-            navigate('/dashboard');
+            navigate('/product-home');
           }, 2000);
         } else {
           throw new Error(result.error || 'Failed to connect calendar');
