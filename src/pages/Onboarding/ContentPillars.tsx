@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/api/useAuth';
 import { useTheme } from '@/services/theme-context';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/design-system/components/Toast';
+import Toast from '@/design-system/components/Toast';
 
 // Design System Components
 import TopNav from '@/design-system/components/TopNav';
@@ -27,6 +27,7 @@ const ContentPillars = () => {
   const { colors } = useTheme();
   const [selectedPillars, setSelectedPillars] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   // Available pillar options
   const pillarOptions = [
@@ -64,7 +65,9 @@ const ContentPillars = () => {
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({ content_pillars: selectedPillars })
+        .update({ 
+          content_pillars: selectedPillars
+        } as any)
         .eq('user_id', user.id);
 
       if (error) throw error;
@@ -72,7 +75,7 @@ const ContentPillars = () => {
       navigate('/onboarding/pacing');
     } catch (error) {
       console.error('Error saving content pillars:', error);
-      toast.error('Failed to save content pillars. Please try again.');
+      setToast({ message: 'Failed to save content pillars. Please try again.', type: 'error' });
     } finally {
       setIsLoading(false);
     }
@@ -176,7 +179,7 @@ const ContentPillars = () => {
               >
                 {/* Bichaurinho */}
                 <div>
-                  <Bichaurinho variant={6} size={48} />
+                  <Bichaurinho variant={26} size={48} />
                 </div>
 
                 {/* Title and Subtitle Container - 12px gap between title and subtitle */}
@@ -200,7 +203,7 @@ const ContentPillars = () => {
                       textAlign: 'left',
                     }}
                   >
-                    Content<br />Pillars
+                    Content Pillars
                   </h1>
 
                   {/* Subtitle */}
@@ -215,7 +218,7 @@ const ContentPillars = () => {
                       textAlign: 'left',
                     }}
                   >
-                    Content Themes. What types of content do you want to share?
+                    These pillars will help us create your content plan so we stay on formats you like to use
                   </p>
                 </div>
               </div>
@@ -265,8 +268,8 @@ const ContentPillars = () => {
                 }}
               >
                 {selectedPillars.length === 0 
-                  ? "Select your content themes to continue."
-                  : `${selectedPillars.length} theme${selectedPillars.length === 1 ? '' : 's'} selected.`
+                  ? "Select your content pillars to continue."
+                  : `${selectedPillars.length} pillar${selectedPillars.length === 1 ? '' : 's'} selected.`
                 }
               </p>
             </div>
@@ -303,6 +306,15 @@ const ContentPillars = () => {
           />
         </div>
       </div>
+
+      {/* Toast */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 };

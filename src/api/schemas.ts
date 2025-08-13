@@ -7,13 +7,13 @@ import { z } from 'zod';
 // ========== AUTHENTICATION SCHEMAS ==========
 
 export const signInSchema = z.object({
-  email: z.string().email('Please enter a valid email address'),
+  email: z.email({ message: 'Please enter a valid email address' }),
   password: z.string().min(6, 'Password must be at least 6 characters long'),
 });
 
 export const signUpSchema = z.object({
   name: z.string().min(1, 'Full name is required'),
-  email: z.string().email('Please enter a valid email address'),
+  email: z.email({ message: 'Please enter a valid email address' }),
   password: z.string()
     .min(8, 'Password must be at least 8 characters long')
     .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
@@ -26,12 +26,12 @@ export const signUpSchema = z.object({
 export const profileUpdateSchema = z.object({
   display_name: z.string().optional(),
   bio: z.string().optional(),
-  avatar_url: z.string().url().optional().or(z.literal('')),
+  avatar_url: z.string().url({ message: 'Please enter a valid URL' }).optional().or(z.literal('')),
 });
 
 export const linkedInProfileSchema = z.object({
   profileUrl: z.string()
-    .url('Please enter a valid URL')
+    .url({ message: 'Please enter a valid URL' })
     .refine((url) => url.includes('linkedin.com'), {
       message: 'Please enter a valid LinkedIn profile URL',
     }),
@@ -65,13 +65,13 @@ export const contactSchema = z.object({
 // ========== CONTENT SCHEMAS ==========
 
 export const linkDataSchema = z.object({
-  url: z.string().url('Please enter a valid URL'),
+  url: z.url({ message: 'Please enter a valid URL' }),
   title: z.string().optional(),
   description: z.string().optional(),
 });
 
 export const fileUploadSchema = z.object({
-  file: z.instanceof(File, 'Please select a file'),
+  file: z.instanceof(File, { message: 'Please select a file' }),
   userId: z.string().min(1, 'User ID is required'),
 });
 
@@ -79,7 +79,7 @@ export const fileUploadSchema = z.object({
 
 export const addInspirationSchema = z.object({
   linkedinUrl: z.string()
-    .url('Please enter a valid URL')
+    .url({ message: 'Please enter a valid URL' })
     .refine((url) => url.includes('linkedin.com/in/'), {
       message: 'Please enter a valid LinkedIn profile URL (e.g., linkedin.com/in/username)',
     }),
@@ -113,15 +113,23 @@ export const validateData = <T>(schema: z.ZodSchema<T>, data: unknown) => {
     const validatedData = schema.parse(data);
     return { success: true, data: validatedData, errors: null };
   } catch (error) {
-    if (error instanceof z.ZodError && error.errors) {
+    if (error instanceof z.ZodError) {
+      const issues = (error as any).issues ?? (error as any).errors ?? [];
+      if (Array.isArray(issues)) {
+        return {
+          success: false,
+          data: null,
+          errors: issues.reduce((acc: Record<string, string>, curr: any) => {
+            const field = Array.isArray(curr.path) ? curr.path.join('.') : 'general';
+            acc[field] = curr.message || 'Invalid value';
+            return acc;
+          }, {})
+        };
+      }
       return {
         success: false,
         data: null,
-        errors: error.errors.reduce((acc, curr) => {
-          const field = curr.path.join('.');
-          acc[field] = curr.message;
-          return acc;
-        }, {} as Record<string, string>)
+        errors: { general: 'Validation failed - invalid error format' }
       };
     }
     return {

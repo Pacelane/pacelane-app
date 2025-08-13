@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTheme } from '../../services/theme-context.jsx';
+import { useHelp } from '../../services/help-context.jsx';
 import { spacing } from '../tokens/spacing.js';
 import { stroke } from '../tokens/stroke.js';
 import Logo from './Logo.jsx';
@@ -26,6 +27,7 @@ const TopNav = ({
   ...rest 
 }) => {
   const { colors, themePreference, setTheme } = useTheme();
+  const { openHelp } = useHelp();
 
   // Theme switcher button group items
   const themeItems = [
@@ -54,8 +56,11 @@ const TopNav = ({
     if (onHelpClick) {
       onHelpClick();
     } else {
-      // Default help action - could open help modal, navigate to help page, etc.
-      console.log('Help requested');
+      // Open the global help modal with context
+      openHelp({
+        section: 'Top Navigation',
+        action: 'Clicked help button from top navigation'
+      });
     }
   };
 

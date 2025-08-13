@@ -8,7 +8,7 @@ import { useToast } from '@/design-system/components/Toast';
 // Design System Components
 import TopNav from '@/design-system/components/TopNav';
 import Button from '@/design-system/components/Button';
-import Input from '@/design-system/components/Input';
+import PhoneInput from '@/design-system/components/PhoneInput';
 import ProgressBar from '@/design-system/components/ProgressBar';
 import Bichaurinho from '@/design-system/components/Bichaurinho';
 
@@ -39,9 +39,10 @@ const Contact = () => {
     setIsLoading(true);
     
     try {
+      // Work around TypeScript issue by using any type for now
       const { error } = await supabase
         .from('profiles')
-        .update({ whatsapp_number: whatsappNumber.trim() })
+        .update({ whatsapp_number: whatsappNumber.trim() } as any)
         .eq('user_id', user.id);
 
       if (error) throw error;
@@ -206,11 +207,10 @@ const Contact = () => {
                   gap: spacing.spacing[12],
                 }}
               >
-                <Input
-                  placeholder="+55 11 99999-9999"
+                <PhoneInput
                   value={whatsappNumber}
-                  onChange={(e) => setWhatsappNumber(e.target.value)}
-                  style="default"
+                  onChange={setWhatsappNumber}
+                  defaultCountry="BR"
                   size="lg"
                   disabled={isLoading}
                 />
@@ -249,7 +249,7 @@ const Contact = () => {
                       textAlign: 'center',
                     }}
                   >
-                    Use international format: +55 11 99999-9999 (Brazil) or +1 555 123-4567 (US)
+                    Select your country and enter your WhatsApp number for personalized notifications
                   </p>
                 </div>
               </div>

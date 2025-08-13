@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTheme } from '@/services/theme-context';
+import { useHelp } from '@/services/help-context';
 import { useAuth } from '@/hooks/api/useAuth';
 import { spacing } from '@/design-system/tokens/spacing';
 import HomeSidebar from '@/design-system/components/HomeSidebar';
@@ -13,6 +14,7 @@ import HomeSidebar from '@/design-system/components/HomeSidebar';
  */
 const MainAppChrome = ({ className = '', children, ...rest }) => {
   const { colors } = useTheme();
+  const { openHelp } = useHelp();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -25,9 +27,11 @@ const MainAppChrome = ({ className = '', children, ...rest }) => {
   // Active menu mapping based on current route
   const activeMenuItem = (() => {
     if (location.pathname.startsWith('/product-home')) return 'home';
+    if (location.pathname.startsWith('/templates')) return 'home'; // Templates is part of home flow
     if (location.pathname.startsWith('/knowledge')) return 'knowledge';
     if (location.pathname.startsWith('/profile')) return 'profile';
     if (location.pathname.startsWith('/posts')) return 'history';
+    if (location.pathname.startsWith('/integrations')) return 'integrations';
     if (location.pathname.startsWith('/pacing')) return 'pacing';
     if (location.pathname.startsWith('/notifications')) return 'notifications';
     if (location.pathname.startsWith('/plan-billing')) return 'plan-billing';
@@ -48,6 +52,9 @@ const MainAppChrome = ({ className = '', children, ...rest }) => {
       case 'history':
         navigate('/posts');
         break;
+      case 'integrations':
+        navigate('/integrations');
+        break;
       case 'pacing':
         navigate('/pacing');
         break;
@@ -64,8 +71,20 @@ const MainAppChrome = ({ className = '', children, ...rest }) => {
 
   const handleCreateNewClick = () => navigate('/content-editor');
   const handleAvatarClick = () => navigate('/profile');
-  const handleHelpClick = () => console.log('Help clicked');
+  const handleHelpClick = () => {
+    openHelp({
+      page: location.pathname,
+      section: 'MainAppChrome',
+      action: 'Clicked help button from main app chrome'
+    });
+  };
   const handleThemeChange = () => {};
+  const handleSignOut = async () => {
+    const result = await signOut();
+    if (!result.error) {
+      navigate('/signin');
+    }
+  };
 
   // Layout styles
   const rootStyles = {
@@ -107,6 +126,7 @@ const MainAppChrome = ({ className = '', children, ...rest }) => {
           onThemeChange={handleThemeChange}
           onHelpClick={handleHelpClick}
           onAvatarClick={handleAvatarClick}
+          onSignOut={handleSignOut}
           userName={user?.email?.split('@')[0] || 'User'}
           userAvatar="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=48&h=48&fit=crop&crop=face"
         />

@@ -6,7 +6,16 @@ import { useTheme } from '@/services/theme-context';
 import { useToast } from '@/design-system/components/Toast';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { linkedInProfileSchema, type LinkedInProfileFormData } from '@/api/schemas';
+import { z } from 'zod';
+
+// Custom schema for LinkedIn username (not full URL)
+const linkedInUsernameSchema = z.object({
+  profileUrl: z.string()
+    .min(1, 'LinkedIn username is required')
+    .regex(/^[a-zA-Z0-9\-]+$/, 'Username can only contain letters, numbers, and hyphens')
+});
+
+type LinkedInUsernameFormData = z.infer<typeof linkedInUsernameSchema>;
 
 // Design System Components
 import TopNav from '@/design-system/components/TopNav';
@@ -31,8 +40,8 @@ const FirstThingsFirst = () => {
   const { colors } = useTheme();
   const { toast } = useToast();
 
-  const form = useForm<LinkedInProfileFormData>({
-    resolver: zodResolver(linkedInProfileSchema),
+  const form = useForm<LinkedInUsernameFormData>({
+    resolver: zodResolver(linkedInUsernameSchema),
     defaultValues: {
       profileUrl: '',
     },
@@ -42,16 +51,19 @@ const FirstThingsFirst = () => {
     navigate('/onboarding/welcome');
   };
 
-  const onSubmit = async (data: LinkedInProfileFormData) => {
+  const onSubmit = async (data: LinkedInUsernameFormData) => {
     if (!user) {
       toast.error('Please sign in to continue');
       return;
     }
 
     try {
+      // Construct the full LinkedIn URL from the username input
+      const fullLinkedInUrl = `https://www.linkedin.com/in/${data.profileUrl.trim()}/`;
+      
       // Use our clean LinkedIn setup API (includes scraper integration)
       const result = await setupLinkedInProfile({
-        profileUrl: data.profileUrl
+        profileUrl: fullLinkedInUrl
       });
 
       if (result.error) {
@@ -221,11 +233,14 @@ const FirstThingsFirst = () => {
               >
                 {/* LinkedIn Profile Input */}
                 <Input
-                  placeholder="Your LinkedIn Profile *"
+                  label="Your LinkedIn Profile"
+                  placeholder="your-linkedin-username"
                   value={form.watch('profileUrl') || ''}
                   onChange={(e) => form.setValue('profileUrl', e.target.value, { shouldValidate: true })}
-                  style="default"
+                  style="add-on"
+                  addOnPrefix="linkedin.com/in/"
                   size="lg"
+                  required={true}
                   disabled={saving}
                   failed={!!form.formState.errors.profileUrl}
                   caption={form.formState.errors.profileUrl?.message}

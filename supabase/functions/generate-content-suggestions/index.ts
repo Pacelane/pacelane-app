@@ -151,7 +151,7 @@ Make suggestions relevant to their industry, goals, and inspired by their role m
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4.1-2025-04-14',
+        model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: 'You are a professional content strategist. Always respond with valid JSON only.' },
           { role: 'user', content: prompt }

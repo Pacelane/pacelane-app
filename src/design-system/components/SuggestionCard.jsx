@@ -1,14 +1,15 @@
 import React from 'react';
-import { Calendar, Sparkles, Info } from 'lucide-react';
-import { useTheme } from '../../services/theme-context.jsx';
-import { spacing } from '../tokens/spacing.js';
-import { cornerRadius } from '../tokens/corner-radius.js';
-import { textStyles } from '../styles/typography/typography-styles.js';
-import { shadows, getShadow } from '../tokens/shadows.js';
-import Button from './Button.jsx';
-import Bichaurinho from './Bichaurinho.jsx';
-import ContentCard from './ContentCard.jsx';
-import Divider from './Divider.jsx';
+import { FileText, Sparkles, Info } from 'lucide-react';
+import { useTheme } from '@/services/theme-context';
+import { spacing } from '@/design-system/tokens/spacing';
+import { cornerRadius } from '@/design-system/tokens/corner-radius';
+import { textStyles } from '@/design-system/styles/typography/typography-styles';
+import { shadows, getShadow } from '@/design-system/tokens/shadows';
+import Button from '@/design-system/components/Button';
+import Bichaurinho from '@/design-system/components/Bichaurinho';
+import ContentCard from '@/design-system/components/ContentCard';
+import Divider from '@/design-system/components/Divider';
+import InlineTip from '@/design-system/components/InlineTip';
 
 const SuggestionCard = ({
   // Content
@@ -17,7 +18,7 @@ const SuggestionCard = ({
   contentCards = [],
   
   // Handlers
-  onCalendarClick,
+  onPostsClick,
   onGenerateClick,
   
   // Standard props
@@ -86,25 +87,16 @@ const SuggestionCard = ({
             <Button
               size="xs"
               style="dashed"
-              label="See Calendar"
-              leadIcon={<Calendar size={12} />}
-              onClick={onCalendarClick}
+              label="See All Your Posts"
+              leadIcon={<FileText size={12} />}
+              onClick={onPostsClick}
             />
           </div>
 
-          {/* Description Box */}
-          <div
-            style={{
-              padding: `${spacing.spacing[8]} ${spacing.spacing[12]}`,
-              borderRadius: cornerRadius.borderRadius.md,
-              backgroundColor: '#E1E7FD33',
-              border: `1px solid ${colors.border.indigo}`,
-              ...textStyles.sm.normal,
-              color: colors.bg.basic.indigo.contrast
-            }}
-          >
+          {/* Description Tip */}
+          <InlineTip>
             {description}
-          </div>
+          </InlineTip>
         </div>
 
         {/* Content Cards Row */}

@@ -31,6 +31,7 @@ const Inspirations = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { colors } = useTheme();
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
   // Initialize with one required benchmark field
@@ -71,17 +72,30 @@ const Inspirations = () => {
     setIsLoading(true);
 
     try {
-      // Filter out empty benchmarks and trim values
-      const validBenchmarks = benchmarks
-        .filter(b => b.value.trim())
-        .map(b => b.value.trim());
-
-      const { error } = await supabase
-        .from('profiles')
-        .update({ inspirations: validBenchmarks })
+      // First, delete existing inspirations for this user
+      const { error: deleteError } = await supabase
+        .from('inspirations')
+        .delete()
         .eq('user_id', user.id);
 
-      if (error) throw error;
+      if (deleteError) throw deleteError;
+
+      // Filter out empty benchmarks and create LinkedIn URL objects
+      const validBenchmarks = benchmarks
+        .filter(b => b.value.trim())
+        .map(b => ({
+          user_id: user.id,
+          linkedin_url: `https://linkedin.com/in/${b.value.trim()}`
+        }));
+
+      // Insert new inspirations if any exist
+      if (validBenchmarks.length > 0) {
+        const { error: insertError } = await supabase
+          .from('inspirations')
+          .insert(validBenchmarks);
+
+        if (insertError) throw insertError;
+      }
 
       navigate('/onboarding/goals');
     } catch (error) {
@@ -191,7 +205,7 @@ const Inspirations = () => {
               >
                 {/* Bichaurinho */}
                 <div>
-                  <Bichaurinho variant={8} size={48} />
+                  <Bichaurinho variant={6} size={48} />
                 </div>
 
                 {/* Title and Subtitle Container - 12px gap between title and subtitle */}
@@ -244,48 +258,61 @@ const Inspirations = () => {
                 }}
               >
                 {benchmarks.map((benchmark, index) => (
-                  <div
-                    key={benchmark.id}
-                    style={{
-                      display: 'flex',
-                      gap: spacing.spacing[8],
-                      alignItems: 'center',
-                    }}
-                  >
-                    <div style={{ flex: 1 }}>
+                  <div key={benchmark.id}>
+                    {benchmark.isRequired ? (
                       <Input
-                        placeholder={index === 0 ? "Benchmark 1 *" : `Benchmark ${index + 1}`}
+                        label="LinkedIn Profile"
+                        placeholder="username"
                         value={benchmark.value}
                         onChange={(e) => updateBenchmark(benchmark.id, e.target.value)}
-                        style="default"
+                        style="add-on"
                         size="lg"
+                        required={true}
                         disabled={isLoading}
+                        addOnPrefix="https://linkedin.com/in/"
                       />
-                    </div>
-                    
-                    {/* Only show delete button for non-required benchmarks */}
-                    {!benchmark.isRequired && (
-                      <Button
-                        label=""
-                        style="ghost"
-                        size="sm"
-                        leadIcon={<Trash2 size={16} />}
-                        onClick={() => removeBenchmark(benchmark.id)}
-                        disabled={isLoading}
-                      />
+                    ) : (
+                      <div
+                        style={{
+                          display: 'flex',
+                          gap: spacing.spacing[8],
+                          alignItems: 'flex-end',
+                        }}
+                      >
+                        <div style={{ flex: 1 }}>
+                          <Input
+                            placeholder="username"
+                            value={benchmark.value}
+                            onChange={(e) => updateBenchmark(benchmark.id, e.target.value)}
+                            style="add-on"
+                            size="lg"
+                            disabled={isLoading}
+                            addOnPrefix="https://linkedin.com/in/"
+                          />
+                        </div>
+                        <Button
+                          label=""
+                          style="ghost"
+                          size="lg"
+                          leadIcon={<Trash2 size={16} />}
+                          onClick={() => removeBenchmark(benchmark.id)}
+                          disabled={isLoading}
+                        />
+                      </div>
                     )}
                   </div>
                 ))}
 
                 {/* Add Benchmark Button */}
-                <div style={{ marginTop: spacing.spacing[8] }}>
+                <div style={{ marginTop: spacing.spacing[8], width: '100%' }}>
                   <Button
                     label="Add Another Benchmark"
-                    style="dashed"
+                    style="secondary"
                     size="sm"
                     leadIcon={<Plus size={16} />}
                     onClick={addBenchmark}
                     disabled={isLoading}
+                    className="w-full"
                   />
                 </div>
               </div>

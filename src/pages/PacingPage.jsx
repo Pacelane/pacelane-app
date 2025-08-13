@@ -8,12 +8,12 @@ import { textStyles } from '../design-system/styles/typography/typography-styles
 
 // Design System Components
 import Button from '../design-system/components/Button.jsx';
-import ButtonGroup from '../design-system/components/ButtonGroup.jsx';
+import DropdownButton from '../design-system/components/DropdownButton.jsx';
 import Checkbox from '../design-system/components/Checkbox.jsx';
 import SidebarMenuItem from '../design-system/components/SidebarMenuItem.jsx';
 
 // Icons
-import { ChevronDown, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
 
 const PacingPage = () => {
   const { colors } = useTheme();
@@ -24,16 +24,14 @@ const PacingPage = () => {
   // State for each section's data
   const [selectedDays, setSelectedDays] = useState(['monday', 'wednesday', 'friday']);
   const [dailySummaryTime, setDailySummaryTime] = useState('Evening (6-8 PM)');
-  const [followUps, setFollowUps] = useState('Two more times the same day');
+  const [followUps, setFollowUps] = useState('One more time the same day');
   const [recommendationsTime, setRecommendationsTime] = useState('Morning (8-10 AM)');
-  const [contextSessionsTime, setContextSessionsTime] = useState('Weekly');
 
   // Saved states for each section
   const [savedStates, setSavedStates] = useState({
     frequency: false,
     dailySummary: false,
-    recommendations: false,
-    contextSessions: false
+    recommendations: false
   });
 
   const weekdays = [
@@ -47,33 +45,36 @@ const PacingPage = () => {
   ];
 
   const timeOptions = [
+    'Early Morning (6-8 AM)',
     'Morning (8-10 AM)',
-    'Afternoon (12-2 PM)', 
+    'Late Morning (10-12 PM)',
+    'Afternoon (12-2 PM)',
+    'Late Afternoon (2-4 PM)',
+    'Early Evening (4-6 PM)',
     'Evening (6-8 PM)',
-    'Night (8-10 PM)'
+    'Night (8-10 PM)',
+    'Late Night (10-12 AM)'
   ];
 
   const followUpOptions = [
     'No follow-ups',
     'One more time the same day',
-    'Two more times the same day',
-    'Next day if no response'
+    'Two more times the same day'
   ];
 
   const recommendationOptions = [
+    'Early Morning (6-8 AM)',
     'Morning (8-10 AM)',
+    'Late Morning (10-12 PM)',
     'Afternoon (12-2 PM)',
+    'Late Afternoon (2-4 PM)',
+    'Early Evening (4-6 PM)',
     'Evening (6-8 PM)',
-    'Night (8-10 PM)'
+    'Night (8-10 PM)',
+    'Late Night (10-12 AM)'
   ];
 
-  const contextOptions = [
-    'Daily',
-    'Every 3 days',
-    'Weekly',
-    'Bi-weekly',
-    'Monthly'
-  ];
+
 
   // Side menu items
   const menuItems = [
@@ -88,10 +89,6 @@ const PacingPage = () => {
     { 
       id: 'recommendations', 
       label: 'Recommendations'
-    },
-    { 
-      id: 'contextSessions', 
-      label: 'Context Sessions'
     }
   ];
 
@@ -120,23 +117,14 @@ const PacingPage = () => {
     }, 2000);
   };
 
-  const DropdownButton = ({ value, options, onChange, placeholder = "Select an option" }) => (
-    <div style={{ position: 'relative' }}>
-      <Button
-        label={value || placeholder}
-        style="secondary"
-        size="sm"
-        tailIcon={<ChevronDown size={14} />}
-        onClick={() => {
-          // In a real implementation, this would open a dropdown
-          // For now, we'll cycle through options
-          const currentIndex = options.indexOf(value);
-          const nextIndex = (currentIndex + 1) % options.length;
-          onChange(options[nextIndex]);
-        }}
-      />
-    </div>
-  );
+  // Helper function to create dropdown items from options
+  const createDropdownItems = (options, onChange) => {
+    return options.map((option) => ({
+      id: option,
+      label: option,
+      onClick: () => onChange(option)
+    }));
+  };
 
 
 
@@ -204,9 +192,9 @@ const PacingPage = () => {
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[16] }}>
               <DropdownButton
-                value={dailySummaryTime}
-                options={timeOptions}
-                onChange={setDailySummaryTime}
+                label={dailySummaryTime}
+                items={createDropdownItems(timeOptions, setDailySummaryTime)}
+                size="sm"
               />
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[8] }}>
@@ -214,9 +202,9 @@ const PacingPage = () => {
                   Follow-Ups
                 </h4>
                 <DropdownButton
-                  value={followUps}
-                  options={followUpOptions}
-                  onChange={setFollowUps}
+                  label={followUps}
+                  items={createDropdownItems(followUpOptions, setFollowUps)}
+                  size="sm"
                 />
                 <p style={{ ...textStyles.xs.normal, color: colors.text.subtle, margin: 0 }}>
                   Define how many follow-ups should we make in case you don't respond to our first message
@@ -250,9 +238,9 @@ const PacingPage = () => {
             </div>
             
             <DropdownButton
-              value={recommendationsTime}
-              options={recommendationOptions}
-              onChange={setRecommendationsTime}
+              label={recommendationsTime}
+              items={createDropdownItems(recommendationOptions, setRecommendationsTime)}
+              size="sm"
             />
 
             <div style={{ alignSelf: 'flex-start' }}>
@@ -268,36 +256,7 @@ const PacingPage = () => {
           </div>
         );
 
-      case 'contextSessions':
-        return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[20] }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[4] }}>
-              <h3 style={{ ...textStyles.sm.semibold, color: colors.text.default, margin: 0 }}>
-                Context Sessions
-              </h3>
-              <p style={{ ...textStyles.xs.normal, color: colors.text.subtle, margin: 0 }}>
-                We will ask you a few questions to tailor your strategy and get more context around some topics
-              </p>
-            </div>
-            
-            <DropdownButton
-              value={contextSessionsTime}
-              options={contextOptions}
-              onChange={setContextSessionsTime}
-            />
 
-            <div style={{ alignSelf: 'flex-start' }}>
-              <Button
-                label={savedStates.contextSessions ? "Saved!" : "Save"}
-                style="primary"
-                size="sm"
-                leadIcon={savedStates.contextSessions ? <Check size={16} /> : undefined}
-                onClick={() => handleSave('contextSessions')}
-                disabled={savedStates.contextSessions}
-              />
-            </div>
-          </div>
-        );
 
       default:
         return null;
