@@ -1375,6 +1375,58 @@ Return only valid JSON:
     }
   }
 
+  /**
+   * Ensure conversation exists in our database for WhatsApp notifications
+   */
+  private async ensureConversationExists(userId: string, chatwootConversationId: number): Promise<void> {
+    try {
+      console.log(`🔗 Ensuring conversation exists for user ${userId} with Chatwoot ID ${chatwootConversationId}`);
+      
+      // Check if conversation already exists
+      const { data: existingConversation, error: findError } = await this.supabase
+        .from('conversations')
+        .select('id')
+        .eq('user_id', userId)
+        .single();
+
+      if (!findError && existingConversation) {
+        // Update existing conversation with new Chatwoot ID if needed
+        const { error: updateError } = await this.supabase
+          .from('conversations')
+          .update({ 
+            chatwoot_conversation_id: chatwootConversationId,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingConversation.id);
+
+        if (updateError) {
+          console.error('❌ Error updating conversation:', updateError);
+        } else {
+          console.log(`✅ Updated existing conversation for user ${userId}`);
+        }
+      } else {
+        // Create new conversation entry
+        const { error: insertError } = await this.supabase
+          .from('conversations')
+          .insert({
+            user_id: userId,
+            chatwoot_conversation_id: chatwootConversationId,
+            context_json: {},
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+
+        if (insertError) {
+          console.error('❌ Error creating conversation:', insertError);
+        } else {
+          console.log(`✅ Created new conversation for user ${userId} with Chatwoot ID ${chatwootConversationId}`);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error ensuring conversation exists:', error);
+    }
+  }
+
   // Removed old conversation management methods - replaced with smart AI + preferences approach
 
   /**
@@ -1573,6 +1625,11 @@ Return only valid JSON:
     }
 
     const { userId, bucketName, contactId: finalContactId } = bucketResult.data;
+
+    // CRITICAL: Create or update conversation entry for WhatsApp notifications
+    if (userId) {
+      await this.ensureConversationExists(userId, payload.conversation.id);
+    }
 
     // AI-powered intent detection and routing
     const intentResult = await this.detectIntent(payload.content || '');
