@@ -212,7 +212,11 @@ const IntegrationsPage = () => {
       try {
         const result = await CalendarService.getAuthUrl();
         if (result.success && result.authUrl) {
-          window.location.href = result.authUrl;
+          // Ensure state (user id) and correct redirect_uri are present
+          const auth = new URL(result.authUrl);
+          if (user?.id) auth.searchParams.set('state', user.id);
+          auth.searchParams.set('redirect_uri', `${window.location.origin}/auth/google/callback`);
+          window.location.href = auth.toString();
         } else {
           toast.error(result.error || 'Failed to start Google Calendar connection');
         }
