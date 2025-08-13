@@ -47,6 +47,7 @@ export interface SignInData {
 
 // Data needed to sign up (same as sign in, but we might add more fields later)
 export interface SignUpData extends SignInData {
+  name: string;                       // Full name required for sign up
   emailRedirectTo?: string;           // Where to redirect after email confirmation
   options?: {
     data?: {

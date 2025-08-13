@@ -23,8 +23,10 @@ GCS_PRIVATE_KEY_ID=your_private_key_id
 # OpenAI Configuration (for audio transcription)
 OPENAI_API_KEY=sk-your_openai_api_key_here
 
-# Chatwoot Configuration (for downloading audio files)
+# Chatwoot Configuration (for downloading audio files and sending messages)
 CHATWOOT_BASE_URL=https://your-chatwoot-instance.com
+CHATWOOT_API_ACCESS_TOKEN=your_chatwoot_api_access_token
+CHATWOOT_ACCOUNT_ID=your_chatwoot_account_id
 ```
 
 **Supabase UI (Production Edge Functions):**
@@ -378,9 +380,94 @@ WHERE chatwoot_message_id = 'test-message-123';
 - Compression for archived messages
 - Regular cleanup of processed data
 
-### 9. Security Implementation
+### 9. Minimal Notification Policy (PCL-26)
 
-#### 9.1 Webhook Verification (Future Phase)
+#### 9.1 Policy Overview
+The WhatsApp integration follows a **minimal notification policy** to reduce noise and only send messages when absolutely necessary:
+
+- **NOTES**: Processed silently, no WhatsApp messages sent
+- **ORDER flows**: Only send messages for blocking clarifications or errors
+- **Ready notices**: Only sent when user has opted in (`notify_on_ready`)
+
+#### 9.2 Message Types
+
+**Blocking Clarifications** (sent only when required fields are missing):
+- Platform selection (LinkedIn, Instagram, Twitter, Blog)
+- Content length (Short, Medium, Long)
+- Tone preference (Professional, Casual, Friendly, Authoritative)
+- Topic focus (Trends, News, Tips, Product)
+
+**Error Notifications** (sent only on processing failures):
+- Bucket setup failures
+- Order creation errors
+- Job enqueue failures
+
+**Ready Notices** (sent only when opted-in):
+- Content completion notifications
+- App opening instructions
+- Order ID references
+
+#### 9.3 Quick Reply Integration
+The system uses Chatwoot's quick reply feature to make clarifications interactive:
+
+```typescript
+// Example quick reply structure
+{
+  content: "📱 Which platform would you like content for?",
+  content_attributes: {
+    quick_reply: {
+      type: "quick_reply",
+      values: [
+        { title: "LinkedIn", value: "linkedin" },
+        { title: "Instagram", value: "instagram" },
+        { title: "Twitter", value: "twitter" },
+        { title: "Blog", value: "blog" }
+      ]
+    }
+  }
+}
+```
+
+#### 9.4 Conversation Context Management
+To handle multi-step clarifications, the system stores conversation context:
+
+```sql
+-- conversations table structure
+CREATE TABLE conversations (
+  id SERIAL PRIMARY KEY,
+  chatwoot_conversation_id INTEGER UNIQUE NOT NULL,
+  context_json JSONB, -- Stores clarifying field, order params, etc.
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+```
+
+#### 9.5 Chatwoot API Integration
+The system uses Chatwoot's REST API to send messages:
+
+**Required Environment Variables:**
+```bash
+CHATWOOT_BASE_URL=https://your-chatwoot-instance.com
+CHATWOOT_API_ACCESS_TOKEN=your_chatwoot_api_access_token
+CHATWOOT_ACCOUNT_ID=your_chatwoot_account_id
+```
+
+**API Endpoint:**
+```
+POST /api/v1/accounts/{account_id}/conversations/{conversation_id}/messages
+```
+
+**Authentication:**
+```
+Headers: {
+  'api_access_token': 'your_token_here',
+  'Content-Type': 'application/json'
+}
+```
+
+### 10. Security Implementation
+
+#### 10.1 Webhook Verification (Future Phase)
 ```typescript
 // Verify Chatwoot webhook signature
 function verifyWebhookSignature(payload: string, signature: string, secret: string): boolean {
@@ -391,14 +478,45 @@ function verifyWebhookSignature(payload: string, signature: string, secret: stri
 }
 ```
 
-#### 9.2 Data Encryption
+#### 10.2 Data Encryption
 - All data encrypted in transit (HTTPS)
 - GCS encryption at rest (default)
 - Consider customer-managed encryption keys (CMEK) for sensitive data
 
-### 10. Operational Procedures
+### 11. Chatwoot API Integration (PCL-26)
 
-#### 10.1 Deployment Checklist
+#### 11.1 New Features Added
+The WhatsApp integration now includes outbound messaging capabilities:
+
+- **Blocking Clarifications**: Interactive quick-reply messages for missing order fields
+- **Error Notifications**: Brief error messages with helpful suggestions
+- **Ready Notices**: Optional notifications when content is ready (user preference-based)
+- **Minimal Policy**: Only send messages when absolutely necessary
+
+#### 11.2 Required Environment Variables
+```bash
+# Add these to your environment configuration
+CHATWOOT_API_ACCESS_TOKEN=your_chatwoot_api_access_token
+CHATWOOT_ACCOUNT_ID=your_chatwoot_account_id
+```
+
+#### 11.3 Database Changes
+Run the new migration to add required tables:
+```bash
+# Apply the new migration
+supabase db push
+```
+
+This creates:
+- `conversations` table for managing clarification context
+- `notify_on_ready` field in `user_bucket_mapping`
+
+#### 11.4 Testing the Integration
+Test the new features with the provided webhook payloads in the [WhatsApp Chatwoot API Integration](./WHATSAPP_CHATWOOT_API_INTEGRATION.md) guide.
+
+### 12. Operational Procedures
+
+#### 12.1 Deployment Checklist
 - [ ] Environment variables configured
 - [ ] GCS bucket created and configured
 - [ ] Service account permissions verified
@@ -408,7 +526,7 @@ function verifyWebhookSignature(payload: string, signature: string, secret: stri
 - [ ] Monitoring dashboards updated
 - [ ] Testing completed
 
-#### 10.2 Rollback Procedures
+#### 12.2 Rollback Procedures
 ```bash
 # Rollback edge function
 supabase functions deploy chatwoot-webhook --env-file .env.local --previous-version

@@ -19,6 +19,7 @@ export { default as FileCard } from './FileCard.jsx';
 export { default as DropdownButton } from './DropdownButton.jsx';
 export { default as DropdownMenu } from './DropdownMenu.jsx';
 export { default as Badge } from './Badge.jsx';
+export { default as Card, CardHeader, CardTitle, CardDescription, CardContent } from './Card.jsx';
 export { default as FileUpload } from './FileUpload.jsx';
 export { default as Divider } from './Divider.jsx';
 export { default as EmptyState } from './EmptyState.jsx';
