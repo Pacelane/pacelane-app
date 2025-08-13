@@ -1,14 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { CalendarService } from '../services/calendarService';
-import { useToast } from '../design-system/components/Toast.jsx';
 import Card, { CardHeader, CardTitle, CardDescription, CardContent } from '../design-system/components/Card.jsx';
 import { CheckCircle, XCircle, RefreshCw } from 'lucide-react';
 
 export const GoogleCalendarCallback: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('Processing Google Calendar authorization...');
 
@@ -48,11 +46,6 @@ export const GoogleCalendarCallback: React.FC = () => {
 
           setStatus('success');
           setMessage('Google Calendar connected successfully!');
-          
-          toast({
-            title: "Calendar Connected",
-            description: "Your Google Calendar has been connected successfully.",
-          });
 
           // Redirect after a short delay
           setTimeout(() => {
@@ -65,12 +58,6 @@ export const GoogleCalendarCallback: React.FC = () => {
         console.error('Calendar callback error:', error);
         setStatus('error');
         setMessage(error.message || 'Failed to connect Google Calendar');
-        
-        toast({
-          title: "Connection Failed",
-          description: error.message || 'Failed to connect Google Calendar',
-          variant: "destructive",
-        });
 
         // Redirect to dashboard after a delay even on error
         setTimeout(() => {
@@ -80,7 +67,7 @@ export const GoogleCalendarCallback: React.FC = () => {
     };
 
     handleCallback();
-  }, [searchParams, navigate, toast]);
+  }, [searchParams, navigate]);
 
   const getIcon = () => {
     switch (status) {
