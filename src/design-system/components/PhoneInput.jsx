@@ -7,46 +7,12 @@ import { getShadow } from '@/design-system/tokens/shadows';
 import { stroke } from '@/design-system/tokens/stroke';
 import Select from './Select';
 
-// Flag component for better emoji rendering
-const FlagEmoji = ({ countryCode }) => {
-  const flagMap = {
-    'BR': '🇧🇷',
-    'US': '🇺🇸',
-    'AR': '🇦🇷',
-    'MX': '🇲🇽',
-    'GB': '🇬🇧',
-    'DE': '🇩🇪',
-    'FR': '🇫🇷',
-    'IT': '🇮🇹',
-    'ES': '🇪🇸',
-    'PT': '🇵🇹',
-    'CA': '🇨🇦',
-    'AU': '🇦🇺',
-    'JP': '🇯🇵',
-    'CN': '🇨🇳',
-    'IN': '🇮🇳'
-  };
-  
-  return (
-    <span 
-      style={{ 
-        fontSize: '16px',
-        fontFamily: 'Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif',
-        marginRight: '6px',
-        display: 'inline-block',
-        minWidth: '20px'
-      }}
-    >
-      {flagMap[countryCode] || '🏳️'}
-    </span>
-  );
-};
-
 // Country data with flags and phone masks
 const COUNTRIES = [
   {
     code: 'BR',
     name: 'Brazil',
+    flag: '🇧🇷',
     dialCode: '+55',
     mask: '(##) #####-####',
     placeholder: '(11) 99999-9999'
@@ -54,6 +20,7 @@ const COUNTRIES = [
   {
     code: 'US',
     name: 'United States',
+    flag: '🇺🇸',
     dialCode: '+1',
     mask: '(###) ###-####',
     placeholder: '(555) 123-4567'
@@ -61,6 +28,7 @@ const COUNTRIES = [
   {
     code: 'AR',
     name: 'Argentina',
+    flag: '🇦🇷',
     dialCode: '+54',
     mask: '### ###-####',
     placeholder: '11 1234-5678'
@@ -68,6 +36,7 @@ const COUNTRIES = [
   {
     code: 'MX',
     name: 'Mexico',
+    flag: '🇲🇽',
     dialCode: '+52',
     mask: '### ###-####',
     placeholder: '55 1234-5678'
@@ -75,6 +44,7 @@ const COUNTRIES = [
   {
     code: 'GB',
     name: 'United Kingdom',
+    flag: '🇬🇧',
     dialCode: '+44',
     mask: '#### ### ####',
     placeholder: '7700 900123'
@@ -82,6 +52,7 @@ const COUNTRIES = [
   {
     code: 'DE',
     name: 'Germany',
+    flag: '🇩🇪',
     dialCode: '+49',
     mask: '### ########',
     placeholder: '30 12345678'
@@ -89,6 +60,7 @@ const COUNTRIES = [
   {
     code: 'FR',
     name: 'France',
+    flag: '🇫🇷',
     dialCode: '+33',
     mask: '# ## ## ## ##',
     placeholder: '1 23 45 67 89'
@@ -96,6 +68,7 @@ const COUNTRIES = [
   {
     code: 'IT',
     name: 'Italy',
+    flag: '🇮🇹',
     dialCode: '+39',
     mask: '### ### ####',
     placeholder: '320 123 4567'
@@ -103,6 +76,7 @@ const COUNTRIES = [
   {
     code: 'ES',
     name: 'Spain',
+    flag: '🇪🇸',
     dialCode: '+34',
     mask: '### ## ## ##',
     placeholder: '612 34 56 78'
@@ -110,6 +84,7 @@ const COUNTRIES = [
   {
     code: 'PT',
     name: 'Portugal',
+    flag: '🇵🇹',
     dialCode: '+351',
     mask: '### ### ###',
     placeholder: '912 345 678'
@@ -117,6 +92,7 @@ const COUNTRIES = [
   {
     code: 'CA',
     name: 'Canada',
+    flag: '🇨🇦',
     dialCode: '+1',
     mask: '(###) ###-####',
     placeholder: '(416) 123-4567'
@@ -124,6 +100,7 @@ const COUNTRIES = [
   {
     code: 'AU',
     name: 'Australia',
+    flag: '🇦🇺',
     dialCode: '+61',
     mask: '### ### ###',
     placeholder: '412 345 678'
@@ -131,6 +108,7 @@ const COUNTRIES = [
   {
     code: 'JP',
     name: 'Japan',
+    flag: '🇯🇵',
     dialCode: '+81',
     mask: '###-####-####',
     placeholder: '90-1234-5678'
@@ -138,6 +116,7 @@ const COUNTRIES = [
   {
     code: 'CN',
     name: 'China',
+    flag: '🇨🇳',
     dialCode: '+86',
     mask: '### #### ####',
     placeholder: '138 0013 8000'
@@ -145,6 +124,7 @@ const COUNTRIES = [
   {
     code: 'IN',
     name: 'India',
+    flag: '🇮🇳',
     dialCode: '+91',
     mask: '##### #####',
     placeholder: '98765 43210'
@@ -262,32 +242,10 @@ const PhoneInput = ({
   
   const config = sizeConfig[size];
   
-  // Get flag emoji with fallback
-  const getFlagEmoji = (countryCode) => {
-    const flagMap = {
-      'BR': '🇧🇷',
-      'US': '🇺🇸', 
-      'AR': '🇦🇷',
-      'MX': '🇲🇽',
-      'GB': '🇬🇧',
-      'DE': '🇩🇪',
-      'FR': '🇫🇷',
-      'IT': '🇮🇹',
-      'ES': '🇪🇸',
-      'PT': '🇵🇹',
-      'CA': '🇨🇦',
-      'AU': '🇦🇺',
-      'JP': '🇯🇵',
-      'CN': '🇨🇳',
-      'IN': '🇮🇳'
-    };
-    return flagMap[countryCode] || '🏳️';
-  };
-
   // Create country options for Select component
   const countryOptions = COUNTRIES.map(country => ({
     value: country.code,
-    label: `${getFlagEmoji(country.code)} ${country.dialCode}`,
+    label: `${country.flag} ${country.dialCode}`,
     country: country
   }));
   
