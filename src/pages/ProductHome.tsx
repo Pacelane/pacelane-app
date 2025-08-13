@@ -13,7 +13,6 @@ import { isFirstTimeUser } from '@/utils/firstTimeUserDetection';
 
 // Design System Components
 // Sidebar is now provided by MainAppChrome
-<<<<<<< HEAD
 import StreakCard from '@/design-system/components/StreakCard';
 import StatsSummaryCard from '@/design-system/components/StatsSummaryCard';
 import SuggestionCard from '@/design-system/components/SuggestionCard';
@@ -25,19 +24,7 @@ import Button from '@/design-system/components/Button';
 import EmptyState from '@/design-system/components/EmptyState';
 import SubtleLoadingSpinner from '@/design-system/components/SubtleLoadingSpinner';
 import FirstTimeUserHome from '@/design-system/components/FirstTimeUserHome';
-=======
-import StreakCard from '@/design-system/components/StreakCard';
-import StatsSummaryCard from '@/design-system/components/StatsSummaryCard';
-import SuggestionCard from '@/design-system/components/SuggestionCard';
-import CalendarSnippetsCard from '@/design-system/components/CalendarSnippetsCard';
-import TemplateCard from '@/design-system/components/TemplateCard';
-import ContentCard from '@/design-system/components/ContentCard';
-import Input from '@/design-system/components/Input';
-import Button from '@/design-system/components/Button';
-import EmptyState from '@/design-system/components/EmptyState';
-import SubtleLoadingSpinner from '@/design-system/components/SubtleLoadingSpinner';
-import FirstTimeUserHome from '@/design-system/components/FirstTimeUserHome';
->>>>>>> origin/front-playground
+ 
 
 // Design System Tokens
 import { spacing } from '../design-system/tokens/spacing';
@@ -56,11 +43,7 @@ import { ReadAiIntegration } from '../components/ReadAiIntegration';
 const ProductHome = () => {
   const navigate = useNavigate();
   const { user, profile, signOut } = useAuth();
-<<<<<<< HEAD
   const { savedDrafts, contentSuggestions, knowledgeFiles, loadSavedDrafts, loadContentSuggestions, loadingDrafts, loadingSuggestions, error, createUIContentOrder } = useContent();
-=======
-  const { savedDrafts, contentSuggestions, knowledgeFiles, loadSavedDrafts, loadContentSuggestions, loadingDrafts, loadingSuggestions, error } = useContent();
->>>>>>> origin/front-playground
   const { streak, stats, weekActivity, loading: analyticsLoading, trackActivity } = useAnalytics();
   const { colors } = useTheme();
   const [searchQuery, setSearchQuery] = useState('');

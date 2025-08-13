@@ -3,19 +3,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Outlet } from "react-router-dom";
 
-<<<<<<< HEAD
 import { ThemeProvider } from "@/services/theme-context";
 import { HelpProvider } from "./services/help-context";
 import ProtectedRoute from "./design-system/components/ProtectedRoute";
 import MainAppChrome from "./design-system/components/MainAppChrome";
 import HelpModal from "./design-system/components/HelpModal";
-=======
-import { ThemeProvider } from "@/services/theme-context";
-import { HelpProvider } from "./services/help-context";
-import ProtectedRoute from "./design-system/components/ProtectedRoute";
-import MainAppChrome from "./design-system/components/MainAppChrome";
-import HelpModal from "./design-system/components/HelpModal";
->>>>>>> origin/front-playground
+ 
 
 import ProductHome from "./pages/ProductHome";
 import Templates from "./pages/Templates";
