@@ -212,11 +212,10 @@ const IntegrationsPage = () => {
       try {
         const result = await CalendarService.getAuthUrl();
         if (result.success && result.authUrl) {
-          // Ensure state (user id) and correct redirect_uri are present
-          const auth = new URL(result.authUrl);
-          if (user?.id) auth.searchParams.set('state', user.id);
-          auth.searchParams.set('redirect_uri', `${window.location.origin}/auth/google/callback`);
-          window.location.href = auth.toString();
+          // Append state=user.id only (edge function requires it); don't alter redirect_uri
+          const authUrl = new URL(result.authUrl);
+          if (user?.id) authUrl.searchParams.set('state', user.id);
+          window.location.href = authUrl.toString();
         } else {
           toast.error(result.error || 'Failed to start Google Calendar connection');
         }
