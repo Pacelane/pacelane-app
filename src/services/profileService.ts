@@ -97,7 +97,7 @@ export class ProfileService {
       
       // First, try to scrape the LinkedIn profile
       let profileData = null;
-      let scrapedFields = {};
+      let scrapedFields = {} as any;
       
       if (setupData.profileUrl) {
         try {
@@ -108,15 +108,33 @@ export class ProfileService {
 
           if (!scrapeError && scrapeData?.success && scrapeData?.profileData) {
             profileData = scrapeData.profileData;
+
+            // Merge with existing linkedin_data to avoid clobbering previously stored keys (e.g., content_pillars)
+            const existingProfileResp = await this.fetchProfile(userId);
+            const existingLinkedinData = existingProfileResp.data?.linkedin_data || {};
+
+            const mergedLinkedinData = {
+              ...existingLinkedinData,
+              last_scrape_raw: profileData,
+              summary: {
+                name: profileData.fullName || null,
+                headline: profileData.headline || null,
+                company: profileData.company || null,
+                location: profileData.location || null,
+                about: profileData.about || null,
+                url: setupData.profileUrl?.trim() || null,
+              },
+            };
+
             scrapedFields = {
-              linkedin_data: profileData,
+              linkedin_data: mergedLinkedinData,
               linkedin_name: profileData.fullName || null,
               linkedin_company: profileData.company || null,
               linkedin_about: profileData.about || null,
               linkedin_location: profileData.location || null,
               linkedin_headline: profileData.headline || null,
               linkedin_scraped_at: new Date().toISOString()
-            };
+            } as any;
             console.log('ProfileService: LinkedIn profile scraped successfully');
           } else {
             console.warn('ProfileService: LinkedIn scraping failed, saving URL only');
@@ -200,16 +218,19 @@ export class ProfileService {
     try {
       console.log('ProfileService: Saving content pillars for user:', userId, data);
       
-      // Get existing profile to preserve other linkedin_data
+      // Get existing profile to preserve other linkedin_data and merge content pillars under linkedin_data.summary
       const { data: existingProfile } = await this.fetchProfile(userId);
-      const existingLinkedinData = existingProfile?.linkedin_data || {};
+      const existingLinkedinData = existingProfile?.linkedin_data || {} as any;
 
       const updateData = {
         linkedin_data: {
           ...existingLinkedinData,
-          content_pillars: data.selectedPillars
-        }
-      };
+          summary: {
+            ...(existingLinkedinData.summary || {}),
+            content_pillars: data.selectedPillars,
+          },
+        },
+      } as any;
 
       const { data: updatedProfile, error } = await supabase
         .from('profiles')
@@ -255,7 +276,17 @@ export class ProfileService {
 
       const { data: updatedProfile, error } = await supabase
         .from('profiles')
-        .update({ pacing_preferences: pacingData })
+        .update({ 
+          pacing_preferences: pacingData,
+          // also mirror into linkedin_data.summary for unified context
+          linkedin_data: {
+            ...(existingProfile?.linkedin_data || {}),
+            summary: {
+              ...((existingProfile?.linkedin_data as any)?.summary || {}),
+              pacing_preferences: pacingData,
+            },
+          },
+        })
         .eq('user_id', userId)
         .select()
         .single();
