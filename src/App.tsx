@@ -59,6 +59,8 @@ const App = () => (
           
           {/* OAuth callbacks */}
           <Route path="/auth/google/callback" element={<GoogleCalendarCallback />} />
+          {/* Some environments use a different path; support both to avoid 404 */}
+          <Route path="/auth/google-calendar/callback" element={<GoogleCalendarCallback />} />
 
           {/* Protected app chrome with sidebar and centered content */}
           <Route
@@ -71,6 +73,8 @@ const App = () => (
             }
           >
             <Route path="/product-home" element={<ProductHome />} />
+            {/* Alias for historical navigation */}
+            <Route path="/dashboard" element={<ProductHome />} />
             <Route path="/templates" element={<Templates />} />
             <Route path="/knowledge" element={<KnowledgeBase />} />
             <Route path="/profile" element={<Profile />} />
