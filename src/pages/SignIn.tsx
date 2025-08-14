@@ -423,6 +423,55 @@ const SignIn = () => {
                   />
                 </form>
 
+                {/* Legal Links */}
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  gap: spacing.spacing[16],
+                  marginTop: spacing.spacing[8],
+                  marginBottom: spacing.spacing[16]
+                }}>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/terms')}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      padding: 0,
+                      cursor: 'pointer',
+                      ...textStyles.xs.normal,
+                      color: colors.text.muted,
+                      textDecoration: 'underline',
+                      fontSize: '11px'
+                    }}
+                  >
+                    Terms of Service
+                  </button>
+                  <span style={{
+                    ...textStyles.xs.normal,
+                    color: colors.text.muted,
+                    fontSize: '11px'
+                  }}>
+                    •
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/privacy')}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      padding: 0,
+                      cursor: 'pointer',
+                      ...textStyles.xs.normal,
+                      color: colors.text.muted,
+                      textDecoration: 'underline',
+                      fontSize: '11px'
+                    }}
+                  >
+                    Privacy Policy
+                  </button>
+                </div>
+
                 {/* Divider */}
                 <Divider label="or" maxWidth={400} />
 
