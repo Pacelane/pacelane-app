@@ -1,22 +1,25 @@
-import React, { useState } from 'react';
-import { useTheme } from '../services/theme-context.jsx';
-import { spacing } from '../design-system/tokens/spacing.js';
-import { cornerRadius } from '../design-system/tokens/corner-radius.js';
-import { getShadow } from '../design-system/tokens/shadows.js';
-import { typography } from '../design-system/tokens/typography.js';
-import { textStyles } from '../design-system/styles/typography/typography-styles.js';
+import React, { useEffect, useState } from 'react';
+import { useTheme } from '@/services/theme-context';
+import { spacing } from '@/design-system/tokens/spacing';
+import { cornerRadius } from '@/design-system/tokens/corner-radius';
+import { getShadow } from '@/design-system/tokens/shadows';
+import { typography } from '@/design-system/tokens/typography';
+import { textStyles } from '@/design-system/styles/typography/typography-styles';
 
 // Design System Components
-import Button from '../design-system/components/Button.jsx';
-import DropdownButton from '../design-system/components/DropdownButton.jsx';
-import Checkbox from '../design-system/components/Checkbox.jsx';
-import SidebarMenuItem from '../design-system/components/SidebarMenuItem.jsx';
+import Button from '@/design-system/components/Button';
+import DropdownButton from '@/design-system/components/DropdownButton';
+import Checkbox from '@/design-system/components/Checkbox';
+import SidebarMenuItem from '@/design-system/components/SidebarMenuItem';
+import { useAuth } from '@/hooks/api/useAuth';
+import { profileApi } from '@/api/profile';
 
 // Icons
 import { Check } from 'lucide-react';
 
 const PacingPage = () => {
   const { colors } = useTheme();
+  const { user, profile, refreshProfile } = useAuth();
   
   // State for active section in side menu
   const [activeSection, setActiveSection] = useState('frequency');
@@ -26,6 +29,25 @@ const PacingPage = () => {
   const [dailySummaryTime, setDailySummaryTime] = useState('Evening (6-8 PM)');
   const [followUps, setFollowUps] = useState('One more time the same day');
   const [recommendationsTime, setRecommendationsTime] = useState('Morning (8-10 AM)');
+
+  // Initialize from profile pacing_preferences
+  useEffect(() => {
+    const prefs = profile?.pacing_preferences || null;
+    if (!prefs) return;
+
+    if (Array.isArray(prefs.frequency) && prefs.frequency.length > 0) {
+      setSelectedDays(prefs.frequency);
+    }
+    if (typeof prefs.daily_summary_time === 'string' && prefs.daily_summary_time) {
+      setDailySummaryTime(prefs.daily_summary_time);
+    }
+    if (typeof prefs.followups_frequency === 'string' && prefs.followups_frequency) {
+      setFollowUps(prefs.followups_frequency);
+    }
+    if (typeof prefs.recommendations_time === 'string' && prefs.recommendations_time) {
+      setRecommendationsTime(prefs.recommendations_time);
+    }
+  }, [profile?.pacing_preferences]);
 
   // Saved states for each section
   const [savedStates, setSavedStates] = useState({
@@ -102,19 +124,44 @@ const PacingPage = () => {
     });
   };
 
-  const handleSave = (sectionId) => {
+  const handleSave = async (sectionId) => {
     setSavedStates(prev => ({
       ...prev,
       [sectionId]: true
     }));
-    
-    // Reset saved state after 2 seconds to show the save feedback
-    setTimeout(() => {
-      setSavedStates(prev => ({
-        ...prev,
-        [sectionId]: false
-      }));
-    }, 2000);
+
+    try {
+      if (!user) return;
+
+      const existing = (profile?.pacing_preferences || {});
+      let updatedPrefs = { ...existing };
+
+      if (sectionId === 'frequency') {
+        updatedPrefs = { ...existing, frequency: selectedDays };
+      } else if (sectionId === 'dailySummary') {
+        updatedPrefs = { 
+          ...existing, 
+          daily_summary_time: dailySummaryTime, 
+          followups_frequency: followUps 
+        };
+      } else if (sectionId === 'recommendations') {
+        updatedPrefs = { ...existing, recommendations_time: recommendationsTime };
+      }
+
+      await profileApi.updateProfile(user.id, { pacing_preferences: updatedPrefs });
+      await refreshProfile();
+    } catch (e) {
+      // If save fails, briefly show saved state then revert like before
+      console.error('Failed to save pacing preferences section', sectionId, e);
+    } finally {
+      // Reset saved state after 2 seconds to show the save feedback
+      setTimeout(() => {
+        setSavedStates(prev => ({
+          ...prev,
+          [sectionId]: false
+        }));
+      }, 2000);
+    }
   };
 
   // Helper function to create dropdown items from options
