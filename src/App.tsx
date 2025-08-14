@@ -34,6 +34,8 @@ import Ready from "./pages/Onboarding/Ready";
 import LoadingPage from "./pages/LoadingPage";
 import NotFound from "./pages/NotFound";
 import GoogleCalendarCallback from "./pages/GoogleCalendarCallback";
+import TermsOfService from "./pages/TermsOfService";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 
 const queryClient = new QueryClient();
 
@@ -56,6 +58,9 @@ const App = () => (
           <Route path="/onboarding/pacing" element={<Pacing />} />
           <Route path="/onboarding/contact" element={<Contact />} />
           <Route path="/onboarding/ready" element={<Ready />} />
+          {/* Public legal pages */}
+          <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
           
           {/* OAuth callbacks */}
           <Route path="/auth/google/callback" element={<GoogleCalendarCallback />} />
