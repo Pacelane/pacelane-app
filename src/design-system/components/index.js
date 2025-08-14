@@ -42,6 +42,7 @@ export { default as ReadAiConfigModal } from './ReadAiConfigModal.jsx';
 export { default as WhatsAppConfigModal } from './WhatsAppConfigModal.jsx';
 export { default as SetupCard } from './SetupCard.jsx';
 export { default as FirstTimeUserHome } from './FirstTimeUserHome.jsx';
+export { default as OnboardingProgressCard } from './OnboardingProgressCard.jsx';
 
 // Pages
 export { default as HomePage } from './pages/HomePage.jsx'; 

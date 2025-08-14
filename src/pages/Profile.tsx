@@ -1064,7 +1064,6 @@ const Profile = () => {
                       {inspirations.length === 0 ? (
                         <EmptyState
                           title="No inspirations added yet"
-                          subtitle="Add people who inspire your work and thinking"
                           fullSpace={true}
                         />
                       ) : (

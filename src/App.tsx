@@ -29,6 +29,7 @@ import Guides from "./pages/Onboarding/Guides";
 import ContentPillars from "./pages/Onboarding/ContentPillars";
 import Pacing from "./pages/Onboarding/Pacing";
 import Contact from "./pages/Onboarding/Contact";
+import WhatsAppSetup from "./pages/Onboarding/WhatsAppSetup";
 import Ready from "./pages/Onboarding/Ready";
 import LoadingPage from "./pages/LoadingPage";
 import NotFound from "./pages/NotFound";
@@ -54,6 +55,7 @@ const App = () => (
           <Route path="/onboarding/content-pillars" element={<ContentPillars />} />
           <Route path="/onboarding/pacing" element={<Pacing />} />
           <Route path="/onboarding/contact" element={<Contact />} />
+          <Route path="/onboarding/whatsapp-setup" element={<WhatsAppSetup />} />
           <Route path="/onboarding/ready" element={<Ready />} />
           
           {/* OAuth callbacks */}
