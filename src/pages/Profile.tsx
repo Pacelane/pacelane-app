@@ -1060,30 +1060,51 @@ const Profile = () => {
                         </p>
                       </div>
                       
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[8] }}>
-                        {inspirations.map((item) => (
-                          <Input
-                            key={item.id}
-                            placeholder="Enter someone who inspires you..."
-                            value={item.value}
-                            onChange={(e) => updateListItem('inspirations', setInspirations, item.id, e.target.value)}
-                            style="tail-action"
-                            tailAction={{
-                              icon: <Trash2 size={14} />,
-                              onClick: () => removeListItem('inspirations', setInspirations, item.id)
-                            }}
-                          />
-                        ))}
-                        
-                        <div style={{ marginTop: spacing.spacing[8] }}>
-                          <Button
-                            label="Add Inspirations"
-                            style="secondary"
-                            size="sm"
-                            leadIcon={<Plus size={14} />}
-                            onClick={() => addListItem('inspirations', setInspirations)}
-                          />
+                      {/* Show inputs or empty state */}
+                      {inspirations.length === 0 ? (
+                        <EmptyState
+                          title="No inspirations added yet"
+                          subtitle="Add people who inspire your work and thinking"
+                          fullSpace={true}
+                        />
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[12] }}>
+                          {inspirations.map((item) => (
+                            <div key={item.id} style={{ 
+                              display: 'flex', 
+                              gap: spacing.spacing[8], 
+                              alignItems: 'flex-end' 
+                            }}>
+                              <div style={{ flex: 1 }}>
+                                <Input
+                                  placeholder="Enter someone who inspires you..."
+                                  value={item.value}
+                                  onChange={(e) => updateListItem('inspirations', setInspirations, item.id, e.target.value)}
+                                  style="default"
+                                  size="lg"
+                                />
+                              </div>
+                              <Button
+                                label=""
+                                style="ghost"
+                                size="lg"
+                                leadIcon={<Trash2 size={16} />}
+                                onClick={() => removeListItem('inspirations', setInspirations, item.id)}
+                              />
+                            </div>
+                          ))}
                         </div>
+                      )}
+                      
+                      <div style={{ width: '100%' }}>
+                        <Button
+                          label="Add Another Inspiration"
+                          style="secondary"
+                          size="sm"
+                          leadIcon={<Plus size={16} />}
+                          onClick={() => addListItem('inspirations', setInspirations)}
+                          className="w-full"
+                        />
                       </div>
 
                       <div style={{ alignSelf: 'flex-start' }}>

@@ -329,16 +329,15 @@ const Ready = () => {
                 flexDirection: 'column',
               }}
             >
-              {/* Heading Container - 16px gap between bichaurinho and title/subtitle */}
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'flex-start',
-                  gap: spacing.spacing[16],
-                  marginBottom: spacing.spacing[24],
-                }}
-              >
+                             {/* Heading Container - 16px gap between bichaurinho and title/subtitle */}
+               <div
+                 style={{
+                   display: 'flex',
+                   flexDirection: 'column',
+                   alignItems: 'flex-start',
+                   gap: spacing.spacing[16],
+                 }}
+               >
                 {/* Bichaurinho */}
                 <div>
                   <Bichaurinho variant={1} size={48} />
@@ -385,52 +384,7 @@ const Ready = () => {
                 </div>
               </div>
 
-              {/* Features List */}
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: spacing.spacing[12],
-                }}
-              >
-                {[
-                  'Personalized content suggestions',
-                  'LinkedIn profile analysis insights',
-                  'Content calendar planning',
-                  'Performance tracking'
-                ].map((feature, index) => (
-                  <div
-                    key={index}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: spacing.spacing[12],
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: '6px',
-                        height: '6px',
-                        borderRadius: '50%',
-                        backgroundColor: colors.text.muted,
-                        flexShrink: 0,
-                      }}
-                    />
-                    <p
-                      style={{
-                        fontFamily: typography.fontFamily.body,
-                        fontSize: typography.desktop.size.sm,
-                        fontWeight: typography.desktop.weight.normal,
-                        lineHeight: typography.desktop.lineHeight.sm,
-                        color: colors.text.muted,
-                        margin: 0,
-                      }}
-                    >
-                      {feature}
-                    </p>
-                  </div>
-                ))}
-            </div>
+
           </div>
 
             {/* Text Container */}

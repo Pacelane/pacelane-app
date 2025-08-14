@@ -148,6 +148,8 @@ const FileCard = ({
         display: 'flex',
         flexDirection: 'column',
         gap: spacing.spacing[12],
+        width: '100%',
+        minWidth: 0, // Allow shrinking below content size
         ...style
       }}
       onMouseEnter={handleMouseEnter}

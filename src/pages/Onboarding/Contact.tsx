@@ -21,12 +21,17 @@ import { typography } from '@/design-system/tokens/typography';
 // Icons
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 
+// Configuration
+const PACELANE_WHATSAPP_NUMBER = '551152360591'; // Business WhatsApp number
+
 const Contact = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { colors } = useTheme();
   const { toast } = useToast();
   const [whatsappNumber, setWhatsappNumber] = useState('');
+  const [cleanWhatsappNumber, setCleanWhatsappNumber] = useState('');
+  const [hasClickedWhatsAppButton, setHasClickedWhatsAppButton] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleGoBack = () => {
@@ -39,10 +44,13 @@ const Contact = () => {
     setIsLoading(true);
     
     try {
+      // Use clean phone number for backend (format: +5563984602704)
+      const phoneNumberToSave = cleanWhatsappNumber.trim() || '';
+      
       // Work around TypeScript issue by using any type for now
       const { error } = await supabase
         .from('profiles')
-        .update({ whatsapp_number: whatsappNumber.trim() } as any)
+        .update({ whatsapp_number: phoneNumberToSave } as any)
         .eq('user_id', user.id);
 
       if (error) throw error;
@@ -57,8 +65,8 @@ const Contact = () => {
     }
   };
 
-  // Check if WhatsApp number is provided (optional but recommended)
-  const canContinue = true; // WhatsApp is optional
+  // Check if user has completed WhatsApp setup (both number and button click required)
+  const canContinue = cleanWhatsappNumber && hasClickedWhatsAppButton;
 
   return (
     <div
@@ -210,48 +218,84 @@ const Contact = () => {
                 <PhoneInput
                   value={whatsappNumber}
                   onChange={setWhatsappNumber}
+                  onCleanNumberChange={setCleanWhatsappNumber}
                   defaultCountry="BR"
                   size="lg"
                   disabled={isLoading}
                 />
 
-                {/* Helper text container with background */}
-                <div
-                  style={{
-                    backgroundColor: colors.bg.card.subtle,
-                    padding: `${spacing.spacing[12]} ${spacing.spacing[16]}`,
-                    borderRadius: cornerRadius.borderRadius.sm,
-                    marginTop: spacing.spacing[8],
-                  }}
-                >
-                  <p
+
+
+                {/* WhatsApp Connection Section */}
+                {cleanWhatsappNumber && (
+                  <div
                     style={{
-                      fontFamily: typography.fontFamily.body,
-                      fontSize: typography.desktop.size.xs,
-                      fontWeight: typography.desktop.weight.normal,
-                      lineHeight: typography.desktop.lineHeight.xs,
-                      color: colors.text.muted,
-                      margin: 0,
-                      textAlign: 'center',
+                      marginTop: spacing.spacing[0],
+                      padding: spacing.spacing[16],
+                      backgroundColor: colors.bg.card.subtle,
+                      borderRadius: cornerRadius.borderRadius.md,
+                      border: `1px solid ${colors.border.default}`,
                     }}
                   >
-                    We'll send you personalized content ideas and platform updates via WhatsApp
-                  </p>
-                  <p
-                    style={{
-                      fontFamily: typography.fontFamily.body,
-                      fontSize: typography.desktop.size.xs,
-                      fontWeight: typography.desktop.weight.normal,
-                      lineHeight: typography.desktop.lineHeight.xs,
-                      color: colors.text.muted,
-                      margin: 0,
-                      marginTop: spacing.spacing[4],
-                      textAlign: 'center',
-                    }}
-                  >
-                    Select your country and enter your WhatsApp number for personalized notifications
-                  </p>
-                </div>
+                    {/* Connection explanation */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: spacing.spacing[4],
+                        marginBottom: spacing.spacing[8],
+                      }}
+                    >
+                      <h3
+                        style={{
+                          fontFamily: typography.fontFamily.body,
+                          fontSize: typography.desktop.size.sm,
+                          fontWeight: typography.desktop.weight.semibold,
+                          lineHeight: typography.desktop.lineHeight.sm,
+                          color: colors.text.default,
+                          margin: 0,
+                        }}
+                      >
+                        Complete WhatsApp Setup
+                      </h3>
+                      <p
+                        style={{
+                          fontFamily: typography.fontFamily.body,
+                          fontSize: typography.desktop.size.xs,
+                          fontWeight: typography.desktop.weight.normal,
+                          lineHeight: typography.desktop.lineHeight.xs,
+                          color: colors.text.muted,
+                          margin: 0,
+                        }}
+                      >
+                        Click below to connect your WhatsApp and start receiving personalized content suggestions.
+                      </p>
+                    </div>
+
+                    {/* WhatsApp Connection Button */}
+                    <Button
+                      label={hasClickedWhatsAppButton ? "✓ Connected to WhatsApp" : "Connect WhatsApp"}
+                      style={hasClickedWhatsAppButton ? "soft" : "primary"}
+                      size="sm"
+                      leadIcon={
+                        hasClickedWhatsAppButton ? undefined : (
+                          <img 
+                            src="/src/assets/images/whatsapp-logo.png" 
+                            alt="WhatsApp" 
+                            style={{ width: 16, height: 16 }}
+                          />
+                        )
+                      }
+                      onClick={() => {
+                        const message = encodeURIComponent("Hi! I want to connect my WhatsApp to Pacelane for personalized content suggestions.");
+                        const whatsappUrl = `https://wa.me/${PACELANE_WHATSAPP_NUMBER}?text=${message}`;
+                        window.open(whatsappUrl, '_blank');
+                        setHasClickedWhatsAppButton(true);
+                      }}
+                      disabled={isLoading}
+                    />
+                  </div>
+                )}
               </div>
             </div>
 
@@ -307,7 +351,7 @@ const Contact = () => {
             size="lg"
             tailIcon={!isLoading ? <ArrowRight size={16} /> : undefined}
             onClick={handleContinue}
-            disabled={isLoading}
+            disabled={isLoading || !canContinue}
             className="w-full"
           />
         </div>
