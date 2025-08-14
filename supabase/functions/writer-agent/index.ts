@@ -66,6 +66,13 @@ async function generateContentDraft(
   userId: string
 ): Promise<GeneratedDraft> {
   console.log(`Generating content draft for user ${userId}`)
+  console.log('WriterAgent: brief snapshot', {
+    platform: brief?.platform,
+    length: brief?.length,
+    tone: brief?.tone,
+    angle: brief?.angle,
+    language: brief?.language || brief?.locale,
+  })
 
   const openaiApiKey = Deno.env.get('OPENAI_API_KEY')
   if (!openaiApiKey) {
@@ -74,6 +81,8 @@ async function generateContentDraft(
 
   // Get rich user profile for enhanced context
   const userProfile = await buildRichUserProfile(userId, supabaseClient)
+  // add userId so inferRequestedLanguage can use it
+  userProfile.user_id = userId
 
   // Prepare context from citations
   const contextText = citations.map(citation => 
@@ -82,6 +91,7 @@ async function generateContentDraft(
 
   // Generate content based on platform
   const content = await generatePlatformSpecificContent(brief, contextText, userProfile, openaiApiKey)
+  console.log('WriterAgent: content generated length (chars)', content?.length || 0)
 
   // Calculate word count
   const wordCount = content.split(' ').length
@@ -112,25 +122,29 @@ async function generatePlatformSpecificContent(
   openaiApiKey: string
 ): Promise<string> {
   const platform = brief.platform?.toLowerCase() || 'linkedin'
-  
+  // Determine requested content language from brief or recent WhatsApp inputs
+  const contentLanguage = await inferRequestedLanguage(brief, openaiApiKey, userContext)
+  console.log('WriterAgent: resolved content language', contentLanguage)
+  console.log('WriterAgent: platform', platform)
+
   let systemPrompt = ''
   let userPrompt = ''
 
   switch (platform) {
     case 'linkedin':
-      systemPrompt = `You are sharing authentic personal insights from your professional experience. Write in a conversational, genuine voice that reflects your unique perspective and expertise. Avoid corporate jargon and generic business speak. Focus on personal stories, honest experiences, and practical insights that only you could share.`
+      systemPrompt = `You are sharing authentic personal insights from your professional experience. Write in a conversational, genuine voice that reflects your unique perspective and expertise. Avoid corporate jargon and generic business speak. Focus on personal stories, honest experiences, and practical insights that only you could share. Always write strictly in ${contentLanguage}. Do not switch languages. If context appears in other languages, keep proper nouns but write the post in ${contentLanguage}.`
       userPrompt = buildLinkedInPrompt(brief, contextText, userContext)
       break
     case 'twitter':
-      systemPrompt = `You are an expert Twitter content creator for executives. Create concise, impactful tweets that drive engagement and thought leadership.`
+      systemPrompt = `You are an expert Twitter content creator for executives. Create concise, impactful tweets that drive engagement and thought leadership. Always write strictly in ${contentLanguage}. Do not switch languages. If context appears in other languages, keep proper nouns but write in ${contentLanguage}.`
       userPrompt = buildTwitterPrompt(brief, contextText, userContext)
       break
     case 'instagram':
-      systemPrompt = `You are an expert Instagram content creator for executives. Create visually-oriented, engaging content with compelling captions.`
+      systemPrompt = `You are an expert Instagram content creator for executives. Create visually-oriented, engaging content with compelling captions. Always write strictly in ${contentLanguage}. Do not switch languages. If context appears in other languages, keep proper nouns but write in ${contentLanguage}.`
       userPrompt = buildInstagramPrompt(brief, contextText, userContext)
       break
     default:
-      systemPrompt = `You are an expert content creator for executives. Create professional, engaging content that demonstrates thought leadership.`
+      systemPrompt = `You are an expert content creator for executives. Create professional, engaging content that demonstrates thought leadership. Always write strictly in ${contentLanguage}. Do not switch languages. If context appears in other languages, keep proper nouns but write in ${contentLanguage}.`
       userPrompt = buildGenericPrompt(brief, contextText, userContext)
   }
 
@@ -158,6 +172,8 @@ async function generatePlatformSpecificContent(
   })
 
   if (!response.ok) {
+    const apiErrorText = await response.text().catch(() => '')
+    console.error('WriterAgent: OpenAI API error', response.status, apiErrorText)
     throw new Error(`OpenAI API error: ${response.status}`)
   }
 
@@ -168,57 +184,234 @@ async function generatePlatformSpecificContent(
     throw new Error('No content generated')
   }
 
+  // Verify language, auto-correct if model ignored constraint
+  try {
+    const detectedOutLang = await detectLanguageOf(generatedContent, openaiApiKey)
+    console.log('WriterAgent: output language detected', detectedOutLang)
+    if (detectedOutLang && contentLanguage && detectedOutLang.toLowerCase() !== contentLanguage.toLowerCase()) {
+      console.log(`WriterAgent: correcting output language from ${detectedOutLang} to ${contentLanguage}`)
+      const corrected = await translateToLanguage(generatedContent, contentLanguage, openaiApiKey)
+      return corrected || generatedContent
+    }
+  } catch (e) {
+    console.warn('WriterAgent: language verification/translation skipped due to error')
+  }
+
   return generatedContent
+}
+
+/**
+ * Infer the requested output language.
+ * Priority:
+ * 1) brief.language or brief.locale if provided
+ * 2) Language of the latest WhatsApp-derived inputs (meeting_notes.content or audio_files.transcription)
+ * 3) Fallback to 'English'
+ */
+async function inferRequestedLanguage(brief: any, openaiApiKey: string, userContext: any): Promise<string> {
+  try {
+    const explicit = (brief?.language || brief?.locale || '').toString().trim()
+    if (explicit) {
+      console.log('WriterAgent: language from brief', explicit)
+      return explicit
+    }
+
+    // 1) Prefer the exact message that generated the order (from Chatwoot → content_order → order-builder)
+    const originalContent = (brief?.original_content || '').toString().trim()
+    if (originalContent) {
+      console.log('WriterAgent: inferring language from brief.original_content (exact order message)')
+      const fromOriginal = await detectLanguageOf(originalContent, openaiApiKey)
+      if (fromOriginal) {
+        console.log('WriterAgent: detected from original_content', fromOriginal)
+        return fromOriginal
+      }
+    }
+
+    // 2) Otherwise, build a short sample from latest WhatsApp-origin content (text or audio transcription)
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
+    const userId = userContext?.user_id || userContext?.id || null
+    if (!userId) return 'English'
+    console.log('WriterAgent: inferring language using recent WhatsApp inputs for user', userId)
+
+    // Pull recent meeting notes text
+    const { data: notes } = await supabaseClient
+      .from('meeting_notes')
+      .select('content, created_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(3)
+
+    // Pull recent audio transcriptions
+    const { data: audios } = await supabaseClient
+      .from('audio_files')
+      .select('transcription, created_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(3)
+
+    const corpus = [
+      ...(notes?.map((n: any) => n.content) || []),
+      ...(audios?.map((a: any) => a.transcription) || []),
+    ]
+      .filter(Boolean)
+      .join('\n')
+      .slice(0, 2000) // keep it small
+
+    console.log('WriterAgent: notes count', notes?.length || 0, 'audios count', audios?.length || 0)
+    console.log('WriterAgent: corpus length', corpus?.length || 0)
+    if (!corpus) {
+      console.log('WriterAgent: no corpus available, defaulting to English')
+      return 'English'
+    }
+
+    // Use a tiny language-id prompt (kept server-side only)
+    const prompt = `Detect the primary human language of the following text. Return only the language name in English (e.g., "Portuguese", "Spanish", "English").\n\nText:\n${corpus}`
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${openaiApiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: 'You are a precise language identification tool. Output only the language name.' },
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0,
+        max_tokens: 10,
+      })
+    })
+
+    if (!response.ok) {
+      const errText = await response.text().catch(() => '')
+      console.warn('WriterAgent: language-id API error', response.status, errText)
+      return 'English'
+    }
+    const data = await response.json()
+    const detected = data.choices?.[0]?.message?.content?.trim()
+    console.log('WriterAgent: detected language', detected)
+    return detected || 'English'
+  } catch (_err) {
+    console.warn('WriterAgent: inferRequestedLanguage failed, defaulting to English')
+    return 'English'
+  }
+}
+
+async function detectLanguageOf(text: string, openaiApiKey: string): Promise<string> {
+  try {
+    const prompt = `Detect the primary human language of the following text. Return only the language name in English.\n\nText:\n${text.slice(0, 2000)}`
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${openaiApiKey}` },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: 'You are a precise language identification tool. Output only the language name.' },
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0,
+        max_tokens: 10,
+      })
+    })
+    if (!response.ok) return ''
+    const data = await response.json()
+    return data.choices?.[0]?.message?.content?.trim() || ''
+  } catch (_) {
+    return ''
+  }
+}
+
+async function translateToLanguage(text: string, targetLanguage: string, openaiApiKey: string): Promise<string> {
+  try {
+    const prompt = `Translate the following LinkedIn post to ${targetLanguage}. Preserve line breaks, placeholders like {X}, emoji numerals, and overall structure. Return only the translated post.\n\n${text}`
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${openaiApiKey}` },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: 'You are a careful translator that preserves formatting and placeholders.' },
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.2,
+        max_tokens: 1200,
+      })
+    })
+    if (!response.ok) return ''
+    const data = await response.json()
+    return data.choices?.[0]?.message?.content || ''
+  } catch (_) {
+    return ''
+  }
 }
 
 function buildLinkedInPrompt(brief: any, contextText: string, userContext: any): string {
   const lengthGuide = getLengthGuide(brief.length)
-  
-  return `ROLE: You are ${userContext.role} with deep expertise in ${userContext.domain}.
 
-CONTEXT SYNTHESIS:
-Original Request: "${brief.original_content || 'Create professional content'}"
-Business Context: ${brief.business_context || 'Professional content sharing'}
-Emotional Tone: ${brief.emotional_tone || 'neutral'}
-Content Type: ${brief.content_type || 'informational'}
-User Writing Style: ${userContext.writingPatterns?.tone || 'professional'} and ${userContext.writingPatterns?.style || 'balanced'}
+  const ctaEnabled = Boolean(brief?.cta?.enabled && brief?.cta?.keyword)
+  const keyword = brief?.cta?.keyword || 'SYSTEM'
+  const assetMode = (brief?.asset_mode || 'outcome').toLowerCase()
 
-USER PROFILE:
+  const cadenceHint = (() => {
+    const days = userContext?.pacingSchedule?.selected_days || userContext?.pacingPreferences?.frequency
+    const time = userContext?.pacingSchedule?.preferred_time || userContext?.pacingPreferences?.recommendations_time
+    if (Array.isArray(days) && days.length) {
+      const label = days.slice(0, 3).map((d: string) => d[0]?.toUpperCase?.() || '').join(' ')
+      return `- Cadence (internal): ${label}${time ? ` • ${time}` : ''}`
+    }
+    return ''
+  })()
+
+  return `ROLE
+You are the founder writing in first person. Operator tone, direct and human. No corporate speak.
+
+PROFILE SNAPSHOT
 - Name: ${userContext.name}
 - Role: ${userContext.headline}
 - Company: ${userContext.company}
 - Industry: ${userContext.industry}
-- Expertise: ${userContext.expertise?.join(', ') || 'Business leadership'}
-- Preferred Topics: ${userContext.preferredTopics?.join(', ') || 'Professional insights'}
-- Engagement Triggers: ${userContext.engagementTriggers?.join(', ') || 'Questions and stories'}
+- Preferred Topics: ${userContext.preferredTopics?.join(', ') || '—'}
+${cadenceHint}
 
-CONTENT REQUIREMENTS:
-Topic: ${brief.topic}
-Tone: ${brief.tone}
-Angle: ${brief.angle}
-Length: ${lengthGuide}
-Urgency: ${brief.urgency || 'normal'}
+CONSTRAINTS
+- First person only. Never address the reader directly.
+- Short lines. New line every 1–2 sentences.
+- No bold, no hashtags, no bullets (use emoji numerals for steps).
+- Avoid metrics; use placeholders like {X} or {insert what changed} if needed.
+- Narrate a real internal system already in use.
+- Hook must imply there’s a repeatable system/resource behind the result.
 
-KNOWLEDGE INTEGRATION:
+CONTEXT (reference naturally; do not dump)
 ${contextText}
 
-STRATEGIC APPROACH:
-1. ANALYZE the user's intent beyond surface request
-2. SYNTHESIZE knowledge base insights with current business context
-3. CRAFT content that reflects authentic voice and established expertise
-4. OPTIMIZE for LinkedIn engagement using user's proven triggers
+WRITING MODE
+${assetMode === 'steal' ? `“Steal This” asset reveal. Minimal narrative. Present the internal tool/prompt/workflow and what it unlocks.` : `Outcome-based breakdown. “I built → how I used it → what changed”.`}
 
-OUTPUT REQUIREMENTS:
-- Write in FIRST PERSON as ${userContext.name} sharing personal experience
-- Use conversational, authentic tone - NOT corporate speak
-- Start with personal perspective or story ("How i do it...", "In my experience...")
-- Share specific, actionable insights from real experience
-- Avoid generic business language and bullet points
-- Use natural, human language that sounds like a real person talking
-- Include vulnerability or honest admission when appropriate
-- End with genuine question or invitation for dialogue
+OUTPUT
+- A LinkedIn post written as ${userContext.name}:
+  - Start with a hook implying a system.
+  - Narrate the system you used.
+  - If steps help clarity, format as:
+    1️⃣ ...\n    2️⃣ ...\n    3️⃣ ...
+  - End with an authentic reflection.
+  ${ctaEnabled ? `- Close with: "Want the full resource? Comment ${keyword}."` : `- No CTA unless it is already present in the brief.`}
 
-Generate authentic, personal LinkedIn content as ${userContext.name}:`
+STYLE GUARDRAILS
+- Keep it personal, concrete, and specific to how you operate.
+- Do not explain “why content works”; show what you actually do.
+
+SPEC
+Topic: ${brief.topic}
+Tone: ${brief.tone || userContext.writingPatterns?.tone || 'personal'}
+Angle: ${brief.angle || 'practical system'}
+Length: ${lengthGuide}
+
+Generate only the LinkedIn post. Do not include analysis or headings.`
 }
 
 function buildTwitterPrompt(brief: any, contextText: string, userContext: any): string {
@@ -234,9 +427,9 @@ ${contextText}
 Requirements:
 - First tweet should hook readers
 - Each tweet should be under 280 characters
-- Include relevant hashtags
 - Make it engaging and shareable
 - Reference the context naturally
+- No hashtags
 
 Generate the Twitter thread:`
 }
@@ -253,10 +446,10 @@ ${contextText}
 
 Requirements:
 - Start with an engaging hook
-- Include relevant hashtags
 - Make it visually descriptive
 - Include a call-to-action
 - Keep it authentic and personal
+- No hashtags
 
 Generate the Instagram caption:`
 }
@@ -280,6 +473,7 @@ Requirements:
 - Demonstrates thought leadership
 - References context naturally
 - Appropriate for the specified platform and length
+- No hashtags
 
 Generate the content:`
 }
@@ -341,6 +535,17 @@ async function buildRichUserProfile(userId: string, supabaseClient: any): Promis
     // Analyze writing patterns from recent content
     const writingPatterns = analyzeWritingPatterns(recentNotes || [], recentContent || [])
 
+    // Load active pacing schedule (for cadence-aware writing)
+    const { data: schedules } = await supabaseClient
+      .from('pacing_schedules')
+      .select('selected_days, preferred_time, is_active, created_at')
+      .eq('user_id', userId)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(1)
+
+    const pacingSchedule = schedules?.[0] || null
+
     // Build comprehensive user persona
     const richProfile = {
       // Basic info
@@ -354,6 +559,7 @@ async function buildRichUserProfile(userId: string, supabaseClient: any): Promis
       goals: profile?.goals || {},
       contentGuides: profile?.content_guides || {},
       pacingPreferences: profile?.pacing_preferences || {},
+      pacingSchedule,
 
       // Derived insights
       writingPatterns,
