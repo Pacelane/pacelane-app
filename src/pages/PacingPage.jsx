@@ -13,6 +13,7 @@ import Checkbox from '@/design-system/components/Checkbox';
 import SidebarMenuItem from '@/design-system/components/SidebarMenuItem';
 import { useAuth } from '@/hooks/api/useAuth';
 import { profileApi } from '@/api/profile';
+import { PacingService } from '@/services/pacingService';
 
 // Icons
 import { Check } from 'lucide-react';
@@ -48,6 +49,57 @@ const PacingPage = () => {
       setRecommendationsTime(prefs.recommendations_time);
     }
   }, [profile?.pacing_preferences]);
+
+  // Active pacing schedule id
+  const [activeScheduleId, setActiveScheduleId] = useState(null);
+
+  // Load user's active schedule to mirror selections
+  useEffect(() => {
+    const loadSchedule = async () => {
+      if (!user) return;
+      const { data, error } = await PacingService.getUserPacingSchedules(user.id);
+      if (!error && data && data.length > 0) {
+        const schedule = data[0];
+        setActiveScheduleId(schedule.id);
+        if (Array.isArray(schedule.selected_days)) {
+          setSelectedDays(schedule.selected_days);
+        }
+        if (typeof schedule.preferred_time === 'string' && schedule.preferred_time) {
+          setRecommendationsTime(schedule.preferred_time);
+        }
+      } else {
+        setActiveScheduleId(null);
+      }
+    };
+    loadSchedule();
+  }, [user?.id]);
+
+  const computeFrequencyFromDays = (days) => {
+    if (!Array.isArray(days)) return 'weekly';
+    if (days.length >= 5) return 'daily';
+    if (days.length <= 2) return 'bi-weekly';
+    return 'weekly';
+  };
+
+  const ensureScheduleAndSync = async (partial) => {
+    if (!user) return;
+    try {
+      if (activeScheduleId) {
+        await PacingService.updatePacingSchedule(activeScheduleId, partial);
+      } else {
+        const scheduleData = {
+          frequency: partial.frequency || computeFrequencyFromDays(selectedDays),
+          selected_days: partial.selected_days || selectedDays,
+          preferred_time: partial.preferred_time || recommendationsTime,
+          is_active: true,
+        };
+        const result = await PacingService.createPacingSchedule(user.id, scheduleData);
+        if (result?.data?.id) setActiveScheduleId(result.data.id);
+      }
+    } catch (e) {
+      console.error('Failed to sync pacing schedule', e);
+    }
+  };
 
   // Saved states for each section
   const [savedStates, setSavedStates] = useState({
@@ -138,6 +190,10 @@ const PacingPage = () => {
 
       if (sectionId === 'frequency') {
         updatedPrefs = { ...existing, frequency: selectedDays };
+        await ensureScheduleAndSync({
+          selected_days: selectedDays,
+          frequency: computeFrequencyFromDays(selectedDays),
+        });
       } else if (sectionId === 'dailySummary') {
         updatedPrefs = { 
           ...existing, 
@@ -146,6 +202,7 @@ const PacingPage = () => {
         };
       } else if (sectionId === 'recommendations') {
         updatedPrefs = { ...existing, recommendations_time: recommendationsTime };
+        await ensureScheduleAndSync({ preferred_time: recommendationsTime });
       }
 
       await profileApi.updateProfile(user.id, { pacing_preferences: updatedPrefs });
