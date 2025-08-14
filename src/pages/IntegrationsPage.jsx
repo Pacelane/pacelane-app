@@ -228,6 +228,17 @@ const IntegrationsPage = () => {
     console.log(`Configure ${integrationKey} integration`);
   };
 
+  const handleSyncNow = async () => {
+    try {
+      const result = await CalendarService.syncCalendar();
+      if (result.success) {
+        // refresh any local state if needed in future
+      }
+    } catch (e) {
+      // no-op
+    }
+  };
+
   // Handle Read.ai setup completion
   const handleReadaiComplete = () => {
     // Update integration status to connected and enabled
@@ -267,6 +278,7 @@ const IntegrationsPage = () => {
             enabled={integrations[integration.key].enabled}
             onToggle={(newValue) => handleToggleChange(integration.key, newValue)}
             onConfigure={() => handleConfigureClick(integration.key)}
+            onSync={integration.key === 'googleCalendar' ? handleSyncNow : undefined}
           />
         ))}
       </div>

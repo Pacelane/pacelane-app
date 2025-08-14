@@ -75,14 +75,17 @@ const ProductHome = () => {
             loadTemplates(),
             (async () => {
               const end = new Date();
-              const start = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+              const start = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
               const { success, events } = await CalendarService.getEvents({
                 start: start.toISOString(),
                 end: end.toISOString(),
-                limit: 6,
+                limit: 10,
               });
               if (success && Array.isArray(events)) {
-                const mapped = events.map((e: any) => ({
+                // Sort most recent first and take top 10
+                const sorted = [...events].sort((a: any, b: any) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
+                const top = sorted.slice(0, 10);
+                const mapped = top.map((e: any) => ({
                   id: e.id || e.event_id,
                   title: e.title || 'Untitled Event',
                   date: e.start_time,

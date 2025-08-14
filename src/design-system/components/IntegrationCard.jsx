@@ -34,6 +34,7 @@ const IntegrationCard = ({
   enabled = false,
   onToggle,
   onConfigure,
+  onSync,
   className = '',
 }) => {
   const { colors } = useTheme();
@@ -147,13 +148,24 @@ const IntegrationCard = ({
 
       {/* Footer Container */}
       <div style={footerContainerStyles}>
-        <Button 
-          label="Configure"
-          style="secondary"
-          size="sm"
-          leadIcon={<Settings size={12} />}
-          onClick={handleConfigureClick}
-        />
+        <div style={{ display: 'flex', gap: spacing.spacing[8] }}>
+          <Button 
+            label="Configure"
+            style="secondary"
+            size="sm"
+            leadIcon={<Settings size={12} />}
+            onClick={handleConfigureClick}
+          />
+          {/* Optional Sync button when provided */}
+          {onSync && (
+            <Button 
+              label="Sync"
+              style="primary"
+              size="sm"
+              onClick={onSync}
+            />
+          )}
+        </div>
 
         <Toggle
           size="md"
