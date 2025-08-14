@@ -198,7 +198,9 @@ const SignIn = () => {
         return;
       }
       
-      // Success case is handled by the auth state change listener
+      // On success, navigate directly to the product home page.
+      navigate('/product-home');
+
     } catch (error: any) {
       console.error('Google sign-in error:', error);
       toast.error('Failed to sign in with Google. Please try again.');
