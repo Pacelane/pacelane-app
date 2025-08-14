@@ -5,6 +5,7 @@
 import { useState, useEffect } from 'react';
 import { authApi } from '@/api/auth';
 import { profileApi } from '@/api/profile';
+import { ProfileService } from '@/services/profileService';
 import type { AuthState, AuthActions, Profile } from '@/types/auth';
 import type { User, Session } from '@supabase/supabase-js';
 
@@ -13,7 +14,7 @@ import type { User, Session } from '@supabase/supabase-js';
  * Manages auth state and provides auth functions
  * @returns Auth state and functions
  */
-export const useAuth = (): AuthState & AuthActions => {
+export const useAuth = () => {
   // ========== STATE MANAGEMENT ==========
   
   const [authState, setAuthState] = useState<AuthState>({
@@ -139,7 +140,13 @@ export const useAuth = (): AuthState & AuthActions => {
         if (session?.user) {
           // Use setTimeout to avoid blocking the auth state update
           setTimeout(() => {
-            fetchProfile(session.user.id);
+            // Ensure a profile exists (handles OAuth where trigger may have failed)
+            ProfileService.ensureProfile(
+              session.user.id,
+              (session.user.user_metadata as any)?.full_name || (session.user.user_metadata as any)?.name
+            ).finally(() => {
+              fetchProfile(session.user.id);
+            });
           }, 0);
         } else {
           // Clear profile if user logged out
@@ -190,7 +197,6 @@ export const useAuth = (): AuthState & AuthActions => {
     signInWithGoogle,
     signOut,
     refreshProfile,
-    
     // Helper functions
     isOnboardingComplete,
   };

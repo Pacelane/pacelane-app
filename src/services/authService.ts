@@ -5,6 +5,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { ApiResponse } from '@/types/api';
 import type { Profile, SignInData, SignUpData } from '@/types/auth';
+import { ProfileService } from '@/services/profileService';
 
 export class AuthService {
   // Note: Profile operations have been moved to ProfileService
@@ -101,6 +102,18 @@ export class AuthService {
       }
       
       console.log('AuthService: Google sign in initiated successfully');
+      // After redirection back, onAuthStateChange will fire. But if a session already exists (popup mode)
+      // proactively ensure a profile row exists.
+      try {
+        const { data: session } = await supabase.auth.getSession();
+        const userId = session?.session?.user?.id;
+        const displayName = session?.session?.user?.user_metadata?.full_name || session?.session?.user?.user_metadata?.name;
+        if (userId) {
+          await ProfileService.ensureProfile(userId, displayName);
+        }
+      } catch (e) {
+        console.warn('AuthService: ensureProfile after Google sign-in skipped:', e);
+      }
       return { data };
     } catch (error: any) {
       console.error('AuthService: signInWithGoogle failed:', error);

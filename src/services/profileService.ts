@@ -48,6 +48,42 @@ export class ProfileService {
   }
 
   /**
+   * Ensure a profile row exists for the given user. Creates it if missing.
+   * Safe to call after OAuth sign-in flows.
+   */
+  static async ensureProfile(
+    userId: string,
+    displayName?: string | null
+  ): Promise<ApiResponse<Profile>> {
+    try {
+      // Try to fetch first
+      const existing = await this.fetchProfile(userId)
+      if (existing.data) {
+        return existing
+      }
+
+      // Insert minimal row
+      const { data, error } = await supabase
+        .from('profiles')
+        .insert({ user_id: userId, display_name: displayName || null } as any)
+        .select()
+        .single()
+
+      if (error) {
+        // If the row already exists due to a race, fetch it
+        console.warn('ProfileService.ensureProfile insert error, retrying fetch:', error)
+        const retry = await this.fetchProfile(userId)
+        if (retry.data) return retry
+        throw error
+      }
+
+      return { data }
+    } catch (error: any) {
+      return { error: error.message || 'Failed to ensure profile' }
+    }
+  }
+
+  /**
    * Update basic profile information (name, bio, address, etc.)
    * @param userId - The user's ID
    * @param updates - Basic profile fields to update
@@ -274,15 +310,19 @@ export class ProfileService {
         context_sessions_time: data.context_sessions_time
       };
 
+      // Fetch existing profile to merge linkedin_data safely
+      const { data: existingProfile } = await this.fetchProfile(userId);
+      const existingLinkedinData = (existingProfile as any)?.linkedin_data || {};
+
       const { data: updatedProfile, error } = await supabase
         .from('profiles')
         .update({ 
           pacing_preferences: pacingData,
           // also mirror into linkedin_data.summary for unified context
           linkedin_data: {
-            ...(existingProfile?.linkedin_data || {}),
+            ...existingLinkedinData,
             summary: {
-              ...((existingProfile?.linkedin_data as any)?.summary || {}),
+              ...((existingLinkedinData as any)?.summary || {}),
               pacing_preferences: pacingData,
             },
           },

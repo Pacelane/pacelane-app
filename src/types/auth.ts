@@ -63,4 +63,5 @@ export interface AuthActions {
   signInWithGoogle: () => Promise<any>;
   signOut: () => Promise<any>;
   refreshProfile: () => Promise<void>;
+  isOnboardingComplete: () => boolean;
 } 
