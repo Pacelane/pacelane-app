@@ -125,20 +125,38 @@ serve(async (req) => {
       let userId: string | null = null;
       
       if (payload.owner.email) {
-        const { data: user } = await supabase
-          .from('profiles')
-          .select('user_id')
-          .eq('email', payload.owner.email)
-          .single();
+        console.log(`🔍 Looking for user with email: ${payload.owner.email}`);
         
-        userId = user?.user_id || null;
+        try {
+          const { data: user, error } = await supabase
+            .from('profiles')
+            .select('user_id')
+            .eq('email', payload.owner.email)
+            .single();
+          
+          if (error) {
+            if (error.code === 'PGRST116') {
+              // No rows returned - user not found
+              console.warn(`⚠️ No user found for email: ${payload.owner.email}`);
+            } else {
+              console.error(`❌ Database error finding user:`, error);
+            }
+          } else if (user && user.user_id) {
+            userId = user.user_id;
+            console.log(`✅ Found user: ${userId} for email: ${payload.owner.email}`);
+          }
+        } catch (userError) {
+          console.error(`❌ Error in user lookup:`, userError);
+        }
       }
 
       // For now, if no user mapping, we'll store it without user_id
       // In production, you'd want to implement proper user mapping
       if (!userId) {
-        console.warn('No user mapping found for email:', payload.owner.email);
+        console.warn('⚠️ No user mapping found for email:', payload.owner.email);
         // You might want to store these for manual processing
+      } else {
+        console.log(`✅ Processing webhook for user: ${userId}`);
       }
 
       // Process based on trigger type
@@ -315,6 +333,46 @@ async function processMeetingData(supabase: any, payload: ReadAIWebhookPayload, 
     await supabase
       .from('read_ai_topics')
       .upsert(topicRecords, { onConflict: 'meeting_id,topic_id' });
+  }
+
+  // NEW: Call transcript-processor to store transcript in knowledge base
+  if (userId && transcriptText) {
+    try {
+      console.log(`🔄 Calling transcript-processor for user ${userId} and session ${payload.session_id}`);
+      
+      const transcriptProcessorUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/transcript-processor`;
+      const response = await fetch(transcriptProcessorUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`,
+        },
+        body: JSON.stringify({
+          owner: {
+            email: payload.owner.email
+          },
+          transcript: {
+            speakers: payload.transcript?.speakers || [],
+            speaker_blocks: payload.transcript?.speaker_blocks || []
+          },
+          session_id: payload.session_id,
+          title: payload.title,
+          start_time: payload.start_time,
+          end_time: payload.end_time
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log(`✅ Transcript processed successfully:`, result);
+      } else {
+        const errorText = await response.text();
+        console.warn(`⚠️ Transcript processing failed: ${response.status} - ${errorText}`);
+      }
+    } catch (transcriptError) {
+      console.warn(`⚠️ Failed to call transcript-processor:`, transcriptError);
+      // Don't fail the entire webhook if transcript processing fails
+    }
   }
 
   console.log(`Processed Read.ai meeting: ${payload.title} (${payload.session_id})`);
