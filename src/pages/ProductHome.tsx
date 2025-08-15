@@ -571,7 +571,7 @@ const ProductHome = () => {
             </>
           )}
 
-          {/* Removed lower placeholder sections */
+          {/* Removed lower placeholder sections */}
 
           {/* Templates Section */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
