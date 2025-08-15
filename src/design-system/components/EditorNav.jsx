@@ -4,14 +4,15 @@ import { spacing } from '../tokens/spacing.js';
 import { stroke } from '../tokens/stroke.js';
 import { textStyles } from '../styles/typography/typography-styles.js';
 import Button from './Button.jsx';
-import { ArrowLeft, Edit, Save } from 'lucide-react';
+import InlineEditInput from './InlineEditInput.jsx';
+import { ArrowLeft, Save } from 'lucide-react';
 
 /**
  * EditorNav component - Navigation bar for editor interfaces
  * 
  * Features:
  * - Go Back button on the left with arrow icon
- * - Title in center with edit button
+ * - Inline editable title in center
  * - Save Draft button on the right
  * - 64px height with proper spacing and theme-aware design
  * 
@@ -19,7 +20,7 @@ import { ArrowLeft, Edit, Save } from 'lucide-react';
  * @param {string} [props.className] - Additional CSS classes
  * @param {string} [props.title] - Title text to display
  * @param {Function} [props.onGoBack] - Callback for go back button click
- * @param {Function} [props.onEditTitle] - Callback for edit title button click
+ * @param {Function} [props.onTitleChange] - Callback for title change (new title as parameter)
  * @param {Function} [props.onSaveDraft] - Callback for save draft button click
  * @param {boolean} [props.canSave] - Whether the save button should be enabled
  */
@@ -27,7 +28,7 @@ const EditorNav = ({
   className = '',
   title = 'Untitled Document',
   onGoBack,
-  onEditTitle,
+  onTitleChange,
   onSaveDraft,
   canSave = true,
   ...rest 
@@ -44,13 +45,13 @@ const EditorNav = ({
     }
   };
 
-  // Handle edit title button click
-  const handleEditTitle = () => {
-    if (onEditTitle) {
-      onEditTitle();
+  // Handle title change
+  const handleTitleChange = (newTitle) => {
+    if (onTitleChange) {
+      onTitleChange(newTitle);
     } else {
-      // Default edit action - could open title editor modal, etc.
-      console.log('Edit title requested');
+      // Default title change action
+      console.log('Title changed to:', newTitle);
     }
   };
 
@@ -118,16 +119,13 @@ const EditorNav = ({
         aria-label="Go back to previous page"
       />
       
-      {/* Title in center with edit button */}
+      {/* Title in center with inline editing */}
       <div style={titleContainerStyles}>
-        <h1 style={titleTextStyles}>{title}</h1>
-        <Button
-          variant="iconOnly"
-          style="ghost"
-          size="xs"
-          leadIcon={<Edit size={16} />}
-          onClick={handleEditTitle}
-          aria-label="Edit title"
+        <InlineEditInput
+          value={title}
+          onSave={handleTitleChange}
+          placeholder="Enter title..."
+          size="lg"
         />
       </div>
       

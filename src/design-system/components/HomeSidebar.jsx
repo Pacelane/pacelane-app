@@ -13,6 +13,7 @@ import SidebarMenuItem from './SidebarMenuItem.jsx';
 import Logo from './Logo.jsx';
 import LogoSymbol from './LogoSymbol.jsx';
 import DropdownMenu from './DropdownMenu.jsx';
+import OnboardingProgressCard from './OnboardingProgressCard.jsx';
 
 // Icons
 import {
@@ -129,8 +130,9 @@ const HomeSidebar = ({
   ];
 
   const secondaryMenuItems = [
-    { id: 'notifications', label: 'Notifications', icon: <Bell />, section: 'secondary' },
-    { id: 'plan-billing', label: 'Plan & Billing', icon: <CreditCard />, section: 'secondary' },
+    // MVP: Temporarily disabled - uncomment when needed
+    // { id: 'notifications', label: 'Notifications', icon: <Bell />, section: 'secondary' },
+    // { id: 'plan-billing', label: 'Plan & Billing', icon: <CreditCard />, section: 'secondary' },
   ];
 
   // Theme selector items (conditional based on collapsed state)
@@ -369,6 +371,9 @@ const HomeSidebar = ({
           />
         ))}
       </div>
+
+      {/* Onboarding Progress Card */}
+      <OnboardingProgressCard isCollapsed={isCollapsed} />
 
       {/* Actions Container */}
       <div style={actionsContainerStyles}>

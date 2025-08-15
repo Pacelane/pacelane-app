@@ -33,8 +33,9 @@ const MainAppChrome = ({ className = '', children, ...rest }) => {
     if (location.pathname.startsWith('/posts')) return 'history';
     if (location.pathname.startsWith('/integrations')) return 'integrations';
     if (location.pathname.startsWith('/pacing')) return 'pacing';
-    if (location.pathname.startsWith('/notifications')) return 'notifications';
-    if (location.pathname.startsWith('/plan-billing')) return 'plan-billing';
+    // MVP: Temporarily disabled - uncomment when needed
+    // if (location.pathname.startsWith('/notifications')) return 'notifications';
+    // if (location.pathname.startsWith('/plan-billing')) return 'plan-billing';
     return 'home';
   })();
 
@@ -58,12 +59,13 @@ const MainAppChrome = ({ className = '', children, ...rest }) => {
       case 'pacing':
         navigate('/pacing');
         break;
-      case 'notifications':
-        navigate('/notifications');
-        break;
-      case 'plan-billing':
-        navigate('/plan-billing');
-        break;
+      // MVP: Temporarily disabled - uncomment when needed
+      // case 'notifications':
+      //   navigate('/notifications');
+      //   break;
+      // case 'plan-billing':
+      //   navigate('/plan-billing');
+      //   break;
       default:
         break;
     }

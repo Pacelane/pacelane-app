@@ -13,6 +13,10 @@ import Button from '@/design-system/components/Button';
 import ButtonGroup from '@/design-system/components/ButtonGroup';
 import SidebarMenuItem from '@/design-system/components/SidebarMenuItem';
 import Input from '@/design-system/components/Input';
+import TextArea from '@/design-system/components/TextArea';
+import Checkbox from '@/design-system/components/Checkbox';
+import Modal from '@/design-system/components/Modal';
+import LoadingSpinner from '@/design-system/components/LoadingSpinner';
 import Bichaurinho from '@/design-system/components/Bichaurinho';
 import EmptyState from '@/design-system/components/EmptyState';
 
@@ -64,6 +68,7 @@ const ContentEditor = () => {
   const { user } = useAuth();
   const { colors, themePreference, setTheme } = useTheme();
   const { openHelp } = useHelp();
+  const { toast } = useToast();
   
   // ========== CLEAN CONTENT STATE MANAGEMENT ==========
   const {
@@ -111,6 +116,7 @@ const ContentEditor = () => {
     explanation: string;
   } | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
+
 
   const [fileStructure, setFileStructure] = useState<FileItem[]>([
     {
@@ -298,7 +304,6 @@ const ContentEditor = () => {
       // Send message using clean API with selected files and current content
       const result = await sendMessage({
         message: messageText,
-        selectedFiles: getSelectedFiles(),
         currentContent: editorContent // Pass current editor content for context
       });
 
@@ -390,8 +395,13 @@ const ContentEditor = () => {
     setTheme(selectedTheme);
   };
 
+  // Handle title editing
+  const handleTitleChange = (newTitle: string) => {
+    setDraftTitle(newTitle);
+  };
+
   // Page container styles
-  const pageStyles = {
+  const pageStyles: React.CSSProperties = {
     display: 'flex',
     flexDirection: 'column',
     height: '100vh',
@@ -406,7 +416,7 @@ const ContentEditor = () => {
   };
 
   // Left sidebar styles
-  const leftSidebarStyles = {
+  const leftSidebarStyles: React.CSSProperties = {
     width: '280px',
     backgroundColor: colors.bg.sidebar?.subtle || colors.bg.card.default,
     borderRight: `${stroke.default} solid ${colors.border.default}`,
@@ -416,7 +426,7 @@ const ContentEditor = () => {
   };
 
   // Sidebar section styles
-  const sidebarSectionStyles = {
+  const sidebarSectionStyles: React.CSSProperties = {
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
@@ -433,11 +443,11 @@ const ContentEditor = () => {
   const sectionContentStyles = {
     flex: 1,
     overflow: 'auto',
-    padding: spacing.spacing[8],
+    padding: `${spacing.spacing[8]} ${spacing.spacing[16]}`, // Increased horizontal padding from 8px to 16px
   };
 
   // Resizer handle styles
-  const resizerStyles = {
+  const resizerStyles: React.CSSProperties = {
     height: '4px',
     backgroundColor: colors.border.default,
     cursor: 'row-resize',
@@ -457,7 +467,7 @@ const ContentEditor = () => {
   };
 
   // Center editor styles
-  const centerEditorStyles = {
+  const centerEditorStyles: React.CSSProperties = {
     flex: 1,
     display: 'flex',
     flexDirection: 'column',
@@ -476,7 +486,7 @@ const ContentEditor = () => {
   };
 
   // Right chat sidebar styles
-  const rightSidebarStyles = {
+  const rightSidebarStyles: React.CSSProperties = {
     width: '320px',
     backgroundColor: colors.bg.sidebar?.subtle || colors.bg.card.default,
     borderLeft: `${stroke.default} solid ${colors.border.default}`,
@@ -493,7 +503,7 @@ const ContentEditor = () => {
   };
 
   // Chat messages area styles
-  const chatMessagesStyles = {
+  const chatMessagesStyles: React.CSSProperties = {
     flex: 1,
     overflow: 'auto',
     padding: spacing.spacing[16],
@@ -593,6 +603,7 @@ const ContentEditor = () => {
       <EditorNav 
         title={draftTitle}
         onGoBack={() => navigate('/product-home')}
+        onTitleChange={handleTitleChange}
         onSaveDraft={handleSaveDraft}
       />
       
@@ -655,27 +666,40 @@ const ContentEditor = () => {
                 </div>
                 {loadingFiles ? (
                     <div style={{ textAlign: 'center', padding: spacing.spacing[16] }}>
-                      <div style={{
-                        width: '16px',
-                        height: '16px',
-                        border: `2px solid ${colors.border.default}`,
-                        borderTop: `2px solid ${colors.border.highlight}`,
-                        borderRadius: '50%',
-                        animation: 'spin 1s linear infinite',
-                        margin: '0 auto',
-                      }} />
+                      <LoadingSpinner size={16} color={colors.icon.muted} />
                   </div>
-                ) : knowledgeFiles.length === 0 ? (
-                    <p style={{ 
-                      ...textStyles.xs.normal, 
-                      color: colors.text.muted,
-                      textAlign: 'center',
-                      padding: spacing.spacing[8]
-                    }}>
-                    No files found. Upload files in Knowledge Base.
-                  </p>
-                ) : (
-                  knowledgeFiles.map(file => {
+                ) : (() => {
+                  const filteredFiles = knowledgeFiles.filter(file => 
+                    file.name.toLowerCase().includes(searchQuery.toLowerCase())
+                  );
+                  
+                  if (knowledgeFiles.length === 0) {
+                    return (
+                      <p style={{ 
+                        ...textStyles.xs.normal, 
+                        color: colors.text.muted,
+                        textAlign: 'center',
+                        padding: spacing.spacing[8]
+                      }}>
+                        No files found. Upload files in Knowledge Base.
+                      </p>
+                    );
+                  }
+                  
+                  if (filteredFiles.length === 0) {
+                    return (
+                      <p style={{ 
+                        ...textStyles.xs.normal, 
+                        color: colors.text.muted,
+                        textAlign: 'center',
+                        padding: spacing.spacing[8]
+                      }}>
+                        No files match "{searchQuery}". Try a different search term.
+                      </p>
+                    );
+                  }
+                  
+                  return filteredFiles.map(file => {
                     const Icon = file.type === 'image' ? Image : 
                                 file.type === 'file' ? FileText : File;
                     return (
@@ -696,15 +720,9 @@ const ContentEditor = () => {
                         }}
                         onClick={() => handleFileSelection(file.id, !file.selected)}
                         >
-                          <input
-                            type="checkbox"
-                          checked={file.selected || false}
+                          <Checkbox
+                            checked={file.selected || false}
                             onChange={(e) => handleFileSelection(file.id, e.target.checked)}
-                            style={{
-                              width: '12px',
-                              height: '12px',
-                              accentColor: colors.border.highlight,
-                            }}
                           />
                           <Icon style={{ 
                             width: '12px', 
@@ -723,8 +741,8 @@ const ContentEditor = () => {
                         </span>
                       </div>
                     );
-                  })
-                )}
+                  });
+                })()}
               </div>
             )}
           </div>
@@ -747,73 +765,65 @@ const ContentEditor = () => {
               Recent Posts
               </h3>
             </div>
-            <div style={sectionContentStyles}>
-            {loadingDrafts ? (
-                <div style={{ textAlign: 'center', padding: spacing.spacing[16] }}>
-                  <div style={{
-                    width: '12px',
-                    height: '12px',
-                    border: `2px solid ${colors.border.default}`,
-                    borderTop: `2px solid ${colors.border.highlight}`,
-                    borderRadius: '50%',
-                    animation: 'spin 1s linear infinite',
-                    margin: '0 auto',
-                  }} />
-              </div>
-            ) : savedDrafts.length === 0 ? (
-                <p style={{ 
-                  ...textStyles.xs.normal, 
-                  color: colors.text.muted,
-                  textAlign: 'center',
-                  padding: spacing.spacing[8]
-                }}>
-                No saved drafts yet
-              </p>
-            ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[4] }}>
-                {savedDrafts.slice(0, 5).map(draft => (
-                    <div
-                    key={draft.id}
-                    onClick={() => handleLoadDraft(draft)}
-                      style={{
-                        padding: spacing.spacing[8],
-                        borderRadius: cornerRadius.borderRadius.sm,
-                        cursor: 'pointer',
-                        transition: 'background-color 0.15s ease-in-out',
-                        backgroundColor: draftId === draft.id ? colors.bg.state?.ghostHover || colors.bg.subtle : 'transparent',
-                        border: draftId === draft.id ? `1px solid ${colors.border.highlight}` : 'none',
-                      }}
-                      onMouseEnter={(e) => {
-                        if (draftId !== draft.id) {
-                          e.currentTarget.style.backgroundColor = colors.bg.state?.ghostHover || colors.bg.subtle;
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (draftId !== draft.id) {
-                          e.currentTarget.style.backgroundColor = 'transparent';
-                        }
-                      }}
-                    >
-                      <div style={{ 
-                        ...textStyles.xs.semibold, 
-                        color: colors.text.default,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap'
-                      }}>
-                      {draft.title || 'Untitled'}
-                    </div>
-                      <div style={{ 
-                        ...textStyles.xs.normal, 
-                        color: colors.text.muted,
-                        marginTop: spacing.spacing[2]
-                      }}>
-                      {new Date(draft.updated_at).toLocaleDateString()}
-                      </div>
-                    </div>
-                ))}
-              </div>
-            )}
+                         <div style={sectionContentStyles}>
+             {loadingDrafts ? (
+                 <div style={{ textAlign: 'center', padding: spacing.spacing[16] }}>
+                   <LoadingSpinner size={12} color={colors.icon.muted} />
+               </div>
+             ) : savedDrafts.length === 0 ? (
+                 <p style={{ 
+                   ...textStyles.xs.normal, 
+                   color: colors.text.muted,
+                   textAlign: 'center',
+                   padding: spacing.spacing[8]
+                 }}>
+                 No saved drafts yet
+               </p>
+             ) : (
+                 <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[4] }}>
+                 {savedDrafts.slice(0, 5).map(draft => (
+                     <div
+                     key={draft.id}
+                     onClick={() => handleLoadDraft(draft)}
+                       style={{
+                         padding: spacing.spacing[8],
+                         borderRadius: cornerRadius.borderRadius.sm,
+                         cursor: 'pointer',
+                         transition: 'background-color 0.15s ease-in-out',
+                         backgroundColor: draftId === draft.id ? colors.bg.state?.ghostHover || colors.bg.subtle : 'transparent',
+                         border: draftId === draft.id ? `1px solid ${colors.border.highlight}` : 'none',
+                       }}
+                       onMouseEnter={(e) => {
+                         if (draftId !== draft.id) {
+                           e.currentTarget.style.backgroundColor = colors.bg.state?.ghostHover || colors.bg.subtle;
+                         }
+                       }}
+                       onMouseLeave={(e) => {
+                         if (draftId !== draft.id) {
+                           e.currentTarget.style.backgroundColor = 'transparent';
+                         }
+                       }}
+                     >
+                       <div style={{ 
+                         ...textStyles.xs.semibold, 
+                         color: colors.text.default,
+                         overflow: 'hidden',
+                         textOverflow: 'ellipsis',
+                         whiteSpace: 'nowrap'
+                       }}>
+                       {draft.title || 'Untitled'}
+                     </div>
+                       <div style={{ 
+                         ...textStyles.xs.normal, 
+                         color: colors.text.muted,
+                         marginTop: spacing.spacing[2]
+                       }}>
+                       {new Date(draft.updated_at).toLocaleDateString()}
+                       </div>
+                     </div>
+                 ))}
+               </div>
+             )}
               <div style={{ marginTop: spacing.spacing[8] }}>
                 <Button
                   label="View all posts"
@@ -848,42 +858,25 @@ const ContentEditor = () => {
         {/* Center Content Editor */}
         <div style={centerEditorStyles}>
           <div style={editorContentStyles}>
-            {/* Title Input */}
-            <Input
-              value={draftTitle}
-              onChange={(e) => setDraftTitle(e.target.value)}
-              size="lg"
-              placeholder="Enter title..."
-              style={{
-                fontSize: typography.desktop.size['2xl'],
-                fontWeight: typography.desktop.weight.semibold,
-                border: 'none',
-                backgroundColor: 'transparent',
-                padding: 0,
-                marginBottom: spacing.spacing[48], // Increased from 24 to 48 for better spacing
-              }}
-            />
-            
             {/* Content Textarea */}
-            <textarea
-            value={editorContent}
-            onChange={(e) => setEditorContent(e.target.value)}
+            <TextArea
+              value={editorContent}
+              onChange={(e) => setEditorContent(e.target.value)}
+              placeholder="Start writing your content..."
+              rows={25}
+              autoResize={false}
               style={{
-                width: '100%',
-                minHeight: '600px', // Increased from 400px for better writing experience
-                border: 'none',
-                outline: 'none',
-                backgroundColor: 'transparent',
-                fontFamily: typography.fontFamily.body,
                 fontSize: typography.desktop.size.md,
                 fontWeight: typography.desktop.weight.normal,
-                lineHeight: '1.8', // Increased from 1.6 for better readability
+                lineHeight: '1.8',
                 color: colors.text.default,
-                resize: 'vertical',
-                padding: `${spacing.spacing[16]} 0`, // Added padding for better text positioning
+                fontFamily: typography.fontFamily.body,
+                border: 'none',
+                backgroundColor: 'transparent',
+                padding: `${spacing.spacing[16]} 0`,
+                minHeight: '600px',
               }}
-            placeholder="Start writing your content..."
-          />
+            />
         </div>
       </div>
 
@@ -1005,15 +998,7 @@ const ContentEditor = () => {
                         padding: spacing.spacing[12],
                         textAlign: 'center',
                       }}>
-                        <div style={{
-                          width: '16px',
-                          height: '16px',
-                          border: `2px solid ${colors.border.default}`,
-                          borderTop: `2px solid ${colors.border.highlight}`,
-                          borderRadius: '50%',
-                          animation: 'spin 1s linear infinite',
-                          margin: '0 auto',
-                        }} />
+                        <LoadingSpinner size={16} color={colors.icon.muted} />
                       </div>
                     )}
                   </div>
@@ -1226,120 +1211,105 @@ const ContentEditor = () => {
         </div>
       </div>
 
-      {/* AI Edit Modal */}
-      {showEditModal && aiEditSuggestion && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-        }}>
-          <div style={{
-            backgroundColor: colors.bg.card.default,
-            borderRadius: cornerRadius.borderRadius.lg,
-            padding: spacing.spacing[24],
-            maxWidth: '800px',
-            width: '90%',
-            maxHeight: '80vh',
-            overflow: 'auto',
-            boxShadow: getShadow('regular.card', colors, { withBorder: true }),
-          }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: spacing.spacing[16],
-            }}>
-              <h3 style={{ ...textStyles.lg.semibold, color: colors.text.default, margin: 0 }}>
-                AI Edit Suggestion
-              </h3>
-              <Button
-                label=""
-                style="secondary"
-                size="sm"
-                leadIcon={<X size={16} />}
-                onClick={handleRejectAIEdit}
-              />
-            </div>
+              {/* AI Edit Modal */}
+        {showEditModal && aiEditSuggestion && (
+         <Modal
+           isOpen={showEditModal}
+           onClose={() => setShowEditModal(false)}
+         >
+           <div style={{
+             padding: spacing.spacing[24],
+             display: 'flex',
+             flexDirection: 'column',
+             height: '100%',
+           }}>
+             <div style={{
+               display: 'flex',
+               alignItems: 'center',
+               justifyContent: 'space-between',
+               marginBottom: spacing.spacing[16],
+             }}>
+               <h3 style={{ ...textStyles.lg.semibold, color: colors.text.default, margin: 0 }}>
+                 AI Edit Suggestion
+               </h3>
+             </div>
 
-            <div style={{ marginBottom: spacing.spacing[16] }}>
-              <p style={{ ...textStyles.sm.normal, color: colors.text.default, margin: 0 }}>
-                {aiEditSuggestion.explanation}
-              </p>
-            </div>
+             <div style={{ marginBottom: spacing.spacing[16] }}>
+               <p style={{ ...textStyles.sm.normal, color: colors.text.default, margin: 0 }}>
+                 {aiEditSuggestion.explanation}
+               </p>
+             </div>
 
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: spacing.spacing[16],
-              marginBottom: spacing.spacing[24],
-            }}>
-              <div>
-                <h4 style={{ ...textStyles.sm.semibold, color: colors.text.default, marginBottom: spacing.spacing[8] }}>
-                  Current Content
-                </h4>
-                <div style={{
-                  backgroundColor: colors.bg.subtle,
-                  border: `1px solid ${colors.border.default}`,
-                  borderRadius: cornerRadius.borderRadius.md,
-                  padding: spacing.spacing[12],
-                  maxHeight: '300px',
-                  overflow: 'auto',
-                  fontFamily: 'monospace',
-                  fontSize: '14px',
-                  lineHeight: '1.5',
-                }}>
-                  {aiEditSuggestion.originalContent}
-                </div>
-              </div>
+             <div style={{
+               display: 'grid',
+               gridTemplateColumns: '1fr 1fr',
+               gap: spacing.spacing[16],
+               marginBottom: spacing.spacing[24],
+               flex: 1,
+             }}>
+               <div>
+                 <h4 style={{ ...textStyles.sm.semibold, color: colors.text.default, marginBottom: spacing.spacing[8] }}>
+                   Current Content
+                 </h4>
+                 <div style={{
+                   backgroundColor: colors.bg.subtle,
+                   border: `1px solid ${colors.border.default}`,
+                   borderRadius: cornerRadius.borderRadius.md,
+                   padding: spacing.spacing[12],
+                   height: '300px',
+                   overflow: 'auto',
+                   fontFamily: 'monospace',
+                   fontSize: '14px',
+                   lineHeight: '1.5',
+                 }}>
+                   {aiEditSuggestion.originalContent}
+                 </div>
+               </div>
 
-              <div>
-                <h4 style={{ ...textStyles.sm.semibold, color: colors.text.default, marginBottom: spacing.spacing[8] }}>
-                  Suggested Edit
-                </h4>
-                <div style={{
-                  backgroundColor: colors.bg.subtle,
-                  border: `1px solid ${colors.border.default}`,
-                  borderRadius: cornerRadius.borderRadius.md,
-                  padding: spacing.spacing[12],
-                  maxHeight: '300px',
-                  overflow: 'auto',
-                  fontFamily: 'monospace',
-                  fontSize: '14px',
-                  lineHeight: '1.5',
-                }}>
-                  {aiEditSuggestion.suggestedContent}
-                </div>
-              </div>
-            </div>
+               <div>
+                 <h4 style={{ ...textStyles.sm.semibold, color: colors.text.default, marginBottom: spacing.spacing[8] }}>
+                   Suggested Edit
+                 </h4>
+                 <div style={{
+                   backgroundColor: colors.bg.subtle,
+                   border: `1px solid ${colors.border.default}`,
+                   borderRadius: cornerRadius.borderRadius.md,
+                   padding: spacing.spacing[12],
+                   height: '300px',
+                   overflow: 'auto',
+                   fontFamily: 'monospace',
+                   fontSize: '14px',
+                   lineHeight: '1.5',
+                 }}>
+                   {aiEditSuggestion.suggestedContent}
+                 </div>
+               </div>
+             </div>
 
-            <div style={{
-              display: 'flex',
-              gap: spacing.spacing[12],
-              justifyContent: 'flex-end',
-            }}>
-              <Button
-                label="Reject"
-                style="secondary"
-                size="md"
-                onClick={handleRejectAIEdit}
-              />
-              <Button
-                label="Apply Edit"
-                style="primary"
-                size="md"
-                onClick={handleApplyAIEdit}
-              />
-            </div>
-          </div>
-        </div>
-      )}
+             <div style={{
+               display: 'flex',
+               gap: spacing.spacing[12],
+               justifyContent: 'flex-end',
+               marginTop: 'auto',
+             }}>
+               <Button
+                 label="Reject"
+                 style="secondary"
+                 size="md"
+                 onClick={handleRejectAIEdit}
+               />
+               <Button
+                 label="Apply Edit"
+                 style="primary"
+                 size="md"
+                 onClick={handleApplyAIEdit}
+               />
+             </div>
+           </div>
+         </Modal>
+        )}
+
+        
     </div>
   );
 

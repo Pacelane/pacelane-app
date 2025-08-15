@@ -21,8 +21,7 @@ import { typography } from '@/design-system/tokens/typography';
 // Icons
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 
-// Configuration
-const PACELANE_WHATSAPP_NUMBER = '551152360591'; // Business WhatsApp number
+
 
 const Contact = () => {
   const navigate = useNavigate();
@@ -31,7 +30,6 @@ const Contact = () => {
   const { toast } = useToast();
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [cleanWhatsappNumber, setCleanWhatsappNumber] = useState('');
-  const [hasClickedWhatsAppButton, setHasClickedWhatsAppButton] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleGoBack = () => {
@@ -56,7 +54,7 @@ const Contact = () => {
       if (error) throw error;
 
       toast.success('WhatsApp number saved!');
-      navigate('/onboarding/ready');
+      navigate('/onboarding/whatsapp-setup');
     } catch (error) {
       console.error('Error saving WhatsApp number:', error);
       toast.error('Failed to save WhatsApp number. Please try again.');
@@ -65,8 +63,8 @@ const Contact = () => {
     }
   };
 
-  // Check if user has completed WhatsApp setup (both number and button click required)
-  const canContinue = cleanWhatsappNumber && hasClickedWhatsAppButton;
+  // Check if user has entered a valid phone number
+  const canContinue = cleanWhatsappNumber;
 
   return (
     <div
@@ -202,7 +200,7 @@ const Contact = () => {
                       textAlign: 'left',
                     }}
                   >
-                    What's your WhatsApp number? We'll send you content suggestions and updates.
+                    What's your WhatsApp number? We'll use it to send you personalized content suggestions.
                   </p>
                 </div>
               </div>
@@ -223,79 +221,6 @@ const Contact = () => {
                   size="lg"
                   disabled={isLoading}
                 />
-
-
-
-                {/* WhatsApp Connection Section */}
-                {cleanWhatsappNumber && (
-                  <div
-                    style={{
-                      marginTop: spacing.spacing[0],
-                      padding: spacing.spacing[16],
-                      backgroundColor: colors.bg.card.subtle,
-                      borderRadius: cornerRadius.borderRadius.md,
-                      border: `1px solid ${colors.border.default}`,
-                    }}
-                  >
-                    {/* Connection explanation */}
-                    <div
-                      style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: spacing.spacing[4],
-                        marginBottom: spacing.spacing[8],
-                      }}
-                    >
-                      <h3
-                        style={{
-                          fontFamily: typography.fontFamily.body,
-                          fontSize: typography.desktop.size.sm,
-                          fontWeight: typography.desktop.weight.semibold,
-                          lineHeight: typography.desktop.lineHeight.sm,
-                          color: colors.text.default,
-                          margin: 0,
-                        }}
-                      >
-                        Complete WhatsApp Setup
-                      </h3>
-                      <p
-                        style={{
-                          fontFamily: typography.fontFamily.body,
-                          fontSize: typography.desktop.size.xs,
-                          fontWeight: typography.desktop.weight.normal,
-                          lineHeight: typography.desktop.lineHeight.xs,
-                          color: colors.text.muted,
-                          margin: 0,
-                        }}
-                      >
-                        Click below to connect your WhatsApp and start receiving personalized content suggestions.
-                      </p>
-                    </div>
-
-                    {/* WhatsApp Connection Button */}
-                    <Button
-                      label={hasClickedWhatsAppButton ? "✓ Connected to WhatsApp" : "Connect WhatsApp"}
-                      style={hasClickedWhatsAppButton ? "soft" : "primary"}
-                      size="sm"
-                      leadIcon={
-                        hasClickedWhatsAppButton ? undefined : (
-                          <img 
-                            src="/src/assets/images/whatsapp-logo.png" 
-                            alt="WhatsApp" 
-                            style={{ width: 16, height: 16 }}
-                          />
-                        )
-                      }
-                      onClick={() => {
-                        const message = encodeURIComponent("Hi! I want to connect my WhatsApp to Pacelane for personalized content suggestions.");
-                        const whatsappUrl = `https://wa.me/${PACELANE_WHATSAPP_NUMBER}?text=${message}`;
-                        window.open(whatsappUrl, '_blank');
-                        setHasClickedWhatsAppButton(true);
-                      }}
-                      disabled={isLoading}
-                    />
-                  </div>
-                )}
               </div>
             </div>
 
@@ -320,7 +245,7 @@ const Contact = () => {
                   textAlign: 'center',
                 }}
               >
-                You can skip this step and add your number later in settings.
+                You can skip this step and add your WhatsApp number later in settings.
               </p>
             </div>
           </div>

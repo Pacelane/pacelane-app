@@ -24,7 +24,7 @@ import Button from '@/design-system/components/Button';
 import EmptyState from '@/design-system/components/EmptyState';
 import SubtleLoadingSpinner from '@/design-system/components/SubtleLoadingSpinner';
 import FirstTimeUserHome from '@/design-system/components/FirstTimeUserHome';
- 
+import InitialHome from './InitialHome';
 
 // Design System Tokens
 import { spacing } from '../design-system/tokens/spacing';
@@ -63,6 +63,8 @@ const ProductHome = () => {
     progress: 0
   });
   const [recentMeetings, setRecentMeetings] = useState<any[]>([]);
+
+
 
   // Load user data on component mount
   useEffect(() => {
@@ -322,6 +324,8 @@ const ProductHome = () => {
     draft.content.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Templates are not filtered by search - always show all templates
+
   // Navigation handled by MainAppChrome sidebar
 
   const handleCreateNewClick = async () => {
@@ -363,6 +367,8 @@ const ProductHome = () => {
     }
     navigate('/content-editor', { state: { meeting } });
   };
+
+
 
   // Function to create a preview of the post content
   const createPostPreview = (suggestion: any) => {
@@ -421,6 +427,14 @@ const ProductHome = () => {
   //   return <FirstTimeUserHome />;
   // }
 
+  // Check if user has no posts
+  const hasNoPosts = filteredDrafts.length === 0;
+
+  // If user has no posts and data has loaded, show InitialHome
+  if (hasLoadedInitialData && hasNoPosts) {
+    return <InitialHome />;
+  }
+
   return (
     <div>
       <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
@@ -437,6 +451,8 @@ const ProductHome = () => {
               <StatsSummaryCard {...getStatsSummaryProps()} />
             </div>
           </div>
+
+
 
           {/* Suggestion Card - Always show with dynamic content */}
           {hasLoadedInitialData && (
@@ -613,7 +629,7 @@ const ProductHome = () => {
             </h2>
             <Input
               size="sm"
-              placeholder="Search..."
+              placeholder="Search your posts..."
               leadIcon={<Search size={16} />}
               style="default"
               value={searchQuery}
@@ -669,6 +685,8 @@ const ProductHome = () => {
               <p>Some features may be limited due to connection issues.</p>
             </div>
           )}
+
+
         </div>
       </div>
   );
