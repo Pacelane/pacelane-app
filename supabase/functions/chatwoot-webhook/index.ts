@@ -1450,33 +1450,64 @@ Return only valid JSON:
   }
 
   /**
-   * Ensure conversation exists in our database for WhatsApp notifications
+   * Ensure conversation exists for WhatsApp notifications
+   * FIXED: Now properly handles duplicate conversation IDs
    */
   private async ensureConversationExists(userId: string, chatwootConversationId: number): Promise<void> {
     try {
       console.log(`🔗 Ensuring conversation exists for user ${userId} with Chatwoot ID ${chatwootConversationId}`);
       
-      // Check if conversation already exists
-      const { data: existingConversation, error: findError } = await this.supabase
+      // First, check if conversation with this Chatwoot ID already exists
+      const { data: existingByChatwootId, error: findByIdError } = await this.supabase
+        .from('conversations')
+        .select('id, user_id')
+        .eq('chatwoot_conversation_id', chatwootConversationId)
+        .single();
+
+      if (!findByIdError && existingByChatwootId) {
+        // Conversation with this Chatwoot ID already exists
+        if (existingByChatwootId.user_id === userId) {
+          // Same user, just update timestamp
+          const { error: updateError } = await this.supabase
+            .from('conversations')
+            .update({ 
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', existingByChatwootId.id);
+
+          if (updateError) {
+            console.error('❌ Error updating conversation timestamp:', updateError);
+          } else {
+            console.log(`✅ Updated existing conversation timestamp for user ${userId}`);
+          }
+        } else {
+          // Different user - this shouldn't happen, but log it
+          console.warn(`⚠️ Chatwoot conversation ${chatwootConversationId} already exists for different user ${existingByChatwootId.user_id}, skipping creation for user ${userId}`);
+        }
+        return; // Exit early, conversation already exists
+      }
+
+      // Check if user already has a conversation entry
+      const { data: existingByUserId, error: findByUserError } = await this.supabase
         .from('conversations')
         .select('id')
         .eq('user_id', userId)
         .single();
 
-      if (!findError && existingConversation) {
-        // Update existing conversation with new Chatwoot ID if needed
+      if (!findByUserError && existingByUserId) {
+        // User has existing conversation, update the Chatwoot ID
         const { error: updateError } = await this.supabase
           .from('conversations')
           .update({ 
             chatwoot_conversation_id: chatwootConversationId,
             updated_at: new Date().toISOString()
           })
-          .eq('id', existingConversation.id);
+          .eq('id', existingByUserId.id);
 
         if (updateError) {
-          console.error('❌ Error updating conversation:', updateError);
+          console.error('❌ Error updating conversation Chatwoot ID:', updateError);
         } else {
-          console.log(`✅ Updated existing conversation for user ${userId}`);
+          console.log(`✅ Updated existing conversation for user ${userId} with new Chatwoot ID ${chatwootConversationId}`);
         }
       } else {
         // Create new conversation entry

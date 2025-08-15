@@ -265,13 +265,13 @@ async function processContentOrder(supabaseClient: any, job: AgentJob, steps: an
   const brief = await callOrderBuilder(supabaseClient, order.id, steps)
   
   // Step 2: Retrieval - Get relevant context
-  const citations = await callRetrievalAgent(supabaseClient, order.user_id, brief.topic, brief.platform, steps)
+  const citations = await callRetrievalAgent(supabaseClient, order.user_id, brief.topic, brief.platform, steps, null) // No meeting context for content orders
   
   // Step 3: Writer - Generate initial draft
-  const draft = await callWriterAgent(supabaseClient, brief, citations, order.user_id, steps)
+  const draft = await callWriterAgent(supabaseClient, brief, citations, order.user_id, steps, null) // No meeting context for content orders
   
   // Step 4: Editor - Refine and finalize
-  const finalDraft = await callEditorAgent(supabaseClient, draft, brief, order.user_id, steps)
+  const finalDraft = await callEditorAgent(supabaseClient, draft, brief, order.user_id, steps, null) // No meeting context for content orders
   
   // Step 5: Save to saved_drafts
   const { data: savedDraft, error: saveError } = await supabaseClient
@@ -309,9 +309,31 @@ async function processPacingCheck(supabaseClient: any, job: AgentJob, steps: any
 }
 
 async function processPacingContentGeneration(supabaseClient: any, job: AgentJob, steps: any[]) {
-  const { schedule_id, frequency, selected_days, preferred_time } = job.payload_json
+  // ✅ FIXED: Now using ALL the rich context data from the enhanced pacing system
+  const { 
+    schedule_id, 
+    frequency, 
+    selected_days, 
+    preferred_time,
+    meeting_context,
+    knowledge_base_context,
+    context_integration,
+    enhanced_suggestion,
+    trigger_date
+  } = job.payload_json
   
-  steps.push({ step: 'start', schedule_id, frequency, selected_days, preferred_time, timestamp: new Date().toISOString() })
+  steps.push({ 
+    step: 'start', 
+    schedule_id, 
+    frequency, 
+    selected_days, 
+    preferred_time,
+    context_integration,
+    enhanced_suggestion,
+    has_meeting_context: !!meeting_context?.meetings_since,
+    has_knowledge_context: !!knowledge_base_context?.transcripts_available,
+    timestamp: new Date().toISOString() 
+  })
 
   // Get user's pacing preferences and content pillars
   const { data: profile, error: profileError } = await supabaseClient
@@ -326,7 +348,25 @@ async function processPacingContentGeneration(supabaseClient: any, job: AgentJob
 
   steps.push({ step: 'profile_retrieved', profile, timestamp: new Date().toISOString() })
 
-  // Create content order for pacing-based generation
+  // ✅ ENHANCED: Create personalized content order using meeting context
+  let personalizedTopic = 'Industry insights and professional updates';
+  let personalizedAngle = 'Industry Insights';
+  
+  // Use meeting context to personalize the content
+  if (meeting_context?.meetings_since && meeting_context.meetings_since.length > 0) {
+    const latestMeeting = meeting_context.meetings_since[0];
+    if (latestMeeting.title) {
+      personalizedTopic = `Insights from recent meeting: ${latestMeeting.title}`;
+    }
+    
+    // Extract key topics and action items for personalization
+    if (latestMeeting.topics && latestMeeting.topics.length > 0) {
+      const mainTopics = latestMeeting.topics.slice(0, 2).map((t: any) => t.text).join(', ');
+      personalizedAngle = `Meeting Insights: ${mainTopics}`;
+    }
+  }
+
+  // ✅ ENHANCED: Create content order with rich context integration
   const contentOrderData = {
     user_id: job.user_id,
     source: 'pacing',
@@ -334,17 +374,42 @@ async function processPacingContentGeneration(supabaseClient: any, job: AgentJob
       platform: 'linkedin_post', // Default to LinkedIn, can be made configurable
       length: 'Medium',
       tone: 'Professional',
-      angle: 'Industry Insights',
-      topic: 'Auto-generated from pacing schedule',
+      angle: personalizedAngle,
+      topic: personalizedTopic,
       refs: [],
       context: {
+        // ✅ Enhanced context with meeting insights
         schedule_id,
         frequency,
         selected_days,
         preferred_time,
         pacing_preferences: profile.pacing_preferences,
         content_pillars: profile.content_pillars,
-        goals: profile.goals
+        goals: profile.goals,
+        
+        // ✅ NEW: Rich meeting context for personalization
+        meeting_context: {
+          recent_meetings: meeting_context?.meetings_since || [],
+          key_insights: meeting_context?.meetings_since?.[0]?.summary || null,
+          action_items: meeting_context?.meetings_since?.[0]?.action_items || [],
+          topics_discussed: meeting_context?.meetings_since?.[0]?.topics || []
+        },
+        
+        // ✅ NEW: Knowledge base context for content relevance
+        knowledge_base_context: {
+          recent_transcripts: knowledge_base_context?.transcripts_available || [],
+          available_files: knowledge_base_context?.transcripts_available || [],
+          content_extraction_status: knowledge_base_context?.transcripts_available?.map((f: any) => ({
+            file_name: f.name,
+            extracted: f.content_extracted,
+            file_type: f.type
+          })) || []
+        },
+        
+        // ✅ NEW: Enhanced suggestion metadata
+        enhanced_suggestion: enhanced_suggestion || false,
+        context_integration: context_integration || false,
+        trigger_date: trigger_date || new Date().toISOString()
       }
     },
     triggered_by: 'pacing'
@@ -360,19 +425,61 @@ async function processPacingContentGeneration(supabaseClient: any, job: AgentJob
     throw new Error(`Failed to create content order: ${orderError.message}`)
   }
 
-  steps.push({ step: 'content_order_created', order_id: contentOrder.id, timestamp: new Date().toISOString() })
+  steps.push({ 
+    step: 'content_order_created', 
+    order_id: contentOrder.id,
+    personalized_topic: personalizedTopic,
+    personalized_angle: personalizedAngle,
+    context_integration: context_integration,
+    enhanced_suggestion: enhanced_suggestion,
+    timestamp: new Date().toISOString() 
+  })
 
-  // Step 1: Order Builder - Create content brief
+  // ✅ ENHANCED: Log the context being used for better debugging
+  if (enhanced_suggestion && meeting_context?.meetings_since) {
+    console.log(`🎯 Enhanced pacing content generation for user ${job.user_id}:`);
+    console.log(`   📅 Recent meetings: ${meeting_context.meetings_since.length}`);
+    console.log(`   📝 Personalized topic: ${personalizedTopic}`);
+    console.log(`   🎭 Personalized angle: ${personalizedAngle}`);
+    if (meeting_context.meetings_since[0]) {
+      console.log(`   🏢 Latest meeting: ${meeting_context.meetings_since[0].title}`);
+      console.log(`   💡 Key topics: ${meeting_context.meetings_since[0].topics?.map((t: any) => t.text).join(', ') || 'None'}`);
+    }
+  }
+
+  // ✅ ENHANCED: Pass meeting context to AI agents for better personalization
+  // Step 1: Order Builder - Create content brief with context
   const brief = await callOrderBuilder(supabaseClient, contentOrder.id, steps)
   
-  // Step 2: Retrieval - Get relevant context
-  const citations = await callRetrievalAgent(supabaseClient, job.user_id, brief.topic, brief.platform, steps)
+  // Step 2: Retrieval - Get relevant context (enhanced with meeting insights)
+  const citations = await callRetrievalAgent(
+    supabaseClient, 
+    job.user_id, 
+    brief.topic, 
+    brief.platform, 
+    steps,
+    meeting_context // ✅ Pass meeting context for better retrieval
+  )
   
-  // Step 3: Writer - Generate initial draft
-  const draft = await callWriterAgent(supabaseClient, brief, citations, job.user_id, steps)
+  // Step 3: Writer - Generate initial draft with meeting insights
+  const draft = await callWriterAgent(
+    supabaseClient, 
+    brief, 
+    citations, 
+    job.user_id, 
+    steps,
+    meeting_context // ✅ Pass meeting context for personalized content
+  )
   
-  // Step 4: Editor - Refine and finalize
-  const finalDraft = await callEditorAgent(supabaseClient, draft, brief, job.user_id, steps)
+  // Step 4: Editor - Refine and finalize with context
+  const finalDraft = await callEditorAgent(
+    supabaseClient, 
+    draft, 
+    brief, 
+    job.user_id, 
+    steps,
+    meeting_context // ✅ Pass meeting context for better refinement
+  )
   
   // Step 5: Save to saved_drafts
   const { data: savedDraft, error: saveError } = await supabaseClient
@@ -397,13 +504,19 @@ async function processPacingContentGeneration(supabaseClient: any, job: AgentJob
   // Step 6: Send WhatsApp notification
   try {
     console.log('📱 Sending WhatsApp notification for completed draft');
+    
+    // ✅ ENHANCED: Use enhanced mode if this was an enhanced pacing suggestion
+    const notificationBody = enhanced_suggestion 
+      ? { draftId: savedDraft.id, enhanced: true }
+      : { draftId: savedDraft.id };
+    
     const notificationResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/whatsapp-notifications`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
       },
-      body: JSON.stringify({ draftId: savedDraft.id }),
+      body: JSON.stringify(notificationBody),
     });
 
     if (notificationResponse.ok) {
@@ -452,7 +565,7 @@ async function callOrderBuilder(supabaseClient: any, orderId: string, steps: any
   return result.brief
 }
 
-async function callRetrievalAgent(supabaseClient: any, userId: string, topic: string, platform: string, steps: any[]) {
+async function callRetrievalAgent(supabaseClient: any, userId: string, topic: string, platform: string, steps: any[], meetingContext?: any) {
   steps.push({ step: 'calling_retrieval_agent', topic, platform, timestamp: new Date().toISOString() })
   
   const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/retrieval-agent`, {
@@ -465,7 +578,8 @@ async function callRetrievalAgent(supabaseClient: any, userId: string, topic: st
       user_id: userId, 
       topic, 
       platform,
-      max_results: 5 
+      max_results: 5,
+      meeting_context: meetingContext // Pass meeting context to retrieval agent
     }),
   })
 
@@ -479,7 +593,7 @@ async function callRetrievalAgent(supabaseClient: any, userId: string, topic: st
   return result.citations
 }
 
-async function callWriterAgent(supabaseClient: any, brief: any, citations: any[], userId: string, steps: any[]) {
+async function callWriterAgent(supabaseClient: any, brief: any, citations: any[], userId: string, steps: any[], meetingContext?: any) {
   steps.push({ step: 'calling_writer_agent', timestamp: new Date().toISOString() })
   
   const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/writer-agent`, {
@@ -491,7 +605,8 @@ async function callWriterAgent(supabaseClient: any, brief: any, citations: any[]
     body: JSON.stringify({ 
       brief, 
       citations, 
-      user_id: userId 
+      user_id: userId,
+      meeting_context: meetingContext // Pass meeting context to writer agent
     }),
   })
 
@@ -505,7 +620,7 @@ async function callWriterAgent(supabaseClient: any, brief: any, citations: any[]
   return result.draft
 }
 
-async function callEditorAgent(supabaseClient: any, draft: any, brief: any, userId: string, steps: any[]) {
+async function callEditorAgent(supabaseClient: any, draft: any, brief: any, userId: string, steps: any[], meetingContext?: any) {
   steps.push({ step: 'calling_editor_agent', timestamp: new Date().toISOString() })
   
   const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/editor-agent`, {
@@ -517,7 +632,8 @@ async function callEditorAgent(supabaseClient: any, draft: any, brief: any, user
     body: JSON.stringify({ 
       draft, 
       brief, 
-      user_id: userId 
+      user_id: userId,
+      meeting_context: meetingContext // Pass meeting context to editor agent
     }),
   })
 

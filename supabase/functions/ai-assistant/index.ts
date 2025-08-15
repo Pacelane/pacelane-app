@@ -8,47 +8,99 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
+    // ✅ ENHANCED: Handle both authenticated user calls and service role calls
+    let userId: string | null = null;
+    let isServiceRole = false;
+    
+    // Check OpenAI API key first
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAIApiKey) {
       throw new Error('OPENAI_API_KEY is not set');
     }
-
-    // Get Supabase environment variables
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     
-    // Create Supabase client with anon key and user token
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        headers: {
-          Authorization: req.headers.get('Authorization')!
-        }
-      }
-    });
-
-    // Get authorization header
+    // Check if this is a service role call (from job-runner or other edge functions)
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('Authorization header is required');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.replace('Bearer ', '');
+      
+      // Check if it's the service role key
+      if (token === Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')) {
+        isServiceRole = true;
+        console.log('🔑 Service role call detected');
+      }
     }
-
-    // Get current user from the authenticated session
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
     
-    if (authError || !user) {
-      throw new Error('Invalid authorization token');
+    // Initialize Supabase client based on context
+    let supabase: any;
+    if (isServiceRole) {
+      // Service role client for internal calls
+      supabase = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      );
+    } else {
+      // Regular client for user calls
+      supabase = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+        {
+          global: {
+            headers: {
+              Authorization: req.headers.get('Authorization')!
+            }
+          }
+        }
+      );
     }
 
-    const { message, conversationId, fileContexts = [], currentContent } = await req.json();
+    // Get user ID based on context
+    let message, conversationId, fileContexts = [], currentContent;
+    
+    if (isServiceRole) {
+      // For service role calls, get userId from request body
+      const body = await req.json();
+      userId = body.userId;
+      message = body.message;
+      conversationId = body.conversationId;
+      fileContexts = body.fileContexts || [];
+      currentContent = body.currentContent;
+      
+      if (!userId) {
+        throw new Error('userId is required for service role calls');
+      }
+      
+      console.log('🔑 Service role call for user:', userId);
+    } else {
+      // For user calls, validate authentication
+      if (!authHeader) {
+        throw new Error('Authorization header is required');
+      }
+      
+      // Get current user from the authenticated session
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        throw new Error('Invalid authorization token');
+      }
+      
+      userId = user.id;
+      console.log('👤 Authenticated user call for user:', userId);
+      
+      // Parse request body for user calls
+      const body = await req.json();
+      message = body.message;
+      conversationId = body.conversationId;
+      fileContexts = body.fileContexts || [];
+      currentContent = body.currentContent;
+    }
 
     console.log('Processing request:', { 
-      userId: user.id, 
+      userId: userId, 
       conversationId, 
       messageLength: message?.length,
       fileContextsCount: fileContexts.length,
@@ -66,7 +118,7 @@ serve(async (req) => {
       const { data: newConversation, error: convError } = await supabase
         .from('conversations')
         .insert({
-          user_id: user.id,
+          user_id: userId,
           title: message.slice(0, 50) + (message.length > 50 ? '...' : '')
         })
         .select()
@@ -164,7 +216,7 @@ ${fileContextInfo}${contentContextInfo}`
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
+        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')!}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
