@@ -92,13 +92,42 @@ async function buildContentBrief(supabaseClient: any, orderId: string): Promise<
   // Extract parameters from order
   const params = order.params_json || {}
   
+  // ✅ ENHANCED: Extract meeting context and knowledge base context for personalization
+  const meetingContext = params.context?.meeting_context || {};
+  const knowledgeBaseContext = params.context?.knowledge_base_context || {};
+  const enhancedSuggestion = params.context?.enhanced_suggestion || false;
+  
+  // ✅ ENHANCED: Use meeting context to personalize the topic and angle
+  let personalizedTopic = params.topic || 'general business insights';
+  let personalizedAngle = params.angle || orderContext.suggestedAngle || 'insight';
+  
+  if (enhancedSuggestion && meetingContext?.recent_meetings?.length > 0) {
+    const latestMeeting = meetingContext.recent_meetings[0];
+    
+    // Personalize topic based on recent meeting
+    if (latestMeeting.title) {
+      personalizedTopic = `Insights from recent meeting: ${latestMeeting.title}`;
+    }
+    
+    // Personalize angle based on meeting topics
+    if (latestMeeting.topics_discussed?.length > 0) {
+      const mainTopics = latestMeeting.topics_discussed.slice(0, 2).map((t: any) => t.text).join(', ');
+      personalizedAngle = `Meeting Insights: ${mainTopics}`;
+    }
+    
+    // Use meeting summary for better context
+    if (latestMeeting.key_insights) {
+      personalizedTopic = `${personalizedTopic} - ${latestMeeting.key_insights}`;
+    }
+  }
+  
   // Build the content brief with order context
   const brief: ContentBrief = {
     platform: params.platform || preferences.prefer_platform || 'linkedin',
     length: params.length || preferences.default_length || 'medium',
     tone: params.tone || preferences.default_tone || 'professional',
-    angle: params.angle || orderContext.suggestedAngle || 'insight',
-    topic: params.topic || 'general business insights',
+    angle: personalizedAngle,
+    topic: personalizedTopic,
     refs: params.refs || [],
     content_guides: contentGuides,
     original_content: params.original_content,
@@ -107,7 +136,26 @@ async function buildContentBrief(supabaseClient: any, orderId: string): Promise<
     business_context: orderContext.businessContext,
     emotional_tone: orderContext.emotionalTone,
     content_type: orderContext.contentType,
-    urgency: orderContext.urgency
+    urgency: orderContext.urgency,
+    
+    // ✅ NEW: Rich meeting context for AI enhancement
+    meeting_context: enhancedSuggestion ? {
+      recent_meetings: meetingContext.recent_meetings || [],
+      key_insights: meetingContext.key_insights || null,
+      action_items: meetingContext.action_items || [],
+      topics_discussed: meetingContext.topics_discussed || []
+    } : null,
+    
+    // ✅ NEW: Knowledge base context for content relevance
+    knowledge_base_context: enhancedSuggestion ? {
+      recent_transcripts: knowledgeBaseContext.recent_transcripts || [],
+      available_files: knowledgeBaseContext.available_files || [],
+      content_extraction_status: knowledgeBaseContext.content_extraction_status || []
+    } : null,
+    
+    // ✅ NEW: Enhanced suggestion metadata
+    enhanced_suggestion: enhancedSuggestion,
+    context_integration: params.context?.context_integration || false
   }
 
   // Add target audience if available
@@ -130,6 +178,15 @@ async function buildContentBrief(supabaseClient: any, orderId: string): Promise<
   // Validate and enhance the brief
   const enhancedBrief = await enhanceBriefWithAI(brief, order)
 
+  // ✅ ENHANCED: Log the enhanced brief details for debugging
+  if (brief.enhanced_suggestion) {
+    console.log(`🎯 Enhanced content brief created for user ${order.user_id}:`);
+    console.log(`   📝 Topic: ${enhancedBrief.topic}`);
+    console.log(`   🎭 Angle: ${enhancedBrief.angle}`);
+    console.log(`   📅 Meeting Context: ${brief.meeting_context?.recent_meetings?.length || 0} recent meetings`);
+    console.log(`   📚 Knowledge Base: ${brief.knowledge_base_context?.recent_transcripts?.length || 0} recent transcripts`);
+  }
+
   console.log('Content brief built:', enhancedBrief)
   return enhancedBrief
 }
@@ -137,11 +194,37 @@ async function buildContentBrief(supabaseClient: any, orderId: string): Promise<
 async function enhanceBriefWithAI(brief: ContentBrief, order: any): Promise<ContentBrief> {
   const openaiApiKey = Deno.env.get('OPENAI_API_KEY')
   if (!openaiApiKey) {
-    console.warn('OPENAI_API_KEY not found, skipping AI enhancement')
+    console.log('OPENAI_API_KEY not found, skipping AI enhancement')
     return brief
   }
 
   try {
+    // ✅ ENHANCED: Build context-aware prompt using meeting insights
+    let contextPrompt = '';
+    
+    if (brief.enhanced_suggestion && brief.meeting_context?.recent_meetings?.length > 0) {
+      const latestMeeting = brief.meeting_context.recent_meetings[0];
+      contextPrompt = `
+
+🎯 ENHANCED CONTEXT - Recent Meeting Insights:
+- Meeting Title: ${latestMeeting.title || 'Recent meeting'}
+- Key Topics: ${latestMeeting.topics_discussed?.map((t: any) => t.text).join(', ') || 'Various topics'}
+- Action Items: ${latestMeeting.action_items?.map((a: any) => a.text).join(', ') || 'None specified'}
+- Key Insights: ${latestMeeting.key_insights || 'Meeting summary available'}
+
+💡 Use these meeting insights to make the content more relevant and personalized to the user's recent activities.`;
+    }
+    
+    if (brief.knowledge_base_context?.recent_transcripts?.length > 0) {
+      const transcriptCount = brief.knowledge_base_context.recent_transcripts.length;
+      contextPrompt += `
+
+📚 KNOWLEDGE BASE CONTEXT:
+- Recent Transcripts: ${transcriptCount} new transcript(s) available
+- Content can reference and build upon these recent materials
+- Use this context to create more informed and relevant content`;
+    }
+
     const prompt = `Enhance this content brief for better AI content generation.
 
 Original Brief:
@@ -151,8 +234,9 @@ Original Brief:
 - Angle: ${brief.angle}
 - Topic: ${brief.topic}
 - Original Content: ${brief.original_content || 'None provided'}
+- Enhanced Suggestion: ${brief.enhanced_suggestion ? 'Yes - Use meeting context' : 'No - Standard content'}
 
-User Goals: ${JSON.stringify(brief.content_guides || {})}
+User Goals: ${JSON.stringify(brief.content_guides || {})}${contextPrompt}
 
 Enhance the brief by:
 1. Clarifying the topic if vague
@@ -160,6 +244,7 @@ Enhance the brief by:
 3. Adding target audience details if missing
 4. Identifying key points to cover
 5. Suggesting relevant hashtags or references
+6. ${brief.enhanced_suggestion ? 'Incorporating meeting insights for personalization' : 'Creating engaging general content'}
 
 Return only valid JSON:
 {
@@ -168,9 +253,12 @@ Return only valid JSON:
   "target_audience": "who this content is for",
   "key_points": ["point1", "point2", "point3"],
   "suggested_hashtags": ["hashtag1", "hashtag2"],
-  "content_structure": "suggested structure (e.g., problem-solution, story, tips)"
+  "content_structure": "suggested structure (e.g., problem-solution, story, tips)",
+  "meeting_insights_integration": "${brief.enhanced_suggestion ? 'How to incorporate meeting insights' : 'N/A'}"
 }`
 
+    console.log(`🤖 Enhancing brief with AI${brief.enhanced_suggestion ? ' (Enhanced mode with meeting context)' : ''}`);
+    
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -182,7 +270,7 @@ Return only valid JSON:
         messages: [
           {
             role: 'system',
-            content: 'You are an expert content strategist. Enhance content briefs for better AI content generation.'
+            content: `You are an expert content strategist specializing in ${brief.enhanced_suggestion ? 'context-aware, personalized content' : 'general business content'}. ${brief.enhanced_suggestion ? 'Use meeting insights to create highly relevant content.' : 'Create engaging content based on user preferences.'}`
           },
           {
             role: 'user',
@@ -190,7 +278,7 @@ Return only valid JSON:
           }
         ],
         temperature: 0.3,
-        max_tokens: 500,
+        max_tokens: 800,
       }),
     })
 

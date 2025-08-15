@@ -107,7 +107,9 @@ class WhatsAppNotificationProcessor {
    */
   private async findOrCreateConversation(notification: DraftNotification): Promise<number | null> {
     try {
-      // First, try to find existing conversation in our database
+      console.log(`🔍 Looking for conversation for user ${notification.userId}`);
+      
+      // First, try to find existing conversation in our conversations table
       const { data: existingConversation, error: findError } = await this.supabase
         .from('conversations')
         .select('chatwoot_conversation_id')
@@ -115,12 +117,55 @@ class WhatsAppNotificationProcessor {
         .single();
 
       if (!findError && existingConversation?.chatwoot_conversation_id) {
-        console.log(`✅ Found existing conversation: ${existingConversation.chatwoot_conversation_id}`);
+        console.log(`✅ Found existing conversation in conversations table: ${existingConversation.chatwoot_conversation_id}`);
         return existingConversation.chatwoot_conversation_id;
       }
 
-      // If no existing conversation, we need to create one via Chatwoot API
-      // This requires the user to have initiated a conversation first
+      // ✅ ENHANCED: Check meeting_notes table for conversation ID
+      const { data: meetingNote, error: meetingError } = await this.supabase
+        .from('meeting_notes')
+        .select('chatwoot_conversation_id')
+        .eq('user_id', notification.userId)
+        .not('chatwoot_conversation_id', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (!meetingError && meetingNote?.chatwoot_conversation_id) {
+        console.log(`✅ Found conversation ID in meeting_notes: ${meetingNote.chatwoot_conversation_id}`);
+        
+        // Create entry in conversations table for future use
+        try {
+          await this.supabase
+            .from('conversations')
+            .insert({
+              user_id: notification.userId,
+              chatwoot_conversation_id: meetingNote.chatwoot_conversation_id,
+              context_json: {},
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            });
+          console.log(`✅ Created conversation entry for future use`);
+        } catch (insertError) {
+          console.log(`ℹ️ Could not create conversation entry (may already exist):`, insertError);
+        }
+        
+        return meetingNote.chatwoot_conversation_id;
+      }
+
+      // ✅ ENHANCED: Check user_bucket_mapping for WhatsApp number
+      const { data: userMapping, error: mappingError } = await this.supabase
+        .from('user_bucket_mapping')
+        .select('whatsapp_number, contact_id')
+        .eq('user_id', notification.userId)
+        .single();
+
+      if (!mappingError && userMapping?.whatsapp_number) {
+        console.log(`ℹ️ Found WhatsApp number ${userMapping.whatsapp_number} for user ${notification.userId}`);
+        console.log(`💡 User has WhatsApp configured but no active conversation`);
+      }
+
+      // If no existing conversation found anywhere, we need the user to initiate one
       console.log(`⚠️ No existing conversation found for user ${notification.userId}`);
       console.log(`💡 User needs to send a WhatsApp message first to establish conversation`);
       
@@ -653,15 +698,22 @@ class WhatsAppNotificationProcessor {
         console.warn(`⚠️ Error getting meeting context:`, meetingError);
       }
 
-      // Get user's notification preferences
-      const { data: preferences, error: prefError } = await this.supabase
-        .from('user_notification_preferences')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
+      // Get user's notification preferences (handle missing data gracefully)
+      let preferences = null;
+      try {
+        const { data: prefData, error: prefError } = await this.supabase
+          .from('user_notification_preferences')
+          .select('*')
+          .eq('user_id', userId)
+          .single();
 
-      if (prefError) {
-        console.warn(`⚠️ Error getting user preferences:`, prefError);
+        if (!prefError && prefData) {
+          preferences = prefData;
+        } else {
+          console.log(`ℹ️ No user notification preferences found for user ${userId}, using defaults`);
+        }
+      } catch (error) {
+        console.log(`ℹ️ Error getting user preferences, using defaults:`, error);
       }
 
       return {
