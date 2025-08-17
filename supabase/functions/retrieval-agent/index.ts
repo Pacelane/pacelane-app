@@ -68,12 +68,16 @@ async function retrieveRelevantContext(
   const citations: Citation[] = []
   const searchTerms = generateSearchTerms(topic, platform)
 
+  // Search user's LinkedIn posts for style and topic relevance
+  const linkedinPosts = await searchLinkedInPosts(supabaseClient, userId, searchTerms, Math.ceil(maxResults / 3))
+  citations.push(...linkedinPosts)
+
   // Search meeting notes
-  const meetingNotes = await searchMeetingNotes(supabaseClient, userId, searchTerms, Math.ceil(maxResults / 2))
+  const meetingNotes = await searchMeetingNotes(supabaseClient, userId, searchTerms, Math.ceil(maxResults / 3))
   citations.push(...meetingNotes)
 
   // Search knowledge files
-  const knowledgeFiles = await searchKnowledgeFiles(supabaseClient, userId, searchTerms, Math.ceil(maxResults / 2))
+  const knowledgeFiles = await searchKnowledgeFiles(supabaseClient, userId, searchTerms, Math.ceil(maxResults / 3))
   citations.push(...knowledgeFiles)
 
   // Sort by relevance and limit results
@@ -102,6 +106,49 @@ function generateSearchTerms(topic: string, platform?: string): string[] {
   terms.push(...businessTerms)
 
   return [...new Set(terms)] // Remove duplicates
+}
+
+async function searchLinkedInPosts(
+  supabaseClient: any, 
+  userId: string, 
+  searchTerms: string[], 
+  limit: number
+): Promise<Citation[]> {
+  const citations: Citation[] = []
+
+  // Search user's LinkedIn posts for similar topics and writing style examples
+  for (const term of searchTerms.slice(0, 2)) { // Limit to first 2 terms
+    const { data: posts, error } = await supabaseClient
+      .from('linkedin_posts')
+      .select('id, content, published_at, engagement_data')
+      .eq('user_id', userId)
+      .ilike('content', `%${term}%`)
+      .order('published_at', { ascending: false })
+      .limit(limit)
+
+    if (error) {
+      console.error('Error searching LinkedIn posts:', error)
+      continue
+    }
+
+    if (posts) {
+      for (const post of posts) {
+        const relevanceScore = calculateRelevanceScore(post.content, searchTerms)
+        
+        citations.push({
+          type: 'linkedin_post',
+          id: post.id,
+          title: 'Your LinkedIn Post',
+          content: extractRelevantSnippet(post.content, searchTerms),
+          created_at: post.published_at,
+          relevance_score: relevanceScore + 0.2, // Boost LinkedIn posts as they show user's voice
+          source_url: `linkedin://post/${post.id}`
+        })
+      }
+    }
+  }
+
+  return citations
 }
 
 async function searchMeetingNotes(

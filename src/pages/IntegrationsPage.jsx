@@ -12,11 +12,15 @@ import { CalendarService } from '@/services/calendarService';
 import IntegrationCard from '@/design-system/components/IntegrationCard';
 import WhatsAppConfigModal from '@/design-system/components/WhatsAppConfigModal';
 import ReadAiConfigModal from '@/design-system/components/ReadAiConfigModal';
+import LinkedInConfigModal from '@/design-system/components/LinkedInConfigModal';
 
 // Integration logo images
 import whatsappLogo from '@/assets/images/whatsapp-logo.png';
 import readaiLogo from '@/assets/images/readai-logo.webp';
 import googleCalendarLogo from '@/assets/images/google-calendar-logo.png';
+
+// Icons
+import { Linkedin } from 'lucide-react';
 
 /**
  * IntegrationsPage - Manage third-party integrations
@@ -30,6 +34,7 @@ const IntegrationsPage = () => {
   // Modal states
   const [whatsappModalOpen, setWhatsappModalOpen] = useState(false);
   const [readaiModalOpen, setReadaiModalOpen] = useState(false);
+  const [linkedinModalOpen, setLinkedinModalOpen] = useState(false);
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [savingWhatsapp, setSavingWhatsapp] = useState(false);
 
@@ -46,6 +51,10 @@ const IntegrationsPage = () => {
     googleCalendar: {
       enabled: true,
       connected: true,
+    },
+    linkedin: {
+      enabled: false,
+      connected: false,
     },
   });
 
@@ -147,6 +156,14 @@ const IntegrationsPage = () => {
       features: ['Knowledge base integration', 'Content creation', 'File management'],
     },
     {
+      key: 'linkedin',
+      name: 'LinkedIn',
+      description: 'Analyze your LinkedIn posts to understand your writing style and create personalized content',
+      icon: <Linkedin size={24} color="#0A66C2" />,
+      iconColor: '#0A66C2',
+      features: ['Writing style analysis', 'Post scraping', 'Content personalization'],
+    },
+    {
       key: 'readai',
       name: 'Read.ai',
       description: 'Add meeting transcripts to your knowledge base for enhanced content creation',
@@ -204,6 +221,10 @@ const IntegrationsPage = () => {
       setWhatsappModalOpen(true);
       return;
     }
+    if (integrationKey === 'linkedin') {
+      setLinkedinModalOpen(true);
+      return;
+    }
     if (integrationKey === 'readai') {
       setReadaiModalOpen(true);
       return;
@@ -254,6 +275,21 @@ const IntegrationsPage = () => {
     toast.success('Read.ai integration configured successfully!');
   };
 
+  // Handle LinkedIn setup completion
+  const handleLinkedInComplete = () => {
+    // Update integration status to connected and enabled
+    setIntegrations(prev => ({
+      ...prev,
+      linkedin: {
+        ...prev.linkedin,
+        connected: true,
+        enabled: true,
+      }
+    }));
+    
+    toast.success('LinkedIn integration configured successfully!');
+  };
+
   return (
     <div style={containerStyles}>
       {/* Header Section */}
@@ -297,6 +333,13 @@ const IntegrationsPage = () => {
         isOpen={readaiModalOpen}
         onClose={() => setReadaiModalOpen(false)}
         onComplete={handleReadaiComplete}
+      />
+
+      {/* LinkedIn Configuration Modal */}
+      <LinkedInConfigModal
+        isOpen={linkedinModalOpen}
+        onClose={() => setLinkedinModalOpen(false)}
+        onComplete={handleLinkedInComplete}
       />
     </div>
   );

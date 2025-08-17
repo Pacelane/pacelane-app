@@ -484,6 +484,41 @@ export class ContentService {
   // ========== LINKEDIN POST SCRAPING & TONE ANALYSIS ==========
 
   /**
+   * Scrape LinkedIn posts using Apify actor
+   * @param username - LinkedIn username (without @)
+   * @param limit - Number of posts to scrape (default 50)
+   * @returns Promise with scraping result
+   */
+  static async scrapeLinkedInPosts(username: string, limit: number = 50): Promise<ApiResponse<{
+    success: boolean;
+    message: string;
+    postsCount: number;
+  }>> {
+    try {
+      console.log('ContentService: Scraping LinkedIn posts with Apify');
+
+      const { data, error } = await supabase.functions.invoke('linkedin-post-scraper', {
+        body: {
+          action: 'scrape_posts',
+          userId: (await supabase.auth.getUser()).data.user?.id,
+          data: { username, limit }
+        }
+      });
+
+      if (error) {
+        console.error('ContentService: LinkedIn posts scraping error:', error);
+        throw error;
+      }
+
+      console.log('ContentService: LinkedIn posts scraped successfully');
+      return { data };
+    } catch (error: any) {
+      console.error('ContentService: scrapeLinkedInPosts failed:', error);
+      return { error: error.message || 'Failed to scrape LinkedIn posts' };
+    }
+  }
+
+  /**
    * Add LinkedIn posts manually for tone analysis
    * @param posts - Array of LinkedIn post content strings
    * @returns Promise with operation result
