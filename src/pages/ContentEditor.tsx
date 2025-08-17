@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/api/useAuth';
 import { useContent } from '@/hooks/api/useContent';
 import { useTheme } from '@/services/theme-context';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useHelp } from '../services/help-context';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/design-system/components/Toast';
@@ -72,6 +73,7 @@ const ContentEditor = () => {
   const { colors, themePreference, setTheme } = useTheme();
   const { openHelp } = useHelp();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   
   // ========== CLEAN CONTENT STATE MANAGEMENT ==========
   const {
@@ -121,6 +123,9 @@ const ContentEditor = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showTranscriptModal, setShowTranscriptModal] = useState(false);
   const [processingTranscript, setProcessingTranscript] = useState(false);
+  
+  // Mobile-specific state
+  const [activeMobileTab, setActiveMobileTab] = useState<'editor' | 'knowledge' | 'chat'>('editor');
 
 
   const [fileStructure, setFileStructure] = useState<FileItem[]>([
@@ -482,21 +487,24 @@ ${contentPrompt}
     backgroundColor: colors.bg.default,
   };
 
-  // Main content area styles (below nav)
+  // Main content area styles (below nav) - responsive
   const mainContentStyles = {
     display: 'flex',
+    flexDirection: isMobile ? 'column' : 'row',
     flex: 1,
     overflow: 'hidden',
   };
 
-  // Left sidebar styles
+  // Left sidebar styles - responsive
   const leftSidebarStyles: React.CSSProperties = {
-    width: '280px',
+    width: isMobile ? '100%' : '280px',
     backgroundColor: colors.bg.sidebar?.subtle || colors.bg.card.default,
-    borderRight: `${stroke.default} solid ${colors.border.default}`,
-    display: 'flex',
+    borderRight: isMobile ? 'none' : `${stroke.default} solid ${colors.border.default}`,
+    borderBottom: isMobile ? `${stroke.default} solid ${colors.border.default}` : 'none',
+    display: isMobile ? (activeMobileTab === 'knowledge' ? 'flex' : 'none') : 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
+    flex: isMobile ? 1 : 'none',
   };
 
   // Sidebar section styles
@@ -540,33 +548,37 @@ ${contentPrompt}
     gap: spacing.spacing[8],
   };
 
-  // Center editor styles
+  // Center editor styles - responsive
   const centerEditorStyles: React.CSSProperties = {
     flex: 1,
-    display: 'flex',
+    display: isMobile ? (activeMobileTab === 'editor' ? 'flex' : 'none') : 'flex',
     flexDirection: 'column',
     backgroundColor: colors.bg.default,
     overflow: 'hidden',
   };
 
-  // Editor content styles
+  // Editor content styles - responsive
   const editorContentStyles = {
     flex: 1,
-    padding: `${spacing.spacing[48]} ${spacing.spacing[80]}`, // Increased padding for better breathing room
+    padding: isMobile 
+      ? `${spacing.spacing[24]} ${spacing.spacing[16]}`
+      : `${spacing.spacing[48]} ${spacing.spacing[80]}`,
     overflow: 'auto',
-    maxWidth: '1200px', // Increased from 800px for better use of space
+    maxWidth: isMobile ? 'none' : '1200px',
     margin: '0 auto',
     width: '100%',
   };
 
-  // Right chat sidebar styles
+  // Right chat sidebar styles - responsive
   const rightSidebarStyles: React.CSSProperties = {
-    width: '320px',
+    width: isMobile ? '100%' : '320px',
     backgroundColor: colors.bg.sidebar?.subtle || colors.bg.card.default,
-    borderLeft: `${stroke.default} solid ${colors.border.default}`,
-    display: 'flex',
+    borderLeft: isMobile ? 'none' : `${stroke.default} solid ${colors.border.default}`,
+    borderTop: isMobile ? `${stroke.default} solid ${colors.border.default}` : 'none',
+    display: isMobile ? (activeMobileTab === 'chat' ? 'flex' : 'none') : 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
+    flex: isMobile ? 1 : 'none',
   };
 
   // Chat header styles
@@ -680,6 +692,48 @@ ${contentPrompt}
         onTitleChange={handleTitleChange}
         onSaveDraft={handleSaveDraft}
       />
+      
+      {/* Mobile Tab Navigation */}
+      {isMobile && (
+        <div style={{
+          display: 'flex',
+          backgroundColor: colors.bg.card.default,
+          borderBottom: `${stroke.default} solid ${colors.border.default}`,
+        }}>
+          {[
+            { id: 'editor', label: 'Editor', icon: <FileText size={16} /> },
+            { id: 'knowledge', label: 'Knowledge', icon: <Book size={16} /> },
+            { id: 'chat', label: 'AI Chat', icon: <User size={16} /> },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveMobileTab(tab.id as 'editor' | 'knowledge' | 'chat')}
+              style={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: spacing.spacing[8],
+                padding: spacing.spacing[16],
+                border: 'none',
+                backgroundColor: activeMobileTab === tab.id ? colors.bg.default : 'transparent',
+                color: activeMobileTab === tab.id ? colors.text.default : colors.text.muted,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                borderBottom: activeMobileTab === tab.id ? `2px solid ${colors.border.highlight}` : '2px solid transparent',
+              }}
+            >
+              {tab.icon}
+              <span style={{
+                ...textStyles.sm.medium,
+                color: activeMobileTab === tab.id ? colors.text.default : colors.text.muted,
+              }}>
+                {tab.label}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
       
       {/* Main Content Area */}
       <div style={mainContentStyles}>
@@ -1342,7 +1396,7 @@ ${contentPrompt}
 
              <div style={{
                display: 'grid',
-               gridTemplateColumns: '1fr 1fr',
+               gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
                gap: spacing.spacing[16],
                marginBottom: spacing.spacing[24],
                flex: 1,
@@ -1388,6 +1442,7 @@ ${contentPrompt}
 
              <div style={{
                display: 'flex',
+               flexDirection: isMobile ? 'column' : 'row',
                gap: spacing.spacing[12],
                justifyContent: 'flex-end',
                marginTop: 'auto',

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTheme } from '../../services/theme-context.jsx';
+import { useIsMobile } from '../../hooks/use-mobile.tsx';
 import { spacing } from '../tokens/spacing.js';
 import { stroke } from '../tokens/stroke.js';
 import { textStyles } from '../styles/typography/typography-styles.js';
@@ -34,6 +35,7 @@ const EditorNav = ({
   ...rest 
 }) => {
   const { colors } = useTheme();
+  const isMobile = useIsMobile();
 
   // Handle go back button click
   const handleGoBack = () => {
@@ -65,12 +67,12 @@ const EditorNav = ({
     }
   };
 
-  // Container styles
+  // Container styles - responsive
   const containerStyles = {
     backgroundColor: colors.bg.default,
     borderBottom: `${stroke.DEFAULT} solid ${colors.border.default}`,
-    paddingLeft: spacing.spacing[40],
-    paddingRight: spacing.spacing[40],
+    paddingLeft: isMobile ? spacing.spacing[16] : spacing.spacing[40],
+    paddingRight: isMobile ? spacing.spacing[16] : spacing.spacing[40],
     paddingTop: spacing.spacing[16],
     paddingBottom: spacing.spacing[16],
     height: '64px',
@@ -83,14 +85,17 @@ const EditorNav = ({
     boxSizing: 'border-box',
   };
 
-  // Title container styles
+  // Title container styles - responsive
   const titleContainerStyles = {
     display: 'flex',
     alignItems: 'center',
     gap: spacing.spacing[8],
-    position: 'absolute',
-    left: '50%',
-    transform: 'translateX(-50%)',
+    position: isMobile ? 'static' : 'absolute',
+    left: isMobile ? 'auto' : '50%',
+    transform: isMobile ? 'none' : 'translateX(-50%)',
+    flex: isMobile ? 1 : 'none',
+    marginLeft: isMobile ? spacing.spacing[12] : 0,
+    marginRight: isMobile ? spacing.spacing[12] : 0,
   };
 
   // Title text styles

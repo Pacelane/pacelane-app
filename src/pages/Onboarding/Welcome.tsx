@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/services/theme-context';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -7,7 +7,6 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import TopNav from '@/design-system/components/TopNav';
 import Button from '@/design-system/components/Button';
 import Bichaurinho from '@/design-system/components/Bichaurinho';
-import AppWorkflowDiagram from '@/design-system/components/AppWorkflowDiagram';
 import OnboardingProgressIndicator from '@/design-system/components/OnboardingProgressIndicator';
 
 // Design System Tokens
@@ -16,22 +15,18 @@ import { cornerRadius } from '@/design-system/tokens/corner-radius';
 import { getShadow } from '@/design-system/tokens/shadows';
 import { typography } from '@/design-system/tokens/typography';
 import { textStyles } from '@/design-system/styles/typography/typography-styles';
+import { getResponsiveContainer, getResponsiveWidth } from '@/design-system/utils/responsive';
 
 // Icons
-import { ArrowRight, Info, Clock, Target, Sparkles } from 'lucide-react';
+import { ArrowRight, Clock, Target, Sparkles } from 'lucide-react';
 
 const Welcome = () => {
   const navigate = useNavigate();
   const { colors } = useTheme();
   const isMobile = useIsMobile();
-  const [showWorkflow, setShowWorkflow] = useState(false);
 
   const handleContinue = () => {
     navigate('/onboarding/first-things-first');
-  };
-
-  const toggleWorkflow = () => {
-    setShowWorkflow(!showWorkflow);
   };
 
   return (
@@ -52,9 +47,10 @@ const Welcome = () => {
           flex: 1,
           position: 'relative',
           backgroundColor: colors.bg.default,
-          padding: spacing.spacing[24],
-          paddingBottom: '100px', // Account for button container height
-          overflow: 'auto',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          ...getResponsiveContainer(isMobile, 'page'),
         }}
       >
         {/* Gradient background with low opacity */}
@@ -77,21 +73,24 @@ const Welcome = () => {
         {/* Main Content Container */}
         <div
           style={{
-            maxWidth: '900px',
-            margin: '0 auto',
             position: 'relative',
             zIndex: 1,
             display: 'flex',
             flexDirection: 'column',
             gap: spacing.spacing[32],
-            paddingTop: spacing.spacing[40],
+            alignItems: 'center',
+            width: '100%',
           }}
         >
           {/* Progress Indicator */}
-          <OnboardingProgressIndicator 
-            currentStep={1}
-            compact={true}
-          />
+          <div style={{
+            ...getResponsiveWidth(isMobile, 'card')
+          }}>
+            <OnboardingProgressIndicator 
+              currentStep={1}
+              compact={true}
+            />
+          </div>
 
           {/* Welcome Header Card */}
           <div
@@ -101,6 +100,7 @@ const Welcome = () => {
               border: `1px solid ${colors.border.default}`,
               boxShadow: getShadow('regular.card', colors, { withBorder: true }),
               overflow: 'hidden',
+              ...getResponsiveWidth(isMobile, 'card'),
             }}
           >
             {/* Header Section */}
@@ -231,65 +231,6 @@ const Welcome = () => {
             </div>
           </div>
 
-          {/* How It Works Section */}
-          <div
-            style={{
-              backgroundColor: colors.bg.card.default,
-              borderRadius: cornerRadius.borderRadius.lg,
-              border: `1px solid ${colors.border.default}`,
-              boxShadow: getShadow('regular.card', colors, { withBorder: true }),
-              padding: spacing.spacing[32],
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                marginBottom: spacing.spacing[24],
-              }}
-            >
-              <div>
-                <h2
-                  style={{
-                    ...textStyles['2xl'].semibold,
-                    color: colors.text.default,
-                    margin: 0,
-                  }}
-                >
-                  How Pacelane Works
-                </h2>
-                <p
-                  style={{
-                    ...textStyles.md.normal,
-                    color: colors.text.subtle,
-                    margin: 0,
-                    marginTop: spacing.spacing[4],
-                  }}
-                >
-                  Your complete LinkedIn content workflow in 6 simple steps
-                </p>
-              </div>
-              
-              <Button
-                label={showWorkflow ? "Hide Details" : "Show Details"}
-                style="ghost"
-                size="sm"
-                leadIcon={<Info size={14} />}
-                onClick={toggleWorkflow}
-              />
-            </div>
-
-            {showWorkflow && (
-              <div style={{ marginTop: spacing.spacing[24] }}>
-                <AppWorkflowDiagram 
-                  showTitle={false}
-                  compact={false}
-                />
-              </div>
-            )}
-          </div>
-
           {/* What to Expect */}
           <div
             style={{
@@ -298,6 +239,7 @@ const Welcome = () => {
               border: `1px solid ${colors.border.default}`,
               boxShadow: getShadow('regular.card', colors, { withBorder: true }),
               padding: spacing.spacing[32],
+              ...getResponsiveWidth(isMobile, 'card'),
             }}
           >
             <h2
