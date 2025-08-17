@@ -21,6 +21,7 @@ const SuggestionCard = ({
   // Handlers
   onPostsClick,
   onGenerateClick,
+  onCalendarClick,
   
   // Standard props
   className = '',

@@ -90,7 +90,7 @@ const StreakCard = ({
           justifyContent: 'center',
         }}
       >
-        <Bichaurinho variant={34} size={40} />
+        <Bichaurinho variant={32} size={40} />
         <div style={awesomeSerifStyle}>
           {streakDays} Days
         </div>

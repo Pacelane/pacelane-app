@@ -253,34 +253,75 @@ const ContentEditor = () => {
     console.log('ContentEditor: Loading template with ID:', templateId);
     console.log('ContentEditor: getTemplateById function:', getTemplateById);
     
-    try {
-      const template = getTemplateById(templateId);
-      console.log('ContentEditor: Template found:', template);
-      
-      if (template) {
-        setDraftTitle(template.title);
-        setEditorContent(template.content);
-        
-        toast({
-          type: 'success',
-          message: `Template "${template.title}" loaded successfully!`,
-          duration: 3000
-        });
-      } else {
-        console.error('Template not found:', templateId);
-        toast({
-          type: 'error',
-          message: 'Template not found. Please try selecting another template.',
+    // Safety check for getTemplateById function
+    if (typeof getTemplateById !== 'function') {
+      console.error('ContentEditor: getTemplateById is not a function:', typeof getTemplateById);
+      if (toast) {
+        toast.error('Template system not available. Please refresh the page and try again.', {
           duration: 5000
         });
       }
+      return;
+    }
+    
+    try {
+      // Validate templateId
+      if (!templateId || typeof templateId !== 'string') {
+        console.error('ContentEditor: Invalid templateId provided:', templateId);
+        if (toast) {
+          toast.error('Invalid template selected. Please try again.', {
+            duration: 5000
+          });
+        }
+        return;
+      }
+      
+      const template = getTemplateById(templateId);
+      console.log('ContentEditor: Template found:', template);
+      
+      if (template && template.content && template.title) {
+        setDraftTitle(template.title);
+        setEditorContent(template.content);
+        
+        console.log('ContentEditor: Template loaded successfully:', {
+          title: template.title,
+          contentLength: template.content.length
+        });
+        
+        if (toast) {
+          toast.success(`Template "${template.title}" loaded successfully!`, {
+            duration: 3000
+          });
+        }
+      } else {
+        console.error('ContentEditor: Template not found or missing required fields:', {
+          templateId,
+          template,
+          hasContent: template?.content ? true : false,
+          hasTitle: template?.title ? true : false
+        });
+        
+        if (toast) {
+          toast.error('Template not found or incomplete. Please try selecting another template.', {
+            duration: 5000
+          });
+        }
+        
+        // Set default content to prevent empty editor
+        setDraftTitle('New Post');
+        setEditorContent('# New Post\n\nStart writing your content here...');
+      }
     } catch (error) {
-      console.error('Error loading template:', error);
-      toast({
-        type: 'error',
-        message: 'An unexpected error occurred while loading the template.',
-        duration: 5000
-      });
+      console.error('ContentEditor: Error loading template:', error);
+      if (toast) {
+        toast.error('An unexpected error occurred while loading the template. Please try again.', {
+          duration: 5000
+        });
+      }
+      
+      // Set default content to prevent empty editor
+      setDraftTitle('New Post');
+      setEditorContent('# New Post\n\nStart writing your content here...');
     }
   };
 

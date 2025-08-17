@@ -30,9 +30,23 @@ const Templates = () => {
   // Handle template selection
   const handleTemplateClick = (templateId: string) => {
     console.log('Template clicked:', templateId);
-    // Temporarily navigate without templateId to test if ContentEditor works
-    navigate('/content-editor');
-    // navigate('/content-editor', { state: { templateId } });
+    
+    // Validate template exists before navigating
+    const template = templates.find(t => t.id === templateId);
+    if (!template) {
+      console.error('Template not found in local data:', templateId);
+      return;
+    }
+    
+    console.log('Template data being passed:', {
+      id: template.id,
+      title: template.title,
+      hasContent: template.content ? true : false,
+      contentLength: template.content?.length || 0
+    });
+    
+    // Navigate to content editor with template ID in state
+    navigate('/content-editor', { state: { templateId } });
   };
 
   // Handle start from scratch
