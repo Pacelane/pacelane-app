@@ -638,7 +638,7 @@ export class ContentService {
     if (['mp3', 'wav', 'ogg', 'm4a', 'flac'].includes(extension)) {
       return 'audio';
     }
-    if (['pdf', 'docx', 'doc', 'txt'].includes(extension)) {
+    if (['pdf', 'docx', 'doc', 'pptx', 'ppt', 'xlsx', 'xls', 'txt', 'md', 'csv', 'json'].includes(extension)) {
       return 'document';
     }
     
@@ -652,20 +652,33 @@ export class ContentService {
    */
   static validateFileType(file: File): FileValidationResult {
     const allowedTypes = [
+      // Text-based formats (best for content extraction)
+      'text/plain',
+      'text/markdown',
+      'text/csv',
+      'application/json',
+      // Document formats
       'application/pdf',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       'application/msword',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-excel',
+      // Image formats
       'image/png',
       'image/jpeg',
       'image/gif',
       'image/webp',
       'image/svg+xml',
+      // Audio formats
       'audio/mpeg',
       'audio/mp3',
       'audio/wav',
       'audio/ogg',
       'audio/m4a',
       'audio/flac',
+      // Video formats
       'video/mp4',
       'video/avi',
       'video/mov',
@@ -675,8 +688,15 @@ export class ContentService {
     // Also check file extension as fallback
     const fileName = file.name.toLowerCase();
     const allowedExtensions = [
-      '.pdf', '.docx', '.doc', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg',
+      // Text-based formats (best for content extraction)
+      '.txt', '.md', '.csv', '.json',
+      // Document formats
+      '.pdf', '.docx', '.doc', '.pptx', '.ppt', '.xlsx', '.xls',
+      // Image formats
+      '.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg',
+      // Audio formats
       '.mp3', '.wav', '.ogg', '.m4a', '.flac',
+      // Video formats
       '.mp4', '.avi', '.mov', '.webm'
     ];
     
@@ -685,7 +705,7 @@ export class ContentService {
     if (!allowedTypes.includes(file.type) && !hasValidExtension) {
       return {
         valid: false,
-        error: 'File type not supported. Allowed types: PDF, Word documents, images (PNG, JPG, GIF, WebP, SVG), audio (MP3, WAV, OGG, M4A, FLAC), and video (MP4, AVI, MOV, WebM).'
+        error: 'File type not supported. Allowed types: Text files (TXT, MD, CSV, JSON), PDF, Word documents (DOCX, DOC), PowerPoint (PPTX, PPT), Excel (XLSX, XLS), images (PNG, JPG, GIF, WebP, SVG), audio (MP3, WAV, OGG, M4A, FLAC), and video (MP4, AVI, MOV, WebM).'
       };
     }
 
