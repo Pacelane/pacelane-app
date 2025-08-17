@@ -25,6 +25,7 @@ import EmptyState from '@/design-system/components/EmptyState';
 import SubtleLoadingSpinner from '@/design-system/components/SubtleLoadingSpinner';
 import FirstTimeUserHome from '@/design-system/components/FirstTimeUserHome';
 import InitialHome from './InitialHome';
+import VertexAITestComponent from '@/components/VertexAITestComponent';
 
 // Design System Tokens
 import { spacing } from '../design-system/tokens/spacing';
@@ -443,6 +444,9 @@ const ProductHome = () => {
           <h1 style={welcomeHeadingStyle}>
             Welcome, {getUserName()}!
           </h1>
+
+          {/* Vertex AI Test Component - Remove this after testing */}
+          <VertexAITestComponent />
 
           {/* Streak Card and Stats Card Row - Using Real Data */}
           <div style={{ display: 'flex', gap: spacing.spacing[16] }}>
