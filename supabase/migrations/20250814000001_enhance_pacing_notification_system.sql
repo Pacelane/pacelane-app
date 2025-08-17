@@ -10,14 +10,22 @@ BEGIN
   DROP FUNCTION IF EXISTS update_meeting_context_tracking(UUID);
   DROP FUNCTION IF EXISTS should_send_pacing_suggestion_today(UUID);
   
-  -- Drop existing policies if they exist
-  DROP POLICY IF EXISTS "Users can view their own pacing suggestions" ON public.pacing_suggestions;
-  DROP POLICY IF EXISTS "Service role can manage all pacing data" ON public.pacing_suggestions;
-  DROP POLICY IF EXISTS "Users can view their own meeting context" ON public.meeting_context_tracking;
-  DROP POLICY IF EXISTS "Service role can manage all meeting context" ON public.meeting_context_tracking;
-  DROP POLICY IF EXISTS "Users can view their own notification preferences" ON public.user_notification_preferences;
-  DROP POLICY IF EXISTS "Users can update their own notification preferences" ON public.user_notification_preferences;
-  DROP POLICY IF EXISTS "Service role can manage all notification preferences" ON public.user_notification_preferences;
+  -- Drop existing policies if they exist (only if tables exist)
+  IF EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'pacing_suggestions') THEN
+    DROP POLICY IF EXISTS "Users can view their own pacing suggestions" ON public.pacing_suggestions;
+    DROP POLICY IF EXISTS "Service role can manage all pacing data" ON public.pacing_suggestions;
+  END IF;
+  
+  IF EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'meeting_context_tracking') THEN
+    DROP POLICY IF EXISTS "Users can view their own meeting context" ON public.meeting_context_tracking;
+    DROP POLICY IF EXISTS "Service role can manage all meeting context" ON public.meeting_context_tracking;
+  END IF;
+  
+  IF EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'user_notification_preferences') THEN
+    DROP POLICY IF EXISTS "Users can view their own notification preferences" ON public.user_notification_preferences;
+    DROP POLICY IF EXISTS "Users can update their own notification preferences" ON public.user_notification_preferences;
+    DROP POLICY IF EXISTS "Service role can manage all notification preferences" ON public.user_notification_preferences;
+  END IF;
   
   -- Drop existing tables if they exist (this will cascade to policies and indices)
   DROP TABLE IF EXISTS public.pacing_suggestions CASCADE;

@@ -2,7 +2,7 @@
 // This hook provides comprehensive content-related state and operations
 // Frontend developers can use this for all content functionality
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { contentApi } from '@/api/content';
 import { useAuth } from '@/hooks/api/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -119,7 +119,7 @@ export const useContent = (): ContentState & ContentActions => {
    * Load all knowledge files for the current user
    * @returns Promise with operation result
    */
-  const loadKnowledgeFiles = async () => {
+  const loadKnowledgeFiles = useCallback(async () => {
     return executeContentOperation(
       async () => {
         const result = await contentApi.loadKnowledgeFiles(user!.id);
@@ -133,7 +133,7 @@ export const useContent = (): ContentState & ContentActions => {
       'loadingFiles',
       'Knowledge files loaded successfully'
     );
-  };
+  }, [user]);
 
   /**
    * Upload a single file to knowledge base
@@ -245,7 +245,7 @@ export const useContent = (): ContentState & ContentActions => {
    * Load all saved drafts for the current user
    * @returns Promise with operation result
    */
-  const loadSavedDrafts = async () => {
+  const loadSavedDrafts = useCallback(async () => {
     return executeContentOperation(
       async () => {
         const result = await contentApi.loadSavedDrafts(user!.id);
@@ -259,7 +259,7 @@ export const useContent = (): ContentState & ContentActions => {
       'loadingDrafts',
       'Saved drafts loaded successfully'
     );
-  };
+  }, [user]);
 
   /**
    * Save a new draft
@@ -343,7 +343,7 @@ export const useContent = (): ContentState & ContentActions => {
    * Load active content suggestions for the current user
    * @returns Promise with operation result
    */
-  const loadContentSuggestions = async () => {
+  const loadContentSuggestions = useCallback(async () => {
     return executeContentOperation(
       async () => {
         const result = await contentApi.loadContentSuggestions(user!.id);
@@ -357,7 +357,7 @@ export const useContent = (): ContentState & ContentActions => {
       'loadingSuggestions',
       'Content suggestions loaded successfully'
     );
-  };
+  }, [user]);
 
   /**
    * Mark a content suggestion as used

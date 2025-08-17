@@ -74,9 +74,9 @@ async function generateContentDraft(
     language: brief?.language || brief?.locale,
   })
 
-  const openaiApiKey = Deno.env.get('OPENAI_API_KEY')
-  if (!openaiApiKey) {
-    throw new Error('OPENAI_API_KEY is required for content generation')
+  const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY')
+  if (!anthropicApiKey) {
+    throw new Error('ANTHROPIC_API_KEY is required for content generation')
   }
 
   // Get rich user profile for enhanced context
@@ -84,13 +84,17 @@ async function generateContentDraft(
   // add userId so inferRequestedLanguage can use it
   userProfile.user_id = userId
 
+  // Get user's writing tone analysis from LinkedIn posts
+  const writingProfile = await getUserWritingProfile(userId, supabaseClient)
+  userProfile.writingProfile = writingProfile
+
   // Prepare context from citations
   const contextText = citations.map(citation => 
     `[${citation.type.toUpperCase()}] ${citation.content}`
   ).join('\n\n')
 
-  // Generate content based on platform
-  const content = await generatePlatformSpecificContent(brief, contextText, userProfile, openaiApiKey)
+  // Generate content based on platform using Anthropic Claude
+  const content = await generatePlatformSpecificContent(brief, contextText, userProfile, anthropicApiKey)
   console.log('WriterAgent: content generated length (chars)', content?.length || 0)
 
   // Calculate word count
@@ -107,9 +111,10 @@ async function generateContentDraft(
       word_count: wordCount,
       citations_used: citations.length,
       generation_metadata: {
-        model: 'gpt-4o-mini',
+        model: 'claude-3-haiku-20240307',
         temperature: 0.7,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        provider: 'anthropic'
       }
     }
   }
@@ -119,11 +124,11 @@ async function generatePlatformSpecificContent(
   brief: any, 
   contextText: string, 
   userContext: any, 
-  openaiApiKey: string
+  anthropicApiKey: string
 ): Promise<string> {
   const platform = brief.platform?.toLowerCase() || 'linkedin'
   // Determine requested content language from brief or recent WhatsApp inputs
-  const contentLanguage = await inferRequestedLanguage(brief, openaiApiKey, userContext)
+  const contentLanguage = await inferRequestedLanguage(brief, anthropicApiKey, userContext)
   console.log('WriterAgent: resolved content language', contentLanguage)
   console.log('WriterAgent: platform', platform)
 
@@ -148,37 +153,35 @@ async function generatePlatformSpecificContent(
       userPrompt = buildGenericPrompt(brief, contextText, userContext)
   }
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${openaiApiKey}`,
+      'x-api-key': anthropicApiKey,
+      'anthropic-version': '2023-06-01'
     },
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
+      model: 'claude-3-haiku-20240307',
+      max_tokens: getMaxTokens(brief.length),
+      temperature: 0.7,
+      system: systemPrompt,
       messages: [
-        {
-          role: 'system',
-          content: systemPrompt
-        },
         {
           role: 'user',
           content: userPrompt
         }
-      ],
-      temperature: 0.7,
-      max_tokens: getMaxTokens(brief.length),
+      ]
     }),
   })
 
   if (!response.ok) {
     const apiErrorText = await response.text().catch(() => '')
-    console.error('WriterAgent: OpenAI API error', response.status, apiErrorText)
-    throw new Error(`OpenAI API error: ${response.status}`)
+    console.error('WriterAgent: Anthropic API error', response.status, apiErrorText)
+    throw new Error(`Anthropic API error: ${response.status}`)
   }
 
   const data = await response.json()
-  const generatedContent = data.choices[0]?.message?.content
+  const generatedContent = data.content[0]?.text
 
   if (!generatedContent) {
     throw new Error('No content generated')
@@ -186,11 +189,11 @@ async function generatePlatformSpecificContent(
 
   // Verify language, auto-correct if model ignored constraint
   try {
-    const detectedOutLang = await detectLanguageOf(generatedContent, openaiApiKey)
+    const detectedOutLang = await detectLanguageOf(generatedContent, anthropicApiKey)
     console.log('WriterAgent: output language detected', detectedOutLang)
     if (detectedOutLang && contentLanguage && detectedOutLang.toLowerCase() !== contentLanguage.toLowerCase()) {
       console.log(`WriterAgent: correcting output language from ${detectedOutLang} to ${contentLanguage}`)
-      const corrected = await translateToLanguage(generatedContent, contentLanguage, openaiApiKey)
+      const corrected = await translateToLanguage(generatedContent, contentLanguage, anthropicApiKey)
       return corrected || generatedContent
     }
   } catch (e) {
@@ -207,7 +210,7 @@ async function generatePlatformSpecificContent(
  * 2) Language of the latest WhatsApp-derived inputs (meeting_notes.content or audio_files.transcription)
  * 3) Fallback to 'English'
  */
-async function inferRequestedLanguage(brief: any, openaiApiKey: string, userContext: any): Promise<string> {
+async function inferRequestedLanguage(brief: any, anthropicApiKey: string, userContext: any): Promise<string> {
   try {
     const explicit = (brief?.language || brief?.locale || '').toString().trim()
     if (explicit) {
@@ -219,7 +222,7 @@ async function inferRequestedLanguage(brief: any, openaiApiKey: string, userCont
     const originalContent = (brief?.original_content || '').toString().trim()
     if (originalContent) {
       console.log('WriterAgent: inferring language from brief.original_content (exact order message)')
-      const fromOriginal = await detectLanguageOf(originalContent, openaiApiKey)
+      const fromOriginal = await detectLanguageOf(originalContent, anthropicApiKey)
       if (fromOriginal) {
         console.log('WriterAgent: detected from original_content', fromOriginal)
         return fromOriginal
@@ -270,20 +273,21 @@ async function inferRequestedLanguage(brief: any, openaiApiKey: string, userCont
     // Use a tiny language-id prompt (kept server-side only)
     const prompt = `Detect the primary human language of the following text. Return only the language name in English (e.g., "Portuguese", "Spanish", "English").\n\nText:\n${corpus}`
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${openaiApiKey}`,
+        'x-api-key': anthropicApiKey,
+        'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: 'You are a precise language identification tool. Output only the language name.' },
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0,
+        model: 'claude-3-haiku-20240307',
         max_tokens: 10,
+        temperature: 0,
+        system: 'You are a precise language identification tool. Output only the language name.',
+        messages: [
+          { role: 'user', content: prompt }
+        ]
       })
     })
 
@@ -293,7 +297,7 @@ async function inferRequestedLanguage(brief: any, openaiApiKey: string, userCont
       return 'English'
     }
     const data = await response.json()
-    const detected = data.choices?.[0]?.message?.content?.trim()
+    const detected = data.content?.[0]?.text?.trim()
     console.log('WriterAgent: detected language', detected)
     return detected || 'English'
   } catch (_err) {
@@ -302,49 +306,57 @@ async function inferRequestedLanguage(brief: any, openaiApiKey: string, userCont
   }
 }
 
-async function detectLanguageOf(text: string, openaiApiKey: string): Promise<string> {
+async function detectLanguageOf(text: string, anthropicApiKey: string): Promise<string> {
   try {
     const prompt = `Detect the primary human language of the following text. Return only the language name in English.\n\nText:\n${text.slice(0, 2000)}`
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${openaiApiKey}` },
+      headers: { 
+        'Content-Type': 'application/json', 
+        'x-api-key': anthropicApiKey,
+        'anthropic-version': '2023-06-01'
+      },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: 'You are a precise language identification tool. Output only the language name.' },
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0,
+        model: 'claude-3-haiku-20240307',
         max_tokens: 10,
+        temperature: 0,
+        system: 'You are a precise language identification tool. Output only the language name.',
+        messages: [
+          { role: 'user', content: prompt }
+        ]
       })
     })
     if (!response.ok) return ''
     const data = await response.json()
-    return data.choices?.[0]?.message?.content?.trim() || ''
+    return data.content?.[0]?.text?.trim() || ''
   } catch (_) {
     return ''
   }
 }
 
-async function translateToLanguage(text: string, targetLanguage: string, openaiApiKey: string): Promise<string> {
+async function translateToLanguage(text: string, targetLanguage: string, anthropicApiKey: string): Promise<string> {
   try {
     const prompt = `Translate the following LinkedIn post to ${targetLanguage}. Preserve line breaks, placeholders like {X}, emoji numerals, and overall structure. Return only the translated post.\n\n${text}`
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${openaiApiKey}` },
+      headers: { 
+        'Content-Type': 'application/json', 
+        'x-api-key': anthropicApiKey,
+        'anthropic-version': '2023-06-01'
+      },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: 'You are a careful translator that preserves formatting and placeholders.' },
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0.2,
+        model: 'claude-3-haiku-20240307',
         max_tokens: 1200,
+        temperature: 0.2,
+        system: 'You are a careful translator that preserves formatting and placeholders.',
+        messages: [
+          { role: 'user', content: prompt }
+        ]
       })
     })
     if (!response.ok) return ''
     const data = await response.json()
-    return data.choices?.[0]?.message?.content || ''
+    return data.content?.[0]?.text || ''
   } catch (_) {
     return ''
   }
@@ -367,51 +379,21 @@ function buildLinkedInPrompt(brief: any, contextText: string, userContext: any):
     return ''
   })()
 
-  return `ROLE
-You are the founder writing in first person. Operator tone, direct and human. No corporate speak.
+  return `You are ${userContext.name || 'a business professional'} writing a LinkedIn post in your own voice.
 
-PROFILE SNAPSHOT
-- Name: ${userContext.name}
-- Role: ${userContext.headline}
-- Company: ${userContext.company}
-- Industry: ${userContext.industry}
-- Preferred Topics: ${userContext.preferredTopics?.join(', ') || '—'}
-${cadenceHint}
+Write about: ${brief.topic}
+Tone: ${brief.tone || 'professional'}
+Length: ${getLengthGuide(brief.length)}
 
-CONSTRAINTS
-- First person only. Never address the reader directly.
-- Short lines. New line every 1–2 sentences.
-- No bold, no hashtags, no bullets (use emoji numerals for steps).
-- Avoid metrics; use placeholders like {X} or {insert what changed} if needed.
-- Narrate a real internal system already in use.
-- Hook must imply there’s a repeatable system/resource behind the result.
+${contextText ? `Context to reference naturally:\n${contextText}\n` : ''}
 
-CONTEXT (reference naturally; do not dump)
-${contextText}
+Write a ${brief.platform || 'LinkedIn'} post that:
+- Sounds authentic and personal
+- Shares a practical insight or experience
+- Uses your natural speaking voice
+- Doesn't use hashtags or bold formatting
 
-WRITING MODE
-${assetMode === 'steal' ? `“Steal This” asset reveal. Minimal narrative. Present the internal tool/prompt/workflow and what it unlocks.` : `Outcome-based breakdown. “I built → how I used it → what changed”.`}
-
-OUTPUT
-- A LinkedIn post written as ${userContext.name}:
-  - Start with a hook implying a system.
-  - Narrate the system you used.
-  - If steps help clarity, format as:
-    1️⃣ ...\n    2️⃣ ...\n    3️⃣ ...
-  - End with an authentic reflection.
-  ${ctaEnabled ? `- Close with: "Want the full resource? Comment ${keyword}."` : `- No CTA unless it is already present in the brief.`}
-
-STYLE GUARDRAILS
-- Keep it personal, concrete, and specific to how you operate.
-- Do not explain “why content works”; show what you actually do.
-
-SPEC
-Topic: ${brief.topic}
-Tone: ${brief.tone || userContext.writingPatterns?.tone || 'personal'}
-Angle: ${brief.angle || 'practical system'}
-Length: ${lengthGuide}
-
-Generate only the LinkedIn post. Do not include analysis or headings.`
+Just write the post - no analysis or commentary.`
 }
 
 function buildTwitterPrompt(brief: any, contextText: string, userContext: any): string {
@@ -695,4 +677,29 @@ function extractPreferredTopics(notes: any[], goals: any): string[] {
  */
 function analyzeEngagementTriggers(content: any[]): string[] {
   return ['questions', 'stories', 'tips'] // Default triggers
+}
+
+/**
+ * Get user's writing profile from tone analysis
+ */
+async function getUserWritingProfile(userId: string, supabaseClient: any): Promise<any> {
+  try {
+    const { data: profile, error } = await supabaseClient
+      .from('user_writing_profiles')
+      .select('tone_analysis, analyzed_at, metadata')
+      .eq('user_id', userId)
+      .single();
+
+    if (error || !profile) {
+      console.log('No writing profile found for user, using defaults');
+      return null;
+    }
+
+    console.log('Loaded writing profile for user:', userId);
+    return profile.tone_analysis;
+
+  } catch (error) {
+    console.error('Error loading writing profile:', error);
+    return null;
+  }
 }

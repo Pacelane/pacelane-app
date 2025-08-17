@@ -481,6 +481,107 @@ export class ContentService {
     }
   }
 
+  // ========== LINKEDIN POST SCRAPING & TONE ANALYSIS ==========
+
+  /**
+   * Add LinkedIn posts manually for tone analysis
+   * @param posts - Array of LinkedIn post content strings
+   * @returns Promise with operation result
+   */
+  static async addLinkedInPostsManually(posts: string[]): Promise<ApiResponse<{
+    success: boolean;
+    message: string;
+    postsCount: number;
+  }>> {
+    try {
+      console.log('ContentService: Adding LinkedIn posts manually');
+
+      const { data, error } = await supabase.functions.invoke('linkedin-post-scraper', {
+        body: {
+          action: 'add_posts_manually',
+          userId: (await supabase.auth.getUser()).data.user?.id,
+          data: { posts }
+        }
+      });
+
+      if (error) {
+        console.error('ContentService: LinkedIn posts manual add error:', error);
+        throw error;
+      }
+
+      console.log('ContentService: LinkedIn posts added successfully');
+      return { data };
+    } catch (error: any) {
+      console.error('ContentService: addLinkedInPostsManually failed:', error);
+      return { error: error.message || 'Failed to add LinkedIn posts' };
+    }
+  }
+
+  /**
+   * Analyze writing tone from existing LinkedIn posts
+   * @returns Promise with tone analysis result
+   */
+  static async analyzeWritingTone(): Promise<ApiResponse<{
+    success: boolean;
+    analysis: any;
+    postsAnalyzed: number;
+  }>> {
+    try {
+      console.log('ContentService: Analyzing writing tone');
+
+      const { data, error } = await supabase.functions.invoke('linkedin-post-scraper', {
+        body: {
+          action: 'analyze_tone',
+          userId: (await supabase.auth.getUser()).data.user?.id,
+          data: {}
+        }
+      });
+
+      if (error) {
+        console.error('ContentService: Tone analysis error:', error);
+        throw error;
+      }
+
+      console.log('ContentService: Tone analysis completed successfully');
+      return { data };
+    } catch (error: any) {
+      console.error('ContentService: analyzeWritingTone failed:', error);
+      return { error: error.message || 'Failed to analyze writing tone' };
+    }
+  }
+
+  /**
+   * Get existing LinkedIn posts for user
+   * @returns Promise with user's LinkedIn posts
+   */
+  static async getLinkedInPosts(): Promise<ApiResponse<{
+    posts: any[];
+    count: number;
+  }>> {
+    try {
+      console.log('ContentService: Getting LinkedIn posts');
+
+      const { data, error } = await supabase.functions.invoke('linkedin-post-scraper', {
+        body: {
+          action: 'get_posts',
+          userId: (await supabase.auth.getUser()).data.user?.id,
+          data: {}
+        }
+      });
+
+      if (error) {
+        console.error('ContentService: Get LinkedIn posts error:', error);
+        throw error;
+      }
+
+      console.log('ContentService: LinkedIn posts retrieved successfully');
+      return { data };
+    } catch (error: any) {
+      console.error('ContentService: getLinkedInPosts failed:', error);
+      return { error: error.message || 'Failed to get LinkedIn posts' };
+    }
+  }
+
   // ========== UTILITY FUNCTIONS ==========
 
   /**

@@ -1,0 +1,306 @@
+# Pacelane App - Development Rules & Context
+
+## 🎯 **Core Value Proposition**
+
+Pacelane is an AI-powered content creation assistant designed for busy founders and executives. The platform helps users maintain consistent LinkedIn content creation by seamlessly integrating with their work routine to automatically collect context from daily activities (meetings, WhatsApp conversations, calendar events) and generate personalized content that matches their writing style.
+
+### **Target Audience**
+- **Primary**: Founders and executives who need to maintain professional LinkedIn presence
+- **Secondary**: Business professionals, consultants, and thought leaders
+- **Pain Point**: Lack of time and consistency in content creation despite having valuable insights from daily work
+
+### **Key Differentiators**
+- **Context Integration**: Automatically collects context from user's work routine
+- **Style Matching**: AI generates content that matches user's writing style
+- **Pacing Focus**: Helps maintain consistent content creation schedule
+- **Workflow Integration**: Seamlessly fits into existing work processes
+
+## 🚀 **Current MVP Features**
+
+### **Core Functionality**
+- **LinkedIn Content Generation**: AI-powered post creation with user style matching
+- **Context Collection**: WhatsApp integration, Google Calendar sync, knowledge base
+- **Content Pacing**: Automated scheduling and consistency tracking
+- **User Onboarding**: 8-step guided setup process
+- **Design System**: Comprehensive component library with theme support
+
+### **Integrations**
+- **WhatsApp Business API**: Via Chatwoot webhook (CRITICAL - most important integration)
+- **Google Calendar API**: Meeting context collection (CRITICAL - core to value proposition)
+- **Knowledge Base**: File uploads with GCS integration
+- **Supabase**: Database, authentication, and edge functions
+
+## 🛠️ **Technology Stack**
+
+### **Frontend Architecture**
+- **React 18 + TypeScript**: Modern, type-safe development
+- **Vite**: Fast build tool with excellent developer experience
+- **Tailwind CSS**: Utility-first styling with custom design tokens
+- **Framer Motion**: Smooth animations and transitions
+- **React Router**: Client-side routing with protected routes
+- **TanStack Query**: Server state management and caching
+
+### **Backend & Infrastructure**
+- **Supabase**: PostgreSQL database + Edge Functions + Auth + Storage
+- **Google Cloud Storage**: User-specific buckets for knowledge base and WhatsApp data
+- **Edge Functions**: 17+ serverless functions for various integrations
+- **Row Level Security**: Comprehensive data isolation and security
+
+### **AI & External Services**
+- **Current**: OpenAI GPT models (planned migration)
+- **Target**: More cost-effective, privacy-focused alternatives
+- **File Processing**: PDF, audio, image OCR capabilities
+- **Real-time Processing**: WhatsApp message analysis and context extraction
+
+## 🏗️ **Application Architecture**
+
+### **Route Structure**
+```
+Public Routes:
+├── / → SignIn
+├── /signin → SignIn
+├── /onboarding/* → 8-step onboarding flow
+├── /terms → Terms of Service
+├── /privacy → Privacy Policy
+
+Protected Routes (wrapped by MainAppChrome):
+├── /product-home → Main dashboard
+├── /knowledge → Knowledge base management
+├── /profile → User settings and preferences
+├── /content-editor → AI content creation interface
+├── /posts → Content history and performance
+├── /pacing → Content scheduling and consistency
+├── /integrations → Third-party service connections
+├── /notifications → System and content alerts
+├── /plan-billing → Subscription management
+
+Special Routes:
+├── /content-editor → Full-width layout (no sidebar)
+├── /auth/google/callback → OAuth callback handlers
+```
+
+### **Core Components**
+- **MainAppChrome**: Primary layout wrapper with sidebar navigation
+- **HomeSidebar**: Collapsible navigation with active state management
+- **ContentEditor**: Full-featured AI content creation interface
+- **Design System**: Comprehensive component library with theme support
+
+### **State Management**
+- **React Query**: Server state management and caching
+- **Context API**: Theme, authentication, and help system
+- **Local State**: Component-specific state management
+- **Supabase Realtime**: Real-time updates for collaborative features
+
+## 🎨 **Design System**
+
+### **Design Tokens**
+- **Colors**: Semantic color system with light/dark theme support
+- **Typography**: Inter, Fraunces, JetBrains Mono, and Awesome Serif fonts
+- **Spacing**: Consistent 4px grid system
+- **Shadows**: Component and elevation shadow tokens
+- **Corner Radius**: Standardized border radius values
+
+### **Component Library**
+- **Button**: 7 styles, 5 sizes, motion animations
+- **Input**: Form inputs with validation and error states
+- **Cards**: Content display with consistent styling
+- **Modals**: Overlay components with backdrop handling
+- **Navigation**: Sidebar and top navigation components
+
+### **Theme Support**
+- **Light/Dark Modes**: Automatic system preference detection
+- **Theme Persistence**: Local storage for user preferences
+- **Semantic Colors**: Theme-aware color usage throughout
+- **Accessibility**: High contrast and screen reader support
+
+## 🔌 **Integration Architecture**
+
+### **WhatsApp Integration (CRITICAL)**
+- **Purpose**: Collect business context from user conversations
+- **Flow**: Chatwoot → Webhook → Supabase Edge Function → GCS Storage
+- **Data**: Messages, audio files, conversation metadata
+- **Storage**: User-specific GCS buckets for data isolation
+
+### **Google Calendar Integration (CRITICAL)**
+- **Purpose**: Extract meeting context for content generation
+- **Flow**: OAuth → Calendar API → Meeting data extraction
+- **Data**: Event details, attendees, meeting notes
+- **Usage**: AI context for relevant content creation
+
+### **Knowledge Base Integration**
+- **Purpose**: User document storage and analysis
+- **Storage**: GCS with Supabase metadata
+- **File Types**: PDF, Word, text, images, audio
+- **Processing**: Text extraction and content analysis
+
+### **AI Content Generation**
+- **Current**: OpenAI GPT models
+- **Target**: Cost-effective alternatives (Claude, Gemini, local models)
+- **Context**: User profile, inspirations, knowledge base, calendar, WhatsApp
+- **Output**: LinkedIn posts matching user's writing style
+
+## 📊 **Data Architecture**
+
+### **User Data Structure**
+```sql
+-- Core user profile
+profiles: id, email, display_name, linkedin_profile, goals, onboarding_completed
+
+-- Content and context
+content_suggestions: id, user_id, content, status, created_at
+knowledge_files: id, user_id, filename, gcs_path, content_type, metadata
+whatsapp_messages: id, user_id, message_id, content, audio_url, timestamp
+calendar_events: id, user_id, event_id, title, description, attendees, start_time
+
+-- User preferences and settings
+pacing_preferences: id, user_id, target_frequency, preferred_days, content_types
+inspirations: id, user_id, content, source, category, notes
+```
+
+### **Storage Strategy**
+- **Supabase**: User metadata, relationships, and configuration
+- **GCS**: User-specific buckets for file storage and WhatsApp data
+- **Data Isolation**: Complete separation between users
+- **Retention**: Permanent storage for user context (no deletion)
+
+## 🚀 **Development Guidelines**
+
+### **Code Organization**
+- **Components**: Feature-based organization in `src/pages/`
+- **Design System**: Reusable components in `src/design-system/`
+- **Hooks**: Custom hooks in `src/hooks/`
+- **Services**: Business logic in `src/services/`
+- **API**: External service integration in `src/api/`
+
+### **Import Patterns**
+- **ALWAYS use `@/` alias**: Never use `src/` prefix or relative paths
+- **Omit file extensions**: Let bundler resolve .js, .jsx, .ts, .tsx automatically
+- **Design System First**: Use existing components before creating new ones
+- **Theme Integration**: Always use `useTheme()` hook for theme-aware components
+
+### **Component Development**
+- **Button Component**: Use for ALL button needs (never create custom buttons)
+- **Lucide Icons**: Use for ALL icon needs (never create custom SVG icons)
+- **Design Tokens**: Use existing tokens for colors, spacing, typography
+- **Theme Compatibility**: All components must work in light/dark themes
+
+### **State Management**
+- **React Query**: For server state and API calls
+- **Context API**: For global app state (theme, auth, help)
+- **Local State**: For component-specific state
+- **Form State**: Use react-hook-form with zod validation
+
+## 🔍 **Current Limitations & Improvement Areas**
+
+### **AI Model Migration (HIGH PRIORITY)**
+- **Current**: OpenAI GPT models
+- **Target**: Cost-effective alternatives (Claude, Gemini, local models)
+- **Benefits**: Lower costs, better privacy, improved performance
+
+### **Style Personalization (HIGH PRIORITY)**
+- **Current**: Basic user profile integration
+- **Target**: Deep writing style analysis and replication
+- **Features**: Tone detection, vocabulary patterns, content preferences
+
+### **Context Integration (MEDIUM PRIORITY)**
+- **Current**: Basic WhatsApp + Calendar + Knowledge Base
+- **Target**: Seamless context integration and analysis
+- **Improvements**: Meeting notes AI, business insight extraction
+
+### **Performance Optimization (MEDIUM PRIORITY)**
+- **Current**: Basic performance
+- **Target**: Optimized loading and user experience
+- **Areas**: Lazy loading, caching, bundle optimization
+
+## 📈 **MVP Validation Metrics**
+
+### **User Engagement**
+- **Onboarding Completion Rate**: Target >80%
+- **Weekly Active Users**: Content creation frequency
+- **Content Generation Rate**: Posts created per user per week
+- **User Retention**: 30-day and 90-day retention
+
+### **Content Quality**
+- **User Satisfaction**: Post-creation feedback scores
+- **Style Match Accuracy**: How well AI replicates user's style
+- **Context Integration**: Relevance of generated content to user's activities
+
+### **Business Metrics**
+- **User Acquisition Cost**: Marketing efficiency
+- **Lifetime Value**: Long-term user engagement
+- **Feature Adoption**: Which integrations users actually use
+
+## 🎯 **Immediate Development Priorities**
+
+### **Next 4-6 Weeks**
+1. **AI Provider Migration**: Research and implement alternatives to OpenAI
+2. **Style Personalization**: Build LinkedIn post style analysis engine
+3. **Context Enhancement**: Improve meeting notes and WhatsApp context extraction
+4. **Performance Optimization**: Implement lazy loading and caching strategies
+
+### **Technical Debt**
+- **Testing Coverage**: Implement unit tests for core functions
+- **Error Handling**: Comprehensive error boundaries and user feedback
+- **Type Safety**: Stricter TypeScript configuration
+- **Performance Monitoring**: Real user metrics tracking
+
+## 🔒 **Security & Privacy**
+
+### **Data Protection**
+- **Row Level Security**: Comprehensive data isolation in Supabase
+- **User Buckets**: Complete data separation in GCS
+- **Authentication**: Supabase Auth with proper session management
+- **API Security**: Edge function security and rate limiting
+
+### **Privacy Considerations**
+- **Data Ownership**: Users own all their data and content
+- **Data Retention**: Permanent storage for user context
+- **Export Capabilities**: Users can export their data
+- **GDPR Compliance**: Data processing transparency
+
+## 🌐 **Deployment & Infrastructure**
+
+### **Current Setup**
+- **Frontend**: Vercel deployment with GitHub integration
+- **Backend**: Supabase cloud with edge functions
+- **Storage**: Google Cloud Storage with user-specific buckets
+- **Monitoring**: Basic error tracking and logging
+
+### **Scaling Considerations**
+- **User Growth**: Support for thousands of concurrent users
+- **Storage Growth**: Efficient GCS lifecycle policies
+- **AI Costs**: Cost optimization through provider selection
+- **Performance**: CDN and edge caching strategies
+
+---
+
+## **Quick Reference Commands**
+
+### **Development**
+```bash
+npm run dev          # Start development server
+npm run build        # Build for production
+npm run build:dev    # Build in development mode
+npm run preview      # Preview production build
+npm run lint         # Run ESLint
+```
+
+### **Key Files**
+- **App Entry**: `src/App.tsx`
+- **Main Layout**: `src/design-system/components/MainAppChrome.jsx`
+- **Content Editor**: `src/pages/ContentEditor.tsx`
+- **Design System**: `src/design-system/components/`
+- **Theme Context**: `src/services/theme-context.jsx`
+
+### **Important URLs**
+- **Supabase Dashboard**: Project ID: `plbgeabtrkdhbrnjonje`
+- **GCS Buckets**: User-specific buckets with `pacelane-` prefix
+- **Edge Functions**: 17+ functions in `supabase/functions/`
+
+---
+
+*This document serves as the central reference for all Pacelane development. Update it as the application evolves and new patterns emerge.*
+description:
+globs:
+alwaysApply: false
+---
