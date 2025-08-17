@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/api/useAuth';
 import { useTheme } from '@/services/theme-context';
+import { useIsMobile } from '@/hooks/use-mobile';
 import * as templatesApi from '@/api/templates';
 import type { Template } from '@/api/templates';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,6 +31,7 @@ const InitialHome = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { colors } = useTheme();
+  const isMobile = useIsMobile();
   
   // Templates state
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -166,15 +168,12 @@ const InitialHome = () => {
     navigate('/knowledge');
   };
 
-  // Content container styles
+  // Content container styles - padding handled by MainAppChrome
   const contentContainerStyles = {
-    padding: `${spacing.spacing[32]} ${spacing.spacing[32]}`,
-    width: '100%',
-    maxWidth: '1200px',
-    margin: '0 auto',
     display: 'flex',
     flexDirection: 'column' as const,
     gap: spacing.spacing[32],
+    backgroundColor: 'transparent',
   };
 
   // Welcome heading style
@@ -216,7 +215,11 @@ const InitialHome = () => {
           Connect your tools
         </h2>
 
-        <div style={{ display: 'flex', gap: spacing.spacing[16] }}>
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: isMobile ? 'column' : 'row',
+          gap: spacing.spacing[16] 
+        }}>
           <IntegrationCard
             name="WhatsApp"
             description="Add files to your knowledge base from WhatsApp and create content directly from messages"
@@ -232,7 +235,7 @@ const InitialHome = () => {
               }));
             }}
             onConfigure={() => setWhatsappModalOpen(true)}
-            style={{ flex: 1 }}
+            style={{ flex: isMobile ? 'none' : 1, width: isMobile ? '100%' : 'auto' }}
           />
           
           <IntegrationCard
@@ -250,7 +253,7 @@ const InitialHome = () => {
               }));
             }}
             onConfigure={() => setReadaiModalOpen(true)}
-            style={{ flex: 1 }}
+            style={{ flex: isMobile ? 'none' : 1, width: isMobile ? '100%' : 'auto' }}
           />
           
           <IntegrationCard
@@ -268,7 +271,7 @@ const InitialHome = () => {
               }));
             }}
             onConfigure={() => console.log('Calendar integration - coming soon')}
-            style={{ flex: 1 }}
+            style={{ flex: isMobile ? 'none' : 1, width: isMobile ? '100%' : 'auto' }}
           />
         </div>
       </div>
@@ -310,11 +313,15 @@ const InitialHome = () => {
         </div>
 
         {/* Template Cards Row */}
-        <div style={{ display: 'flex', gap: spacing.spacing[12] }}>
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: isMobile ? 'column' : 'row',
+          gap: spacing.spacing[12] 
+        }}>
           <TemplateCard 
             variant="empty"
             onClick={() => navigate('/content-editor')}
-            style={{ flex: 1 }}
+            style={{ flex: isMobile ? 'none' : 1, width: isMobile ? '100%' : 'auto' }}
           />
           {templates.slice(0, 2).map((template, index) => (
             <TemplateCard 
@@ -324,7 +331,7 @@ const InitialHome = () => {
               description={template.description || ''}
               bichaurinhoVariant={index + 3}
               onClick={() => handleTemplateClick(template.id)}
-              style={{ flex: 1 }}
+              style={{ flex: isMobile ? 'none' : 1, width: isMobile ? '100%' : 'auto' }}
             />
           ))}
         </div>

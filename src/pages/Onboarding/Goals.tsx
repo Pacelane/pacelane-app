@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/api/useAuth';
 import { useTheme } from '@/services/theme-context';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/design-system/components/Toast';
 
@@ -17,6 +18,7 @@ import { spacing } from '@/design-system/tokens/spacing';
 import { cornerRadius } from '@/design-system/tokens/corner-radius';
 import { getShadow } from '@/design-system/tokens/shadows';
 import { typography } from '@/design-system/tokens/typography';
+import { getResponsivePadding, getResponsiveWidth, getResponsiveContainer } from '@/design-system/utils/responsive';
 
 // Icons
 import { ArrowLeft, ArrowRight } from 'lucide-react';
@@ -26,6 +28,7 @@ const Goals = () => {
   const { user } = useAuth();
   const { colors } = useTheme();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -105,8 +108,7 @@ const Goals = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: spacing.spacing[40],
-          paddingBottom: '160px', // Account for button container height
+          ...getResponsiveContainer(isMobile, 'page'),
         }}
       >
         {/* Gradient background with 5% opacity */}
@@ -136,7 +138,10 @@ const Goals = () => {
           alignItems: 'center',
         }}>
           {/* Back Button */}
-          <div style={{ alignSelf: 'flex-start', width: '400px' }}>
+          <div style={{ 
+            alignSelf: 'flex-start', 
+            ...getResponsiveWidth(isMobile, 'card')
+          }}>
             <Button
               label="Go Back"
               style="dashed"
@@ -153,14 +158,14 @@ const Goals = () => {
               borderRadius: cornerRadius.borderRadius.lg,
               border: `1px solid ${colors.border.darker}`,
               boxShadow: getShadow('regular.card', colors, { withBorder: true }),
-              width: '400px',
+              ...getResponsiveWidth(isMobile, 'card'),
               overflow: 'hidden',
             }}
           >
             {/* Main Container */}
             <div
               style={{
-                padding: spacing.spacing[36],
+                padding: getResponsivePadding(isMobile, 'card'),
                 backgroundColor: colors.bg.card.default,
                 borderBottom: `1px solid ${colors.border.default}`,
                 display: 'flex',
@@ -287,14 +292,14 @@ const Goals = () => {
           height: '80px',
           backgroundColor: colors.bg.default,
           borderTop: `1px solid ${colors.border.default}`,
-          padding: spacing.spacing[40],
+          padding: getResponsivePadding(isMobile, 'button'),
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 10,
         }}
       >
-        <div style={{ width: '280px' }}>
+        <div style={getResponsiveWidth(isMobile, 'button')}>
           <Button
             label={isLoading ? "Saving..." : "Continue"}
             style="primary"

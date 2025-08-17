@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTheme } from '@/services/theme-context';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { spacing } from '@/design-system/tokens/spacing';
 import { cornerRadius } from '@/design-system/tokens/corner-radius';
 import { getShadow } from '@/design-system/tokens/shadows';
@@ -21,6 +22,7 @@ import { Check } from 'lucide-react';
 const PacingPage = () => {
   const { colors } = useTheme();
   const { user, profile, refreshProfile } = useAuth();
+  const isMobile = useIsMobile();
   
   // State for active section in side menu
   const [activeSection, setActiveSection] = useState('frequency');
@@ -408,6 +410,7 @@ const PacingPage = () => {
       <div
         style={{
           display: 'flex',
+          flexDirection: isMobile ? 'column' : 'row',
           gap: spacing.spacing[32],
           width: '100%',
         }}
@@ -415,11 +418,13 @@ const PacingPage = () => {
         {/* Left Side Menu */}
         <div
           style={{
-            width: '280px',
+            width: isMobile ? '100%' : '280px',
             display: 'flex',
-            flexDirection: 'column',
+            flexDirection: isMobile ? 'row' : 'column',
             gap: spacing.spacing[8],
             flex: 'none', // Prevent shrinking
+            overflowX: isMobile ? 'auto' : 'visible',
+            paddingBottom: isMobile ? spacing.spacing[8] : 0,
           }}
         >
           {menuItems.map((item) => (
@@ -437,7 +442,7 @@ const PacingPage = () => {
         <div
           style={{
             flex: 1,
-            maxWidth: '480px',
+            maxWidth: isMobile ? 'none' : '480px',
             display: 'flex',
             flexDirection: 'column',
             gap: spacing.spacing[20],

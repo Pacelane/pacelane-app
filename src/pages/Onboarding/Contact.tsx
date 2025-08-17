@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/api/useAuth';
 import { useTheme } from '@/services/theme-context';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/design-system/components/Toast';
 
@@ -10,6 +11,7 @@ import TopNav from '@/design-system/components/TopNav';
 import Button from '@/design-system/components/Button';
 import PhoneInput from '@/design-system/components/PhoneInput';
 import ProgressBar from '@/design-system/components/ProgressBar';
+import OnboardingProgressIndicator from '@/design-system/components/OnboardingProgressIndicator';
 import Bichaurinho from '@/design-system/components/Bichaurinho';
 
 // Design System Tokens
@@ -17,9 +19,10 @@ import { spacing } from '@/design-system/tokens/spacing';
 import { cornerRadius } from '@/design-system/tokens/corner-radius';
 import { getShadow } from '@/design-system/tokens/shadows';
 import { typography } from '@/design-system/tokens/typography';
+import { textStyles } from '@/design-system/styles/typography/typography-styles';
 
 // Icons
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Phone, MessageSquare, Info } from 'lucide-react';
 
 
 
@@ -28,6 +31,7 @@ const Contact = () => {
   const { user } = useAuth();
   const { colors } = useTheme();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [cleanWhatsappNumber, setCleanWhatsappNumber] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -87,8 +91,8 @@ const Contact = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: spacing.spacing[40],
-          paddingBottom: '160px', // Account for button container height
+          padding: isMobile ? spacing.spacing[24] : spacing.spacing[40],
+          paddingBottom: isMobile ? '140px' : '160px', // Account for button container height
         }}
       >
         {/* Gradient background with 5% opacity */}
@@ -118,13 +122,28 @@ const Contact = () => {
           alignItems: 'center',
         }}>
           {/* Back Button */}
-          <div style={{ alignSelf: 'flex-start', width: '400px' }}>
+          <div style={{ 
+            alignSelf: 'flex-start', 
+            width: isMobile ? '100%' : '400px',
+            maxWidth: isMobile ? '320px' : '400px'
+          }}>
             <Button
               label="Go Back"
               style="dashed"
               size="xs"
               leadIcon={<ArrowLeft size={12} />}
               onClick={handleGoBack}
+            />
+          </div>
+
+          {/* Progress Indicator */}
+          <div style={{ 
+            width: isMobile ? '100%' : '400px',
+            maxWidth: isMobile ? '320px' : '400px'
+          }}>
+            <OnboardingProgressIndicator 
+              currentStep={8}
+              compact={true}
             />
           </div>
 
@@ -135,14 +154,15 @@ const Contact = () => {
               borderRadius: cornerRadius.borderRadius.lg,
               border: `1px solid ${colors.border.darker}`,
               boxShadow: getShadow('regular.card', colors, { withBorder: true }),
-              width: '400px',
+              width: isMobile ? '100%' : '400px',
+              maxWidth: isMobile ? '320px' : '400px',
               overflow: 'hidden',
             }}
           >
             {/* Main Container */}
             <div
               style={{
-                padding: spacing.spacing[36],
+                padding: isMobile ? spacing.spacing[24] : spacing.spacing[36],
                 backgroundColor: colors.bg.card.default,
                 borderBottom: `1px solid ${colors.border.default}`,
                 display: 'flex',
@@ -177,7 +197,7 @@ const Contact = () => {
                   <h1
                     style={{
                       fontFamily: typography.fontFamily['awesome-serif'],
-                      fontSize: typography.desktop.size['5xl'],
+                      fontSize: isMobile ? typography.desktop.size['3xl'] : typography.desktop.size['5xl'],
                       fontWeight: typography.desktop.weight.semibold,
                       lineHeight: '0.9',
                       color: colors.text.default,
@@ -227,7 +247,9 @@ const Contact = () => {
             {/* Text Container */}
             <div
               style={{
-                padding: `${spacing.spacing[24]} ${spacing.spacing[36]}`,
+                padding: isMobile 
+                  ? `${spacing.spacing[20]} ${spacing.spacing[24]}` 
+                  : `${spacing.spacing[24]} ${spacing.spacing[36]}`,
                 backgroundColor: colors.bg.card.subtle,
                 display: 'flex',
                 flexDirection: 'column',
@@ -259,17 +281,20 @@ const Contact = () => {
           bottom: 0,
           left: 0,
           right: 0,
-          height: '80px',
+          height: isMobile ? '70px' : '80px',
           backgroundColor: colors.bg.default,
           borderTop: `1px solid ${colors.border.default}`,
-          padding: spacing.spacing[40],
+          padding: isMobile ? spacing.spacing[24] : spacing.spacing[40],
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 10,
         }}
       >
-        <div style={{ width: '280px' }}>
+        <div style={{ 
+          width: isMobile ? '100%' : '280px',
+          maxWidth: isMobile ? '320px' : '280px'
+        }}>
           <Button
             label={isLoading ? "Saving..." : "Continue"}
             style="primary"

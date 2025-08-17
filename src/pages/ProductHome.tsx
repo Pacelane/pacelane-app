@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/api/useAuth';
 import { useContent } from '../hooks/api/useContent';
 import { useAnalytics } from '../hooks/api/useAnalytics';
 import { useTheme } from '../services/theme-context';
+import { useIsMobile } from '@/hooks/use-mobile';
 import * as templatesApi from '../api/templates';
 import type { Template } from '../api/templates';
 import { supabase } from '../integrations/supabase/client';
@@ -45,6 +46,7 @@ const ProductHome = () => {
   const { savedDrafts, contentSuggestions, knowledgeFiles, loadSavedDrafts, loadContentSuggestions, loadingDrafts, loadingSuggestions, error, createUIContentOrder } = useContent();
   const { streak, stats, weekActivity, loading: analyticsLoading, trackActivity } = useAnalytics();
   const { colors } = useTheme();
+  const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState('');
   const [hasLoadedInitialData, setHasLoadedInitialData] = useState(false);
 
@@ -297,25 +299,31 @@ const ProductHome = () => {
 
   // Main content container (wrapped by MainAppChrome 840px container)
 
-  // Content container styles
+  // Content container styles - padding handled by MainAppChrome
   const contentContainerStyles = {
-    padding: `${spacing.spacing[32]} ${spacing.spacing[32]}`,
-    width: '100%',
-    maxWidth: '1200px',
-    margin: '0 auto',
     display: 'flex',
     flexDirection: 'column' as const,
     gap: spacing.spacing[32],
+    backgroundColor: 'transparent',
   };
 
   // Welcome heading style
   const welcomeHeadingStyle = {
     fontFamily: typography.fontFamily['awesome-serif'],
-    fontSize: typography.desktop.size['5xl'],
+    fontSize: typography.desktop.size['4xl'],
     fontWeight: typography.desktop.weight.semibold,
     lineHeight: typography.desktop.lineHeight.leading7,
     letterSpacing: typography.desktop.letterSpacing.normal,
     color: colors?.text?.default || '#000000',
+    margin: 0,
+  };
+
+  // Subtitle style
+  const subtitleStyle = {
+    ...textStyles.sm.medium,
+    color: colors.text.subtle,
+    margin: 0,
+    marginTop: spacing.spacing[8],
   };
 
   // Filter drafts based on search
@@ -401,10 +409,15 @@ const ProductHome = () => {
   if (!hasLoadedInitialData && !error) {
     return (
       <div style={contentContainerStyles}>
-        {/* Welcome Heading */}
-        <h1 style={welcomeHeadingStyle}>
-          Welcome, {getUserName()}!
-        </h1>
+        {/* Header Section */}
+        <div>
+          <h1 style={welcomeHeadingStyle}>
+            Welcome, {getUserName()}!
+          </h1>
+          <p style={subtitleStyle}>
+            Your content creation dashboard with insights, templates, and quick actions
+          </p>
+        </div>
 
         {/* Loading indicator */}
         <div style={{ 
@@ -439,15 +452,26 @@ const ProductHome = () => {
     <div>
       <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
       <div style={contentContainerStyles}>
-          {/* Welcome Heading */}
-          <h1 style={welcomeHeadingStyle}>
-            Welcome, {getUserName()}!
-          </h1>
+          {/* Header Section */}
+          <div>
+            <h1 style={welcomeHeadingStyle}>
+              Welcome, {getUserName()}!
+            </h1>
+            <p style={subtitleStyle}>
+              Your content creation dashboard with insights, templates, and quick actions
+            </p>
+          </div>
 
           {/* Streak Card and Stats Card Row - Using Real Data */}
-          <div style={{ display: 'flex', gap: spacing.spacing[16] }}>
-            <StreakCard {...getStreakCardProps()} />
-            <div style={{ flex: 1 }}>
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: isMobile ? 'column' : 'row',
+            gap: spacing.spacing[16] 
+          }}>
+            <div style={{ flex: isMobile ? 'none' : 'auto', width: isMobile ? '100%' : 'auto' }}>
+              <StreakCard {...getStreakCardProps()} />
+            </div>
+            <div style={{ flex: 1, width: isMobile ? '100%' : 'auto' }}>
               <StatsSummaryCard {...getStatsSummaryProps()} />
             </div>
           </div>
@@ -600,11 +624,15 @@ const ProductHome = () => {
           </div>
 
           {/* Template Cards Row - Using Real Templates */}
-          <div style={{ display: 'flex', gap: spacing.spacing[12] }}>
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: isMobile ? 'column' : 'row',
+            gap: spacing.spacing[12] 
+          }}>
             <TemplateCard 
               variant="empty"
               onClick={() => navigate('/content-editor')}
-              style={{ flex: 1 }}
+              style={{ flex: isMobile ? 'none' : 1, width: isMobile ? '100%' : 'auto' }}
             />
             {templates.slice(0, 2).map((template, index) => (
               <TemplateCard 
@@ -614,13 +642,19 @@ const ProductHome = () => {
                 description={template.description || ''}
                 bichaurinhoVariant={index + 3}
                 onClick={() => handleTemplateClick(template.id)}
-                style={{ flex: 1 }}
+                style={{ flex: isMobile ? 'none' : 1, width: isMobile ? '100%' : 'auto' }}
               />
             ))}
           </div>
 
           {/* Your History Section */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: isMobile ? 'column' : 'row',
+            alignItems: isMobile ? 'flex-start' : 'center', 
+            justifyContent: 'space-between',
+            gap: isMobile ? spacing.spacing[16] : 0
+          }}>
             <h2 style={{ 
               ...textStyles.md.semibold, 
               color: colors?.text?.subtle || '#666666'
@@ -635,7 +669,7 @@ const ProductHome = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-              </div>
+          </div>
 
           {/* Content Cards Grid */}
           {loadingDrafts && !hasLoadedInitialData ? (
@@ -652,7 +686,7 @@ const ProductHome = () => {
           ) : filteredDrafts.length > 0 ? (
             <div style={{ 
               display: 'grid', 
-              gridTemplateColumns: '1fr 1fr', 
+              gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', 
               gap: spacing.spacing[24] 
             }}>
               {filteredDrafts.map((draft, index) => (

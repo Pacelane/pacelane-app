@@ -6,6 +6,7 @@ import { useTheme } from '@/services/theme-context';
 import { useHelp } from '../services/help-context';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/design-system/components/Toast';
+import TranscriptService from '@/services/transcriptService';
 
 // Design System Components
 import EditorNav from '@/design-system/components/EditorNav';
@@ -19,6 +20,7 @@ import Modal from '@/design-system/components/Modal';
 import LoadingSpinner from '@/design-system/components/LoadingSpinner';
 import Bichaurinho from '@/design-system/components/Bichaurinho';
 import EmptyState from '@/design-system/components/EmptyState';
+import TranscriptPasteModal from '@/design-system/components/TranscriptPasteModal';
 
 // Design System Tokens
 import { spacing } from '@/design-system/tokens/spacing';
@@ -50,7 +52,8 @@ import {
   File,
   ChevronDown,
   Plus,
-  X
+  X,
+  Copy
 } from 'lucide-react';
 
 interface FileItem {
@@ -116,6 +119,8 @@ const ContentEditor = () => {
     explanation: string;
   } | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showTranscriptModal, setShowTranscriptModal] = useState(false);
+  const [processingTranscript, setProcessingTranscript] = useState(false);
 
 
   const [fileStructure, setFileStructure] = useState<FileItem[]>([
@@ -354,6 +359,75 @@ const ContentEditor = () => {
     setAiEditSuggestion(null);
     setShowEditModal(false);
     toast.info('AI edit rejected');
+  };
+
+  // Transcript handling functions
+  const handleTranscriptPaste = () => {
+    setShowTranscriptModal(true);
+  };
+
+  const handleTranscriptSubmit = async (transcriptData: { title: string; transcript: string; source: string }) => {
+    try {
+      setProcessingTranscript(true);
+
+      // Validate the transcript
+      const validation = TranscriptService.validateTranscript(transcriptData.transcript);
+      if (!validation.isValid) {
+        toast.error(validation.errors[0] || 'Invalid transcript format');
+        return;
+      }
+
+      // Parse the transcript
+      const parsedTranscript = TranscriptService.parseTranscript(transcriptData.transcript);
+      
+      // Generate content prompt
+      const contentPrompt = TranscriptService.generateContentPrompt(parsedTranscript, transcriptData.title);
+      
+      // Set the editor content with the processed transcript
+      const formattedContent = `# ${transcriptData.title}
+
+Based on meeting transcript with ${parsedTranscript.participants.join(', ')}
+
+## Key Discussion Points
+
+${parsedTranscript.cleanedText.substring(0, 2000)}${parsedTranscript.cleanedText.length > 2000 ? '...' : ''}
+
+## Content Ideas
+
+${contentPrompt}
+
+---
+
+**Meeting Details:**
+- Participants: ${parsedTranscript.participants.join(', ')}
+- Duration: ~${Math.floor(parsedTranscript.metadata.estimatedDuration / 60)} minutes  
+- Word Count: ${parsedTranscript.metadata.wordCount.toLocaleString()} words
+- Key Topics: ${TranscriptService.extractKeyTopics(parsedTranscript).join(', ')}`;
+
+      setDraftTitle(transcriptData.title);
+      setEditorContent(formattedContent);
+      setShowTranscriptModal(false);
+
+      // Optionally save the transcript to knowledge base
+      if (user) {
+        try {
+          const formattedForKB = TranscriptService.formatForKnowledgeBase(transcriptData, parsedTranscript);
+          
+          // This would need to be implemented - saving to knowledge base
+          // For now, we'll just show success message
+          toast.success(`Meeting transcript "${transcriptData.title}" loaded successfully! You can now create content from this meeting.`);
+        } catch (kbError) {
+          console.error('Error saving to knowledge base:', kbError);
+          toast.success(`Meeting transcript loaded successfully!`);
+        }
+      }
+
+    } catch (error: any) {
+      console.error('Error processing transcript:', error);
+      toast.error(error.message || 'Failed to process meeting transcript');
+    } finally {
+      setProcessingTranscript(false);
+    }
   };
 
   const parseAIResponseForEdits = (response: string) => {
@@ -1094,6 +1168,32 @@ const ContentEditor = () => {
           )}
         </div>
 
+        {/* Transcript Paste Action */}
+        <div style={{
+          padding: spacing.spacing[12],
+          borderTop: `1px solid ${colors.border.default}`,
+          backgroundColor: colors.bg.card.default,
+        }}>
+          <Button
+            label="Paste Meeting Transcript"
+            style="primary"
+            size="sm"
+            leadIcon={<FileText size={16} />}
+            onClick={handleTranscriptPaste}
+            disabled={processingTranscript}
+            loading={processingTranscript}
+          />
+          <p style={{
+            ...textStyles.xs.normal,
+            color: colors.text.muted,
+            textAlign: 'center',
+            marginTop: spacing.spacing[8],
+            margin: `${spacing.spacing[8]} 0 0 0`,
+          }}>
+            Paste transcripts from Fireflies, Fathom, Otter.ai, or any meeting tool
+          </p>
+        </div>
+
         {/* Quick Actions */}
         <div style={{
           padding: spacing.spacing[12],
@@ -1308,6 +1408,14 @@ const ContentEditor = () => {
            </div>
          </Modal>
         )}
+
+        {/* Transcript Paste Modal */}
+        <TranscriptPasteModal
+          isOpen={showTranscriptModal}
+          onClose={() => setShowTranscriptModal(false)}
+          onTranscriptSubmit={handleTranscriptSubmit}
+          loading={processingTranscript}
+        />
 
         
     </div>

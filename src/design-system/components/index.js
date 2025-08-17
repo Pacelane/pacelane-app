@@ -39,10 +39,13 @@ export { default as IntegrationCard } from './IntegrationCard.jsx';
 export { default as Modal } from './Modal.jsx';
 export { default as HelpModal } from './HelpModal.jsx';
 export { default as ReadAiConfigModal } from './ReadAiConfigModal.jsx';
+export { default as TranscriptPasteModal } from './TranscriptPasteModal.jsx';
 export { default as WhatsAppConfigModal } from './WhatsAppConfigModal.jsx';
 export { default as SetupCard } from './SetupCard.jsx';
 export { default as FirstTimeUserHome } from './FirstTimeUserHome.jsx';
 export { default as OnboardingProgressCard } from './OnboardingProgressCard.jsx';
+export { default as OnboardingProgressIndicator } from './OnboardingProgressIndicator.jsx';
+export { default as AppWorkflowDiagram } from './AppWorkflowDiagram.jsx';
 
 // Pages
 export { default as HomePage } from './pages/HomePage.jsx'; 

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/api/useAuth';
 import { useTheme } from '@/services/theme-context';
+import { useIsMobile } from '@/hooks/use-mobile';
 import * as templatesApi from '@/api/templates';
 import type { Template } from '@/api/templates';
 
@@ -22,6 +23,7 @@ const Templates = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { colors } = useTheme();
+  const isMobile = useIsMobile();
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
 
@@ -91,13 +93,13 @@ const Templates = () => {
     marginTop: spacing.spacing[8], // REQUIRED: 8px gap between title and subtitle
   };
 
-  // Grid container styles for 3 columns
+  // Grid container styles - mobile single column, desktop fixed width
   const gridStyles = {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, 240px)',
+    gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, 240px)',
     gap: spacing.spacing[12],
     width: '100%',
-    justifyContent: 'start',
+    justifyContent: isMobile ? 'stretch' : 'start',
   };
 
   // Show loading state
@@ -162,7 +164,7 @@ const Templates = () => {
       {/* Templates Grid */}
       {templates.length > 0 ? (
         <div style={gridStyles}>
-          {/* Template Cards - Show 6 templates (2 rows × 3 columns) */}
+          {/* Template Cards - Show 6 templates (2 rows × 3 columns on desktop) */}
           {templates.slice(0, 6).map((template, index) => (
             <TemplateCard 
               key={template.id}
@@ -171,6 +173,7 @@ const Templates = () => {
               description={template.description || ''}
               bichaurinhoVariant={(index % 32) + 1} // Cycle through available variants
               onClick={() => handleTemplateClick(template.id)}
+              style={{ width: isMobile ? '100%' : 'auto' }}
             />
           ))}
           
@@ -178,6 +181,7 @@ const Templates = () => {
           <TemplateCard 
             variant="empty"
             onClick={handleStartFromScratch}
+            style={{ width: isMobile ? '100%' : 'auto' }}
           />
         </div>
       ) : (

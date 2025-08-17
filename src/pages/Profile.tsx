@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/api/useAuth';
 import { useProfile } from '@/hooks/api/useProfile';
 import { useTheme } from '@/services/theme-context';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 
 // Design System Components
@@ -37,6 +38,7 @@ const Profile = () => {
   const { user, signOut } = useAuth();
   const { profile, saving, updateBasicProfile } = useProfile();
   const { colors } = useTheme();
+  const isMobile = useIsMobile();
   
   // Sidebar state
   // Sidebar handled by layout
@@ -705,31 +707,49 @@ const Profile = () => {
   return (
     <div style={containerStyles}>
           {/* Header */}
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: isMobile ? 'column' : 'row',
+            alignItems: isMobile ? 'flex-start' : 'flex-start', 
+            justifyContent: isMobile ? 'flex-start' : 'space-between',
+            gap: isMobile ? spacing.spacing[16] : 0
+          }}>
             <div>
               <h1 style={titleStyle}>Profile Settings</h1>
               <p style={subtitleStyle}>
                 Manage your personal information, company details, and content preferences
               </p>
             </div>
-            <Button
-              label="Sign Out"
-              style="secondary"
-              size="sm"
-              leadIcon={<LogOut size={16} />}
-              onClick={handleSignOut}
-            />
+            <div style={{ 
+              alignSelf: isMobile ? 'flex-start' : 'flex-start',
+              flexShrink: 0
+            }}>
+              <Button
+                label="Sign Out"
+                style="secondary"
+                size="sm"
+                leadIcon={<LogOut size={16} />}
+                onClick={handleSignOut}
+              />
+            </div>
           </div>
 
           {/* Main Content Layout */}
-          <div style={{ display: 'flex', gap: spacing.spacing[32], width: '100%' }}>
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: isMobile ? 'column' : 'row',
+            gap: spacing.spacing[32], 
+            width: '100%' 
+          }}>
             {/* Left Side Menu */}
             <div style={{
-              width: '280px',
+              width: isMobile ? '100%' : '280px',
               display: 'flex',
-              flexDirection: 'column',
+              flexDirection: isMobile ? 'row' : 'column',
               gap: spacing.spacing[8],
               flex: 'none',
+              overflowX: isMobile ? 'auto' : 'visible',
+              paddingBottom: isMobile ? spacing.spacing[8] : 0,
             }}>
               {menuItems.map((item) => (
                 <SidebarMenuItem
@@ -745,7 +765,7 @@ const Profile = () => {
             {/* Right Content Area */}
             <div style={{
               flex: 1,
-              maxWidth: '480px',
+              maxWidth: isMobile ? 'none' : '480px',
               display: 'flex',
               flexDirection: 'column',
               gap: spacing.spacing[20],

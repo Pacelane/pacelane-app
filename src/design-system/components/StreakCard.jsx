@@ -2,6 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { Check } from 'lucide-react';
 import { useTheme } from '../../services/theme-context.jsx';
+import { useIsMobile } from '../../hooks/use-mobile.tsx';
 import { spacing } from '../tokens/spacing.js';
 import { cornerRadius } from '../tokens/corner-radius.js';
 import { colors as primitiveColors } from '../tokens/primitive-colors.js';
@@ -26,6 +27,7 @@ const StreakCard = ({
   ]
 }) => {
   const { colors } = useTheme();
+  const isMobile = useIsMobile();
 
   // Create awesome serif text style for streak numbers
   const awesomeSerifStyle = {
@@ -62,8 +64,9 @@ const StreakCard = ({
   return (
     <div
       style={{
-        width: '460px',
+        width: isMobile ? '100%' : '460px',
         display: 'flex',
+        flexDirection: isMobile ? 'column' : 'row',
         gap: spacing.spacing[12],
         padding: spacing.spacing[16],
         borderRadius: cornerRadius.borderRadius.xl,
@@ -72,10 +75,10 @@ const StreakCard = ({
         boxShadow: getShadow('regular.card', colors, { withBorder: true }),
       }}
     >
-      {/* Left Column */}
+      {/* Bichaurinho Section */}
       <div
         style={{
-          width: '90px',
+          width: isMobile ? '100%' : '90px',
           display: 'flex',
           flexDirection: 'column',
           gap: spacing.spacing[4],
@@ -101,7 +104,7 @@ const StreakCard = ({
         </div>
       </div>
 
-      {/* Right Column */}
+      {/* Content Section */}
       <div
         style={{
           flex: 1,
