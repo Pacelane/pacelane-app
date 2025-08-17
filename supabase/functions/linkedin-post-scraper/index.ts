@@ -43,6 +43,7 @@ interface ToneAnalysis {
 class LinkedInPostScraper {
   private supabase: any;
   private anthropicApiKey: string;
+  private apifyApiKey: string;
 
   constructor() {
     this.supabase = createClient(
@@ -50,30 +51,140 @@ class LinkedInPostScraper {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
     this.anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY') ?? '';
+    this.apifyApiKey = Deno.env.get('APIFY_API_KEY') ?? '';
   }
 
   /**
-   * Scrape LinkedIn posts from user's profile URL
-   * Note: This is a simplified implementation. In production, you'd need:
-   * - LinkedIn API integration
-   * - Proper authentication and permissions
-   * - Rate limiting and compliance
+   * Scrape LinkedIn posts using Apify actor
+   * @param username - LinkedIn username (without @)
+   * @param limit - Number of posts to scrape (default 100)
    */
-  async scrapeLinkedInPosts(linkedInProfileUrl: string): Promise<LinkedInPost[]> {
+  async scrapeLinkedInPosts(username: string, limit: number = 100): Promise<LinkedInPost[]> {
     try {
-      console.log(`📱 Scraping LinkedIn posts for profile: ${linkedInProfileUrl}`);
+      console.log(`📱 Scraping LinkedIn posts for username: ${username} (limit: ${limit})`);
       
-      // For MVP, we'll simulate this with manual input or LinkedIn API
-      // In production, this would integrate with LinkedIn's API or web scraping
+      if (!username) {
+        throw new Error('LinkedIn username is required');
+      }
+
+      if (!this.apifyApiKey) {
+        throw new Error('Apify API key not configured');
+      }
+
+      // Clean username (remove @ if present)
+      const cleanUsername = username.replace('@', '').trim();
       
-      // Placeholder - return empty array for now
-      // Real implementation would use LinkedIn API or web scraping
-      console.log('⚠️ LinkedIn scraping not implemented - using manual input method');
-      return [];
+      // Prepare Apify actor input for LinkedIn Posts scraper
+      const input = {
+        "username": cleanUsername,
+        "usernames": [cleanUsername],
+        "limit": Math.min(limit, 100)
+      };
+
+      console.log('🚀 Running Apify LinkedIn Posts actor with input:', input);
+
+      // Run the Apify actor using direct API call
+      const runResponse = await fetch(`https://api.apify.com/v2/acts/LQQIXN9Othf8f7R5n/runs`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.apifyApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(input),
+      });
+
+      if (!runResponse.ok) {
+        const errorText = await runResponse.text();
+        console.error('Error starting Apify actor:', errorText);
+        throw new Error(`Failed to start LinkedIn posts scraping: ${errorText}`);
+      }
+
+      const runData = await runResponse.json();
+      console.log('Full runData response:', JSON.stringify(runData, null, 2));
+      
+      if (!runData.data || !runData.data.id) {
+        console.error('Invalid response from Apify API:', runData);
+        throw new Error('Failed to start LinkedIn posts scraping - invalid API response');
+      }
+      
+      const runId = runData.data.id;
+      console.log('Actor run started with ID:', runId);
+
+      // Wait for the run to complete
+      let attempts = 0;
+      const maxAttempts = 12; // 2 minutes max
+      
+      while (attempts < maxAttempts) {
+        const statusResponse = await fetch(`https://api.apify.com/v2/actor-runs/${runId}`, {
+          headers: {
+            'Authorization': `Bearer ${this.apifyApiKey}`,
+          },
+        });
+
+        if (!statusResponse.ok) {
+          throw new Error('Failed to check run status');
+        }
+
+        const statusData = await statusResponse.json();
+        const status = statusData.data.status;
+        
+        console.log(`Run status (attempt ${attempts + 1}): ${status}`);
+
+        if (status === 'SUCCEEDED') {
+          console.log('✅ Actor run completed successfully');
+          break;
+        } else if (status === 'FAILED') {
+          throw new Error('Apify actor run failed');
+        }
+
+        attempts++;
+        if (attempts < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 10000)); // Wait 10 seconds
+        }
+      }
+
+      if (attempts >= maxAttempts) {
+        throw new Error('Actor run timed out');
+      }
+
+      // Fetch results from the dataset
+      const datasetResponse = await fetch(`https://api.apify.com/v2/actor-runs/${runId}/dataset/items`, {
+        headers: {
+          'Authorization': `Bearer ${this.apifyApiKey}`,
+        },
+      });
+
+      if (!datasetResponse.ok) {
+        throw new Error('Failed to fetch dataset items');
+      }
+
+      const items = await datasetResponse.json();
+      console.log(`📊 Found ${items.length} posts from Apify actor`);
+
+      // Transform Apify results to our LinkedInPost format
+      const posts: LinkedInPost[] = items.map((item: any, index: number) => {
+        // Generate engagement data from Apify response
+        const engagement = {
+          likes: item.likes || item.reactions || 0,
+          comments: item.comments || 0,
+          shares: item.shares || item.reposts || 0
+        };
+
+        return {
+          id: item.id || `apify_${Date.now()}_${index}`,
+          content: item.content || item.text || '',
+          publishedAt: item.publishedAt || item.date || new Date().toISOString(),
+          engagement,
+          url: item.url || item.link || `https://linkedin.com/posts/${cleanUsername}-${index}`
+        };
+      }).filter(post => post.content && post.content.trim().length > 0); // Filter out empty posts
+
+      console.log(`✅ Successfully processed ${posts.length} valid posts`);
+      return posts;
       
     } catch (error) {
-      console.error('Error scraping LinkedIn posts:', error);
-      return [];
+      console.error('Error scraping LinkedIn posts with Apify:', error);
+      throw new Error(`LinkedIn scraping failed: ${error.message}`);
     }
   }
 
@@ -179,7 +290,7 @@ Return only the JSON object, no other text.`;
           'anthropic-version': '2023-06-01'
         },
         body: JSON.stringify({
-          model: 'claude-3-sonnet-20240229',
+          model: 'claude-3-haiku-20240307',
           max_tokens: 1000,
           temperature: 0.1,
           messages: [{
@@ -369,18 +480,18 @@ serve(async (req) => {
 
     switch (action) {
       case 'scrape_posts': {
-        // Scrape posts from LinkedIn profile URL
-        const { linkedInProfileUrl } = data;
-        if (!linkedInProfileUrl) {
-          throw new Error('linkedInProfileUrl is required for scraping');
+        // Scrape posts from LinkedIn username using Apify
+        const { username, limit = 50 } = data;
+        if (!username) {
+          throw new Error('LinkedIn username is required for scraping');
         }
 
-        const posts = await scraper.scrapeLinkedInPosts(linkedInProfileUrl);
+        const posts = await scraper.scrapeLinkedInPosts(username, limit);
         const stored = await scraper.storeLinkedInPosts(userId, posts);
         
         return new Response(JSON.stringify({
           success: stored,
-          message: `Scraped and stored ${posts.length} posts`,
+          message: `Scraped and stored ${posts.length} posts from @${username}`,
           postsCount: posts.length
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
