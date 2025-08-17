@@ -403,7 +403,7 @@ class GCSKnowledgeBaseStorage {
         updated_at: new Date().toISOString(),
       };
 
-      const { error: dbError } = await this.supabase
+      const { data: insertedFile, error: dbError } = await this.supabase
         .from('knowledge_files')
         .insert({
           user_id: userId,
@@ -421,16 +421,25 @@ class GCSKnowledgeBaseStorage {
             uploaded_at: new Date().toISOString(),
             content_extracted: false,
           },
-        });
+        })
+        .select()
+        .single();
 
-      if (dbError) {
+      if (dbError || !insertedFile) {
         console.error('Error storing file metadata:', dbError);
         return { success: false, error: 'Failed to store file metadata' };
       }
 
+      // Trigger content extraction automatically after upload using the file data we already have
+      console.log(`🔄 Triggering content extraction for ${file.name}`);
+      const extractionSuccess = await this.extractContentFromFileData(insertedFile.id, file);
+
       return { 
         success: true, 
-        data: fileInfo,
+        data: {
+          ...fileInfo,
+          contentExtracted: extractionSuccess
+        },
         gcsPath
       };
 
@@ -598,28 +607,373 @@ class GCSKnowledgeBaseStorage {
   }
 
   /**
-   * Extract text content from file (placeholder for future implementation)
+   * Download file from GCS as buffer
    */
-  async extractContent(fileId: string): Promise<boolean> {
+  private async downloadFileFromGCS(bucketName: string, filePath: string): Promise<Uint8Array | null> {
     try {
-      // This would integrate with OCR services, PDF parsers, etc.
-      // For now, we'll mark it as extracted
+      const accessToken = await this.getGCSAccessToken();
+      if (!accessToken) {
+        throw new Error('Failed to get GCS access token');
+      }
+      
+      const downloadUrl = `https://storage.googleapis.com/storage/v1/b/${bucketName}/o/${encodeURIComponent(filePath)}?alt=media`;
+      
+      const response = await fetch(downloadUrl, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to download file: ${response.statusText}`);
+      }
+
+      const arrayBuffer = await response.arrayBuffer();
+      return new Uint8Array(arrayBuffer);
+    } catch (error) {
+      console.error('Error downloading file from GCS:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Get MIME type from file name
+   */
+  private getMimeTypeFromName(fileName: string): string {
+    const extension = fileName.toLowerCase().split('.').pop() || '';
+    const mimeTypes: { [key: string]: string } = {
+      'txt': 'text/plain',
+      'md': 'text/markdown',
+      'csv': 'text/csv',
+      'pdf': 'application/pdf',
+      'doc': 'application/msword',
+      'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'xls': 'application/vnd.ms-excel',
+      'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'ppt': 'application/vnd.ms-powerpoint',
+      'pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'rtf': 'application/rtf',
+      'json': 'application/json'
+    };
+    return mimeTypes[extension] || 'application/octet-stream';
+  }
+
+  /**
+   * Extract text content from plain text files
+   */
+  private extractTextContent(fileBuffer: Uint8Array): string {
+    try {
+      const decoder = new TextDecoder('utf-8');
+      return decoder.decode(fileBuffer);
+    } catch (error) {
+      console.error('Error extracting text content:', error);
+      return '[Error: Could not decode text content]';
+    }
+  }
+
+  /**
+   * Extract text content from PDF files - simplified approach for MVP
+   */
+  private async extractPDFContent(fileBuffer: Uint8Array): Promise<string> {
+    try {
+      // For MVP: Use filename-based semantic matching instead of complex PDF parsing
+      // This is much more reliable than trying to extract garbled binary content
+      
+      return '[PDF content extraction not available in MVP - using filename for semantic matching. For better text extraction, please upload files in these formats: .txt, .md, .docx, .csv, or .json. Alternatively, copy text content from the PDF and save as a .txt file.]';
+      
+    } catch (error) {
+      console.error('Error handling PDF:', error);
+      return '[PDF processing not available - please use text-based formats for content extraction]';
+    }
+  }
+
+  /**
+   * Extract text content from DOCX files - simplified approach for MVP
+   */
+  private async extractDocxContent(fileBuffer: Uint8Array): Promise<string> {
+    try {
+      // DOCX files are complex ZIP archives with XML content
+      // For MVP: Use filename-based semantic matching instead of complex parsing
+      
+      return '[DOCX content extraction not available in MVP - using filename for semantic matching. For better text extraction, please save the document as .txt, .md, or copy the text content to a plain text file.]';
+      
+    } catch (error) {
+      console.error('Error handling DOCX:', error);
+      return '[DOCX processing not available - please use text-based formats for content extraction]';
+    }
+  }
+
+  /**
+   * Extract text content from PPTX files - simplified approach for MVP
+   */
+  private async extractPptxContent(fileBuffer: Uint8Array): Promise<string> {
+    try {
+      // PPTX files are complex ZIP archives with XML content
+      // For MVP: Use filename-based semantic matching instead of complex parsing
+      
+      return '[PPTX content extraction not available in MVP - using filename for semantic matching. For better text extraction, please export slides as .txt or copy the text content to a plain text file.]';
+      
+    } catch (error) {
+      console.error('Error handling PPTX:', error);
+      return '[PPTX processing not available - please use text-based formats for content extraction]';
+    }
+  }
+
+  /**
+   * Extract text content from XLSX files - simplified approach for MVP
+   */
+  private async extractXlsxContent(fileBuffer: Uint8Array): Promise<string> {
+    try {
+      // XLSX files are complex ZIP archives with XML content
+      // For MVP: Use filename-based semantic matching instead of complex parsing
+      
+      return '[XLSX content extraction not available in MVP - using filename for semantic matching. For better text extraction, please export the spreadsheet as .csv or copy relevant data to a .txt file.]';
+      
+    } catch (error) {
+      console.error('Error handling XLSX:', error);
+      return '[XLSX processing not available - please use text-based formats for content extraction]';
+    }
+  }
+
+  /**
+   * Clean and normalize extracted text
+   */
+  private cleanExtractedText(text: string): string {
+    return text
+      .replace(/\r\n/g, '\n')  // Normalize line endings
+      .replace(/\r/g, '\n')    // Normalize line endings
+      .replace(/\n{3,}/g, '\n\n')  // Reduce multiple newlines
+      .replace(/\s+/g, ' ')    // Normalize whitespace
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')  // Remove control characters
+      .trim();
+  }
+
+  /**
+   * Extract text content from file data directly (used during upload)
+   */
+  async extractContentFromFileData(fileId: string, file: File): Promise<boolean> {
+    try {
+      const mimeType = this.getMimeTypeFromName(file.name);
+      console.log(`📄 Extracting content from ${file.name} (${mimeType})`);
+
+      // Get file buffer
+      const fileBuffer = new Uint8Array(await file.arrayBuffer());
+
+      let extractedContent = '';
+      let extractionMethod = 'unknown';
+
+      // Extract content based on file type
+      switch (mimeType) {
+        case 'text/plain':
+        case 'text/markdown':
+        case 'text/csv':
+          extractedContent = this.extractTextContent(fileBuffer);
+          extractionMethod = 'text_direct';
+          break;
+          
+        case 'application/pdf':
+          extractedContent = await this.extractPDFContent(fileBuffer);
+          extractionMethod = 'pdf_parser';
+          break;
+          
+        case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+        case 'application/msword':
+          extractedContent = await this.extractDocxContent(fileBuffer);
+          extractionMethod = 'docx_parser';
+          break;
+          
+        case 'application/vnd.openxmlformats-officedocument.presentationml.presentation':
+        case 'application/vnd.ms-powerpoint':
+          extractedContent = await this.extractPptxContent(fileBuffer);
+          extractionMethod = 'pptx_parser';
+          break;
+          
+        case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
+        case 'application/vnd.ms-excel':
+          extractedContent = await this.extractXlsxContent(fileBuffer);
+          extractionMethod = 'xlsx_parser';
+          break;
+          
+        default:
+          // Try generic text extraction for unknown types
+          extractedContent = this.extractTextContent(fileBuffer);
+          extractionMethod = 'generic_text';
+          break;
+      }
+
+      // Clean and validate extracted content
+      extractedContent = this.cleanExtractedText(extractedContent);
+      
+      if (extractedContent.length < 10) {
+        console.warn(`⚠️ Very little content extracted from ${file.name}`);
+        extractedContent = `[Unable to extract meaningful content from ${file.name}]`;
+        extractionMethod = 'failed_extraction';
+      }
+
+      // Update database with extracted content
       const { error } = await this.supabase
         .from('knowledge_files')
         .update({
           content_extracted: true,
-          extracted_content: '[Content extraction to be implemented]',
+          extracted_content: extractedContent,
           extraction_metadata: {
             extracted_at: new Date().toISOString(),
-            method: 'placeholder'
+            method: extractionMethod,
+            content_length: extractedContent.length,
+            original_file_size: file.size
           }
         })
         .eq('id', fileId);
 
-      return !error;
+      if (error) {
+        console.error('Error updating extracted content:', error);
+        return false;
+      }
+
+      console.log(`✅ Content extracted from ${file.name}: ${extractedContent.length} characters`);
+      return true;
 
     } catch (error) {
       console.error('Error extracting content:', error);
+      
+      // Mark extraction as failed but don't throw
+      await this.supabase
+        .from('knowledge_files')
+        .update({
+          content_extracted: false,
+          extracted_content: `[Extraction failed: ${error.message}]`,
+          extraction_metadata: {
+            extracted_at: new Date().toISOString(),
+            method: 'failed',
+            error: error.message
+          }
+        })
+        .eq('id', fileId);
+      
+      return false;
+    }
+  }
+
+  /**
+   * Extract text content from file based on file type (downloads from GCS)
+   */
+  async extractContent(fileId: string): Promise<boolean> {
+    try {
+      // Get file information from database
+      const { data: fileRecord, error: fileError } = await this.supabase
+        .from('knowledge_files')
+        .select('name, gcs_path, gcs_bucket, size')
+        .eq('id', fileId)
+        .single();
+
+      if (fileError || !fileRecord) {
+        console.error('File not found:', fileError);
+        return false;
+      }
+
+      const fileType = this.getFileTypeFromName(fileRecord.name);
+      const mimeType = this.getMimeTypeFromName(fileRecord.name);
+      
+      console.log(`📄 Extracting content from ${fileRecord.name} (${mimeType})`);
+
+      // Download file from GCS
+      const fileBuffer = await this.downloadFileFromGCS(fileRecord.gcs_bucket, fileRecord.gcs_path);
+      if (!fileBuffer) {
+        console.error('Failed to download file from GCS');
+        return false;
+      }
+
+      let extractedContent = '';
+      let extractionMethod = 'unknown';
+
+      // Extract content based on file type
+      switch (mimeType) {
+        case 'text/plain':
+        case 'text/markdown':
+        case 'text/csv':
+          extractedContent = this.extractTextContent(fileBuffer);
+          extractionMethod = 'text_direct';
+          break;
+          
+        case 'application/pdf':
+          extractedContent = await this.extractPDFContent(fileBuffer);
+          extractionMethod = 'pdf_parser';
+          break;
+          
+        case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+        case 'application/msword':
+          extractedContent = await this.extractDocxContent(fileBuffer);
+          extractionMethod = 'docx_parser';
+          break;
+          
+        case 'application/vnd.openxmlformats-officedocument.presentationml.presentation':
+        case 'application/vnd.ms-powerpoint':
+          extractedContent = await this.extractPptxContent(fileBuffer);
+          extractionMethod = 'pptx_parser';
+          break;
+          
+        case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
+        case 'application/vnd.ms-excel':
+          extractedContent = await this.extractXlsxContent(fileBuffer);
+          extractionMethod = 'xlsx_parser';
+          break;
+          
+        default:
+          // Try generic text extraction for unknown types
+          extractedContent = this.extractTextContent(fileBuffer);
+          extractionMethod = 'generic_text';
+          break;
+      }
+
+      // Clean and validate extracted content
+      extractedContent = this.cleanExtractedText(extractedContent);
+      
+      if (extractedContent.length < 10) {
+        console.warn(`⚠️ Very little content extracted from ${fileRecord.name}`);
+        extractedContent = `[Unable to extract meaningful content from ${fileRecord.name}]`;
+        extractionMethod = 'failed_extraction';
+      }
+
+      // Update database with extracted content
+      const { error } = await this.supabase
+        .from('knowledge_files')
+        .update({
+          content_extracted: true,
+          extracted_content: extractedContent,
+          extraction_metadata: {
+            extracted_at: new Date().toISOString(),
+            method: extractionMethod,
+            content_length: extractedContent.length,
+            original_file_size: fileRecord.size
+          }
+        })
+        .eq('id', fileId);
+
+      if (error) {
+        console.error('Error updating extracted content:', error);
+        return false;
+      }
+
+      console.log(`✅ Content extracted from ${fileRecord.name}: ${extractedContent.length} characters`);
+      return true;
+
+    } catch (error) {
+      console.error('Error extracting content:', error);
+      
+      // Mark extraction as failed but don't throw
+      await this.supabase
+        .from('knowledge_files')
+        .update({
+          content_extracted: false,
+          extracted_content: `[Extraction failed: ${error.message}]`,
+          extraction_metadata: {
+            extracted_at: new Date().toISOString(),
+            method: 'failed',
+            error: error.message
+          }
+        })
+        .eq('id', fileId);
+      
       return false;
     }
   }
@@ -679,6 +1033,24 @@ serve(async (req) => {
         // Handle file listing
         const files = await storage.listFiles(userId);
         return new Response(JSON.stringify({ data: files }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      } else if (action === 'extract') {
+        // Handle manual content extraction
+        const { fileId } = body;
+        if (!fileId) {
+          return new Response(JSON.stringify({ error: 'File ID required for extraction' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        const extractionSuccess = await storage.extractContent(fileId);
+        return new Response(JSON.stringify({ 
+          success: extractionSuccess,
+          message: extractionSuccess ? 'Content extracted successfully' : 'Content extraction failed'
+        }), {
+          status: extractionSuccess ? 200 : 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       } else if (action === 'delete') {

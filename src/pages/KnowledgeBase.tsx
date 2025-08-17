@@ -160,6 +160,9 @@ const KnowledgeBase = () => {
             cardFileType = 'pdf';
           } else if (item.name?.toLowerCase().endsWith('.zip')) {
             cardFileType = 'zip';
+          } else if (['.txt', '.md', '.csv', '.json', '.docx', '.doc', '.pptx', '.ppt', '.xlsx', '.xls'].some(ext => 
+            item.name?.toLowerCase().endsWith(ext))) {
+            cardFileType = 'code'; // Use code icon for text-based files
           } else {
             cardFileType = 'default';
           }
