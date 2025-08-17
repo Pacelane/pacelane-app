@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/api/useAuth';
 import { useTheme } from '@/services/theme-context';
@@ -11,6 +11,7 @@ import TopNav from '@/design-system/components/TopNav';
 import Button from '@/design-system/components/Button';
 import Chips from '@/design-system/components/Chips';
 import ProgressBar from '@/design-system/components/ProgressBar';
+import OnboardingProgressIndicator from '@/design-system/components/OnboardingProgressIndicator';
 import Bichaurinho from '@/design-system/components/Bichaurinho';
 
 // Design System Tokens
@@ -22,6 +23,9 @@ import { typography } from '@/design-system/tokens/typography';
 // Icons
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 
+// Data
+import { allPillarOptions, getPillarsForGoals } from '@/data/onboardingData';
+
 const ContentPillars = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -30,20 +34,42 @@ const ContentPillars = () => {
   const [selectedPillars, setSelectedPillars] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [userGoals, setUserGoals] = useState<string[]>([]);
+  const [goalBasedPillars, setGoalBasedPillars] = useState<string[]>([]);
 
-  // Available pillar options
-  const pillarOptions = [
-    'Industry Insights',
-    'Personal Stories',
-    'Tips & Advice',
-    'Behind the Scenes',
-    'Team & Culture',
-    'Product Updates',
-    'Thought Leadership',
-    'Educational Content',
-    'Company News',
-    'Customer Stories'
-  ];
+  // Fetch user goals and set goal-based pillars
+  useEffect(() => {
+    const fetchUserGoals = async () => {
+      if (!user) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('goals')
+          .eq('user_id', user.id)
+          .single();
+
+        if (error) {
+          console.error('Error fetching user goals:', error);
+          return;
+        }
+
+        const goals = (data?.goals as string[]) || [];
+        setUserGoals(goals);
+
+        // Get suggested pillars based on goals
+        const suggestedPillars = getPillarsForGoals(goals);
+        setGoalBasedPillars(suggestedPillars);
+        
+        // Pre-select the goal-based pillars
+        setSelectedPillars(suggestedPillars);
+      } catch (error) {
+        console.error('Error loading user goals:', error);
+      }
+    };
+
+    fetchUserGoals();
+  }, [user]);
 
   const handleGoBack = () => {
     navigate('/onboarding/guides');
@@ -152,6 +178,17 @@ const ContentPillars = () => {
             />
           </div>
 
+          {/* Progress Indicator */}
+          <div style={{
+            width: isMobile ? '100%' : '400px',
+            maxWidth: isMobile ? '320px' : '400px'
+          }}>
+            <OnboardingProgressIndicator 
+              currentStep={6}
+              compact={true}
+            />
+          </div>
+
           {/* Main Card */}
           <div
             style={{
@@ -225,7 +262,10 @@ const ContentPillars = () => {
                       textAlign: 'left',
                     }}
                   >
-                    These pillars will help us create your content plan so we stay on formats you like to use
+                    {userGoals.length > 0 
+                      ? `Based on your goals (${userGoals.join(', ')}), we've pre-selected some content pillars. Choose additional ones or modify as needed.`
+                      : 'These pillars will help us create your content plan so we stay on formats you like to use'
+                    }
                   </p>
                 </div>
               </div>
@@ -234,22 +274,89 @@ const ContentPillars = () => {
               <div
                 style={{
                   display: 'flex',
-                  flexWrap: 'wrap',
-                  gap: spacing.spacing[8],
-                  alignItems: 'flex-start',
-                  justifyContent: 'flex-start',
+                  flexDirection: 'column',
+                  gap: spacing.spacing[20],
                 }}
               >
-                {pillarOptions.map((pillar) => (
-                  <Chips
-                    key={pillar}
-                    label={pillar}
-                    style="default"
-                    size="lg"
-                    selected={selectedPillars.includes(pillar)}
-                    onClick={() => togglePillar(pillar)}
-                  />
-                ))}
+                {/* Goal-based suggestions (if any) */}
+                {goalBasedPillars.length > 0 && (
+                  <div>
+                    <h3
+                      style={{
+                        fontFamily: typography.fontFamily.body,
+                        fontSize: typography.desktop.size.xs,
+                        fontWeight: typography.desktop.weight.semibold,
+                        color: colors.text.subtle,
+                        margin: 0,
+                        marginBottom: spacing.spacing[8],
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                      }}
+                    >
+                      Suggested for Your Goals
+                    </h3>
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: spacing.spacing[8],
+                        alignItems: 'flex-start',
+                        justifyContent: 'flex-start',
+                      }}
+                    >
+                      {goalBasedPillars.map((pillar) => (
+                        <Chips
+                          key={pillar}
+                          label={pillar}
+                          style="default"
+                          size="lg"
+                          selected={selectedPillars.includes(pillar)}
+                          onClick={() => togglePillar(pillar)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* All other pillars */}
+                <div>
+                  <h3
+                    style={{
+                      fontFamily: typography.fontFamily.body,
+                      fontSize: typography.desktop.size.xs,
+                      fontWeight: typography.desktop.weight.semibold,
+                      color: colors.text.subtle,
+                      margin: 0,
+                      marginBottom: spacing.spacing[8],
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                    }}
+                  >
+                    {goalBasedPillars.length > 0 ? 'More Options' : 'All Content Pillars'}
+                  </h3>
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: spacing.spacing[8],
+                      alignItems: 'flex-start',
+                      justifyContent: 'flex-start',
+                    }}
+                  >
+                    {allPillarOptions
+                      .filter(pillar => !goalBasedPillars.includes(pillar))
+                      .map((pillar) => (
+                        <Chips
+                          key={pillar}
+                          label={pillar}
+                          style="default"
+                          size="lg"
+                          selected={selectedPillars.includes(pillar)}
+                          onClick={() => togglePillar(pillar)}
+                        />
+                      ))}
+                  </div>
+                </div>
               </div>
             </div>
 

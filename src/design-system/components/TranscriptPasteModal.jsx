@@ -10,7 +10,7 @@ import { getShadow } from '@/design-system/tokens/shadows';
 import Modal from '@/design-system/components/Modal';
 import Button from '@/design-system/components/Button';
 import TextArea from '@/design-system/components/TextArea';
-import InlineTip from '@/design-system/components/InlineTip';
+
 
 // Icons
 import { FileText, Copy, CheckCircle, AlertCircle, X } from 'lucide-react';
@@ -47,7 +47,8 @@ const TranscriptPasteModal = ({ isOpen, onClose, onTranscriptSubmit, loading = f
     return null;
   };
 
-  const handleTranscriptChange = (value) => {
+  const handleTranscriptChange = (e) => {
+    const value = e.target.value;
     setTranscript(value);
     
     // Clear validation error when user starts typing
@@ -92,59 +93,75 @@ const TranscriptPasteModal = ({ isOpen, onClose, onTranscriptSubmit, loading = f
     return 'Meeting Transcript';
   };
 
-  // Example transcript formats
-  const exampleFormats = [
-    {
-      tool: 'Fireflies.ai',
-      format: 'Speaker Name: Transcript text here...'
-    },
-    {
-      tool: 'Fathom',
-      format: '[Timestamp] Speaker: What they said...'
-    },
-    {
-      tool: 'Otter.ai',
-      format: 'Speaker Name (Time): Transcript content...'
-    },
-    {
-      tool: 'Zoom',
-      format: 'Speaker Name: Transcript text here...'
-    }
-  ];
 
-  const modalContent = (
-    <div style={{ 
-      display: 'flex',
-      flexDirection: 'column',
-      gap: spacing.spacing[24],
-      width: '100%',
-      maxWidth: '600px'
-    }}>
+
+  // Modal content styles
+  const headerStyles = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacing.spacing[8],
+    padding: spacing.spacing[24],
+    paddingBottom: spacing.spacing[16],
+  };
+
+  const titleStyle = {
+    fontFamily: typography.fontFamily['awesome-serif'],
+    fontSize: typography.desktop.size['2xl'],
+    fontWeight: typography.desktop.weight.semibold,
+    lineHeight: typography.desktop.lineHeight.leading7,
+    color: colors.text.default,
+    margin: 0,
+  };
+
+  const subtitleStyle = {
+    ...textStyles.sm.medium,
+    color: colors.text.subtle,
+    margin: 0,
+  };
+
+  const contentStyles = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacing.spacing[24],
+    padding: `0 ${spacing.spacing[24]}`,
+    flex: 1,
+    overflow: 'auto',
+    minHeight: 0,
+  };
+
+  const footerStyles = {
+    display: 'flex',
+    gap: spacing.spacing[12],
+    padding: spacing.spacing[24],
+    paddingTop: spacing.spacing[16],
+    borderTop: `1px solid ${colors.border.default}`,
+    justifyContent: 'flex-end',
+    flexShrink: 0,
+  };
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      showCloseButton={true}
+      closeOnOverlayClick={!loading}
+    >
       {/* Header */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[8] }}>
+      <div style={headerStyles}>
         <div style={{ display: 'flex', alignItems: 'center', gap: spacing.spacing[12] }}>
           <FileText size={24} color={colors.icon.default} />
-          <h2 style={{
-            fontFamily: typography.fontFamily['awesome-serif'],
-            fontSize: typography.desktop.size['2xl'],
-            fontWeight: typography.desktop.weight.semibold,
-            lineHeight: typography.desktop.lineHeight.leading7,
-            color: colors.text.default,
-            margin: 0,
-          }}>
+          <h2 style={titleStyle}>
             Paste Meeting Transcript
           </h2>
         </div>
-        <p style={{
-          ...textStyles.sm.medium,
-          color: colors.text.subtle,
-          margin: 0,
-        }}>
+        <p style={subtitleStyle}>
           Paste your meeting transcript from Fireflies, Fathom, Otter.ai, Zoom, or any other transcription tool
         </p>
       </div>
 
-      {/* Title Input (Optional) */}
+      {/* Content */}
+      <div style={contentStyles}>
+        {/* Title Input (Optional) */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[8] }}>
         <label style={{
           ...textStyles.sm.medium,
@@ -266,24 +283,10 @@ Example formats we support:
           </div>
         )}
       </div>
+      </div>
 
-      {/* Supported Formats Help */}
-      <InlineTip
-        icon={<FileText size={16} />}
-        title="Supported Transcript Formats"
-        description="We support transcripts from all major tools including:"
-        items={exampleFormats.map(format => `${format.tool}: ${format.format}`)}
-        variant="informative"
-      />
-
-      {/* Action Buttons */}
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'flex-end', 
-        gap: spacing.spacing[12],
-        paddingTop: spacing.spacing[8],
-        borderTop: `1px solid ${colors.border.default}`
-      }}>
+      {/* Footer */}
+      <div style={footerStyles}>
         <Button
           label="Cancel"
           style="ghost"
@@ -301,17 +304,7 @@ Example formats we support:
           leadIcon={loading ? undefined : <Copy size={16} />}
         />
       </div>
-    </div>
-  );
-
-  return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      content={modalContent}
-      showCloseButton={true}
-      closeOnOverlayClick={!loading}
-    />
+    </Modal>
   );
 };
 

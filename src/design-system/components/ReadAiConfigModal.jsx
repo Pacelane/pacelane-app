@@ -99,6 +99,7 @@ const ReadAiConfigModal = ({
     padding: `0 ${spacing.spacing[24]}`,
     flex: 1,
     overflowY: 'auto',
+    minHeight: 0,
   };
 
   const footerStyles = {
@@ -107,6 +108,7 @@ const ReadAiConfigModal = ({
     alignItems: 'center',
     padding: `${spacing.spacing[16]} ${spacing.spacing[24]} ${spacing.spacing[20]} ${spacing.spacing[24]}`,
     borderTop: `1px solid ${colors.border.default}`,
+    flexShrink: 0,
   };
 
   const stepContainerStyles = {

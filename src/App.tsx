@@ -2,6 +2,8 @@ import { ToastProvider } from "./design-system/components/Toast";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Outlet } from "react-router-dom";
+import { useEffect } from "react";
+import { ErrorReportingService } from "@/services/errorReportingService";
 
 import { ThemeProvider } from "@/services/theme-context";
 import { HelpProvider } from "./services/help-context";
@@ -40,7 +42,13 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 
 const queryClient = new QueryClient();
 
-const App = () => (
+const App = () => {
+  // Set up global error reporting on app start
+  useEffect(() => {
+    ErrorReportingService.setupGlobalErrorHandling();
+  }, []);
+
+  return (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
       <HelpProvider>
@@ -105,6 +113,7 @@ const App = () => (
       </HelpProvider>
     </ThemeProvider>
   </QueryClientProvider>
-);
+  );
+};
 
 export default App;

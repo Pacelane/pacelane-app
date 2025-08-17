@@ -123,6 +123,8 @@ const WhatsAppConfigModal = ({
     gap: spacing.spacing[20],
     padding: `0 ${spacing.spacing[24]}`,
     flex: 1,
+    overflow: 'auto',
+    minHeight: 0,
   };
 
   const footerStyles = {
@@ -132,6 +134,7 @@ const WhatsAppConfigModal = ({
     paddingTop: spacing.spacing[16],
     borderTop: `1px solid ${colors.border.default}`,
     justifyContent: 'flex-end',
+    flexShrink: 0,
   };
 
   const infoBoxStyles = {

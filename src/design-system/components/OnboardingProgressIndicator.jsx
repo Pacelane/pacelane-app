@@ -132,7 +132,7 @@ const OnboardingProgressIndicator = ({
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.spacing[8],
+    marginBottom: spacing.spacing[0],
   };
 
   const currentStepTextStyle = {

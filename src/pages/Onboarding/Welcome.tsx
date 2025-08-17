@@ -18,7 +18,7 @@ import { textStyles } from '@/design-system/styles/typography/typography-styles'
 import { getResponsiveContainer, getResponsiveWidth } from '@/design-system/utils/responsive';
 
 // Icons
-import { ArrowRight, Clock, Target, Sparkles } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 
 const Welcome = () => {
   const navigate = useNavigate();
@@ -103,151 +103,99 @@ const Welcome = () => {
               ...getResponsiveWidth(isMobile, 'card'),
             }}
           >
+            {/* Bichaurinho Section */}
+            <div
+              style={{
+                paddingTop: spacing.spacing[32],
+                paddingBottom: spacing.spacing[12],
+                paddingLeft: spacing.spacing[32],
+                paddingRight: spacing.spacing[32],
+                display: 'flex',
+                justifyContent: 'flex-start',
+              }}
+            >
+              <Bichaurinho variant={15} size={48} />
+            </div>
+
             {/* Header Section */}
             <div
               style={{
-                padding: spacing.spacing[32],
-                display: 'flex',
-                alignItems: 'center',
-                gap: spacing.spacing[24],
+                paddingTop: spacing.spacing[12],
+                paddingBottom: spacing.spacing[32],
+                paddingLeft: spacing.spacing[32],
+                paddingRight: spacing.spacing[32],
                 borderBottom: `1px solid ${colors.border.default}`,
+                textAlign: 'left',
               }}
             >
-              <Bichaurinho variant={15} size={64} />
-              
-              <div style={{ flex: 1 }}>
-                <h1
-                  style={{
-                    fontFamily: typography.fontFamily['awesome-serif'],
-                    fontSize: typography.desktop.size['4xl'],
-                    fontWeight: typography.desktop.weight.semibold,
-                    lineHeight: typography.desktop.lineHeight.leading7,
-                    color: colors.text.default,
-                    margin: 0,
-                  }}
-                >
-                  Welcome to Pacelane!
-                </h1>
-                <p
-                  style={{
-                    ...textStyles.lg.normal,
-                    color: colors.text.subtle,
-                    margin: 0,
-                    marginTop: spacing.spacing[8],
-                  }}
-                >
-                  Your AI-powered LinkedIn content strategy starts here
-                </p>
-              </div>
+              <h1
+                style={{
+                  fontFamily: typography.fontFamily['awesome-serif'],
+                  fontSize: typography.desktop.size['5xl'],
+                  fontWeight: typography.desktop.weight.semibold,
+                  lineHeight: typography.desktop.lineHeight.leading7,
+                  color: colors.text.default,
+                  margin: 0,
+                }}
+              >
+                Welcome!
+              </h1>
+              <p
+                style={{
+                  ...textStyles.sm.normal,
+                  color: colors.text.muted,
+                  margin: 0,
+                  marginTop: spacing.spacing[16],
+                }}
+              >
+                We want to help you show up consistently on LinkedIn with content that feels like you.
+              </p>
             </div>
 
             {/* Content Section */}
             <div
               style={{
-                padding: spacing.spacing[32],
+                paddingTop: spacing.spacing[24],
+                paddingBottom: spacing.spacing[24],
+                paddingLeft: '36px',
+                paddingRight: '36px',
                 backgroundColor: colors.bg.card.subtle,
               }}
             >
               <p
                 style={{
-                  ...textStyles.md.normal,
-                  color: colors.text.default,
+                  ...textStyles.sm.normal,
+                  color: colors.text.muted,
                   margin: 0,
-                  marginBottom: spacing.spacing[16],
                   lineHeight: '1.6',
                 }}
               >
-                We're here to help you show up consistently on LinkedIn with authentic content that feels like you. 
-                Our AI learns your voice, understands your goals, and creates personalized content suggestions delivered 
-                right to your WhatsApp.
+                We'll ask a few questions to tailor your strategy.
               </p>
-              
-              {/* Key Benefits */}
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                  gap: spacing.spacing[16],
-                  marginTop: spacing.spacing[24],
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: spacing.spacing[12] }}>
-                  <div
-                    style={{
-                      width: '32px',
-                      height: '32px',
-                      borderRadius: cornerRadius.borderRadius.sm,
-                      backgroundColor: colors.bg.state.primary,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Clock size={16} color="white" />
-                  </div>
-                  <span style={{ ...textStyles.sm.medium, color: colors.text.default }}>
-                    Save 5+ hours per week
-                  </span>
-                </div>
-                
-                <div style={{ display: 'flex', alignItems: 'center', gap: spacing.spacing[12] }}>
-                  <div
-                    style={{
-                      width: '32px',
-                      height: '32px',
-                      borderRadius: cornerRadius.borderRadius.sm,
-                      backgroundColor: colors.bg.state.brand,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Target size={16} color="white" />
-                  </div>
-                  <span style={{ ...textStyles.sm.medium, color: colors.text.default }}>
-                    Authentic, personalized content
-                  </span>
-                </div>
-                
-                <div style={{ display: 'flex', alignItems: 'center', gap: spacing.spacing[12] }}>
-                  <div
-                    style={{
-                      width: '32px',
-                      height: '32px',
-                      borderRadius: cornerRadius.borderRadius.sm,
-                      backgroundColor: colors.bg.state.secondary,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Sparkles size={16} color={colors.icon.default} />
-                  </div>
-                  <span style={{ ...textStyles.sm.medium, color: colors.text.default }}>
-                    Consistent posting schedule
-                  </span>
-                </div>
-              </div>
             </div>
           </div>
 
           {/* What to Expect */}
           <div
             style={{
-              backgroundColor: colors.bg.card.default,
+              background: `linear-gradient(0deg, rgba(67, 125, 252, 0.08) 0%, rgba(67, 125, 252, 0) 100%), ${colors.bg.card.default}`,
               borderRadius: cornerRadius.borderRadius.lg,
               border: `1px solid ${colors.border.default}`,
               boxShadow: getShadow('regular.card', colors, { withBorder: true }),
-              padding: spacing.spacing[32],
+              padding: spacing.spacing[24],
               ...getResponsiveWidth(isMobile, 'card'),
             }}
           >
             <h2
               style={{
-                ...textStyles['2xl'].semibold,
+                fontFamily: typography.fontFamily['awesome-serif'],
+                fontSize: typography.desktop.size['2xl'],
+                fontWeight: typography.desktop.weight.semibold,
+                lineHeight: typography.desktop.lineHeight.leading7,
+                letterSpacing: typography.desktop.letterSpacing.normal,
                 color: colors.text.default,
                 margin: 0,
-                marginBottom: spacing.spacing[16],
+                marginBottom: spacing.spacing[12],
               }}
             >
               What to Expect
@@ -256,33 +204,93 @@ const Welcome = () => {
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-                gap: spacing.spacing[20],
+                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                gap: spacing.spacing[16],
               }}
             >
-              <div>
-                <h3 style={{ ...textStyles.md.semibold, color: colors.text.default, margin: 0 }}>
+              {/* Setup Time */}
+              <div
+                style={{
+                  backgroundColor: colors.bg.card.default,
+                  padding: spacing.spacing[16],
+                  borderRadius: cornerRadius.borderRadius.md,
+                  border: `1px solid ${colors.border.default}`,
+                  boxShadow: getShadow('regular.card', colors, { withBorder: true }),
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: spacing.spacing[8],
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <h3 style={{ 
+                  fontFamily: typography.fontFamily['awesome-serif'],
+                  fontSize: typography.desktop.size.md,
+                  fontWeight: typography.desktop.weight.semibold,
+                  lineHeight: typography.desktop.lineHeight.leading6,
+                  color: colors.text.default, 
+                  margin: 0 
+                }}>
                   Setup Time: ~5 minutes
                 </h3>
-                <p style={{ ...textStyles.sm.normal, color: colors.text.subtle, margin: 0, marginTop: spacing.spacing[4] }}>
+                <p style={{ ...textStyles.sm.normal, color: colors.text.subtle, margin: 0, lineHeight: '1.5' }}>
                   Quick questions about your LinkedIn profile, goals, and content preferences
                 </p>
               </div>
               
-              <div>
-                <h3 style={{ ...textStyles.md.semibold, color: colors.text.default, margin: 0 }}>
+              {/* Content Delivery */}
+              <div
+                style={{
+                  backgroundColor: colors.bg.card.default,
+                  padding: spacing.spacing[16],
+                  borderRadius: cornerRadius.borderRadius.md,
+                  border: `1px solid ${colors.border.default}`,
+                  boxShadow: getShadow('regular.card', colors, { withBorder: true }),
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: spacing.spacing[8],
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <h3 style={{ 
+                  fontFamily: typography.fontFamily['awesome-serif'],
+                  fontSize: typography.desktop.size.md,
+                  fontWeight: typography.desktop.weight.semibold,
+                  lineHeight: typography.desktop.lineHeight.leading6,
+                  color: colors.text.default, 
+                  margin: 0 
+                }}>
                   Content Delivery
                 </h3>
-                <p style={{ ...textStyles.sm.normal, color: colors.text.subtle, margin: 0, marginTop: spacing.spacing[4] }}>
+                <p style={{ ...textStyles.sm.normal, color: colors.text.subtle, margin: 0, lineHeight: '1.5' }}>
                   Personalized posts delivered to WhatsApp based on your schedule
                 </p>
               </div>
               
-              <div>
-                <h3 style={{ ...textStyles.md.semibold, color: colors.text.default, margin: 0 }}>
+              {/* Your Voice, Amplified */}
+              <div
+                style={{
+                  backgroundColor: colors.bg.card.default,
+                  padding: spacing.spacing[16],
+                  borderRadius: cornerRadius.borderRadius.md,
+                  border: `1px solid ${colors.border.default}`,
+                  boxShadow: getShadow('regular.card', colors, { withBorder: true }),
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: spacing.spacing[8],
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <h3 style={{ 
+                  fontFamily: typography.fontFamily['awesome-serif'],
+                  fontSize: typography.desktop.size.md,
+                  fontWeight: typography.desktop.weight.semibold,
+                  lineHeight: typography.desktop.lineHeight.leading6,
+                  color: colors.text.default, 
+                  margin: 0 
+                }}>
                   Your Voice, Amplified
                 </h3>
-                <p style={{ ...textStyles.sm.normal, color: colors.text.subtle, margin: 0, marginTop: spacing.spacing[4] }}>
+                <p style={{ ...textStyles.sm.normal, color: colors.text.subtle, margin: 0, lineHeight: '1.5' }}>
                   AI learns from your existing content to match your unique style
                 </p>
               </div>

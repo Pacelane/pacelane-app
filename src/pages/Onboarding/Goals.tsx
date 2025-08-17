@@ -11,6 +11,7 @@ import TopNav from '@/design-system/components/TopNav';
 import Button from '@/design-system/components/Button';
 import Chips from '@/design-system/components/Chips';
 import ProgressBar from '@/design-system/components/ProgressBar';
+import OnboardingProgressIndicator from '@/design-system/components/OnboardingProgressIndicator';
 import Bichaurinho from '@/design-system/components/Bichaurinho';
 
 // Design System Tokens
@@ -23,6 +24,9 @@ import { getResponsivePadding, getResponsiveWidth, getResponsiveContainer } from
 // Icons
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 
+// Data
+import { goalOptions, getGoalPreviewText } from '@/data/onboardingData';
+
 const Goals = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -32,17 +36,7 @@ const Goals = () => {
   const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Available goal options
-  const goalOptions = [
-    'Build Authority',
-    'Grow Network', 
-    'Attract Clients',
-    'Share Ideas',
-    'Attract Opportunities',
-    'Stay Visible',
-    'Stay Relevant',
-    'Become a Thought Leader'
-  ];
+  // Goal options are now imported from onboardingData
 
   const handleGoBack = () => {
     navigate('/onboarding/inspirations');
@@ -148,6 +142,16 @@ const Goals = () => {
               size="xs"
               leadIcon={<ArrowLeft size={12} />}
               onClick={handleGoBack}
+            />
+          </div>
+
+          {/* Progress Indicator */}
+          <div style={{
+            ...getResponsiveWidth(isMobile, 'card')
+          }}>
+            <OnboardingProgressIndicator 
+              currentStep={4}
+              compact={true}
             />
           </div>
 
@@ -277,6 +281,24 @@ const Goals = () => {
                   : `${selectedGoals.length} goal${selectedGoals.length === 1 ? '' : 's'} selected.`
                 }
               </p>
+              
+              {/* Preview text for selected goals */}
+              {selectedGoals.length > 0 && (
+                <p
+                  style={{
+                    fontFamily: typography.fontFamily.body,
+                    fontSize: typography.desktop.size.xs,
+                    fontWeight: typography.desktop.weight.normal,
+                    lineHeight: typography.desktop.lineHeight.xs,
+                    color: colors.text.subtle,
+                    margin: 0,
+                    marginTop: spacing.spacing[8],
+                    textAlign: 'center',
+                  }}
+                >
+                  {getGoalPreviewText(selectedGoals)}
+                </p>
+              )}
             </div>
           </div>
         </div>

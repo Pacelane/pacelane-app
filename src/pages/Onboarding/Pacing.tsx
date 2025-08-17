@@ -16,6 +16,7 @@ import ProgressBar from '@/design-system/components/ProgressBar';
 import OnboardingProgressIndicator from '@/design-system/components/OnboardingProgressIndicator';
 import Bichaurinho from '@/design-system/components/Bichaurinho';
 import DropdownButton from '@/design-system/components/DropdownButton';
+import InlineTip from '@/design-system/components/InlineTip';
 
 // Design System Tokens
 import { spacing } from '@/design-system/tokens/spacing';
@@ -25,7 +26,7 @@ import { typography } from '@/design-system/tokens/typography';
 import { textStyles } from '@/design-system/styles/typography/typography-styles';
 
 // Icons
-import { ArrowLeft, ArrowRight, Clock, Info, Calendar, MessageSquare } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Clock, Calendar, MessageSquare } from 'lucide-react';
 
 const Pacing = () => {
   const navigate = useNavigate();
@@ -42,8 +43,7 @@ const Pacing = () => {
   const [selectedDays, setSelectedDays] = useState<string[]>(['monday', 'wednesday', 'friday']);
   
   // State for dropdowns
-  const [dailySummaryTime, setDailySummaryTime] = useState('Evening (6-8 PM)');
-  const [followUps, setFollowUps] = useState('One more time the same day');
+  const [dailySummaryTime, setDailySummaryTime] = useState('6:00 PM');
   const [recommendationsTime, setRecommendationsTime] = useState('Morning (8-10 AM)');
 
   const weekdays = [
@@ -57,22 +57,12 @@ const Pacing = () => {
   ];
 
   const timeOptions = [
-    'Early Morning (6-8 AM)',
-    'Morning (8-10 AM)',
-    'Late Morning (10-12 PM)',
-    'Afternoon (12-2 PM)',
-    'Late Afternoon (2-4 PM)',
-    'Early Evening (4-6 PM)',
-    'Evening (6-8 PM)',
-    'Night (8-10 PM)',
-    'Late Night (10-12 AM)'
+    '9:00 AM',
+    '2:00 PM', 
+    '6:00 PM'
   ];
 
-  const followUpOptions = [
-    'No follow-ups',
-    'One more time the same day',
-    'Two more times the same day'
-  ];
+
 
 
 
@@ -106,7 +96,6 @@ const Pacing = () => {
         pace: selectedPace,
         frequency: selectedDays,
         daily_summary_time: dailySummaryTime,
-        followups_frequency: followUps,
         recommendations_time: recommendationsTime
       };
 
@@ -322,11 +311,13 @@ const Pacing = () => {
                   {/* Subtitle */}
                   <p
                     style={{
-                      ...textStyles.md.normal,
-                      color: colors.text.subtle,
+                      fontFamily: typography.fontFamily.body,
+                      fontSize: typography.desktop.size.sm,
+                      fontWeight: typography.desktop.weight.normal,
+                      lineHeight: typography.desktop.lineHeight.sm,
+                      color: colors.text.muted,
                       margin: 0,
                       textAlign: 'left',
-                      lineHeight: '1.5',
                     }}
                   >
                     Set your ideal posting frequency and schedule. We'll deliver personalized content suggestions at the perfect times based on your preferences.
@@ -334,74 +325,7 @@ const Pacing = () => {
                 </div>
               </div>
 
-              {/* Information Card */}
-              <div
-                style={{
-                  backgroundColor: colors.bg.card.subtle,
-                  borderRadius: cornerRadius.borderRadius.md,
-                  border: `1px solid ${colors.border.default}`,
-                  padding: spacing.spacing[16],
-                  marginBottom: spacing.spacing[24],
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: spacing.spacing[12] }}>
-                  <div
-                    style={{
-                      width: '32px',
-                      height: '32px',
-                      borderRadius: cornerRadius.borderRadius.sm,
-                      backgroundColor: colors.bg.state.primary,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                    }}
-                  >
-                    <Clock size={16} color="white" />
-                  </div>
-                  
-                  <div style={{ flex: 1 }}>
-                    <h3 style={{ 
-                      ...textStyles.sm.semibold, 
-                      color: colors.text.default, 
-                      margin: 0,
-                      marginBottom: spacing.spacing[8]
-                    }}>
-                      Pacing Options Explained:
-                    </h3>
-                    <div style={{ 
-                      display: 'grid',
-                      gridTemplateColumns: '1fr',
-                      gap: spacing.spacing[6]
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: spacing.spacing[8] }}>
-                        <span style={{ ...textStyles.xs.semibold, color: colors.text.default, minWidth: '60px' }}>
-                          Light:
-                        </span>
-                        <span style={{ ...textStyles.xs.normal, color: colors.text.subtle }}>
-                          1-2 posts per week, perfect for busy professionals
-                        </span>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: spacing.spacing[8] }}>
-                        <span style={{ ...textStyles.xs.semibold, color: colors.text.default, minWidth: '60px' }}>
-                          Moderate:
-                        </span>
-                        <span style={{ ...textStyles.xs.normal, color: colors.text.subtle }}>
-                          3-4 posts per week, balanced approach for consistent growth
-                        </span>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: spacing.spacing[8] }}>
-                        <span style={{ ...textStyles.xs.semibold, color: colors.text.default, minWidth: '60px' }}>
-                          Hard Core:
-                        </span>
-                        <span style={{ ...textStyles.xs.normal, color: colors.text.subtle }}>
-                          5-7 posts per week, maximum visibility and engagement
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+
 
               {/* Pace Selection */}
               <ButtonGroup
@@ -463,30 +387,20 @@ const Pacing = () => {
                 title="Daily Summary"
                 subtitle="When should we send you a daily summary?"
               >
-                <DropdownButton
-                  label={dailySummaryTime}
-                  size="sm"
-                  items={timeOptions.map(option => ({
-                    label: option,
-                    onClick: () => setDailySummaryTime(option)
-                  }))}
-                />
-              </InnerSection>
-
-              <div style={{ height: spacing.spacing[12] }} />
-
-              <InnerSection
-                title="Follow-ups"
-                subtitle="How often should we follow up on your posts?"
-              >
-                <DropdownButton
-                  label={followUps}
-                  size="sm"
-                  items={followUpOptions.map(option => ({
-                    label: option,
-                    onClick: () => setFollowUps(option)
-                  }))}
-                />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[12] }}>
+                  <InlineTip style={{ fontSize: typography.desktop.size.xs }}>
+                    We'll ask about how your day went and give you the opportunity to add more context about what happened. This helps us focus on what matters when creating your content.
+                  </InlineTip>
+                  
+                  <DropdownButton
+                    label={dailySummaryTime}
+                    size="sm"
+                    items={timeOptions.map(option => ({
+                      label: option,
+                      onClick: () => setDailySummaryTime(option)
+                    }))}
+                  />
+                </div>
               </InnerSection>
 
               <div style={{ height: spacing.spacing[12] }} />
@@ -495,14 +409,20 @@ const Pacing = () => {
                 title="Content Recommendations"
                 subtitle="When should we suggest new content ideas?"
               >
-                <DropdownButton
-                  label={recommendationsTime}
-                  size="sm"
-                  items={timeOptions.map(option => ({
-                    label: option,
-                    onClick: () => setRecommendationsTime(option)
-                  }))}
-                />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[12] }}>
+                  <InlineTip style={{ fontSize: typography.desktop.size.xs }}>
+                    We'll send you personalized content suggestions based on your goals, interests, and recent activities to help spark your next post ideas.
+                  </InlineTip>
+                  
+                  <DropdownButton
+                    label={recommendationsTime}
+                    size="sm"
+                    items={timeOptions.map(option => ({
+                      label: option,
+                      onClick: () => setRecommendationsTime(option)
+                    }))}
+                  />
+                </div>
               </InnerSection>
 
 

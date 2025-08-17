@@ -683,38 +683,49 @@ const KnowledgeBase = () => {
           {/* Transcript Paste Section */}
           <div style={{
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: spacing.spacing[16],
+            flexDirection: isMobile ? 'column' : 'row',
+            alignItems: isMobile ? 'stretch' : 'center',
+            justifyContent: isMobile ? 'flex-start' : 'space-between',
+            padding: spacing.spacing[20],
             backgroundColor: colors.bg.card.subtle,
             borderRadius: cornerRadius.borderRadius.lg,
             border: `1px solid ${colors.border.default}`,
+            gap: isMobile ? spacing.spacing[16] : 0,
           }}>
-            <Button
-              label="Paste Meeting Transcript"
-              style="secondary"
-              size="md"
-              leadIcon={<FileText size={16} />}
-              onClick={handleTranscriptPaste}
-              disabled={processingTranscript}
-              loading={processingTranscript}
-            />
-            <div style={{ marginLeft: spacing.spacing[12] }}>
-              <p style={{
-                ...textStyles.sm.medium,
+            <div style={{ flex: isMobile ? 'none' : 1 }}>
+              <h3 style={{
+                fontFamily: typography.fontFamily['awesome-serif'],
+                fontSize: typography.desktop.size.lg,
+                fontWeight: typography.desktop.weight.medium,
+                lineHeight: typography.desktop.lineHeight.leading6,
+                letterSpacing: typography.desktop.letterSpacing.normal,
                 color: colors.text.default,
                 margin: 0,
+                marginBottom: spacing.spacing[4],
               }}>
-                Add meeting transcripts from Fireflies, Fathom, Otter.ai, or any transcription tool
-              </p>
+                Paste Your Meeting Transcripts
+              </h3>
               <p style={{
-                ...textStyles.xs.normal,
-                color: colors.text.muted,
+                ...textStyles.sm.normal,
+                color: colors.text.subtle,
                 margin: 0,
-                marginTop: spacing.spacing[4],
               }}>
                 Transcripts will be saved as searchable knowledge files for future content creation
               </p>
+            </div>
+            <div style={{ 
+              flexShrink: 0,
+              alignSelf: isMobile ? 'flex-start' : 'center',
+            }}>
+              <Button
+                label="Paste Transcript"
+                style="secondary"
+                size="md"
+                leadIcon={<FileText size={16} />}
+                onClick={handleTranscriptPaste}
+                disabled={processingTranscript}
+                loading={processingTranscript}
+              />
             </div>
           </div>
 

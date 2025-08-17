@@ -5,8 +5,7 @@ import { useContent } from '../hooks/api/useContent';
 import { useAnalytics } from '../hooks/api/useAnalytics';
 import { useTheme } from '../services/theme-context';
 import { useIsMobile } from '@/hooks/use-mobile';
-import * as templatesApi from '../api/templates';
-import type { Template } from '../api/templates';
+import { templateData } from '@/data/templateData';
 import { supabase } from '../integrations/supabase/client';
 
 // First-time user utilities
@@ -53,8 +52,7 @@ const ProductHome = () => {
   // Check if user is a first-time user
   const isNewUser = isFirstTimeUser(profile, savedDrafts, contentSuggestions, knowledgeFiles);
   // Sidebar handled by MainAppChrome layout
-  const [templates, setTemplates] = useState<Template[]>([]);
-  const [loadingTemplates, setLoadingTemplates] = useState(false);
+  const [templates] = useState(templateData.slice(0, 2)); // Show first 2 templates
   const [generationProgress, setGenerationProgress] = useState<{
     isGenerating: boolean;
     currentStep: string;
@@ -76,7 +74,7 @@ const ProductHome = () => {
           await Promise.allSettled([
             loadSavedDrafts(),
             loadContentSuggestions(),
-            loadTemplates(),
+
             (async () => {
               const end = new Date();
               const start = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -113,22 +111,7 @@ const ProductHome = () => {
     }
   }, [user, hasLoadedInitialData, loadSavedDrafts, loadContentSuggestions]);
 
-  // Load templates from database
-  const loadTemplates = async () => {
-    if (!user) return;
-    
-    setLoadingTemplates(true);
-    try {
-      const result = await templatesApi.fetchSystemTemplates();
-      if (result.data) {
-        setTemplates(result.data.slice(0, 2)); // Show first 2 templates in home page
-      }
-    } catch (err) {
-      console.error('Failed to load templates:', err);
-    } finally {
-      setLoadingTemplates(false);
-    }
-  };
+
 
   // Generate new content suggestions using the enhanced multi-agent system
   const generateContentSuggestions = async () => {
@@ -468,10 +451,16 @@ const ProductHome = () => {
             flexDirection: isMobile ? 'column' : 'row',
             gap: spacing.spacing[16] 
           }}>
-            <div style={{ flex: isMobile ? 'none' : 'auto', width: isMobile ? '100%' : 'auto' }}>
+            <div style={{ 
+              flex: isMobile ? 'none' : '0 0 auto', 
+              width: isMobile ? '100%' : 'auto' 
+            }}>
               <StreakCard {...getStreakCardProps()} />
             </div>
-            <div style={{ flex: 1, width: isMobile ? '100%' : 'auto' }}>
+            <div style={{ 
+              flex: isMobile ? 'none' : '1', 
+              width: isMobile ? '100%' : 'auto' 
+            }}>
               <StatsSummaryCard {...getStatsSummaryProps()} />
             </div>
           </div>

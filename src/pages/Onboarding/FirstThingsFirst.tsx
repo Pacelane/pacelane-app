@@ -40,7 +40,7 @@ import { typography } from '@/design-system/tokens/typography';
 import { textStyles } from '@/design-system/styles/typography/typography-styles';
 
 // Icons
-import { ArrowLeft, ArrowRight, Loader2, Check, X, Info, Lightbulb } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 
 const FirstThingsFirst = () => {
   const navigate = useNavigate();
@@ -53,7 +53,6 @@ const FirstThingsFirst = () => {
   // State for LinkedIn URL detection
   const [detectedUsername, setDetectedUsername] = useState('');
   const [wasUrlDetected, setWasUrlDetected] = useState(false);
-  const [showUrlDetection, setShowUrlDetection] = useState(false);
 
   const form = useForm<LinkedInUsernameFormData>({
     resolver: zodResolver(linkedInUsernameSchema),
@@ -62,39 +61,27 @@ const FirstThingsFirst = () => {
     },
   });
 
-  // Handle input changes with URL detection
+  // Handle input changes with automatic URL detection
   const handleInputChange = (value) => {
-    form.setValue('profileUrl', value, { shouldValidate: true });
-    
     // Check if input looks like a LinkedIn URL
     if (isLinkedInUrl(value)) {
       const parsed = parseLinkedInInput(value);
       if (parsed.isValid && parsed.username) {
+        // Automatically set the extracted username
+        form.setValue('profileUrl', parsed.username, { shouldValidate: true });
         setDetectedUsername(parsed.username);
         setWasUrlDetected(true);
-        setShowUrlDetection(true);
-      } else {
-        setShowUrlDetection(false);
-        setWasUrlDetected(false);
+        toast.success(`LinkedIn username extracted: ${parsed.username}`);
+        return;
       }
-    } else {
-      setShowUrlDetection(false);
-      setWasUrlDetected(false);
     }
-  };
-
-  // Handle confirmation of detected username
-  const handleConfirmDetection = () => {
-    form.setValue('profileUrl', detectedUsername, { shouldValidate: true });
-    setShowUrlDetection(false);
-    toast.success(`LinkedIn username extracted: ${detectedUsername}`);
-  };
-
-  // Handle dismissing the detection
-  const handleDismissDetection = () => {
-    setShowUrlDetection(false);
+    
+    // For non-URL inputs or invalid URLs, set the value directly
+    form.setValue('profileUrl', value, { shouldValidate: true });
     setWasUrlDetected(false);
   };
+
+
 
   const handleGoBack = () => {
     navigate('/onboarding/welcome');
@@ -246,7 +233,7 @@ const FirstThingsFirst = () => {
                   flexDirection: 'column',
                   alignItems: 'flex-start',
                   gap: spacing.spacing[16],
-                  marginBottom: spacing.spacing[32],
+                  marginBottom: spacing.spacing[20],
                 }}
               >
                 {/* Bichaurinho */}
@@ -281,8 +268,8 @@ const FirstThingsFirst = () => {
                   {/* Subtitle */}
                   <p
                     style={{
-                      ...textStyles.md.normal,
-                      color: colors.text.subtle,
+                      ...textStyles.sm.normal,
+                      color: colors.text.muted,
                       margin: 0,
                       textAlign: 'left',
                       marginTop: spacing.spacing[8],
@@ -294,56 +281,6 @@ const FirstThingsFirst = () => {
                 </div>
               </div>
 
-              {/* Information Card */}
-              <div
-                style={{
-                  backgroundColor: colors.bg.card.subtle,
-                  borderRadius: cornerRadius.borderRadius.md,
-                  border: `1px solid ${colors.border.default}`,
-                  padding: spacing.spacing[16],
-                  marginBottom: spacing.spacing[24],
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: spacing.spacing[12] }}>
-                  <div
-                    style={{
-                      width: '32px',
-                      height: '32px',
-                      borderRadius: cornerRadius.borderRadius.sm,
-                      backgroundColor: colors.bg.state.primary,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                    }}
-                  >
-                    <Lightbulb size={16} color="white" />
-                  </div>
-                  
-                  <div style={{ flex: 1 }}>
-                    <h3 style={{ 
-                      ...textStyles.sm.semibold, 
-                      color: colors.text.default, 
-                      margin: 0,
-                      marginBottom: spacing.spacing[4]
-                    }}>
-                      What we'll analyze from your LinkedIn:
-                    </h3>
-                    <ul style={{ 
-                      ...textStyles.xs.normal, 
-                      color: colors.text.subtle, 
-                      margin: 0,
-                      paddingLeft: spacing.spacing[16],
-                      lineHeight: '1.4'
-                    }}>
-                      <li>Your writing style and tone from existing posts</li>
-                      <li>Professional background and expertise areas</li>
-                      <li>Industry context and relevant topics</li>
-                      <li>Content themes that perform well for you</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
 
               {/* Form Inputs Container */}
               <div
@@ -356,11 +293,11 @@ const FirstThingsFirst = () => {
                 {/* LinkedIn Profile Input */}
                 <Input
                   label="Your LinkedIn Profile"
-                  placeholder={showUrlDetection ? "Paste LinkedIn URL or enter username..." : "your-linkedin-username"}
+                  placeholder="your-linkedin-username"
                   value={form.watch('profileUrl') || ''}
                   onChange={(e) => handleInputChange(e.target.value)}
-                  style={showUrlDetection ? "default" : "add-on"}
-                  addOnPrefix={showUrlDetection ? undefined : "linkedin.com/in/"}
+                  style="add-on"
+                  addOnPrefix="linkedin.com/in/"
                   size="lg"
                   required={true}
                   disabled={saving}
@@ -368,94 +305,9 @@ const FirstThingsFirst = () => {
                   caption={form.formState.errors.profileUrl?.message}
                 />
 
-                {/* URL Detection Confirmation UI */}
-                {showUrlDetection && (
-                  <div
-                    style={{
-                      backgroundColor: colors.bg.state.soft,
-                      border: `1px solid ${colors.border.highlight}`,
-                      borderRadius: cornerRadius.borderRadius.md,
-                      padding: spacing.spacing[16],
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: spacing.spacing[12],
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                      }}
-                    >
-                      <div>
-                        <p
-                          style={{
-                            fontFamily: typography.fontFamily.body,
-                            fontSize: typography.desktop.size.sm,
-                            fontWeight: typography.desktop.weight.medium,
-                            color: colors.text.default,
-                            margin: 0,
-                          }}
-                        >
-                          LinkedIn URL detected!
-                        </p>
-                        <p
-                          style={{
-                            fontFamily: typography.fontFamily.body,
-                            fontSize: typography.desktop.size.xs,
-                            fontWeight: typography.desktop.weight.normal,
-                            color: colors.text.subtle,
-                            margin: 0,
-                            marginTop: spacing.spacing[4],
-                          }}
-                        >
-                          Extracted username: <strong>{detectedUsername}</strong>
-                        </p>
-                      </div>
-                      <div style={{ display: 'flex', gap: spacing.spacing[8] }}>
-                        <Button
-                          label="Use this"
-                          style="soft"
-                          size="xs"
-                          leadIcon={<Check size={12} />}
-                          onClick={handleConfirmDetection}
-                        />
-                        <Button
-                          label="Keep editing"
-                          style="ghost"
-                          size="xs"
-                          leadIcon={<X size={12} />}
-                          onClick={handleDismissDetection}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
 
-                {/* Helper text container with background */}
-                <div
-                  style={{
-                    backgroundColor: colors.bg.card.subtle,
-                    padding: `${spacing.spacing[12]} ${spacing.spacing[16]}`,
-                    borderRadius: cornerRadius.borderRadius.sm,
-                    marginTop: spacing.spacing[8],
-                  }}
-                >
-                  <p
-                    style={{
-                      fontFamily: typography.fontFamily.body,
-                      fontSize: typography.desktop.size.xs,
-                      fontWeight: typography.desktop.weight.normal,
-                      lineHeight: typography.desktop.lineHeight.xs,
-                      color: colors.text.muted,
-                      margin: 0,
-                      textAlign: 'center',
-                    }}
-                  >
-                    You can paste your full LinkedIn URL or just enter your username. We'll analyze your profile to understand your style and create personalized content suggestions
-                  </p>
-                </div>
+
+
               </div>
             </div>
 

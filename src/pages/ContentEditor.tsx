@@ -7,7 +7,8 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useHelp } from '../services/help-context';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/design-system/components/Toast';
-import TranscriptService from '@/services/transcriptService';
+
+import { getTemplateById } from '@/data/templateData';
 
 // Design System Components
 import EditorNav from '@/design-system/components/EditorNav';
@@ -16,12 +17,14 @@ import ButtonGroup from '@/design-system/components/ButtonGroup';
 import SidebarMenuItem from '@/design-system/components/SidebarMenuItem';
 import Input from '@/design-system/components/Input';
 import TextArea from '@/design-system/components/TextArea';
+import LinkedInPostEditor from '@/design-system/components/LinkedInPostEditor';
 import Checkbox from '@/design-system/components/Checkbox';
 import Modal from '@/design-system/components/Modal';
 import LoadingSpinner from '@/design-system/components/LoadingSpinner';
 import Bichaurinho from '@/design-system/components/Bichaurinho';
 import EmptyState from '@/design-system/components/EmptyState';
-import TranscriptPasteModal from '@/design-system/components/TranscriptPasteModal';
+
+import Tabs from '@/design-system/components/Tabs';
 
 // Design System Tokens
 import { spacing } from '@/design-system/tokens/spacing';
@@ -67,13 +70,17 @@ interface FileItem {
 }
 
 const ContentEditor = () => {
+  console.log('ContentEditor: Component rendering');
+  
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { colors, themePreference, setTheme } = useTheme();
   const { openHelp } = useHelp();
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  
+  console.log('ContentEditor: Location state:', location.state);
   
   // ========== CLEAN CONTENT STATE MANAGEMENT ==========
   const {
@@ -104,7 +111,6 @@ const ContentEditor = () => {
   } = useContent();
 
   // ========== LOCAL COMPONENT STATE ==========
-  const [searchQuery, setSearchQuery] = useState('');
   const [chatInput, setChatInput] = useState('');
   const [draftId, setDraftId] = useState<string | null>(null);
   const [draftTitle, setDraftTitle] = useState('New Post');
@@ -121,8 +127,7 @@ const ContentEditor = () => {
     explanation: string;
   } | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [showTranscriptModal, setShowTranscriptModal] = useState(false);
-  const [processingTranscript, setProcessingTranscript] = useState(false);
+
   
   // Mobile-specific state
   const [activeMobileTab, setActiveMobileTab] = useState<'editor' | 'knowledge' | 'chat'>('editor');
@@ -209,7 +214,7 @@ const ContentEditor = () => {
     setShowConversationDropdown(false);
   };
 
-  // Handle content suggestions from ProductHome and draft editing
+  // Handle content suggestions from ProductHome, draft editing, and template loading
   useEffect(() => {
     if (location.state?.suggestion) {
       const suggestion = location.state.suggestion;
@@ -231,8 +236,53 @@ const ContentEditor = () => {
       window.history.replaceState({}, document.title);
       
       // Removed success toast - no need to notify user when loading draft
+    } else if (location.state?.templateId) {
+      // Load template content
+      console.log('ContentEditor: Detected templateId in location.state:', location.state.templateId);
+      loadTemplateContent(location.state.templateId);
+      
+      // Clear the state to prevent re-applying on navigation
+      window.history.replaceState({}, document.title);
+    } else {
+      console.log('ContentEditor: No special state detected, using default content');
     }
   }, [location.state]);
+
+  // Load template content by ID from local data
+  const loadTemplateContent = (templateId: string) => {
+    console.log('ContentEditor: Loading template with ID:', templateId);
+    console.log('ContentEditor: getTemplateById function:', getTemplateById);
+    
+    try {
+      const template = getTemplateById(templateId);
+      console.log('ContentEditor: Template found:', template);
+      
+      if (template) {
+        setDraftTitle(template.title);
+        setEditorContent(template.content);
+        
+        toast({
+          type: 'success',
+          message: `Template "${template.title}" loaded successfully!`,
+          duration: 3000
+        });
+      } else {
+        console.error('Template not found:', templateId);
+        toast({
+          type: 'error',
+          message: 'Template not found. Please try selecting another template.',
+          duration: 5000
+        });
+      }
+    } catch (error) {
+      console.error('Error loading template:', error);
+      toast({
+        type: 'error',
+        message: 'An unexpected error occurred while loading the template.',
+        duration: 5000
+      });
+    }
+  };
 
   // Auto-save functionality
   useEffect(() => {
@@ -366,74 +416,7 @@ const ContentEditor = () => {
     toast.info('AI edit rejected');
   };
 
-  // Transcript handling functions
-  const handleTranscriptPaste = () => {
-    setShowTranscriptModal(true);
-  };
 
-  const handleTranscriptSubmit = async (transcriptData: { title: string; transcript: string; source: string }) => {
-    try {
-      setProcessingTranscript(true);
-
-      // Validate the transcript
-      const validation = TranscriptService.validateTranscript(transcriptData.transcript);
-      if (!validation.isValid) {
-        toast.error(validation.errors[0] || 'Invalid transcript format');
-        return;
-      }
-
-      // Parse the transcript
-      const parsedTranscript = TranscriptService.parseTranscript(transcriptData.transcript);
-      
-      // Generate content prompt
-      const contentPrompt = TranscriptService.generateContentPrompt(parsedTranscript, transcriptData.title);
-      
-      // Set the editor content with the processed transcript
-      const formattedContent = `# ${transcriptData.title}
-
-Based on meeting transcript with ${parsedTranscript.participants.join(', ')}
-
-## Key Discussion Points
-
-${parsedTranscript.cleanedText.substring(0, 2000)}${parsedTranscript.cleanedText.length > 2000 ? '...' : ''}
-
-## Content Ideas
-
-${contentPrompt}
-
----
-
-**Meeting Details:**
-- Participants: ${parsedTranscript.participants.join(', ')}
-- Duration: ~${Math.floor(parsedTranscript.metadata.estimatedDuration / 60)} minutes  
-- Word Count: ${parsedTranscript.metadata.wordCount.toLocaleString()} words
-- Key Topics: ${TranscriptService.extractKeyTopics(parsedTranscript).join(', ')}`;
-
-      setDraftTitle(transcriptData.title);
-      setEditorContent(formattedContent);
-      setShowTranscriptModal(false);
-
-      // Optionally save the transcript to knowledge base
-      if (user) {
-        try {
-          const formattedForKB = TranscriptService.formatForKnowledgeBase(transcriptData, parsedTranscript);
-          
-          // This would need to be implemented - saving to knowledge base
-          // For now, we'll just show success message
-          toast.success(`Meeting transcript "${transcriptData.title}" loaded successfully! You can now create content from this meeting.`);
-        } catch (kbError) {
-          console.error('Error saving to knowledge base:', kbError);
-          toast.success(`Meeting transcript loaded successfully!`);
-        }
-      }
-
-    } catch (error: any) {
-      console.error('Error processing transcript:', error);
-      toast.error(error.message || 'Failed to process meeting transcript');
-    } finally {
-      setProcessingTranscript(false);
-    }
-  };
 
   const parseAIResponseForEdits = (response: string) => {
     // Look for markdown code blocks that might contain edited content
@@ -484,7 +467,7 @@ ${contentPrompt}
     display: 'flex',
     flexDirection: 'column',
     height: '100vh',
-    backgroundColor: colors.bg.default,
+    backgroundColor: colors.bg.subtle,
   };
 
   // Main content area styles (below nav) - responsive
@@ -499,7 +482,7 @@ ${contentPrompt}
   const leftSidebarStyles: React.CSSProperties = {
     width: isMobile ? '100%' : '280px',
     backgroundColor: colors.bg.sidebar?.subtle || colors.bg.card.default,
-    borderRight: isMobile ? 'none' : `${stroke.default} solid ${colors.border.default}`,
+    borderRight: `${stroke.default} solid ${colors.border.default}`,
     borderBottom: isMobile ? `${stroke.default} solid ${colors.border.default}` : 'none',
     display: isMobile ? (activeMobileTab === 'knowledge' ? 'flex' : 'none') : 'flex',
     flexDirection: 'column',
@@ -555,6 +538,8 @@ ${contentPrompt}
     flexDirection: 'column',
     backgroundColor: colors.bg.default,
     overflow: 'hidden',
+    margin: isMobile ? 0 : spacing.spacing[16],
+    borderRadius: isMobile ? 0 : cornerRadius.borderRadius.lg,
   };
 
   // Editor content styles - responsive
@@ -573,7 +558,7 @@ ${contentPrompt}
   const rightSidebarStyles: React.CSSProperties = {
     width: isMobile ? '100%' : '320px',
     backgroundColor: colors.bg.sidebar?.subtle || colors.bg.card.default,
-    borderLeft: isMobile ? 'none' : `${stroke.default} solid ${colors.border.default}`,
+    borderLeft: `${stroke.default} solid ${colors.border.default}`,
     borderTop: isMobile ? `${stroke.default} solid ${colors.border.default}` : 'none',
     display: isMobile ? (activeMobileTab === 'chat' ? 'flex' : 'none') : 'flex',
     flexDirection: 'column',
@@ -696,42 +681,23 @@ ${contentPrompt}
       {/* Mobile Tab Navigation */}
       {isMobile && (
         <div style={{
-          display: 'flex',
+          padding: spacing.spacing[12],
           backgroundColor: colors.bg.card.default,
           borderBottom: `${stroke.default} solid ${colors.border.default}`,
+          display: 'flex',
+          justifyContent: 'center',
         }}>
-          {[
-            { id: 'editor', label: 'Editor', icon: <FileText size={16} /> },
-            { id: 'knowledge', label: 'Knowledge', icon: <Book size={16} /> },
-            { id: 'chat', label: 'AI Chat', icon: <User size={16} /> },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveMobileTab(tab.id as 'editor' | 'knowledge' | 'chat')}
-              style={{
-                flex: 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: spacing.spacing[8],
-                padding: spacing.spacing[16],
-                border: 'none',
-                backgroundColor: activeMobileTab === tab.id ? colors.bg.default : 'transparent',
-                color: activeMobileTab === tab.id ? colors.text.default : colors.text.muted,
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                borderBottom: activeMobileTab === tab.id ? `2px solid ${colors.border.highlight}` : '2px solid transparent',
-              }}
-            >
-              {tab.icon}
-              <span style={{
-                ...textStyles.sm.medium,
-                color: activeMobileTab === tab.id ? colors.text.default : colors.text.muted,
-              }}>
-                {tab.label}
-              </span>
-            </button>
-          ))}
+          <Tabs
+            style="segmented"
+            type="fixed"
+            tabs={[
+              { id: 'editor', label: 'Editor', leadIcon: <FileText size={16} /> },
+              { id: 'knowledge', label: 'Knowledge', leadIcon: <Book size={16} /> },
+              { id: 'chat', label: 'AI Chat', leadIcon: <User size={16} /> },
+            ]}
+            activeTab={activeMobileTab}
+            onTabChange={(tabId) => setActiveMobileTab(tabId as 'editor' | 'knowledge' | 'chat')}
+          />
         </div>
       )}
       
@@ -754,20 +720,8 @@ ${contentPrompt}
               </h3>
             </div>
             <div style={sectionContentStyles}>
-              {/* Search Input */}
-              <div style={{ marginBottom: spacing.spacing[12] }}>
-                <Input
-            size="sm"
-                  style="default"
-              placeholder="Find content..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-                  leadIcon={<Search size={14} />}
-            />
-        </div>
-
-        {/* File Tree */}
-            {renderFileTree(fileStructure)}
+              {/* File Tree */}
+              {renderFileTree(fileStructure)}
               
             {/* Show knowledge base files */}
             {fileStructure.find(item => item.id === 'knowledge-base')?.isOpen && (
@@ -797,10 +751,6 @@ ${contentPrompt}
                       <LoadingSpinner size={16} color={colors.icon.muted} />
                   </div>
                 ) : (() => {
-                  const filteredFiles = knowledgeFiles.filter(file => 
-                    file.name.toLowerCase().includes(searchQuery.toLowerCase())
-                  );
-                  
                   if (knowledgeFiles.length === 0) {
                     return (
                       <p style={{ 
@@ -814,20 +764,7 @@ ${contentPrompt}
                     );
                   }
                   
-                  if (filteredFiles.length === 0) {
-                    return (
-                      <p style={{ 
-                        ...textStyles.xs.normal, 
-                        color: colors.text.muted,
-                        textAlign: 'center',
-                        padding: spacing.spacing[8]
-                      }}>
-                        No files match "{searchQuery}". Try a different search term.
-                      </p>
-                    );
-                  }
-                  
-                  return filteredFiles.map(file => {
+                  return knowledgeFiles.map(file => {
                     const Icon = file.type === 'image' ? Image : 
                                 file.type === 'file' ? FileText : File;
                     return (
@@ -917,9 +854,10 @@ ${contentPrompt}
                          padding: spacing.spacing[8],
                          borderRadius: cornerRadius.borderRadius.sm,
                          cursor: 'pointer',
-                         transition: 'background-color 0.15s ease-in-out',
-                         backgroundColor: draftId === draft.id ? colors.bg.state?.ghostHover || colors.bg.subtle : 'transparent',
-                         border: draftId === draft.id ? `1px solid ${colors.border.highlight}` : 'none',
+                         transition: 'all 0.15s ease-in-out',
+                         backgroundColor: colors.bg.default,
+                         border: `1px solid ${colors.border.default}`,
+                         boxShadow: draftId === draft.id ? shadows.regular.card : 'none',
                        }}
                        onMouseEnter={(e) => {
                          if (draftId !== draft.id) {
@@ -928,7 +866,7 @@ ${contentPrompt}
                        }}
                        onMouseLeave={(e) => {
                          if (draftId !== draft.id) {
-                           e.currentTarget.style.backgroundColor = 'transparent';
+                           e.currentTarget.style.backgroundColor = colors.bg.default;
                          }
                        }}
                      >
@@ -986,24 +924,13 @@ ${contentPrompt}
         {/* Center Content Editor */}
         <div style={centerEditorStyles}>
           <div style={editorContentStyles}>
-            {/* Content Textarea */}
-            <TextArea
+            {/* LinkedIn-style Post Editor */}
+            <LinkedInPostEditor
               value={editorContent}
               onChange={(e) => setEditorContent(e.target.value)}
-              placeholder="Start writing your content..."
-              rows={25}
-              autoResize={false}
-              style={{
-                fontSize: typography.desktop.size.md,
-                fontWeight: typography.desktop.weight.normal,
-                lineHeight: '1.8',
-                color: colors.text.default,
-                fontFamily: typography.fontFamily.body,
-                border: 'none',
-                backgroundColor: 'transparent',
-                padding: `${spacing.spacing[16]} 0`,
-                minHeight: '600px',
-              }}
+              placeholder="What do you want to talk about?"
+              user={user}
+              profile={profile}
             />
         </div>
       </div>
@@ -1222,31 +1149,7 @@ ${contentPrompt}
           )}
         </div>
 
-        {/* Transcript Paste Action */}
-        <div style={{
-          padding: spacing.spacing[12],
-          borderTop: `1px solid ${colors.border.default}`,
-          backgroundColor: colors.bg.card.default,
-        }}>
-          <Button
-            label="Paste Meeting Transcript"
-            style="primary"
-            size="sm"
-            leadIcon={<FileText size={16} />}
-            onClick={handleTranscriptPaste}
-            disabled={processingTranscript}
-            loading={processingTranscript}
-          />
-          <p style={{
-            ...textStyles.xs.normal,
-            color: colors.text.muted,
-            textAlign: 'center',
-            marginTop: spacing.spacing[8],
-            margin: `${spacing.spacing[8]} 0 0 0`,
-          }}>
-            Paste transcripts from Fireflies, Fathom, Otter.ai, or any meeting tool
-          </p>
-        </div>
+
 
         {/* Quick Actions */}
         <div style={{
@@ -1340,25 +1243,22 @@ ${contentPrompt}
 
         {/* Chat Input */}
           <div style={chatInputAreaStyles}>
-            <div style={{ display: 'flex', gap: spacing.spacing[8] }}>
-              <div style={{ flex: 1 }}>
-            <Input
-                  placeholder="Ask AI anything about your content..."
-              value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
-                  onKeyPress={handleChatKeyPress}
-                  style="default"
-                  size="sm"
-              disabled={aiLoading}
-            />
-              </div>
-            <Button
-                label=""
+            <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[8] }}>
+              <TextArea
+                placeholder="Ask AI anything about your content..."
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={handleChatKeyPress}
+                rows={3}
+                disabled={aiLoading}
+              />
+              <Button
+                label="Send Message"
                 style="primary"
                 size="sm"
                 leadIcon={<Send size={16} />}
-              onClick={handleSendMessage}
-              disabled={aiLoading || !chatInput.trim()}
+                onClick={handleSendMessage}
+                disabled={aiLoading || !chatInput.trim()}
               />
             </div>
           </div>
@@ -1464,13 +1364,7 @@ ${contentPrompt}
          </Modal>
         )}
 
-        {/* Transcript Paste Modal */}
-        <TranscriptPasteModal
-          isOpen={showTranscriptModal}
-          onClose={() => setShowTranscriptModal(false)}
-          onTranscriptSubmit={handleTranscriptSubmit}
-          loading={processingTranscript}
-        />
+
 
         
     </div>

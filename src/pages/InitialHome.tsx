@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/api/useAuth';
 import { useTheme } from '@/services/theme-context';
 import { useIsMobile } from '@/hooks/use-mobile';
-import * as templatesApi from '@/api/templates';
-import type { Template } from '@/api/templates';
+import { templateData } from '@/data/templateData';
 import { supabase } from '@/integrations/supabase/client';
 
 // Design System Components
@@ -33,9 +32,8 @@ const InitialHome = () => {
   const { colors } = useTheme();
   const isMobile = useIsMobile();
   
-  // Templates state
-  const [templates, setTemplates] = useState<Template[]>([]);
-  const [loadingTemplates, setLoadingTemplates] = useState(false);
+  // Templates state - use first 3 templates locally
+  const [templates] = useState(templateData.slice(0, 3));
 
   // Integration modal states
   const [whatsappModalOpen, setWhatsappModalOpen] = useState(false);
@@ -61,27 +59,9 @@ const InitialHome = () => {
   // Load data on component mount
   useEffect(() => {
     if (user) {
-      loadTemplates();
       loadIntegrationStatus();
     }
   }, [user]);
-
-  // Load templates from database
-  const loadTemplates = async () => {
-    if (!user) return;
-    
-    setLoadingTemplates(true);
-    try {
-      const result = await templatesApi.fetchSystemTemplates();
-      if (result.data) {
-        setTemplates(result.data.slice(0, 3)); // Show first 3 templates
-      }
-    } catch (err) {
-      console.error('Failed to load templates:', err);
-    } finally {
-      setLoadingTemplates(false);
-    }
-  };
 
   // Load integration status
   const loadIntegrationStatus = async () => {

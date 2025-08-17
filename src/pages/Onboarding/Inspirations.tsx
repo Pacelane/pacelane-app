@@ -14,6 +14,7 @@ import TopNav from '@/design-system/components/TopNav';
 import Button from '@/design-system/components/Button';
 import Input from '@/design-system/components/Input';
 import ProgressBar from '@/design-system/components/ProgressBar';
+import OnboardingProgressIndicator from '@/design-system/components/OnboardingProgressIndicator';
 import Bichaurinho from '@/design-system/components/Bichaurinho';
 
 // Design System Tokens
@@ -23,7 +24,7 @@ import { getShadow } from '@/design-system/tokens/shadows';
 import { typography } from '@/design-system/tokens/typography';
 
 // Icons
-import { ArrowLeft, ArrowRight, Plus, Trash2, Check, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Plus, Trash2 } from 'lucide-react';
 
 interface Benchmark {
   id: number;
@@ -31,7 +32,6 @@ interface Benchmark {
   isRequired: boolean;
   detectedUsername?: string;
   wasUrlDetected?: boolean;
-  showUrlDetection?: boolean;
 }
 
 const Inspirations = () => {
@@ -68,20 +68,21 @@ const Inspirations = () => {
           if (isLinkedInUrl(value)) {
             const parsed = parseLinkedInInput(value);
             if (parsed.isValid && parsed.username) {
+              // Automatically set the extracted username
+              toast.success(`LinkedIn username extracted: ${parsed.username}`);
               return {
                 ...benchmark,
-                value,
+                value: parsed.username,
                 detectedUsername: parsed.username,
                 wasUrlDetected: true,
-                showUrlDetection: true,
               };
             }
           }
           
+          // For non-URL inputs or invalid URLs, set the value directly
           return {
             ...benchmark,
             value,
-            showUrlDetection: false,
             wasUrlDetected: false,
           };
         }
@@ -90,38 +91,7 @@ const Inspirations = () => {
     );
   };
 
-  // Handle confirmation of detected username
-  const handleConfirmDetection = (id: number) => {
-    setBenchmarks(prev =>
-      prev.map(benchmark => {
-        if (benchmark.id === id && benchmark.detectedUsername) {
-          toast.success(`LinkedIn username extracted: ${benchmark.detectedUsername}`);
-          return {
-            ...benchmark,
-            value: benchmark.detectedUsername,
-            showUrlDetection: false,
-          };
-        }
-        return benchmark;
-      })
-    );
-  };
 
-  // Handle dismissing the detection
-  const handleDismissDetection = (id: number) => {
-    setBenchmarks(prev =>
-      prev.map(benchmark => {
-        if (benchmark.id === id) {
-          return {
-            ...benchmark,
-            showUrlDetection: false,
-            wasUrlDetected: false,
-          };
-        }
-        return benchmark;
-      })
-    );
-  };
 
   const handleContinue = async () => {
     if (!user) return;
@@ -245,6 +215,17 @@ const Inspirations = () => {
             />
           </div>
 
+          {/* Progress Indicator */}
+          <div style={{ 
+            width: isMobile ? '100%' : '400px',
+            maxWidth: isMobile ? '320px' : '400px'
+          }}>
+            <OnboardingProgressIndicator 
+              currentStep={3}
+              compact={true}
+            />
+          </div>
+
           {/* Main Card */}
           <div
             style={{
@@ -334,163 +315,45 @@ const Inspirations = () => {
                 {benchmarks.map((benchmark, index) => (
                   <div key={benchmark.id} style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[12] }}>
                     {benchmark.isRequired ? (
-                      <>
-                        <Input
-                          label="LinkedIn Profile"
-                          placeholder={benchmark.showUrlDetection ? "Paste LinkedIn URL or enter username..." : "username"}
-                          value={benchmark.value}
-                          onChange={(e) => updateBenchmark(benchmark.id, e.target.value)}
-                          style={benchmark.showUrlDetection ? "default" : "add-on"}
-                          addOnPrefix={benchmark.showUrlDetection ? undefined : "https://linkedin.com/in/"}
-                          size="lg"
-                          required={true}
-                          disabled={isLoading}
-                        />
-                        
-                        {/* URL Detection Confirmation UI for Required Field */}
-                        {benchmark.showUrlDetection && (
-                          <div
-                            style={{
-                              backgroundColor: colors.bg.state.soft,
-                              border: `1px solid ${colors.border.highlight}`,
-                              borderRadius: cornerRadius.borderRadius.md,
-                              padding: spacing.spacing[16],
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                            }}
-                          >
-                            <div>
-                              <p
-                                style={{
-                                  fontFamily: typography.fontFamily.body,
-                                  fontSize: typography.desktop.size.sm,
-                                  fontWeight: typography.desktop.weight.medium,
-                                  color: colors.text.default,
-                                  margin: 0,
-                                }}
-                              >
-                                LinkedIn URL detected!
-                              </p>
-                              <p
-                                style={{
-                                  fontFamily: typography.fontFamily.body,
-                                  fontSize: typography.desktop.size.xs,
-                                  fontWeight: typography.desktop.weight.normal,
-                                  color: colors.text.subtle,
-                                  margin: 0,
-                                  marginTop: spacing.spacing[4],
-                                }}
-                              >
-                                Extracted username: <strong>{benchmark.detectedUsername}</strong>
-                              </p>
-                            </div>
-                            <div style={{ display: 'flex', gap: spacing.spacing[8] }}>
-                              <Button
-                                label="Use this"
-                                style="soft"
-                                size="xs"
-                                leadIcon={<Check size={12} />}
-                                onClick={() => handleConfirmDetection(benchmark.id)}
-                              />
-                              <Button
-                                label="Keep editing"
-                                style="ghost"
-                                size="xs"
-                                leadIcon={<X size={12} />}
-                                onClick={() => handleDismissDetection(benchmark.id)}
-                              />
-                            </div>
-                          </div>
-                        )}
-                      </>
+                      <Input
+                        label="LinkedIn Profile"
+                        placeholder="username"
+                        value={benchmark.value}
+                        onChange={(e) => updateBenchmark(benchmark.id, e.target.value)}
+                        style="add-on"
+                        addOnPrefix="https://linkedin.com/in/"
+                        size="lg"
+                        required={true}
+                        disabled={isLoading}
+                      />
                     ) : (
-                      <>
-                        <div
-                          style={{
-                            display: 'flex',
-                            gap: spacing.spacing[8],
-                            alignItems: 'flex-end',
-                          }}
-                        >
-                          <div style={{ flex: 1 }}>
-                            <Input
-                              placeholder={benchmark.showUrlDetection ? "Paste LinkedIn URL or enter username..." : "username"}
-                              value={benchmark.value}
-                              onChange={(e) => updateBenchmark(benchmark.id, e.target.value)}
-                              style={benchmark.showUrlDetection ? "default" : "add-on"}
-                              addOnPrefix={benchmark.showUrlDetection ? undefined : "https://linkedin.com/in/"}
-                              size="lg"
-                              disabled={isLoading}
-                            />
-                          </div>
-                          <Button
-                            label=""
-                            style="ghost"
+                      <div
+                        style={{
+                          display: 'flex',
+                          gap: spacing.spacing[8],
+                          alignItems: 'flex-end',
+                        }}
+                      >
+                        <div style={{ flex: 1 }}>
+                          <Input
+                            placeholder="username"
+                            value={benchmark.value}
+                            onChange={(e) => updateBenchmark(benchmark.id, e.target.value)}
+                            style="add-on"
+                            addOnPrefix="https://linkedin.com/in/"
                             size="lg"
-                            leadIcon={<Trash2 size={16} />}
-                            onClick={() => removeBenchmark(benchmark.id)}
                             disabled={isLoading}
                           />
                         </div>
-                        
-                        {/* URL Detection Confirmation UI for Optional Fields */}
-                        {benchmark.showUrlDetection && (
-                          <div
-                            style={{
-                              backgroundColor: colors.bg.state.soft,
-                              border: `1px solid ${colors.border.highlight}`,
-                              borderRadius: cornerRadius.borderRadius.md,
-                              padding: spacing.spacing[16],
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                            }}
-                          >
-                            <div>
-                              <p
-                                style={{
-                                  fontFamily: typography.fontFamily.body,
-                                  fontSize: typography.desktop.size.sm,
-                                  fontWeight: typography.desktop.weight.medium,
-                                  color: colors.text.default,
-                                  margin: 0,
-                                }}
-                              >
-                                LinkedIn URL detected!
-                              </p>
-                              <p
-                                style={{
-                                  fontFamily: typography.fontFamily.body,
-                                  fontSize: typography.desktop.size.xs,
-                                  fontWeight: typography.desktop.weight.normal,
-                                  color: colors.text.subtle,
-                                  margin: 0,
-                                  marginTop: spacing.spacing[4],
-                                }}
-                              >
-                                Extracted username: <strong>{benchmark.detectedUsername}</strong>
-                              </p>
-                            </div>
-                            <div style={{ display: 'flex', gap: spacing.spacing[8] }}>
-                              <Button
-                                label="Use this"
-                                style="soft"
-                                size="xs"
-                                leadIcon={<Check size={12} />}
-                                onClick={() => handleConfirmDetection(benchmark.id)}
-                              />
-                              <Button
-                                label="Keep editing"
-                                style="ghost"
-                                size="xs"
-                                leadIcon={<X size={12} />}
-                                onClick={() => handleDismissDetection(benchmark.id)}
-                              />
-                            </div>
-                          </div>
-                        )}
-                      </>
+                        <Button
+                          label=""
+                          style="ghost"
+                          size="lg"
+                          leadIcon={<Trash2 size={16} />}
+                          onClick={() => removeBenchmark(benchmark.id)}
+                          disabled={isLoading}
+                        />
+                      </div>
                     )}
                   </div>
                 ))}
