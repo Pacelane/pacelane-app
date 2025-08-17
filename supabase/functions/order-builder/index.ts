@@ -192,9 +192,9 @@ async function buildContentBrief(supabaseClient: any, orderId: string): Promise<
 }
 
 async function enhanceBriefWithAI(brief: ContentBrief, order: any): Promise<ContentBrief> {
-  const openaiApiKey = Deno.env.get('OPENAI_API_KEY')
-  if (!openaiApiKey) {
-    console.log('OPENAI_API_KEY not found, skipping AI enhancement')
+  const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY')
+  if (!anthropicApiKey) {
+    console.log('ANTHROPIC_API_KEY not found, skipping AI enhancement')
     return brief
   }
 
@@ -259,41 +259,44 @@ Return only valid JSON:
 
     console.log(`🤖 Enhancing brief with AI${brief.enhanced_suggestion ? ' (Enhanced mode with meeting context)' : ''}`);
     
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${openaiApiKey}`,
+        'x-api-key': anthropicApiKey,
+        'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'claude-3-haiku-20240307',
+        max_tokens: 800,
+        temperature: 0.3,
         messages: [
           {
-            role: 'system',
-            content: `You are an expert content strategist specializing in ${brief.enhanced_suggestion ? 'context-aware, personalized content' : 'general business content'}. ${brief.enhanced_suggestion ? 'Use meeting insights to create highly relevant content.' : 'Create engaging content based on user preferences.'}`
-          },
-          {
             role: 'user',
-            content: prompt
+            content: `You are an expert content strategist specializing in ${brief.enhanced_suggestion ? 'context-aware, personalized content' : 'general business content'}. ${brief.enhanced_suggestion ? 'Use meeting insights to create highly relevant content.' : 'Create engaging content based on user preferences.'}
+
+${prompt}`
           }
-        ],
-        temperature: 0.3,
-        max_tokens: 800,
+        ]
       }),
     })
 
     if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status}`)
+      throw new Error(`Anthropic API error: ${response.status}`)
     }
 
     const data = await response.json()
-    const aiResponse = data.choices[0]?.message?.content
+    const aiResponse = data.content[0]?.text
 
     if (!aiResponse) {
-      throw new Error('No response from OpenAI')
+      throw new Error('No response from Anthropic')
     }
 
-    const enhanced = JSON.parse(aiResponse)
+    // Clean the AI response to remove control characters
+    const cleanedResponse = aiResponse.replace(/[\x00-\x1F\x7F]/g, '');
+    console.log('🧹 Cleaned AI response:', cleanedResponse);
+    
+    const enhanced = JSON.parse(cleanedResponse)
 
     // Merge AI enhancements with original brief
     return {
@@ -327,9 +330,9 @@ async function analyzeOrderContext(originalMessage: string, userId: string, supa
     }
   }
 
-  const openaiApiKey = Deno.env.get('OPENAI_API_KEY')
-  if (!openaiApiKey) {
-    console.warn('OPENAI_API_KEY not found, using basic order analysis')
+  const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY')
+  if (!anthropicApiKey) {
+    console.warn('ANTHROPIC_API_KEY not found, using basic order analysis')
     return analyzeOrderBasic(originalMessage)
   }
 
@@ -376,38 +379,37 @@ Return only valid JSON:
   "suggestedAngle": "recommended content angle"
 }`
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${openaiApiKey}`,
+        'x-api-key': anthropicApiKey,
+        'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'claude-3-haiku-20240307',
+        max_tokens: 600,
+        temperature: 0.3,
         messages: [
           {
-            role: 'system',
-            content: 'You are an expert at analyzing business communication and extracting context for content creation. Always return valid JSON.'
-          },
-          {
             role: 'user',
-            content: prompt
+            content: `You are an expert at analyzing business communication and extracting context for content creation. Always return valid JSON.
+
+${prompt}`
           }
-        ],
-        temperature: 0.3,
-        max_tokens: 600,
+        ]
       }),
     })
 
     if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status}`)
+      throw new Error(`Anthropic API error: ${response.status}`)
     }
 
     const data = await response.json()
-    const aiResponse = data.choices[0]?.message?.content
+    const aiResponse = data.content[0]?.text
 
     if (!aiResponse) {
-      throw new Error('No response from OpenAI')
+      throw new Error('No response from Anthropic')
     }
 
     const analysis = JSON.parse(aiResponse)

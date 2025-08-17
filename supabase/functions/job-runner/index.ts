@@ -348,11 +348,11 @@ async function processPacingContentGeneration(supabaseClient: any, job: AgentJob
 
   steps.push({ step: 'profile_retrieved', profile, timestamp: new Date().toISOString() })
 
-  // ✅ ENHANCED: Create personalized content order using meeting context
-  let personalizedTopic = 'Industry insights and professional updates';
-  let personalizedAngle = 'Industry Insights';
+  // ✅ ENHANCED: Create personalized content order using all available context
+  let personalizedTopic = await generatePersonalizedTopic(supabaseClient, job.user_id, meeting_context, knowledge_base_context);
+  let personalizedAngle = await generatePersonalizedAngle(supabaseClient, job.user_id, meeting_context, knowledge_base_context);
   
-  // Use meeting context to personalize the content
+  // Use meeting context to personalize the content if available
   if (meeting_context?.meetings_since && meeting_context.meetings_since.length > 0) {
     const latestMeeting = meeting_context.meetings_since[0];
     if (latestMeeting.title) {
@@ -651,4 +651,190 @@ async function processDraftReview(supabaseClient: any, job: AgentJob, steps: any
   // TODO: Implement draft review logic
   steps.push({ step: 'draft_review', message: 'Not implemented yet', timestamp: new Date().toISOString() })
   return { message: 'Draft review not implemented yet' }
+}
+
+// Helper functions for personalized content generation
+async function generatePersonalizedTopic(supabaseClient: any, userId: string, meetingContext: any, knowledgeContext: any): Promise<string> {
+  try {
+    // Get user's LinkedIn profile and content pillars for context
+    console.log(`🔍 Querying profile for user_id: ${userId}`);
+    const { data: profile, error: profileError } = await supabaseClient
+      .from('profiles')
+      .select('linkedin_headline, linkedin_company, linkedin_about, content_pillars, goals, linkedin_data')
+      .eq('user_id', userId)
+      .single();
+
+    if (profileError) {
+      console.error(`❌ Profile query error:`, profileError);
+    }
+
+    // Get recent knowledge base files for topic inspiration
+    const { data: recentFiles } = await supabaseClient
+      .from('knowledge_files')
+      .select('filename, title, metadata')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    // Extract LinkedIn data from the correct format
+    console.log(`🔍 Debug - Profile data:`, JSON.stringify(profile, null, 2));
+    
+    const linkedinData = profile?.linkedin_data;
+    console.log(`🔍 Debug - LinkedIn data:`, JSON.stringify(linkedinData, null, 2));
+    
+    // Try both possible data structures
+    const basicInfo = linkedinData?.last_scrape_raw?.basic_info || linkedinData?.basic_info || {};
+    const skills = linkedinData?.last_scrape_raw?.skills || linkedinData?.skills || [];
+    const experience = linkedinData?.last_scrape_raw?.experience || linkedinData?.experience || [];
+    
+    console.log(`🔍 Debug - Basic info:`, JSON.stringify(basicInfo, null, 2));
+    console.log(`🔍 Debug - Skills:`, JSON.stringify(skills.slice(0, 3), null, 2)); // Show first 3 skills
+    
+    // Generate topic based on available context
+    const userRole = basicInfo.headline || profile?.linkedin_headline || 'Professional';
+    const userCompany = basicInfo.current_company || profile?.linkedin_company || '';
+    const userIndustry = extractIndustryFromSkills(skills) || 'Business';
+    const contentPillars = profile?.content_pillars || [];
+    const topSkills = skills.slice(0, 5).map(s => s.name).join(', ');
+    const recentFileTopics = recentFiles?.map(f => f.filename || f.title).join(', ') || '';
+
+    console.log(`🎯 Generating personalized topic for ${userRole} at ${userCompany}`);
+    console.log(`📋 Content pillars: ${contentPillars.length}`);
+    console.log(`📁 Recent files: ${recentFiles?.length || 0}`);
+    console.log(`🎯 Top skills: ${topSkills}`);
+
+    // Prioritize content pillars if available
+    if (contentPillars.length > 0) {
+      const randomPillar = contentPillars[Math.floor(Math.random() * contentPillars.length)];
+      console.log(`✅ Using content pillar: ${randomPillar.name}`);
+      return `${randomPillar.name}: ${randomPillar.description}`;
+    }
+
+    // Use recent knowledge base files
+    if (recentFiles && recentFiles.length > 0) {
+      const recentFile = recentFiles[0];
+      console.log(`✅ Using recent file: ${recentFile.filename || recentFile.title}`);
+      return `Professional insights inspired by recent work on ${recentFile.filename || recentFile.title}`;
+    }
+
+    // Generate topic based on user's top skills if available
+    if (skills.length > 0) {
+      const topSkillsText = skills.slice(0, 3).map(s => s.name).join(', ');
+      console.log(`✅ Using skills-based topic: ${topSkillsText}`);
+      return `${userRole} insights: Leveraging ${topSkillsText} for professional growth and industry impact`;
+    }
+    
+    console.log(`✅ Using role-based fallback for ${userRole}`);
+    return `${userRole} insights: Strategic approaches to business growth and professional development`;
+
+  } catch (error) {
+    console.warn('❌ Error generating personalized topic:', error);
+    return 'Professional insights and industry updates';
+  }
+}
+
+async function generatePersonalizedAngle(supabaseClient: any, userId: string, meetingContext: any, knowledgeContext: any): Promise<string> {
+  try {
+    // Get user's goals and content preferences
+    const { data: profile } = await supabaseClient
+      .from('profiles')
+      .select('goals, linkedin_headline, content_pillars, linkedin_data')
+      .eq('user_id', userId)
+      .single();
+
+    // Extract LinkedIn data
+    const linkedinData = profile?.linkedin_data;
+    const basicInfo = linkedinData?.last_scrape_raw?.basic_info || linkedinData?.basic_info || {};
+    const userRole = basicInfo.headline || profile?.linkedin_headline || 'Professional';
+    const goals = profile?.goals || {};
+    const contentPillars = profile?.content_pillars || [];
+
+    console.log(`🎭 Generating personalized angle for ${userRole}`);
+    console.log(`🎯 Goals: ${JSON.stringify(goals)}`);
+
+    // Use goals to determine angle
+    if (goals.primary_goal) {
+      const goalAngle = getAngleFromGoal(goals.primary_goal);
+      console.log(`✅ Using goal-based angle: ${goalAngle}`);
+      return goalAngle;
+    }
+
+    // Use content pillars
+    if (contentPillars.length > 0) {
+      const randomPillar = contentPillars[Math.floor(Math.random() * contentPillars.length)];
+      const pillarName = randomPillar?.name || randomPillar?.title || 'Content Theme';
+      console.log(`✅ Using content pillar angle: ${pillarName} Insights`);
+      return `${pillarName} Insights`;
+    }
+
+    // Fallback based on role
+    const roleAngle = getAngleFromRole(userRole);
+    console.log(`✅ Using role-based angle: ${roleAngle}`);
+    return roleAngle;
+
+  } catch (error) {
+    console.warn('❌ Error generating personalized angle:', error);
+    return 'Professional Perspective';
+  }
+}
+
+function getAngleFromGoal(primaryGoal: string): string {
+  switch (primaryGoal.toLowerCase()) {
+    case 'thought leadership':
+      return 'Industry Thought Leadership';
+    case 'network building':
+      return 'Professional Networking Insights';
+    case 'career growth':
+      return 'Career Development Strategies';
+    case 'business growth':
+      return 'Business Growth Tactics';
+    default:
+      return `${primaryGoal} Perspective`;
+  }
+}
+
+function getAngleFromRole(userRole: string): string {
+  const roleAngles = {
+    'ceo': 'Executive Leadership Insights',
+    'founder': 'Entrepreneurial Perspective',
+    'manager': 'Team Leadership Strategies',
+    'director': 'Strategic Management Insights',
+    'consultant': 'Professional Consulting Advice',
+    'developer': 'Technical Innovation Insights',
+    'designer': 'Design Strategy Perspectives',
+    'marketer': 'Marketing Strategy Insights',
+    'sales': 'Sales Excellence Strategies'
+  };
+
+  const roleKey = userRole.toLowerCase();
+  for (const [key, angle] of Object.entries(roleAngles)) {
+    if (roleKey.includes(key)) {
+      return angle;
+    }
+  }
+
+  return 'Professional Experience Insights';
+}
+
+function extractIndustryFromSkills(skills: any[]): string {
+  if (!skills || skills.length === 0) return 'Business';
+  
+  const skillNames = skills.map(s => s.name.toLowerCase());
+  
+  // Marketing/Digital Marketing
+  if (skillNames.some(s => s.includes('marketing') || s.includes('google ads') || s.includes('facebook'))) {
+    return 'Marketing';
+  }
+  
+  // Technology/Programming
+  if (skillNames.some(s => s.includes('programação') || s.includes('analytics') || s.includes('bi'))) {
+    return 'Technology';
+  }
+  
+  // Strategy/Business
+  if (skillNames.some(s => s.includes('estratégia') || s.includes('gestão') || s.includes('projetos'))) {
+    return 'Business Strategy';
+  }
+  
+  return 'Business';
 }
