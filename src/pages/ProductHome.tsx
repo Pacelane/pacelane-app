@@ -426,12 +426,13 @@ const ProductHome = () => {
   // Check if user has no posts
   const hasNoPosts = filteredDrafts.length === 0;
 
-  // If user has no posts and data has loaded, show InitialHome
-  if (hasLoadedInitialData && hasNoPosts) {
+  // Always show InitialHome for all users
+  if (hasLoadedInitialData) {
     return <InitialHome />;
   }
 
-  return (
+  // OLD VERSION DISABLED - keeping for reference but not using
+  /* return (
     <div>
       <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
       <div style={contentContainerStyles}>
@@ -712,7 +713,7 @@ const ProductHome = () => {
 
         </div>
       </div>
-  );
+  ); */
 };
 
 export default ProductHome;
