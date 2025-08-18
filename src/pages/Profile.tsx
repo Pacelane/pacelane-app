@@ -65,6 +65,83 @@ const Profile = () => {
     about: ''
   });
 
+  // Load inspirations from separate table
+  const loadInspirations = async () => {
+    if (!user) return;
+
+    try {
+      const { data: inspirationsData, error } = await supabase
+        .from('inspirations')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error loading inspirations:', error);
+        return;
+      }
+
+      if (inspirationsData && inspirationsData.length > 0) {
+        // Convert inspirations table data to format expected by Profile component
+        const inspirationValues = inspirationsData.map(insp => {
+          // Extract username from LinkedIn URL for display
+          const username = insp.linkedin_url?.split('/in/')?.pop() || insp.linkedin_url;
+          return username;
+        });
+        setInspirations(inspirationValues.map((inspiration, index) => ({ 
+          id: index + 1, 
+          value: inspiration 
+        })));
+      }
+    } catch (error) {
+      console.error('Error loading inspirations:', error);
+    }
+  };
+
+  // Save inspirations to separate table
+  const saveInspirationsToTable = async () => {
+    if (!user) return;
+
+    try {
+      // First, delete existing inspirations for this user
+      const { error: deleteError } = await supabase
+        .from('inspirations')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (deleteError) throw deleteError;
+
+      // Filter out empty inspirations and create LinkedIn URL objects
+      const validInspirations = inspirations
+        .filter(insp => insp.value.trim())
+        .map(insp => {
+          const username = insp.value.trim();
+          // Ensure it's a proper LinkedIn URL
+          const linkedinUrl = username.startsWith('http') 
+            ? username 
+            : `https://linkedin.com/in/${username}`;
+          
+          return {
+            user_id: user.id,
+            linkedin_url: linkedinUrl
+          };
+        });
+
+      // Insert new inspirations if any exist
+      if (validInspirations.length > 0) {
+        const { error: insertError } = await supabase
+          .from('inspirations')
+          .insert(validInspirations);
+
+        if (insertError) throw insertError;
+      }
+
+      console.log('Inspirations saved successfully');
+    } catch (error) {
+      console.error('Error saving inspirations:', error);
+      throw error;
+    }
+  };
+
   // Load profile data into state when profile loads
   useEffect(() => {
     if (profile) {
@@ -110,12 +187,17 @@ const Profile = () => {
         setPillars(pillarsArray.map((pillar, index) => ({ id: index + 1, value: pillar })));
       }
 
-      if (profile.inspirations) {
-        const inspirationsArray = Array.isArray(profile.inspirations) ? profile.inspirations : [];
-        setInspirations(inspirationsArray.map((inspiration, index) => ({ id: index + 1, value: inspiration })));
-      }
+      // Load inspirations from separate table
+      loadInspirations();
     }
   }, [profile]);
+
+  // Load inspirations when user changes
+  useEffect(() => {
+    if (user) {
+      loadInspirations();
+    }
+  }, [user]);
 
   // Dynamic lists state - will be connected to profile fields
   const [inspirations, setInspirations] = useState([
@@ -244,6 +326,12 @@ const Profile = () => {
             guides: guides.filter(g => g.value.trim()).map(g => g.value)
           };
           break;
+        case 'inspirations':
+          // Handle inspirations separately since they're in a different table
+          await saveInspirationsToTable();
+          setSavedStates(prev => ({ ...prev, inspirations: true }));
+          setTimeout(() => setSavedStates(prev => ({ ...prev, inspirations: false })), 2000);
+          return; // Exit early since we handle the saved state above
         case 'pillars':
           updateData = {
             content_pillars: pillars.filter(p => p.value.trim()).map(p => p.value)

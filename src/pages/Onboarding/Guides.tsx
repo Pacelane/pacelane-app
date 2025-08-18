@@ -122,7 +122,7 @@ const Guides = () => {
       // since they have values: 'Be authentic', 'Share your experience', 'Avoid hype'
       const { error } = await supabase
         .from('profiles')
-        .update({ content_guides: validGuides })
+        .update({ guides: validGuides })
         .eq('user_id', user.id);
 
       if (error) throw error;
