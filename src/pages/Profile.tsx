@@ -92,9 +92,17 @@ const Profile = () => {
         setGoals(goalsArray.map((goal, index) => ({ id: index + 1, value: goal })));
       }
 
-      if (profile.guides) {
-        const guidesArray = Array.isArray(profile.guides) ? profile.guides : [];
+      // Check both 'guides' and 'content_guides' columns for backward compatibility
+      const guidesData = profile.guides || profile.content_guides;
+      if (guidesData) {
+        const guidesArray = Array.isArray(guidesData) ? guidesData : [];
         setGuides(guidesArray.map((guide, index) => ({ id: index + 1, value: guide })));
+        
+        // If data was in content_guides, migrate it to guides column
+        if (!profile.guides && profile.content_guides) {
+          console.log('Profile: Migrating content_guides to guides column');
+          // The next save will put it in the correct 'guides' column
+        }
       }
 
       if (profile.content_pillars) {

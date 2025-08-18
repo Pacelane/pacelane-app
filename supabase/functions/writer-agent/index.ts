@@ -412,13 +412,14 @@ async function uploadFileToAnthropic(fileUrl: string, filename: string, anthropi
     }
 
     // Determine MIME type based on file extension
+    // Note: Anthropic only supports PDF and plaintext documents
     let mimeType = 'text/plain' // Default for .txt files
     if (filename.endsWith('.md')) {
-      mimeType = 'text/markdown'
+      mimeType = 'text/plain' // Treat markdown as plain text for Anthropic
     } else if (filename.endsWith('.csv')) {
-      mimeType = 'text/csv'
+      mimeType = 'text/plain' // Treat CSV as plain text for Anthropic
     } else if (filename.endsWith('.json')) {
-      mimeType = 'application/json'
+      mimeType = 'text/plain' // Treat JSON as plain text for Anthropic
     } else if (filename.endsWith('.pdf')) {
       mimeType = 'application/pdf'
     }
