@@ -6,6 +6,7 @@ import { useTheme } from '@/services/theme-context';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useToast } from '@/design-system/components/Toast';
 import TranscriptService from '@/services/transcriptService';
+import { supabase } from '@/integrations/supabase/client';
 
 // Design System Components
 // Sidebar is provided by MainAppChrome layout
@@ -486,41 +487,65 @@ const KnowledgeBase = () => {
         return;
       }
 
-      // Parse the transcript
+      // Parse the transcript to get additional metadata
       const parsedTranscript = TranscriptService.parseTranscript(transcriptData.transcript);
-      
-      // Format transcript for knowledge base storage
-      const formattedContent = TranscriptService.formatForKnowledgeBase(transcriptData, parsedTranscript);
-      
-      // Create a text file with the formatted transcript
-      const fileName = `${transcriptData.title.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '-')}-transcript.md`;
-      const file = new File([formattedContent], fileName, { type: 'text/markdown' });
 
       // Show loading toast
-      const loadingToastId = toast.loading(`Saving transcript "${transcriptData.title}"...`, {
-        title: 'Saving Transcript'
+      const loadingToastId = toast.loading(`Processing transcript "${transcriptData.title}"...`, {
+        title: 'Processing Transcript'
       });
 
-      // Upload the transcript as a knowledge file
-      const result = await uploadFiles([file]);
-      
+      // Get the user's session token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('No valid session found. Please sign in again.');
+      }
+
+      // Call the manual transcript processor endpoint
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manual-transcript-processor`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          title: transcriptData.title,
+          transcript: transcriptData.transcript,
+          source: transcriptData.source,
+          participants: parsedTranscript.participants,
+          duration_minutes: Math.floor(parsedTranscript.metadata.estimatedDuration / 60),
+          meeting_date: new Date().toISOString()
+        })
+      });
+
       // Remove loading toast
       toast.removeToast(loadingToastId);
 
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Server error: ${response.status}`);
+      }
+
+      const result = await response.json();
+
       if (result.success) {
         setShowTranscriptModal(false);
-        toast.success(`Meeting transcript "${transcriptData.title}" saved to Knowledge Base successfully!`, {
+        toast.success(`Meeting transcript "${transcriptData.title}" processed and saved successfully!`, {
           title: 'Transcript Saved',
+          description: `Added to meetings table and knowledge base with ${result.data.participants} participants`,
           duration: 6000
         });
+
+        // Reload the knowledge files to show the new transcript
+        // The useContent hook should handle this automatically
       } else {
-        throw new Error(result.error || 'Failed to save transcript');
+        throw new Error(result.error || 'Failed to process transcript');
       }
 
     } catch (error: any) {
       console.error('Error processing transcript:', error);
-      toast.error(error.message || 'Failed to save meeting transcript', {
-        title: 'Save Error',
+      toast.error(error.message || 'Failed to process meeting transcript', {
+        title: 'Processing Error',
         duration: 6000
       });
     } finally {
