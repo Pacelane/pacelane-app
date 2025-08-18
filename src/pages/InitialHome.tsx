@@ -5,6 +5,8 @@ import { useTheme } from '@/services/theme-context';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { templateData } from '@/data/templateData';
 import { supabase } from '@/integrations/supabase/client';
+import { CalendarService } from '@/services/calendarService';
+import { useToast } from '@/design-system/components/Toast';
 
 // Design System Components
 import IntegrationCard from '@/design-system/components/IntegrationCard';
@@ -31,6 +33,7 @@ const InitialHome = () => {
   const { user } = useAuth();
   const { colors } = useTheme();
   const isMobile = useIsMobile();
+  const { toast } = useToast();
   
   // Templates state - use first 3 templates locally
   const [templates] = useState(templateData.slice(0, 3));
@@ -128,6 +131,23 @@ const InitialHome = () => {
       }
     }));
     setReadaiModalOpen(false);
+  };
+
+  // Handle Google Calendar configuration
+  const handleCalendarConfigure = async () => {
+    try {
+      const result = await CalendarService.getAuthUrl();
+      if (result.success && result.authUrl) {
+        // Append state=user.id only (edge function requires it); don't alter redirect_uri
+        const authUrl = new URL(result.authUrl);
+        if (user?.id) authUrl.searchParams.set('state', user.id);
+        window.location.href = authUrl.toString();
+      } else {
+        toast.error(result.error || 'Failed to start Google Calendar connection');
+      }
+    } catch (e) {
+      toast.error('Failed to start Google Calendar connection');
+    }
   };
 
   // Navigation handlers
@@ -250,7 +270,7 @@ const InitialHome = () => {
                 calendar: { ...prev.calendar, enabled: newValue }
               }));
             }}
-            onConfigure={() => console.log('Calendar integration - coming soon')}
+            onConfigure={handleCalendarConfigure}
             style={{ flex: isMobile ? 'none' : 1, width: isMobile ? '100%' : 'auto' }}
           />
         </div>
