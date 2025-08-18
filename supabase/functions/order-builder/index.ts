@@ -206,20 +206,20 @@ async function enhanceBriefWithAI(brief: ContentBrief, order: any): Promise<Cont
       const latestMeeting = brief.meeting_context.recent_meetings[0];
       contextPrompt = `
 
-🎯 ENHANCED CONTEXT - Recent Meeting Insights:
+ENHANCED CONTEXT - Recent Meeting Insights:
 - Meeting Title: ${latestMeeting.title || 'Recent meeting'}
 - Key Topics: ${latestMeeting.topics_discussed?.map((t: any) => t.text).join(', ') || 'Various topics'}
 - Action Items: ${latestMeeting.action_items?.map((a: any) => a.text).join(', ') || 'None specified'}
 - Key Insights: ${latestMeeting.key_insights || 'Meeting summary available'}
 
-💡 Use these meeting insights to make the content more relevant and personalized to the user's recent activities.`;
+Use these meeting insights to make the content more relevant and personalized to the user's recent activities.`;
     }
     
     if (brief.knowledge_base_context?.recent_transcripts?.length > 0) {
       const transcriptCount = brief.knowledge_base_context.recent_transcripts.length;
       contextPrompt += `
 
-📚 KNOWLEDGE BASE CONTEXT:
+KNOWLEDGE BASE CONTEXT:
 - Recent Transcripts: ${transcriptCount} new transcript(s) available
 - Content can reference and build upon these recent materials
 - Use this context to create more informed and relevant content`;
@@ -238,26 +238,49 @@ Original Brief:
 
 User Goals: ${JSON.stringify(brief.content_guides || {})}${contextPrompt}
 
+IMPORTANT: Preserve technical specificity and technical terms from the original topic.
+If the user mentions specific platforms, tools, APIs, or technical concepts, KEEP them in the enhanced topic.
+
 Enhance the brief by:
-1. Clarifying the topic if vague
-2. Suggesting specific angles or perspectives
+1. Clarifying the topic if vague, but PRESERVING technical terms and platform names
+2. Suggesting specific angles that build on the technical context provided
 3. Adding target audience details if missing
-4. Identifying key points to cover
-5. Suggesting relevant hashtags or references
-6. ${brief.enhanced_suggestion ? 'Incorporating meeting insights for personalization' : 'Creating engaging general content'}
+4. Identifying key technical points to cover
+5. Suggesting relevant hashtags that include technical terms
+6. ${brief.enhanced_suggestion ? 'Incorporating meeting insights for personalization' : 'Creating engaging technical content'}
 
 Return only valid JSON:
 {
-  "enhanced_topic": "clear, specific topic",
-  "suggested_angle": "specific angle or perspective",
-  "target_audience": "who this content is for",
-  "key_points": ["point1", "point2", "point3"],
-  "suggested_hashtags": ["hashtag1", "hashtag2"],
-  "content_structure": "suggested structure (e.g., problem-solution, story, tips)",
+  "enhanced_topic": "technical topic that preserves original technical terms",
+  "suggested_angle": "specific technical angle or perspective",
+  "target_audience": "who this technical content is for",
+  "key_points": ["technical point1", "technical point2", "technical point3"],
+  "suggested_hashtags": ["#TechnicalTerm1", "#TechnicalTerm2"],
+  "content_structure": "suggested structure (e.g., technical tutorial, implementation guide, case study)",
   "meeting_insights_integration": "${brief.enhanced_suggestion ? 'How to incorporate meeting insights' : 'N/A'}"
 }`
 
-    console.log(`🤖 Enhancing brief with AI${brief.enhanced_suggestion ? ' (Enhanced mode with meeting context)' : ''}`);
+    // Add debugging to see what's being sent
+    console.log('Prompt length:', prompt.length);
+    console.log('Context prompt length:', contextPrompt.length);
+    console.log('Full prompt preview:', prompt.substring(0, 200) + '...');
+
+    console.log(`Enhancing brief with AI${brief.enhanced_suggestion ? ' (Enhanced mode with meeting context)' : ''}`);
+    
+    const requestBody = {
+      model: 'claude-3-haiku-20240307',
+      max_tokens: 1000,
+      temperature: 0.1,
+      system: `You are an expert technical content strategist. Always preserve technical terms, platform names, and tool names from the original request. Focus on improving clarity and structure, not changing the core technical subject.`,
+      messages: [
+        {
+          role: 'user',
+          content: prompt
+        }
+      ]
+    };
+    
+    console.log('Request body preview:', JSON.stringify(requestBody).substring(0, 300) + '...');
     
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -266,23 +289,13 @@ Return only valid JSON:
         'x-api-key': anthropicApiKey,
         'anthropic-version': '2023-06-01'
       },
-      body: JSON.stringify({
-        model: 'claude-3-haiku-20240307',
-        max_tokens: 800,
-        temperature: 0.3,
-        messages: [
-          {
-            role: 'user',
-            content: `You are an expert content strategist specializing in ${brief.enhanced_suggestion ? 'context-aware, personalized content' : 'general business content'}. ${brief.enhanced_suggestion ? 'Use meeting insights to create highly relevant content.' : 'Create engaging content based on user preferences.'}
-
-${prompt}`
-          }
-        ]
-      }),
+      body: JSON.stringify(requestBody),
     })
 
     if (!response.ok) {
-      throw new Error(`Anthropic API error: ${response.status}`)
+      const errorText = await response.text();
+      console.log('Anthropic API error response:', errorText);
+      throw new Error(`Anthropic API error: ${response.status} - ${errorText}`)
     }
 
     const data = await response.json()
@@ -294,14 +307,54 @@ ${prompt}`
 
     // Clean the AI response to remove control characters
     const cleanedResponse = aiResponse.replace(/[\x00-\x1F\x7F]/g, '');
-    console.log('🧹 Cleaned AI response:', cleanedResponse);
+    console.log('Cleaned AI response:', cleanedResponse);
     
     const enhanced = JSON.parse(cleanedResponse)
 
+    // ✅ NEW: Content validation to ensure technical specificity is preserved
+    const originalTopic = brief.topic.toLowerCase();
+    const enhancedTopic = enhanced.enhanced_topic?.toLowerCase() || '';
+    
+    // Check if enhanced topic preserves key technical terms
+    const technicalTerms = ['hotmart', 'rudderstack', 'api', 'integration', 'gateway', 'payment', 'conversion'];
+    const preservedTerms = technicalTerms.filter(term => 
+      originalTopic.includes(term) && enhancedTopic.includes(term)
+    );
+    
+    // If too many technical terms were lost, fall back to original topic
+    const technicalTermLoss = technicalTerms.filter(term => 
+      originalTopic.includes(term) && !enhancedTopic.includes(term)
+    ).length;
+    
+    if (technicalTermLoss > 2) {
+      console.log(`AI enhancement lost too many technical terms (${technicalTermLoss} lost), using original topic`);
+      console.log(`   Original: "${brief.topic}"`);
+      console.log(`   Enhanced: "${enhanced.enhanced_topic}"`);
+      console.log(`   Lost terms: ${technicalTerms.filter(term => originalTopic.includes(term) && !enhancedTopic.includes(term))}`);
+      
+      // Use original topic but keep other enhancements
+      return {
+        ...brief,
+        topic: brief.topic, // Keep original
+        original_topic: brief.topic,
+        enhanced_topic: brief.topic, // Mark as not enhanced
+        angle: enhanced.suggested_angle || brief.angle,
+        target_audience: enhanced.target_audience || brief.target_audience,
+        key_points: enhanced.key_points || brief.key_points,
+        refs: [...brief.refs, ...(enhanced.suggested_hashtags || [])],
+        content_structure: enhanced.content_structure
+      };
+    }
+
+    console.log(`AI enhancement preserved technical specificity (${preservedTerms.length} terms kept)`);
+    
     // Merge AI enhancements with original brief
+    // ✅ CRITICAL FIX: Preserve original topic for semantic matching while using enhanced for content
     return {
       ...brief,
       topic: enhanced.enhanced_topic || brief.topic,
+      original_topic: brief.topic, // ✅ Keep original for semantic matching
+      enhanced_topic: enhanced.enhanced_topic, // ✅ Store enhanced version separately
       angle: enhanced.suggested_angle || brief.angle,
       target_audience: enhanced.target_audience || brief.target_audience,
       key_points: enhanced.key_points || brief.key_points,
@@ -402,7 +455,9 @@ ${prompt}`
     })
 
     if (!response.ok) {
-      throw new Error(`Anthropic API error: ${response.status}`)
+      const errorText = await response.text();
+      console.log('Anthropic API error response:', errorText);
+      throw new Error(`Anthropic API error: ${response.status} - ${errorText}`)
     }
 
     const data = await response.json()

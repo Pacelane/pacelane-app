@@ -1348,7 +1348,7 @@ Return only valid JSON:
         return { success: false, message: 'Failed to create content order' };
       }
 
-      // Then, create agent_job to process the order
+      // Then, create agent_job to process the order with simplified flow
       const jobData = {
         type: 'process_order',
         payload_json: {
@@ -1357,7 +1357,9 @@ Return only valid JSON:
         user_id: userId,
         status: 'pending',
         attempts: 0,
-        run_at: new Date().toISOString()
+        run_at: new Date().toISOString(),
+        user_message: payload.content || '', // Store original WhatsApp message
+        simplified_flow: true // Use simplified flow (retrieval -> writer)
       };
 
       const { error: jobError } = await this.supabase
