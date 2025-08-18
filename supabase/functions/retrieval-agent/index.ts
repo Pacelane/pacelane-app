@@ -65,240 +65,203 @@ async function retrieveRelevantContext(
 ): Promise<Citation[]> {
   console.log(`Retrieving context for user ${userId}, topic: ${topic}`)
 
-  const citations: Citation[] = []
-  const searchTerms = generateSearchTerms(topic, platform)
-
-  // Search user's LinkedIn posts for style and topic relevance
-  const linkedinPosts = await searchLinkedInPosts(supabaseClient, userId, searchTerms, Math.ceil(maxResults / 3))
-  citations.push(...linkedinPosts)
-
-  // Search meeting notes
-  const meetingNotes = await searchMeetingNotes(supabaseClient, userId, searchTerms, Math.ceil(maxResults / 3))
-  citations.push(...meetingNotes)
-
-  // Search knowledge files
-  const knowledgeFiles = await searchKnowledgeFiles(supabaseClient, userId, searchTerms, Math.ceil(maxResults / 3))
-  citations.push(...knowledgeFiles)
-
-  // Sort by relevance and limit results
-  const sortedCitations = citations
-    .sort((a, b) => (b.relevance_score || 0) - (a.relevance_score || 0))
-    .slice(0, maxResults)
-
-  console.log(`Found ${sortedCitations.length} relevant citations`)
-  return sortedCitations
-}
-
-function generateSearchTerms(topic: string, platform?: string): string[] {
-  const terms = [topic.toLowerCase()]
+  // Just use Claude to find relevant knowledge files
+  const knowledgeFiles = await searchKnowledgeFilesWithClaude(supabaseClient, userId, topic, maxResults)
   
-  // Add platform-specific terms
-  if (platform) {
-    terms.push(platform.toLowerCase())
-  }
-
-  // Extract key words from topic
-  const words = topic.split(' ').filter(word => word.length > 3)
-  terms.push(...words)
-
-  // Add common business terms
-  const businessTerms = ['strategy', 'growth', 'leadership', 'innovation', 'business', 'management', 'team', 'success']
-  terms.push(...businessTerms)
-
-  return [...new Set(terms)] // Remove duplicates
+  console.log(`Found ${knowledgeFiles.length} relevant files`)
+  return knowledgeFiles
 }
 
-async function searchLinkedInPosts(
+// Simplified - no more complex search terms generation
+
+// Simplified - no LinkedIn search
+
+// Simplified - no meeting notes search
+
+// Simplified - no separate function needed
+
+async function searchKnowledgeFilesWithClaude(
   supabaseClient: any, 
   userId: string, 
-  searchTerms: string[], 
+  contentTopic: string,
   limit: number
 ): Promise<Citation[]> {
-  const citations: Citation[] = []
-
-  // Search user's LinkedIn posts for similar topics and writing style examples
-  for (const term of searchTerms.slice(0, 2)) { // Limit to first 2 terms
-    const { data: posts, error } = await supabaseClient
-      .from('linkedin_posts')
-      .select('id, content, published_at, engagement_data')
-      .eq('user_id', userId)
-      .ilike('content', `%${term}%`)
-      .order('published_at', { ascending: false })
-      .limit(limit)
-
-    if (error) {
-      console.error('Error searching LinkedIn posts:', error)
-      continue
-    }
-
-    if (posts) {
-      for (const post of posts) {
-        const relevanceScore = calculateRelevanceScore(post.content, searchTerms)
-        
-        citations.push({
-          type: 'linkedin_post',
-          id: post.id,
-          title: 'Your LinkedIn Post',
-          content: extractRelevantSnippet(post.content, searchTerms),
-          created_at: post.published_at,
-          relevance_score: relevanceScore + 0.2, // Boost LinkedIn posts as they show user's voice
-          source_url: `linkedin://post/${post.id}`
-        })
-      }
-    }
-  }
-
-  return citations
-}
-
-async function searchMeetingNotes(
-  supabaseClient: any, 
-  userId: string, 
-  searchTerms: string[], 
-  limit: number
-): Promise<Citation[]> {
-  const citations: Citation[] = []
-
-  // Search for each term
-  for (const term of searchTerms.slice(0, 3)) { // Limit to first 3 terms to avoid too many queries
-    const { data: notes, error } = await supabaseClient
-      .from('meeting_notes')
-      .select('id, content, created_at, source_type')
-      .eq('user_id', userId)
-      .ilike('content', `%${term}%`)
-      .order('created_at', { ascending: false })
-      .limit(limit)
-
-    if (error) {
-      console.error('Error searching meeting notes:', error)
-      continue
-    }
-
-    if (notes) {
-      for (const note of notes) {
-        const relevanceScore = calculateRelevanceScore(note.content, searchTerms)
-        
-        citations.push({
-          type: 'meeting_note',
-          id: note.id,
-          content: extractRelevantSnippet(note.content, searchTerms),
-          created_at: note.created_at,
-          relevance_score: relevanceScore
-        })
-      }
-    }
-  }
-
-  return citations
-}
-
-async function searchKnowledgeFiles(
-  supabaseClient: any, 
-  userId: string, 
-  searchTerms: string[], 
-  limit: number
-): Promise<Citation[]> {
-  const citations: Citation[] = []
-
-  // Search for each term
-  for (const term of searchTerms.slice(0, 3)) {
+  console.log(`🤖 Claude-powered file selection for topic: "${contentTopic}"`);
+  
+  try {
+    // Get all user files (just names and basic metadata for Claude)
     const { data: files, error } = await supabaseClient
       .from('knowledge_files')
-      .select('id, name, extracted_content, created_at, url')
+      .select('id, name, type, created_at, url')
       .eq('user_id', userId)
-      .not('extracted_content', 'is', null)
-      .ilike('extracted_content', `%${term}%`)
-      .order('created_at', { ascending: false })
-      .limit(limit)
+      .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Error searching knowledge files:', error)
-      continue
+    if (error || !files) {
+      console.error('Error fetching knowledge files:', error);
+      return [];
     }
 
-    if (files) {
-      for (const file of files) {
-        const relevanceScore = calculateRelevanceScore(file.extracted_content, searchTerms)
-        
-        citations.push({
-          type: 'knowledge_file',
-          id: file.id,
-          title: file.name,
-          content: extractRelevantSnippet(file.extracted_content, searchTerms),
-          created_at: file.created_at,
-          relevance_score: relevanceScore,
-          source_url: file.url
-        })
+    console.log(`📁 Found ${files.length} total files for Claude selection`);
+
+    if (files.length === 0) {
+      return [];
+    }
+
+    // Use Claude to select relevant files
+    const selectedFileIds = await selectFilesWithClaude(contentTopic, files, limit);
+    
+    if (!selectedFileIds || selectedFileIds.length === 0) {
+      console.log('🤖 Claude selected no relevant files');
+      return [];
+    }
+
+    // Get full file details for selected files
+    const selectedFiles = files.filter(file => selectedFileIds.includes(file.id));
+    
+    console.log(`🎯 Claude selected ${selectedFiles.length} relevant files:`);
+    selectedFiles.forEach((file, index) => {
+      console.log(`${index + 1}. "${file.name}" (${file.type})`);
+    });
+
+    // Convert to citations format
+    return selectedFiles.map(file => ({
+      type: 'knowledge_file',
+      id: file.id,
+      title: file.name,
+      content: `File: ${file.name} (${file.type})`, // Simple content for now
+      created_at: file.created_at,
+      relevance_score: 1.0, // Claude deemed it relevant
+      source_url: file.url,
+      metadata: {
+        file_type: file.type,
+        selection_method: 'claude_ai',
+        claude_selected: true
+      }
+    }));
+  } catch (error) {
+    console.error('Error in Claude-powered knowledge search:', error);
+    return [];
+  }
+}
+
+// Simplified - no complex scoring functions needed
+
+/**
+ * Use Claude to intelligently select relevant files from the user's knowledge base
+ */
+async function selectFilesWithClaude(
+  userPrompt: string, 
+  availableFiles: any[], 
+  maxFiles: number
+): Promise<string[]> {
+  try {
+    const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
+    if (!anthropicApiKey) {
+      console.warn('ANTHROPIC_API_KEY not found, falling back to first few files');
+      return availableFiles.slice(0, Math.min(maxFiles, availableFiles.length)).map(f => f.id);
+    }
+
+    // Create file list for Claude with IDs
+    const fileList = availableFiles.map(file => 
+      `- ID: ${file.id} | ${file.name} (${file.type || 'unknown'})`
+    ).join('\n');
+
+    console.log(`📁 Files available for Claude selection:`);
+    availableFiles.forEach((file, index) => {
+      console.log(`  ${index + 1}. ${file.name} (${file.type || 'unknown'})`);
+    });
+
+    const prompt = `The user wants to create content about: "${userPrompt}"
+
+Available files:
+${fileList}
+
+Select ONLY files that are directly relevant to the user's request. Return a JSON array of file IDs.
+
+Example: ["file-id-1", "file-id-2"]`;
+
+    console.log(`🤖 Asking Claude to select files for: "${userPrompt}"`);
+    console.log(`📁 Available files: ${availableFiles.length}`);
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': anthropicApiKey,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-3-5-haiku-20241022',
+        max_tokens: 200,
+        temperature: 0.1,
+        system: 'You are a helpful assistant that selects relevant files. Always return valid JSON arrays.',
+        messages: [
+          {
+            role: 'user',
+            content: prompt
+          }
+        ]
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Claude API error:', errorText);
+      throw new Error(`Claude API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const aiResponse = data.content[0]?.text;
+
+    if (!aiResponse) {
+      throw new Error('No response from Claude');
+    }
+
+    // Log the raw response from Claude
+    console.log('🤖 Raw Claude response:', aiResponse);
+    console.log('🤖 Response length:', aiResponse.length);
+
+    // Parse Claude's response - try to extract JSON if there's extra text
+    let selectedFileIds;
+    try {
+      selectedFileIds = JSON.parse(aiResponse);
+      console.log('✅ Direct JSON parse successful');
+    } catch (parseError) {
+      console.log('❌ Direct JSON parse failed:', parseError.message);
+      // Try to extract JSON from the response if Claude added extra text
+      console.log('🔍 Trying to extract JSON from response...');
+      const jsonMatch = aiResponse.match(/\[.*\]/);
+      if (jsonMatch) {
+        try {
+          selectedFileIds = JSON.parse(jsonMatch[0]);
+          console.log('✅ Successfully extracted JSON from response:', jsonMatch[0]);
+        } catch (extractError) {
+          console.error('❌ Failed to extract JSON:', extractError.message);
+          throw new Error('Could not parse Claude response as JSON');
+        }
+      } else {
+        console.log('❌ No JSON array pattern found in response');
+        throw new Error('No JSON array found in Claude response');
       }
     }
-  }
-
-  return citations
-}
-
-function calculateRelevanceScore(content: string, searchTerms: string[]): number {
-  const contentLower = content.toLowerCase()
-  let score = 0
-
-  for (const term of searchTerms) {
-    const termCount = (contentLower.match(new RegExp(term, 'g')) || []).length
-    score += termCount * 0.1 // Base score for each occurrence
-  }
-
-  // Bonus for exact topic match
-  if (searchTerms[0] && contentLower.includes(searchTerms[0])) {
-    score += 0.5
-  }
-
-  // Bonus for recent content (within last 30 days)
-  const thirtyDaysAgo = new Date()
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-  
-  return Math.min(score, 1.0) // Cap at 1.0
-}
-
-function extractRelevantSnippet(content: string, searchTerms: string[]): string {
-  const maxLength = 300
-  const contentLower = content.toLowerCase()
-  
-  // Find the best position to start the snippet
-  let bestPosition = 0
-  let bestScore = 0
-
-  for (const term of searchTerms) {
-    const position = contentLower.indexOf(term)
-    if (position !== -1) {
-      const score = calculateSnippetScore(content, position, searchTerms)
-      if (score > bestScore) {
-        bestScore = score
-        bestPosition = position
-      }
+    
+    if (!Array.isArray(selectedFileIds)) {
+      console.warn('Claude returned invalid format, using fallback');
+      return availableFiles.slice(0, Math.min(maxFiles, availableFiles.length)).map(f => f.id);
     }
+
+    // Validate that all selected IDs exist in available files
+    const validFileIds = selectedFileIds.filter(id => 
+      availableFiles.some(file => file.id === id)
+    );
+
+    console.log(`🤖 Claude selected ${validFileIds.length} files:`, validFileIds);
+    return validFileIds;
+
+  } catch (error) {
+    console.error('Error in Claude file selection:', error);
+    // Fallback: return first few files
+    console.log('Using fallback file selection');
+    return availableFiles.slice(0, Math.min(maxFiles, availableFiles.length)).map(f => f.id);
   }
-
-  // Extract snippet around the best position
-  const start = Math.max(0, bestPosition - 100)
-  const end = Math.min(content.length, start + maxLength)
-  let snippet = content.substring(start, end)
-
-  // Add ellipsis if we're not at the beginning/end
-  if (start > 0) snippet = '...' + snippet
-  if (end < content.length) snippet = snippet + '...'
-
-  return snippet
-}
-
-function calculateSnippetScore(content: string, position: number, searchTerms: string[]): number {
-  const windowSize = 200
-  const start = Math.max(0, position - windowSize / 2)
-  const end = Math.min(content.length, position + windowSize / 2)
-  const window = content.substring(start, end).toLowerCase()
-  
-  let score = 0
-  for (const term of searchTerms) {
-    const termCount = (window.match(new RegExp(term, 'g')) || []).length
-    score += termCount
-  }
-  
-  return score
 }

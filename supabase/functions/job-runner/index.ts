@@ -194,14 +194,32 @@ async function executeJob(supabaseClient: any, job: AgentJob) {
         throw new Error(`Unknown job type: ${job.type}`)
     }
 
-    // Update agent run with success
+    // Update agent run with success and flow information
+    const runUpdateData: any = {
+      steps_json: steps,
+      timings_json: { total_ms: Date.now() - startTime },
+      success: true
+    };
+    
+    // Add flow type and relevant files for simplified flow
+    if (job.type === 'process_order' && job.simplified_flow === true) {
+      runUpdateData.flow_type = 'simplified';
+      // Extract relevant files from citations if available
+      const relevantFiles = steps
+        .filter(step => step.step === 'retrieval_complete' && step.citations)
+        .flatMap(step => step.citations.map((citation: any) => citation.file_id || citation.id))
+        .filter(Boolean);
+      
+      if (relevantFiles.length > 0) {
+        runUpdateData.relevant_files = relevantFiles;
+      }
+    } else if (job.type === 'process_order') {
+      runUpdateData.flow_type = 'complex';
+    }
+    
     await supabaseClient
       .from('agent_run')
-      .update({
-        steps_json: steps,
-        timings_json: { total_ms: Date.now() - startTime },
-        success: true
-      })
+      .update(runUpdateData)
       .eq('id', runId)
 
     // Mark job as completed
@@ -248,6 +266,17 @@ async function processContentOrder(supabaseClient: any, job: AgentJob, steps: an
   
   steps.push({ step: 'start', order_id, timestamp: new Date().toISOString() })
 
+  // Check if this is a simplified flow job
+  const isSimplifiedFlow = job.simplified_flow === true;
+  const userMessage = job.user_message || '';
+  
+  steps.push({ 
+    step: 'flow_detected', 
+    flow_type: isSimplifiedFlow ? 'simplified' : 'complex',
+    has_user_message: !!userMessage,
+    timestamp: new Date().toISOString() 
+  });
+
   // Get the content order
   const { data: order, error: orderError } = await supabaseClient
     .from('content_order')
@@ -261,17 +290,58 @@ async function processContentOrder(supabaseClient: any, job: AgentJob, steps: an
 
   steps.push({ step: 'order_retrieved', order, timestamp: new Date().toISOString() })
 
-  // Step 1: Order Builder - Create content brief
-  const brief = await callOrderBuilder(supabaseClient, order.id, steps)
-  
-  // Step 2: Retrieval - Get relevant context
-  const citations = await callRetrievalAgent(supabaseClient, order.user_id, brief.topic, brief.platform, steps, null) // No meeting context for content orders
-  
-  // Step 3: Writer - Generate initial draft
-  const draft = await callWriterAgent(supabaseClient, brief, citations, order.user_id, steps, null) // No meeting context for content orders
-  
-  // Step 4: Editor - Refine and finalize
-  const finalDraft = await callEditorAgent(supabaseClient, draft, brief, order.user_id, steps, null) // No meeting context for content orders
+  let brief, searchTopic, citations, draft, finalDraft;
+
+  if (isSimplifiedFlow) {
+    // SIMPLIFIED FLOW: Skip order-builder, go directly to retrieval
+    console.log(`🚀 Using simplified flow for job ${job.id}`);
+    
+    // Create a simple brief from the user message
+    brief = {
+      platform: order.params_json.platform || 'linkedin',
+      length: order.params_json.length || 'medium',
+      tone: order.params_json.tone || 'professional',
+      angle: order.params_json.angle || 'insight',
+      topic: userMessage || order.params_json.topic || 'Content creation',
+      original_topic: userMessage || order.params_json.topic || 'Content creation',
+      enhanced_topic: userMessage || order.params_json.topic || 'Content creation',
+      user_message: userMessage
+    };
+    
+    steps.push({ step: 'simplified_brief_created', brief, timestamp: new Date().toISOString() });
+    
+    // Step 1: Retrieval - Get relevant context using user message
+    searchTopic = userMessage || order.params_json.topic || 'Content creation';
+    console.log(`🔍 Simplified flow retrieval search topic: "${searchTopic}"`);
+    
+    citations = await callRetrievalAgent(supabaseClient, order.user_id, searchTopic, brief.platform, steps, null);
+    
+    // Step 2: Writer - Generate initial draft (skip editor for now)
+    draft = await callWriterAgent(supabaseClient, brief, citations, order.user_id, steps, null);
+    
+    // For simplified flow, use draft directly (no editor step)
+    finalDraft = draft;
+    
+  } else {
+    // COMPLEX FLOW: Use existing multi-agent pipeline
+    console.log(`🔄 Using complex flow for job ${job.id}`);
+    
+    // Step 1: Order Builder - Create content brief
+    brief = await callOrderBuilder(supabaseClient, order.id, steps)
+    
+    // Step 2: Retrieval - Get relevant context
+    // ✅ CRITICAL FIX: Use original topic for semantic matching to preserve keywords
+    searchTopic = brief.original_topic || brief.topic;
+    console.log(`🔍 Content order retrieval search topic: "${searchTopic}" (original: "${brief.original_topic}", enhanced: "${brief.enhanced_topic}")`);
+    
+    citations = await callRetrievalAgent(supabaseClient, order.user_id, searchTopic, brief.platform, steps, null) // No meeting context for content orders
+    
+    // Step 3: Writer - Generate initial draft
+    draft = await callWriterAgent(supabaseClient, brief, citations, order.user_id, steps, null) // No meeting context for content orders
+    
+    // Step 4: Editor - Refine and finalize
+    finalDraft = await callEditorAgent(supabaseClient, draft, brief, order.user_id, steps, null) // No meeting context for content orders
+  }
   
   // Step 5: Save to saved_drafts
   const { data: savedDraft, error: saveError } = await supabaseClient
@@ -452,10 +522,14 @@ async function processPacingContentGeneration(supabaseClient: any, job: AgentJob
   const brief = await callOrderBuilder(supabaseClient, contentOrder.id, steps)
   
   // Step 2: Retrieval - Get relevant context (enhanced with meeting insights)
+  // ✅ CRITICAL FIX: Use original topic for semantic matching to preserve keywords like "hotmart"
+  const searchTopic = brief.original_topic || brief.topic;
+  console.log(`🔍 Retrieval agent search topic: "${searchTopic}" (original: "${brief.original_topic}", enhanced: "${brief.enhanced_topic}")`);
+  
   const citations = await callRetrievalAgent(
     supabaseClient, 
     job.user_id, 
-    brief.topic, 
+    searchTopic, 
     brief.platform, 
     steps,
     meeting_context // ✅ Pass meeting context for better retrieval
@@ -671,7 +745,7 @@ async function generatePersonalizedTopic(supabaseClient: any, userId: string, me
     // Get recent knowledge base files for topic inspiration
     const { data: recentFiles } = await supabaseClient
       .from('knowledge_files')
-      .select('filename, title, metadata')
+      .select('name, extracted_content, metadata')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(5);
@@ -696,7 +770,7 @@ async function generatePersonalizedTopic(supabaseClient: any, userId: string, me
     const userIndustry = extractIndustryFromSkills(skills) || 'Business';
     const contentPillars = profile?.content_pillars || [];
     const topSkills = skills.slice(0, 5).map(s => s.name).join(', ');
-    const recentFileTopics = recentFiles?.map(f => f.filename || f.title).join(', ') || '';
+    const recentFileTopics = recentFiles?.map(f => f.name).join(', ') || '';
 
     console.log(`🎯 Generating personalized topic for ${userRole} at ${userCompany}`);
     console.log(`📋 Content pillars: ${contentPillars.length}`);
@@ -713,8 +787,8 @@ async function generatePersonalizedTopic(supabaseClient: any, userId: string, me
     // Use recent knowledge base files
     if (recentFiles && recentFiles.length > 0) {
       const recentFile = recentFiles[0];
-      console.log(`✅ Using recent file: ${recentFile.filename || recentFile.title}`);
-      return `Professional insights inspired by recent work on ${recentFile.filename || recentFile.title}`;
+      console.log(`✅ Using recent file: ${recentFile.name}`);
+      return `Professional insights inspired by recent work: ${recentFile.name}`;
     }
 
     // Generate topic based on user's top skills if available
