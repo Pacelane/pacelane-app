@@ -67,6 +67,7 @@ const HomeSidebar = ({
   onAvatarClick,
   onSignOut,
   className = '',
+  style,
   ...rest
 }) => {
   const { colors, themePreference, setTheme } = useTheme();
@@ -158,6 +159,7 @@ const HomeSidebar = ({
     borderRight: `${stroke.DEFAULT} solid ${colors.border.default}`,
     transition: 'width 0.3s cubic-bezier(0.4, 0.0, 0.2, 1)', // Smooth width transition
     zIndex: 1000, // Ensure sidebar is above content
+    ...style, // Allow custom styles for mobile
   };
 
   // Header container (Logo only)

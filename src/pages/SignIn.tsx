@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/api/useAuth';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { signInSchema, signUpSchema, type SignInFormData, type SignUpFormData } from '@/api/schemas';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // Design System Components
 import { useTheme } from '@/services/theme-context';
@@ -13,6 +14,7 @@ import { cornerRadius } from '@/design-system/tokens/corner-radius';
 import { textStyles } from '@/design-system/styles/typography/typography-styles';
 import { colors as primitiveColors } from '@/design-system/tokens/primitive-colors';
 import { shadows, getShadow } from '@/design-system/tokens/shadows';
+import { getResponsivePadding, getResponsiveWidth } from '@/design-system/utils/responsive';
 import Logo from '@/design-system/components/Logo';
 import Bichaurinho from '@/design-system/components/Bichaurinho';
 import Input from '@/design-system/components/Input';
@@ -31,6 +33,7 @@ const SignIn = () => {
   const { user, signIn, signUp, signInWithGoogle } = useAuth();
   const { colors } = useTheme();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   // Use a single form instance with dynamic schema
   const form = useForm<SignInFormData | SignUpFormData>({
@@ -240,64 +243,66 @@ const SignIn = () => {
     return true;
   })();
 
-  // Page container styles
+  // Page container styles - responsive layout
   const pageContainerStyles: React.CSSProperties = {
-    height: '100vh',
+    minHeight: '100vh',
     width: '100%',
     display: 'flex',
+    flexDirection: isMobile ? 'column' : 'row',
     position: 'relative',
     backgroundColor: colors.bg.default,
   };
 
-  // Left column styles (50% width, 720px container)
-  const leftColumnStyles: React.CSSProperties = {
-    width: '50%',
+  // Main column styles - responsive width and padding
+  const mainColumnStyles: React.CSSProperties = {
+    width: isMobile ? '100%' : '50%',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.spacing[40],
+    justifyContent: isMobile ? 'flex-start' : 'center',
+    padding: getResponsivePadding(isMobile, 'container'),
+    paddingTop: isMobile ? spacing.spacing[48] : spacing.spacing[40],
     boxSizing: 'border-box',
     position: 'relative',
     zIndex: 5,
   };
 
-  // 400px centered container styles
+  // Content container styles - responsive width
   const contentContainerStyles = {
-    width: '400px',
+    ...getResponsiveWidth(isMobile, 'card'),
     display: 'flex',
     flexDirection: 'column' as const,
     alignItems: 'center',
     gap: spacing.spacing[24],
   };
 
-  // Card styles - single card containing both form and text sections
+  // Card styles - responsive width
   const cardStyles = {
-    width: '400px',
+    ...getResponsiveWidth(isMobile, 'card'),
     display: 'flex',
     flexDirection: 'column' as const,
     backgroundColor: colors.bg.default,
     border: `1px solid ${colors.border.default}`,
     borderRadius: cornerRadius.borderRadius.lg,
     boxShadow: getShadow('regular.card', colors, { withBorder: true }),
-    overflow: 'hidden' as const, // Ensure rounded corners are maintained
+    overflow: 'hidden' as const,
   };
 
-  // Form container styles - main content area
+  // Form container styles - main content area with responsive padding
   const formContainerStyles = {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: spacing.spacing[24], // 24px gap between major sections
-    padding: spacing.spacing[36],
+    gap: spacing.spacing[24],
+    padding: getResponsivePadding(isMobile, 'card'),
   };
 
-  // Text container styles - bottom section  
+  // Text container styles - bottom section with responsive padding
   const textContainerStyles = {
     display: 'flex',
     flexDirection: 'column' as const,
     gap: spacing.spacing[4],
-    paddingLeft: spacing.spacing[36],
-    paddingRight: spacing.spacing[36],
+    paddingLeft: getResponsivePadding(isMobile, 'card'),
+    paddingRight: getResponsivePadding(isMobile, 'card'),
     paddingTop: spacing.spacing[24],
     paddingBottom: spacing.spacing[24],
     backgroundColor: colors.bg.card.subtle,
@@ -328,8 +333,8 @@ const SignIn = () => {
 
   return (
     <div style={pageContainerStyles}>
-      {/* Left Column */}
-      <div style={leftColumnStyles}>
+      {/* Main Column - Full width on mobile, 50% on desktop */}
+      <div style={mainColumnStyles}>
         <div style={contentContainerStyles}>
           {/* Logo */}
           <Logo width={120} />
@@ -425,55 +430,6 @@ const SignIn = () => {
                   />
                 </form>
 
-                {/* Legal Links */}
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'center',
-                  gap: spacing.spacing[16],
-                  marginTop: spacing.spacing[8],
-                  marginBottom: spacing.spacing[16]
-                }}>
-                  <button
-                    type="button"
-                    onClick={() => navigate('/terms')}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      padding: 0,
-                      cursor: 'pointer',
-                      ...textStyles.xs.normal,
-                      color: colors.text.muted,
-                      textDecoration: 'underline',
-                      fontSize: '11px'
-                    }}
-                  >
-                    Terms of Service
-                  </button>
-                  <span style={{
-                    ...textStyles.xs.normal,
-                    color: colors.text.muted,
-                    fontSize: '11px'
-                  }}>
-                    •
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => navigate('/privacy')}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      padding: 0,
-                      cursor: 'pointer',
-                      ...textStyles.xs.normal,
-                      color: colors.text.muted,
-                      textDecoration: 'underline',
-                      fontSize: '11px'
-                    }}
-                  >
-                    Privacy Policy
-                  </button>
-                </div>
-
                 {/* Divider */}
                 <Divider label="or" maxWidth={400} />
 
@@ -509,27 +465,95 @@ const SignIn = () => {
               </p>
             </div>
           </div>
+
+          {/* Legal Links - Outside main card */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            gap: spacing.spacing[12],
+            marginTop: spacing.spacing[16],
+          }}>
+            <button
+              type="button"
+              onClick={() => navigate('/terms')}
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                cursor: 'pointer',
+                ...textStyles.xs.normal,
+                color: colors.text.hint,
+                textDecoration: 'none',
+                fontSize: '11px',
+                transition: 'color 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.color = colors.text.muted;
+                e.target.style.textDecoration = 'underline';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.color = colors.text.hint;
+                e.target.style.textDecoration = 'none';
+              }}
+            >
+              Terms of Service
+            </button>
+            <span style={{
+              ...textStyles.xs.normal,
+              color: colors.text.hint,
+              fontSize: '11px'
+            }}>
+              •
+            </span>
+            <button
+              type="button"
+              onClick={() => navigate('/privacy')}
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                cursor: 'pointer',
+                ...textStyles.xs.normal,
+                color: colors.text.hint,
+                textDecoration: 'none',
+                fontSize: '11px',
+                transition: 'color 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.color = colors.text.muted;
+                e.target.style.textDecoration = 'underline';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.color = colors.text.hint;
+                e.target.style.textDecoration = 'none';
+              }}
+            >
+              Privacy Policy
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Right Column */}
-      <div style={rightColumnStyles}>
-        <div style={rightContainerStyles}>
-          {/* Sign In Bichaurinho - positioned bottom right */}
-          <img
-            src={signinBichaurinho}
-            alt="Sign in illustration"
-            style={{
-              position: 'absolute',
-              bottom: '-150px', // Partially outside container
-              right: '-100px', // Partially outside container
-              width: '800px',
-              height: '800px',
-              objectFit: 'contain',
-            }}
-          />
+      {/* Right Column - Only show on desktop */}
+      {!isMobile && (
+        <div style={rightColumnStyles}>
+          <div style={rightContainerStyles}>
+            {/* Sign In Bichaurinho - positioned bottom right */}
+            <img
+              src={signinBichaurinho}
+              alt="Sign in illustration"
+              style={{
+                position: 'absolute',
+                bottom: '-150px', // Partially outside container
+                right: '-100px', // Partially outside container
+                width: '800px',
+                height: '800px',
+                objectFit: 'contain',
+              }}
+            />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

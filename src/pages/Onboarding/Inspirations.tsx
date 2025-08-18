@@ -2,14 +2,19 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/api/useAuth';
 import { useTheme } from '@/services/theme-context';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/design-system/components/Toast';
+
+// LinkedIn URL parsing utilities
+import { parseLinkedInInput, isLinkedInUrl } from '@/utils/linkedinParser';
 
 // Design System Components
 import TopNav from '@/design-system/components/TopNav';
 import Button from '@/design-system/components/Button';
 import Input from '@/design-system/components/Input';
 import ProgressBar from '@/design-system/components/ProgressBar';
+import OnboardingProgressIndicator from '@/design-system/components/OnboardingProgressIndicator';
 import Bichaurinho from '@/design-system/components/Bichaurinho';
 
 // Design System Tokens
@@ -25,6 +30,8 @@ interface Benchmark {
   id: number;
   value: string;
   isRequired: boolean;
+  detectedUsername?: string;
+  wasUrlDetected?: boolean;
 }
 
 const Inspirations = () => {
@@ -32,6 +39,7 @@ const Inspirations = () => {
   const { user } = useAuth();
   const { colors } = useTheme();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [isLoading, setIsLoading] = useState(false);
 
   // Initialize with one required benchmark field
@@ -54,11 +62,36 @@ const Inspirations = () => {
 
   const updateBenchmark = (id: number, value: string) => {
     setBenchmarks(prev =>
-      prev.map(benchmark =>
-        benchmark.id === id ? { ...benchmark, value } : benchmark
-      )
+      prev.map(benchmark => {
+        if (benchmark.id === id) {
+          // Check if input looks like a LinkedIn URL
+          if (isLinkedInUrl(value)) {
+            const parsed = parseLinkedInInput(value);
+            if (parsed.isValid && parsed.username) {
+              // Automatically set the extracted username
+              toast.success(`LinkedIn username extracted: ${parsed.username}`);
+              return {
+                ...benchmark,
+                value: parsed.username,
+                detectedUsername: parsed.username,
+                wasUrlDetected: true,
+              };
+            }
+          }
+          
+          // For non-URL inputs or invalid URLs, set the value directly
+          return {
+            ...benchmark,
+            value,
+            wasUrlDetected: false,
+          };
+        }
+        return benchmark;
+      })
     );
   };
+
+
 
   const handleContinue = async () => {
     if (!user) return;
@@ -83,10 +116,16 @@ const Inspirations = () => {
       // Filter out empty benchmarks and create LinkedIn URL objects
       const validBenchmarks = benchmarks
         .filter(b => b.value.trim())
-        .map(b => ({
-          user_id: user.id,
-          linkedin_url: `https://linkedin.com/in/${b.value.trim()}`
-        }));
+        .map(b => {
+          // Parse the input to extract the username
+          const parsed = parseLinkedInInput(b.value);
+          const username = parsed.isValid ? parsed.username : b.value.trim();
+          
+          return {
+            user_id: user.id,
+            linkedin_url: `https://linkedin.com/in/${username}`
+          };
+        });
 
       // Insert new inspirations if any exist
       if (validBenchmarks.length > 0) {
@@ -162,13 +201,28 @@ const Inspirations = () => {
           alignItems: 'center',
         }}>
           {/* Back Button */}
-          <div style={{ alignSelf: 'flex-start', width: '400px' }}>
+          <div style={{ 
+            alignSelf: 'flex-start', 
+            width: isMobile ? '100%' : '400px',
+            maxWidth: isMobile ? '320px' : '400px'
+          }}>
             <Button
               label="Go Back"
               style="dashed"
               size="xs"
               leadIcon={<ArrowLeft size={12} />}
               onClick={handleGoBack}
+            />
+          </div>
+
+          {/* Progress Indicator */}
+          <div style={{ 
+            width: isMobile ? '100%' : '400px',
+            maxWidth: isMobile ? '320px' : '400px'
+          }}>
+            <OnboardingProgressIndicator 
+              currentStep={3}
+              compact={true}
             />
           </div>
 
@@ -179,14 +233,15 @@ const Inspirations = () => {
               borderRadius: cornerRadius.borderRadius.lg,
               border: `1px solid ${colors.border.darker}`,
               boxShadow: getShadow('regular.card', colors, { withBorder: true }),
-              width: '400px',
+              width: isMobile ? '100%' : '400px',
+              maxWidth: isMobile ? '320px' : '400px',
               overflow: 'hidden',
             }}
           >
             {/* Main Container */}
             <div
               style={{
-                padding: spacing.spacing[36],
+                padding: isMobile ? spacing.spacing[24] : spacing.spacing[36],
                 backgroundColor: colors.bg.card.default,
                 borderBottom: `1px solid ${colors.border.default}`,
                 display: 'flex',
@@ -258,7 +313,7 @@ const Inspirations = () => {
                 }}
               >
                 {benchmarks.map((benchmark, index) => (
-                  <div key={benchmark.id}>
+                  <div key={benchmark.id} style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[12] }}>
                     {benchmark.isRequired ? (
                       <Input
                         label="LinkedIn Profile"
@@ -266,10 +321,10 @@ const Inspirations = () => {
                         value={benchmark.value}
                         onChange={(e) => updateBenchmark(benchmark.id, e.target.value)}
                         style="add-on"
+                        addOnPrefix="https://linkedin.com/in/"
                         size="lg"
                         required={true}
                         disabled={isLoading}
-                        addOnPrefix="https://linkedin.com/in/"
                       />
                     ) : (
                       <div
@@ -285,9 +340,9 @@ const Inspirations = () => {
                             value={benchmark.value}
                             onChange={(e) => updateBenchmark(benchmark.id, e.target.value)}
                             style="add-on"
+                            addOnPrefix="https://linkedin.com/in/"
                             size="lg"
                             disabled={isLoading}
-                            addOnPrefix="https://linkedin.com/in/"
                           />
                         </div>
                         <Button

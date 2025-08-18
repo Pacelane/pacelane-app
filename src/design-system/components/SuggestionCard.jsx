@@ -1,6 +1,7 @@
 import React from 'react';
 import { FileText, Sparkles, Info } from 'lucide-react';
 import { useTheme } from '@/services/theme-context';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { spacing } from '@/design-system/tokens/spacing';
 import { cornerRadius } from '@/design-system/tokens/corner-radius';
 import { textStyles } from '@/design-system/styles/typography/typography-styles';
@@ -20,6 +21,7 @@ const SuggestionCard = ({
   // Handlers
   onPostsClick,
   onGenerateClick,
+  onCalendarClick,
   
   // Standard props
   className = '',
@@ -27,6 +29,7 @@ const SuggestionCard = ({
   ...rest
 }) => {
   const { colors } = useTheme();
+  const isMobile = useIsMobile();
 
   return (
     <div
@@ -35,21 +38,21 @@ const SuggestionCard = ({
         display: 'flex',
         flexDirection: 'row',
         alignItems: 'flex-start',
-        gap: spacing.spacing[20],
+        gap: isMobile ? 0 : spacing.spacing[20],
         padding: spacing.spacing[24],
         backgroundColor: colors.bg.default,
         borderRadius: cornerRadius.borderRadius.xl,
         border: `1px solid ${colors.border.default}`,
         boxShadow: getShadow('regular.card', colors, { withBorder: true }),
-        width: '840px',
+        width: isMobile ? '100%' : '840px',
         ...style
       }}
       {...rest}
     >
-      {/* Left: Bichaurinho */}
-      <Bichaurinho variant={16} size={48} />
+      {/* Bichaurinho - Hidden on mobile */}
+      {!isMobile && <Bichaurinho variant={16} size={48} />}
 
-      {/* Right: Content Column */}
+      {/* Content Column */}
       <div
         style={{
           display: 'flex',
@@ -99,11 +102,11 @@ const SuggestionCard = ({
           </InlineTip>
         </div>
 
-        {/* Content Cards Row */}
+        {/* Content Cards - Responsive Layout */}
         <div
           style={{
             display: 'flex',
-            flexDirection: 'row',
+            flexDirection: isMobile ? 'column' : 'row',
             gap: spacing.spacing[20],
             width: '100%'
           }}
@@ -112,7 +115,8 @@ const SuggestionCard = ({
             <div
               key={index}
               style={{
-                flex: 1,
+                flex: isMobile ? 'none' : 1,
+                width: isMobile ? '100%' : 'auto',
                 minWidth: 0
               }}
             >

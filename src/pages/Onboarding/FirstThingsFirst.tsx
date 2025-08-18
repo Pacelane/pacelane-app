@@ -1,18 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/api/useAuth';
 import { useProfile } from '@/hooks/api/useProfile';
 import { useTheme } from '@/services/theme-context';
 import { useToast } from '@/design-system/components/Toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
-// Custom schema for LinkedIn username (not full URL)
+// LinkedIn URL parsing utilities
+import { parseLinkedInInput, isLinkedInUrl, isValidLinkedInUsername } from '@/utils/linkedinParser';
+
+// Updated schema that accepts both URLs and usernames
 const linkedInUsernameSchema = z.object({
   profileUrl: z.string()
-    .min(1, 'LinkedIn username is required')
-    .regex(/^[a-zA-Z0-9\-]+$/, 'Username can only contain letters, numbers, and hyphens')
+    .min(1, 'LinkedIn profile is required')
+    .refine((value) => {
+      const parsed = parseLinkedInInput(value);
+      return parsed.isValid;
+    }, 'Please enter a valid LinkedIn username or profile URL')
 });
 
 type LinkedInUsernameFormData = z.infer<typeof linkedInUsernameSchema>;
@@ -22,6 +29,7 @@ import TopNav from '@/design-system/components/TopNav';
 import Button from '@/design-system/components/Button';
 import Input from '@/design-system/components/Input';
 import ProgressBar from '@/design-system/components/ProgressBar';
+import OnboardingProgressIndicator from '@/design-system/components/OnboardingProgressIndicator';
 import Bichaurinho from '@/design-system/components/Bichaurinho';
 
 // Design System Tokens
@@ -29,6 +37,7 @@ import { spacing } from '@/design-system/tokens/spacing';
 import { cornerRadius } from '@/design-system/tokens/corner-radius';
 import { getShadow } from '@/design-system/tokens/shadows';
 import { typography } from '@/design-system/tokens/typography';
+import { textStyles } from '@/design-system/styles/typography/typography-styles';
 
 // Icons
 import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
@@ -39,6 +48,11 @@ const FirstThingsFirst = () => {
   const { setupLinkedInProfile, saving } = useProfile();
   const { colors } = useTheme();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
+
+  // State for LinkedIn URL detection
+  const [detectedUsername, setDetectedUsername] = useState('');
+  const [wasUrlDetected, setWasUrlDetected] = useState(false);
 
   const form = useForm<LinkedInUsernameFormData>({
     resolver: zodResolver(linkedInUsernameSchema),
@@ -46,6 +60,28 @@ const FirstThingsFirst = () => {
       profileUrl: '',
     },
   });
+
+  // Handle input changes with automatic URL detection
+  const handleInputChange = (value) => {
+    // Check if input looks like a LinkedIn URL
+    if (isLinkedInUrl(value)) {
+      const parsed = parseLinkedInInput(value);
+      if (parsed.isValid && parsed.username) {
+        // Automatically set the extracted username
+        form.setValue('profileUrl', parsed.username, { shouldValidate: true });
+        setDetectedUsername(parsed.username);
+        setWasUrlDetected(true);
+        toast.success(`LinkedIn username extracted: ${parsed.username}`);
+        return;
+      }
+    }
+    
+    // For non-URL inputs or invalid URLs, set the value directly
+    form.setValue('profileUrl', value, { shouldValidate: true });
+    setWasUrlDetected(false);
+  };
+
+
 
   const handleGoBack = () => {
     navigate('/onboarding/welcome');
@@ -58,8 +94,15 @@ const FirstThingsFirst = () => {
     }
 
     try {
-      // Construct the full LinkedIn URL from the username input
-      const fullLinkedInUrl = `https://www.linkedin.com/in/${data.profileUrl.trim()}/`;
+      // Parse the input to extract the username
+      const parsed = parseLinkedInInput(data.profileUrl);
+      
+      if (!parsed.isValid) {
+        throw new Error('Please enter a valid LinkedIn username or profile URL');
+      }
+
+      // Construct the full LinkedIn URL from the extracted username
+      const fullLinkedInUrl = `https://www.linkedin.com/in/${parsed.username.trim()}/`;
       
       // Use our clean LinkedIn setup API (includes scraper integration)
       const result = await setupLinkedInProfile({
@@ -105,8 +148,8 @@ const FirstThingsFirst = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: spacing.spacing[40],
-          paddingBottom: '160px', // Account for button container height
+          padding: isMobile ? spacing.spacing[24] : spacing.spacing[40],
+          paddingBottom: isMobile ? '140px' : '160px', // Account for button container height
         }}
       >
         {/* Gradient background with 5% opacity */}
@@ -136,13 +179,28 @@ const FirstThingsFirst = () => {
           alignItems: 'center',
         }}>
           {/* Back Button */}
-          <div style={{ alignSelf: 'flex-start', width: '400px' }}>
+          <div style={{ 
+            alignSelf: 'flex-start', 
+            width: isMobile ? '100%' : '400px',
+            maxWidth: isMobile ? '320px' : '400px'
+          }}>
             <Button
               label="Go Back"
               style="dashed"
               size="xs"
               leadIcon={<ArrowLeft size={12} />}
               onClick={handleGoBack}
+            />
+          </div>
+
+          {/* Progress Indicator */}
+          <div style={{ 
+            width: isMobile ? '100%' : '400px',
+            maxWidth: isMobile ? '320px' : '400px'
+          }}>
+            <OnboardingProgressIndicator 
+              currentStep={2}
+              compact={true}
             />
           </div>
 
@@ -153,14 +211,15 @@ const FirstThingsFirst = () => {
               borderRadius: cornerRadius.borderRadius.lg,
               border: `1px solid ${colors.border.darker}`,
               boxShadow: getShadow('regular.card', colors, { withBorder: true }),
-              width: '400px',
+              width: isMobile ? '100%' : '400px',
+              maxWidth: isMobile ? '320px' : '400px',
               overflow: 'hidden',
             }}
           >
             {/* Main Container */}
             <div
               style={{
-                padding: spacing.spacing[36],
+                padding: isMobile ? spacing.spacing[24] : spacing.spacing[36],
                 backgroundColor: colors.bg.card.default,
                 borderBottom: `1px solid ${colors.border.default}`,
                 display: 'flex',
@@ -174,7 +233,7 @@ const FirstThingsFirst = () => {
                   flexDirection: 'column',
                   alignItems: 'flex-start',
                   gap: spacing.spacing[16],
-                  marginBottom: spacing.spacing[32],
+                  marginBottom: spacing.spacing[20],
                 }}
               >
                 {/* Bichaurinho */}
@@ -195,9 +254,9 @@ const FirstThingsFirst = () => {
                   <h1
                     style={{
                       fontFamily: typography.fontFamily['awesome-serif'],
-                      fontSize: typography.desktop.size['5xl'],
+                      fontSize: isMobile ? typography.desktop.size['3xl'] : typography.desktop.size['5xl'],
                       fontWeight: typography.desktop.weight.semibold,
-                      lineHeight: typography.desktop.lineHeight['5xl'],
+                      lineHeight: isMobile ? typography.desktop.lineHeight['3xl'] : typography.desktop.lineHeight['5xl'],
                       color: colors.text.default,
                       margin: 0,
                       textAlign: 'left',
@@ -209,19 +268,19 @@ const FirstThingsFirst = () => {
                   {/* Subtitle */}
                   <p
                     style={{
-                      fontFamily: typography.fontFamily.body,
-                      fontSize: typography.desktop.size.sm,
-                      fontWeight: typography.desktop.weight.normal,
-                      lineHeight: typography.desktop.lineHeight.sm,
+                      ...textStyles.sm.normal,
                       color: colors.text.muted,
                       margin: 0,
                       textAlign: 'left',
+                      marginTop: spacing.spacing[8],
+                      lineHeight: '1.5',
                     }}
                   >
-                    Tell Us About You. We'll use this to analyze your LinkedIn and match your style.
+                    Let's connect your LinkedIn profile so our AI can learn your unique voice, analyze your content style, and understand your professional background.
                   </p>
                 </div>
               </div>
+
 
               {/* Form Inputs Container */}
               <div
@@ -236,7 +295,7 @@ const FirstThingsFirst = () => {
                   label="Your LinkedIn Profile"
                   placeholder="your-linkedin-username"
                   value={form.watch('profileUrl') || ''}
-                  onChange={(e) => form.setValue('profileUrl', e.target.value, { shouldValidate: true })}
+                  onChange={(e) => handleInputChange(e.target.value)}
                   style="add-on"
                   addOnPrefix="linkedin.com/in/"
                   size="lg"
@@ -246,36 +305,18 @@ const FirstThingsFirst = () => {
                   caption={form.formState.errors.profileUrl?.message}
                 />
 
-                {/* Helper text container with background */}
-                <div
-                  style={{
-                    backgroundColor: colors.bg.card.subtle,
-                    padding: `${spacing.spacing[12]} ${spacing.spacing[16]}`,
-                    borderRadius: cornerRadius.borderRadius.sm,
-                    marginTop: spacing.spacing[8],
-                  }}
-                >
-                  <p
-                    style={{
-                      fontFamily: typography.fontFamily.body,
-                      fontSize: typography.desktop.size.xs,
-                      fontWeight: typography.desktop.weight.normal,
-                      lineHeight: typography.desktop.lineHeight.xs,
-                      color: colors.text.muted,
-                      margin: 0,
-                      textAlign: 'center',
-                    }}
-                  >
-                    We'll analyze your profile to understand your style and create personalized content suggestions
-                  </p>
-                </div>
+
+
+
               </div>
             </div>
 
             {/* Text Container */}
             <div
               style={{
-                padding: `${spacing.spacing[24]} ${spacing.spacing[36]}`,
+                padding: isMobile 
+                  ? `${spacing.spacing[20]} ${spacing.spacing[24]}` 
+                  : `${spacing.spacing[24]} ${spacing.spacing[36]}`,
                 backgroundColor: colors.bg.card.subtle,
                 display: 'flex',
                 flexDirection: 'column',
@@ -307,17 +348,20 @@ const FirstThingsFirst = () => {
           bottom: 0,
           left: 0,
           right: 0,
-          height: '80px',
+          height: isMobile ? '70px' : '80px',
           backgroundColor: colors.bg.default,
           borderTop: `1px solid ${colors.border.default}`,
-          padding: spacing.spacing[40],
+          padding: isMobile ? spacing.spacing[24] : spacing.spacing[40],
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 10,
         }}
       >
-        <div style={{ width: '280px' }}>
+        <div style={{ 
+          width: isMobile ? '100%' : '280px',
+          maxWidth: isMobile ? '320px' : '280px'
+        }}>
           <Button
             label={saving ? "Analyzing LinkedIn Profile..." : "Continue"}
             style="primary"

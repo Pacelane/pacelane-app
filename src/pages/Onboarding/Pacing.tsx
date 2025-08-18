@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/api/useAuth';
 import { useTheme } from '@/services/theme-context';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/design-system/components/Toast';
 import { PacingService } from '@/services/pacingService';
@@ -12,23 +13,27 @@ import Button from '@/design-system/components/Button';
 import ButtonGroup from '@/design-system/components/ButtonGroup';
 import Checkbox from '@/design-system/components/Checkbox';
 import ProgressBar from '@/design-system/components/ProgressBar';
+import OnboardingProgressIndicator from '@/design-system/components/OnboardingProgressIndicator';
 import Bichaurinho from '@/design-system/components/Bichaurinho';
 import DropdownButton from '@/design-system/components/DropdownButton';
+import InlineTip from '@/design-system/components/InlineTip';
 
 // Design System Tokens
 import { spacing } from '@/design-system/tokens/spacing';
 import { cornerRadius } from '@/design-system/tokens/corner-radius';
 import { getShadow } from '@/design-system/tokens/shadows';
 import { typography } from '@/design-system/tokens/typography';
+import { textStyles } from '@/design-system/styles/typography/typography-styles';
 
 // Icons
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Clock, Calendar, MessageSquare } from 'lucide-react';
 
 const Pacing = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { colors } = useTheme();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [isLoading, setIsLoading] = useState(false);
 
   // State for pace selection
@@ -38,8 +43,7 @@ const Pacing = () => {
   const [selectedDays, setSelectedDays] = useState<string[]>(['monday', 'wednesday', 'friday']);
   
   // State for dropdowns
-  const [dailySummaryTime, setDailySummaryTime] = useState('Evening (6-8 PM)');
-  const [followUps, setFollowUps] = useState('One more time the same day');
+  const [dailySummaryTime, setDailySummaryTime] = useState('6:00 PM');
   const [recommendationsTime, setRecommendationsTime] = useState('Morning (8-10 AM)');
 
   const weekdays = [
@@ -53,22 +57,12 @@ const Pacing = () => {
   ];
 
   const timeOptions = [
-    'Early Morning (6-8 AM)',
-    'Morning (8-10 AM)',
-    'Late Morning (10-12 PM)',
-    'Afternoon (12-2 PM)',
-    'Late Afternoon (2-4 PM)',
-    'Early Evening (4-6 PM)',
-    'Evening (6-8 PM)',
-    'Night (8-10 PM)',
-    'Late Night (10-12 AM)'
+    '9:00 AM',
+    '2:00 PM', 
+    '6:00 PM'
   ];
 
-  const followUpOptions = [
-    'No follow-ups',
-    'One more time the same day',
-    'Two more times the same day'
-  ];
+
 
 
 
@@ -102,7 +96,6 @@ const Pacing = () => {
         pace: selectedPace,
         frequency: selectedDays,
         daily_summary_time: dailySummaryTime,
-        followups_frequency: followUps,
         recommendations_time: recommendationsTime
       };
 
@@ -198,8 +191,8 @@ const Pacing = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: spacing.spacing[40],
-          paddingBottom: '160px', // Account for button container height
+          padding: isMobile ? spacing.spacing[24] : spacing.spacing[40],
+          paddingBottom: isMobile ? '140px' : '160px', // Account for button container height
         }}
       >
         {/* Gradient background with 5% opacity */}
@@ -229,13 +222,28 @@ const Pacing = () => {
           alignItems: 'center',
         }}>
           {/* Back Button */}
-          <div style={{ alignSelf: 'flex-start', width: '400px' }}>
+          <div style={{ 
+            alignSelf: 'flex-start', 
+            width: isMobile ? '100%' : '400px',
+            maxWidth: isMobile ? '320px' : '400px'
+          }}>
             <Button
               label="Go Back"
               style="dashed"
               size="xs"
               leadIcon={<ArrowLeft size={12} />}
               onClick={handleGoBack}
+            />
+          </div>
+
+          {/* Progress Indicator */}
+          <div style={{ 
+            width: isMobile ? '100%' : '400px',
+            maxWidth: isMobile ? '320px' : '400px'
+          }}>
+            <OnboardingProgressIndicator 
+              currentStep={7}
+              compact={true}
             />
           </div>
 
@@ -246,14 +254,15 @@ const Pacing = () => {
               borderRadius: cornerRadius.borderRadius.lg,
               border: `1px solid ${colors.border.darker}`,
               boxShadow: getShadow('regular.card', colors, { withBorder: true }),
-              width: '400px',
+              width: isMobile ? '100%' : '400px',
+              maxWidth: isMobile ? '320px' : '400px',
               overflow: 'hidden',
             }}
           >
             {/* Main Container */}
             <div
               style={{
-                padding: spacing.spacing[36],
+                padding: isMobile ? spacing.spacing[24] : spacing.spacing[36],
                 backgroundColor: colors.bg.card.default,
                 borderBottom: `1px solid ${colors.border.default}`,
                 display: 'flex',
@@ -311,10 +320,12 @@ const Pacing = () => {
                       textAlign: 'left',
                     }}
                   >
-                    How often do you want to post? We'll create a schedule that fits your lifestyle.
+                    Set your ideal posting frequency and schedule. We'll deliver personalized content suggestions at the perfect times based on your preferences.
                   </p>
                 </div>
               </div>
+
+
 
               {/* Pace Selection */}
               <ButtonGroup
@@ -376,30 +387,20 @@ const Pacing = () => {
                 title="Daily Summary"
                 subtitle="When should we send you a daily summary?"
               >
-                <DropdownButton
-                  label={dailySummaryTime}
-                  size="sm"
-                  items={timeOptions.map(option => ({
-                    label: option,
-                    onClick: () => setDailySummaryTime(option)
-                  }))}
-                />
-              </InnerSection>
-
-              <div style={{ height: spacing.spacing[12] }} />
-
-              <InnerSection
-                title="Follow-ups"
-                subtitle="How often should we follow up on your posts?"
-              >
-                <DropdownButton
-                  label={followUps}
-                  size="sm"
-                  items={followUpOptions.map(option => ({
-                    label: option,
-                    onClick: () => setFollowUps(option)
-                  }))}
-                />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[12] }}>
+                  <InlineTip style={{ fontSize: typography.desktop.size.xs }}>
+                    We'll ask about how your day went and give you the opportunity to add more context about what happened. This helps us focus on what matters when creating your content.
+                  </InlineTip>
+                  
+                  <DropdownButton
+                    label={dailySummaryTime}
+                    size="sm"
+                    items={timeOptions.map(option => ({
+                      label: option,
+                      onClick: () => setDailySummaryTime(option)
+                    }))}
+                  />
+                </div>
               </InnerSection>
 
               <div style={{ height: spacing.spacing[12] }} />
@@ -408,14 +409,20 @@ const Pacing = () => {
                 title="Content Recommendations"
                 subtitle="When should we suggest new content ideas?"
               >
-                <DropdownButton
-                  label={recommendationsTime}
-                  size="sm"
-                  items={timeOptions.map(option => ({
-                    label: option,
-                    onClick: () => setRecommendationsTime(option)
-                  }))}
-                />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[12] }}>
+                  <InlineTip style={{ fontSize: typography.desktop.size.xs }}>
+                    We'll send you personalized content suggestions based on your goals, interests, and recent activities to help spark your next post ideas.
+                  </InlineTip>
+                  
+                  <DropdownButton
+                    label={recommendationsTime}
+                    size="sm"
+                    items={timeOptions.map(option => ({
+                      label: option,
+                      onClick: () => setRecommendationsTime(option)
+                    }))}
+                  />
+                </div>
               </InnerSection>
 
 
@@ -459,17 +466,20 @@ const Pacing = () => {
           bottom: 0,
           left: 0,
           right: 0,
-          height: '80px',
+          height: isMobile ? '70px' : '80px',
           backgroundColor: colors.bg.default,
           borderTop: `1px solid ${colors.border.default}`,
-          padding: spacing.spacing[40],
+          padding: isMobile ? spacing.spacing[24] : spacing.spacing[40],
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 10,
         }}
       >
-        <div style={{ width: '280px' }}>
+        <div style={{ 
+          width: isMobile ? '100%' : '280px',
+          maxWidth: isMobile ? '320px' : '280px'
+        }}>
           <Button
             label={isLoading ? "Saving..." : "Continue"}
             style="primary"

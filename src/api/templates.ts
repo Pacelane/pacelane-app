@@ -110,4 +110,50 @@ export const fetchSystemTemplates = async () => {
       }
     };
   }
+};
+
+/**
+ * Get a specific template by ID
+ * @param templateId - Template ID
+ * @returns Promise with template data
+ */
+export const getTemplateById = async (templateId: string) => {
+  console.log('TemplatesAPI: Fetching template by ID:', templateId);
+
+  try {
+    const { data, error } = await supabase
+      .from('templates')
+      .select('*')
+      .eq('id', templateId)
+      .eq('is_active', true)
+      .single();
+
+    if (error) {
+      console.error('TemplatesAPI: Template fetch error:', error);
+      return { 
+        data: null, 
+        error: { 
+          message: error.message,
+          details: error.details || '',
+          hint: error.hint || '',
+          code: error.code || ''
+        }
+      };
+    }
+
+    console.log('TemplatesAPI: Template fetched successfully:', data?.title);
+    return { data, error: null };
+
+  } catch (err) {
+    console.error('TemplatesAPI: Unexpected error in getTemplateById:', err);
+    return { 
+      data: null, 
+      error: { 
+        message: err instanceof Error ? err.message : 'Failed to fetch template',
+        details: err instanceof Error ? err.stack || '' : '',
+        hint: '',
+        code: ''
+      }
+    };
+  }
 }; 

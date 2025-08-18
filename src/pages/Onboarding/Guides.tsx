@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/api/useAuth';
 import { useTheme } from '@/services/theme-context';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/design-system/components/Toast';
 
@@ -10,6 +11,7 @@ import TopNav from '@/design-system/components/TopNav';
 import Button from '@/design-system/components/Button';
 import Input from '@/design-system/components/Input';
 import ProgressBar from '@/design-system/components/ProgressBar';
+import OnboardingProgressIndicator from '@/design-system/components/OnboardingProgressIndicator';
 import Bichaurinho from '@/design-system/components/Bichaurinho';
 
 // Design System Tokens
@@ -20,6 +22,9 @@ import { typography } from '@/design-system/tokens/typography';
 
 // Icons
 import { ArrowLeft, ArrowRight, Plus, Trash2 } from 'lucide-react';
+
+// Data
+import { getGuidesForGoals } from '@/data/onboardingData';
 
 interface Guide {
   id: number;
@@ -32,18 +37,55 @@ const Guides = () => {
   const { user } = useAuth();
   const { colors } = useTheme();
   const toast = useToast();
+  const isMobile = useIsMobile();
 
   const [isLoading, setIsLoading] = useState(false);
+  const [userGoals, setUserGoals] = useState<string[]>([]);
 
-  // Initialize with 3 pre-selected guides
-  const [guides, setGuides] = useState<Guide[]>([
-    { id: 1, value: 'Be authentic', isPreSelected: true },
-    { id: 2, value: 'Share your experience', isPreSelected: true },
-    { id: 3, value: 'Avoid hype', isPreSelected: true }
-  ]);
+  // Initialize with empty guides - will be populated based on user goals
+  const [guides, setGuides] = useState<Guide[]>([]);
+
+  // Fetch user goals and populate guides
+  useEffect(() => {
+    const fetchUserGoals = async () => {
+      if (!user) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('goals')
+          .eq('user_id', user.id)
+          .single();
+
+        if (error) {
+          console.error('Error fetching user goals:', error);
+          return;
+        }
+
+        const goals = (data?.goals as string[]) || [];
+        setUserGoals(goals);
+
+        // Get suggested guides based on goals
+        const suggestedGuides = getGuidesForGoals(goals);
+        
+        // Convert to Guide format with pre-selected status
+        const initialGuides: Guide[] = suggestedGuides.map((guide, index) => ({
+          id: index + 1,
+          value: guide,
+          isPreSelected: true
+        }));
+
+        setGuides(initialGuides);
+      } catch (error) {
+        console.error('Error loading user goals:', error);
+      }
+    };
+
+    fetchUserGoals();
+  }, [user]);
 
   const addGuide = () => {
-    const newId = Math.max(...guides.map(g => g.id)) + 1;
+    const newId = guides.length > 0 ? Math.max(...guides.map(g => g.id)) + 1 : 1;
     setGuides(prev => [...prev, { id: newId, value: '', isPreSelected: false }]);
   };
 
@@ -71,11 +113,13 @@ const Guides = () => {
     setIsLoading(true);
     
     try {
-      // Filter out empty guides and save to database
+      // Get all guides with content (including pre-selected ones)
       const validGuides = guides
-        .filter(g => g.value.trim())
-        .map(g => g.value.trim());
+        .filter(guide => guide.value && guide.value.trim().length > 0)
+        .map(guide => guide.value.trim());
 
+      // Always save the guides - the pre-selected ones should be included by default
+      // since they have values: 'Be authentic', 'Share your experience', 'Avoid hype'
       const { error } = await supabase
         .from('profiles')
         .update({ content_guides: validGuides })
@@ -147,13 +191,28 @@ const Guides = () => {
           alignItems: 'center',
         }}>
           {/* Back Button */}
-          <div style={{ alignSelf: 'flex-start', width: '400px' }}>
+          <div style={{ 
+            alignSelf: 'flex-start', 
+            width: isMobile ? '100%' : '400px',
+            maxWidth: isMobile ? '320px' : '400px'
+          }}>
             <Button
               label="Go Back"
               style="dashed"
               size="xs"
               leadIcon={<ArrowLeft size={12} />}
               onClick={handleGoBack}
+            />
+          </div>
+
+          {/* Progress Indicator */}
+          <div style={{
+            width: isMobile ? '100%' : '400px',
+            maxWidth: isMobile ? '320px' : '400px'
+          }}>
+            <OnboardingProgressIndicator 
+              currentStep={5}
+              compact={true}
             />
           </div>
 
@@ -164,14 +223,15 @@ const Guides = () => {
               borderRadius: cornerRadius.borderRadius.lg,
               border: `1px solid ${colors.border.darker}`,
               boxShadow: getShadow('regular.card', colors, { withBorder: true }),
-              width: '400px',
+              width: isMobile ? '100%' : '400px',
+              maxWidth: isMobile ? '320px' : '400px',
               overflow: 'hidden',
             }}
           >
             {/* Main Container */}
             <div
               style={{
-                padding: spacing.spacing[36],
+                padding: isMobile ? spacing.spacing[24] : spacing.spacing[36],
                 backgroundColor: colors.bg.card.default,
                 borderBottom: `1px solid ${colors.border.default}`,
                 display: 'flex',
@@ -229,7 +289,10 @@ const Guides = () => {
                       textAlign: 'left',
                     }}
                   >
-                    What values guide the way you want to create content? (For example: be authentic, share your experience, avoid hype)
+                    {userGoals.length > 0 
+                      ? `Based on your goals (${userGoals.join(', ')}), here are some suggested guides. Feel free to edit or add your own.`
+                      : 'What values guide the way you want to create content? (For example: be authentic, share your experience, avoid hype)'
+                    }
                   </p>
                 </div>
               </div>

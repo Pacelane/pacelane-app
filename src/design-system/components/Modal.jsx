@@ -24,6 +24,7 @@ import Button from './Button.jsx';
  * @param {Function} [props.onClose] - Callback when modal should close
  * @param {React.ReactNode} props.children - Content to display inside the modal
  * @param {boolean} [props.showCloseButton=true] - Whether to show the X close button
+ * @param {boolean} [props.closeOnOverlayClick=true] - Whether clicking overlay closes modal
  * @param {string} [props.className] - Additional CSS classes
  */
 const Modal = ({ 
@@ -31,6 +32,7 @@ const Modal = ({
   onClose, 
   children, 
   showCloseButton = true,
+  closeOnOverlayClick = true,
   className = '',
   ...props 
 }) => {
@@ -58,7 +60,7 @@ const Modal = ({
 
   // Handle overlay click
   const handleOverlayClick = (e) => {
-    if (e.target === e.currentTarget) {
+    if (e.target === e.currentTarget && closeOnOverlayClick) {
       onClose?.();
     }
   };

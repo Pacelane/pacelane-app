@@ -26,6 +26,7 @@ const FileUpload = forwardRef(({
   
   // State props
   disabled = false,
+  uploading = false, // New prop to show uploading state
   className,
   ...rest
 }, ref) => {
@@ -108,7 +109,7 @@ const FileUpload = forwardRef(({
   
   // Get background color based on state
   const getBackgroundColor = () => {
-    if (disabled) return colors.bg.state.secondary;
+    if (disabled || uploading) return colors.bg.state.secondary;
     if (isDragOver) return colors.bg.state.primaryHover;
     if (isHovered) return colors.bg.state.secondaryHover;
     return colors.bg.state.secondary;
@@ -122,7 +123,7 @@ const FileUpload = forwardRef(({
   
   // Get box shadow based on state
   const getBoxShadow = () => {
-    if (disabled) return 'none';
+    if (disabled || uploading) return 'none';
     if (isHovered || isDragOver) return 'inset 0 2px 4px rgba(0, 0, 0, 0.1)';
     return 'none';
   };
@@ -156,7 +157,7 @@ const FileUpload = forwardRef(({
           backgroundColor: getBackgroundColor(),
           border: `${stroke.DEFAULT} dashed ${getBorderColor()}`,
           boxShadow: getBoxShadow(),
-          cursor: disabled ? 'not-allowed' : 'pointer',
+          cursor: (disabled || uploading) ? 'not-allowed' : 'pointer',
           transition: 'background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out',
           alignItems: 'center',
           textAlign: 'center',
@@ -164,8 +165,8 @@ const FileUpload = forwardRef(({
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
-        onMouseEnter={() => !disabled && setIsHovered(true)}
-        onMouseLeave={() => !disabled && setIsHovered(false)}
+        onMouseEnter={() => !disabled && !uploading && setIsHovered(true)}
+        onMouseLeave={() => !disabled && !uploading && setIsHovered(false)}
         onClick={handleBrowseClick}
       >
         {/* Hidden file input */}
@@ -175,7 +176,7 @@ const FileUpload = forwardRef(({
           accept={accept}
           multiple={multiple}
           onChange={handleFileInputChange}
-          disabled={disabled}
+          disabled={disabled || uploading}
           style={{ display: 'none' }}
         />
         
@@ -188,7 +189,7 @@ const FileUpload = forwardRef(({
             alignItems: 'center',
             width: '100%',
           }}
-          animate={{ scale: !disabled && (isHovered || isDragOver) ? 0.97 : 1 }}
+          animate={{ scale: !disabled && !uploading && (isHovered || isDragOver) ? 0.97 : 1 }}
           transition={{ duration: 0.2, ease: "easeInOut" }}
         >
         
@@ -205,21 +206,26 @@ const FileUpload = forwardRef(({
           }}
         >
           <div style={{ ...textStyles.sm.medium }}>
-            <span style={{ color: disabled ? colors.text.hint : colors.text.default }}>
-              Drop your files here, or{' '}
+            <span style={{ color: (disabled || uploading) ? colors.text.hint : colors.text.default }}>
+              {uploading ? 'Uploading files...' : 'Drop your files here, or'}{uploading ? '' : ' '}
             </span>
-            <span style={{ color: disabled ? colors.text.hint : colors.text.informative }}>
-              click to browse
-            </span>
+            {!uploading && (
+              <span style={{ color: (disabled || uploading) ? colors.text.hint : colors.text.informative }}>
+                click to browse
+              </span>
+            )}
           </div>
           
           <div
             style={{
               ...textStyles.xs.normal,
-              color: disabled ? colors.text.hint : colors.text.muted,
+              color: (disabled || uploading) ? colors.text.hint : colors.text.muted,
             }}
           >
-            Up to {maxFiles} files, {Math.round(maxTotalSize / (1024 * 1024))}MB total limit
+            {uploading 
+              ? 'Please wait while files are being uploaded...'
+              : `Up to ${maxFiles} files, ${Math.round(maxTotalSize / (1024 * 1024))}MB total limit`
+            }
           </div>
         </div>
         
@@ -227,31 +233,35 @@ const FileUpload = forwardRef(({
         <Divider maxWidth={400} />
         
         {/* URL section header */}
-        <div
-          data-upload-section="url"
-          style={{
-            ...textStyles.sm.medium,
-            color: disabled ? colors.text.hint : colors.text.default,
-          }}
-        >
-          Drop a link to a website
-        </div>
+        {!uploading && (
+          <div
+            data-upload-section="url"
+            style={{
+              ...textStyles.sm.medium,
+              color: disabled ? colors.text.hint : colors.text.default,
+            }}
+          >
+            Drop a link to a website
+          </div>
+        )}
         
         {/* URL input */}
-        <div data-upload-section="url" style={{ width: '100%', maxWidth: 400 }}>
-          <form onSubmit={handleUrlSubmit}>
-            <Input
-              size="sm"
-              style="add-on"
-              addOnPrefix="https://"
-              value={urlValue}
-              onChange={(e) => onUrlChange?.(e.target.value)}
-              placeholder={urlPlaceholder}
-              disabled={disabled}
-              type="url"
-            />
-          </form>
-        </div>
+        {!uploading && (
+          <div data-upload-section="url" style={{ width: '100%', maxWidth: 400 }}>
+            <form onSubmit={handleUrlSubmit}>
+              <Input
+                size="sm"
+                style="add-on"
+                addOnPrefix="https://"
+                value={urlValue}
+                onChange={(e) => onUrlChange?.(e.target.value)}
+                placeholder={urlPlaceholder}
+                disabled={disabled}
+                type="url"
+              />
+            </form>
+          </div>
+        )}
         </motion.div>
       </div>
     </div>

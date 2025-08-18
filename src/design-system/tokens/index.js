@@ -7,6 +7,9 @@ import { stroke } from './stroke.js';
 import { shadows } from './shadows.js';
 import { themes } from './semantic-colors.js';
 
+// Responsive Utilities
+import * as responsiveUtils from '../utils/responsive.js';
+
 // Combine all design tokens
 export const tokens = {
   colors,
@@ -16,6 +19,7 @@ export const tokens = {
   stroke,
   shadows,
   themes,
+  responsive: responsiveUtils,
   // Export Tailwind-specific tokens
   fontFamily: typography.fontFamily,
   fontSize: typography.fontSize,
@@ -32,6 +36,9 @@ export { cornerRadius } from './corner-radius.js';
 export { stroke } from './stroke.js';
 export { shadows } from './shadows.js';
 export { themes } from './semantic-colors.js';
+
+// Export responsive utilities
+export * from '../utils/responsive.js';
 
 // Note: Theme system (ThemeProvider, useTheme, withTheme) should be imported directly from:
 // import { ThemeProvider, useTheme, withTheme } from '../../services/theme-context.jsx';

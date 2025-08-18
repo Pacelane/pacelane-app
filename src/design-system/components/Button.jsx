@@ -21,6 +21,7 @@ const Button = ({
   // States
   disabled = false,
   loading = false,
+  fullWidth = false,            // Full width button
   
   // Standard props
   onClick,
@@ -397,6 +398,7 @@ const Button = ({
     transition: 'all 0.15s ease-in-out',
     textDecoration: 'none',
     boxSizing: 'border-box',
+    width: fullWidth ? '100%' : 'auto',
     ...sizeStyles.textStyle,
     // Add text shadow for the "small drop shadow" requirement
     textShadow: currentState !== 'disabled' ? '0 1px 2px rgba(0, 0, 0, 0.1)' : 'none',

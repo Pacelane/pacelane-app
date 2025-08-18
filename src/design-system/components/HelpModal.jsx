@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Send, Loader2 } from 'lucide-react';
 import { useTheme } from '@/services/theme-context';
 import { useHelp } from '@/services/help-context';
+import { useToast } from './Toast';
 import { spacing } from '../tokens/spacing.js';
 import { textStyles } from '../styles/typography/typography-styles.js';
 import { typography } from '../tokens/typography.js';
@@ -25,6 +26,7 @@ import Select from './Select.jsx';
 const HelpModal = () => {
   const { colors } = useTheme();
   const { isHelpModalOpen, closeHelp, submitHelpRequest, helpContext } = useHelp();
+  const { toast } = useToast();
   
   // Form state
   const [formData, setFormData] = useState({
@@ -88,10 +90,24 @@ const HelpModal = () => {
     
     setIsSubmitting(true);
     
+    // Show loading toast
+    const loadingToastId = toast.loading('Sending your help request...', {
+      title: 'Submitting Request'
+    });
+    
     try {
       const result = await submitHelpRequest(formData);
       
+      // Remove loading toast
+      toast.remove(loadingToastId);
+      
       if (result.success) {
+        // Show success toast
+        toast.success(result.message || 'Your help request has been submitted successfully!', {
+          title: 'Request Submitted',
+          duration: 5000
+        });
+        
         // Reset form
         setFormData({
           type: 'question',
@@ -99,11 +115,31 @@ const HelpModal = () => {
           message: '',
         });
         setErrors({});
+        
+        // Modal will be closed by the help context
       } else {
-        // Handle submission error
+        // Show error toast
+        toast.error(result.error || 'Failed to submit help request. Please try again.', {
+          title: 'Submission Failed',
+          duration: 6000
+        });
+        
+        // Also set form error for inline display
         setErrors({ submit: result.error || 'Failed to submit help request' });
       }
     } catch (error) {
+      // Remove loading toast
+      toast.remove(loadingToastId);
+      
+      console.error('Help request submission error:', error);
+      
+      // Show error toast
+      toast.error('An unexpected error occurred. Please try again.', {
+        title: 'Submission Error',
+        duration: 6000
+      });
+      
+      // Set form error for inline display
       setErrors({ submit: 'An unexpected error occurred. Please try again.' });
     } finally {
       setIsSubmitting(false);
@@ -153,6 +189,7 @@ const HelpModal = () => {
     gap: spacing.spacing[24],
     flex: 1,
     overflow: 'auto',
+    minHeight: 0,
   };
 
   const footerStyles = {
@@ -162,6 +199,7 @@ const HelpModal = () => {
     justifyContent: 'space-between',
     alignItems: 'center',
     gap: spacing.spacing[16],
+    flexShrink: 0,
   };
 
 

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/api/useAuth';
 import { useContent } from '@/hooks/api/useContent';
 import { useTheme } from '@/services/theme-context';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { SavedDraft, ContentSuggestion } from '@/types/content';
 import { useToast } from '@/design-system/components/Toast';
 
@@ -29,6 +30,7 @@ const Posts = () => {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
   const { colors } = useTheme();
+  const isMobile = useIsMobile();
   const { toast } = useToast();
   
   // ========== CLEAN CONTENT STATE MANAGEMENT ==========
@@ -280,26 +282,28 @@ const Posts = () => {
     return 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=48&h=48&fit=crop&crop=face';
   };
 
-  // Controls row styles for search and sort
+  // Controls row styles for search and sort - responsive
   const controlRowStyles = {
     display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.spacing[24],
+    flexDirection: isMobile ? 'column' : 'row',
+    alignItems: isMobile ? 'stretch' : 'center',
+    justifyContent: isMobile ? 'flex-start' : 'space-between',
+    gap: isMobile ? spacing.spacing[16] : spacing.spacing[24],
     width: '100%',
   };
 
-  // Right section styles for search and dropdown
+  // Right section styles for search and dropdown - responsive
   const rightSectionStyles = {
     display: 'flex',
     alignItems: 'center',
     gap: spacing.spacing[12],
+    width: isMobile ? '100%' : 'auto',
   };
 
-  // Content grid styles (2 columns)
+  // Content grid styles - responsive
   const contentGridStyles = {
     display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
+    gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
     gap: spacing.spacing[24],
   };
 
@@ -342,7 +346,7 @@ const Posts = () => {
             {/* Right: Search and Sort */}
             <div style={rightSectionStyles}>
               {/* Search Input */}
-              <div style={{ width: '280px' }}>
+              <div style={{ flex: isMobile ? 1 : 'none', width: isMobile ? 'auto' : '280px' }}>
                 <Input
                   size="lg"
                   style="default"
@@ -354,13 +358,15 @@ const Posts = () => {
               </div>
 
               {/* Sort Dropdown */}
-              <DropdownButton
-                label={getCurrentSortLabel()}
-                items={sortOptions}
-                size="lg"
-                position="bottom-right"
-                minWidth="160px"
-              />
+              <div style={{ flexShrink: 0 }}>
+                <DropdownButton
+                  label={getCurrentSortLabel()}
+                  items={sortOptions}
+                  size="lg"
+                  position="bottom-right"
+                  minWidth="160px"
+                />
+              </div>
                                   </div>
                                 </div>
 

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTheme } from '@/services/theme-context';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { spacing } from '@/design-system/tokens/spacing';
 import { cornerRadius } from '@/design-system/tokens/corner-radius';
 import { getShadow } from '@/design-system/tokens/shadows';
@@ -11,6 +12,7 @@ import Button from '@/design-system/components/Button';
 import DropdownButton from '@/design-system/components/DropdownButton';
 import Checkbox from '@/design-system/components/Checkbox';
 import SidebarMenuItem from '@/design-system/components/SidebarMenuItem';
+import InlineTip from '@/design-system/components/InlineTip';
 import { useAuth } from '@/hooks/api/useAuth';
 import { profileApi } from '@/api/profile';
 import { PacingService } from '@/services/pacingService';
@@ -21,14 +23,14 @@ import { Check } from 'lucide-react';
 const PacingPage = () => {
   const { colors } = useTheme();
   const { user, profile, refreshProfile } = useAuth();
+  const isMobile = useIsMobile();
   
   // State for active section in side menu
   const [activeSection, setActiveSection] = useState('frequency');
   
   // State for each section's data
   const [selectedDays, setSelectedDays] = useState(['monday', 'wednesday', 'friday']);
-  const [dailySummaryTime, setDailySummaryTime] = useState('Evening (6-8 PM)');
-  const [followUps, setFollowUps] = useState('One more time the same day');
+  const [dailySummaryTime, setDailySummaryTime] = useState('6:00 PM');
   const [recommendationsTime, setRecommendationsTime] = useState('Morning (8-10 AM)');
 
   // Initialize from profile pacing_preferences
@@ -41,9 +43,6 @@ const PacingPage = () => {
     }
     if (typeof prefs.daily_summary_time === 'string' && prefs.daily_summary_time) {
       setDailySummaryTime(prefs.daily_summary_time);
-    }
-    if (typeof prefs.followups_frequency === 'string' && prefs.followups_frequency) {
-      setFollowUps(prefs.followups_frequency);
     }
     if (typeof prefs.recommendations_time === 'string' && prefs.recommendations_time) {
       setRecommendationsTime(prefs.recommendations_time);
@@ -119,22 +118,12 @@ const PacingPage = () => {
   ];
 
   const timeOptions = [
-    'Early Morning (6-8 AM)',
-    'Morning (8-10 AM)',
-    'Late Morning (10-12 PM)',
-    'Afternoon (12-2 PM)',
-    'Late Afternoon (2-4 PM)',
-    'Early Evening (4-6 PM)',
-    'Evening (6-8 PM)',
-    'Night (8-10 PM)',
-    'Late Night (10-12 AM)'
+    '9:00 AM',
+    '2:00 PM', 
+    '6:00 PM'
   ];
 
-  const followUpOptions = [
-    'No follow-ups',
-    'One more time the same day',
-    'Two more times the same day'
-  ];
+
 
   const recommendationOptions = [
     'Early Morning (6-8 AM)',
@@ -197,8 +186,7 @@ const PacingPage = () => {
       } else if (sectionId === 'dailySummary') {
         updatedPrefs = { 
           ...existing, 
-          daily_summary_time: dailySummaryTime, 
-          followups_frequency: followUps 
+          daily_summary_time: dailySummaryTime
         };
       } else if (sectionId === 'recommendations') {
         updatedPrefs = { ...existing, recommendations_time: recommendationsTime };
@@ -294,26 +282,16 @@ const PacingPage = () => {
               </p>
             </div>
             
-            <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[16] }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[12] }}>
+              <InlineTip style={{ fontSize: typography.desktop.size.xs }}>
+                We'll ask about how your day went and give you the opportunity to add more context about what happened. This helps us focus on what matters when creating your content.
+              </InlineTip>
+              
               <DropdownButton
                 label={dailySummaryTime}
                 items={createDropdownItems(timeOptions, setDailySummaryTime)}
                 size="sm"
               />
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[8] }}>
-                <h4 style={{ ...textStyles.sm.semibold, color: colors.text.default, margin: 0 }}>
-                  Follow-Ups
-                </h4>
-                <DropdownButton
-                  label={followUps}
-                  items={createDropdownItems(followUpOptions, setFollowUps)}
-                  size="sm"
-                />
-                <p style={{ ...textStyles.xs.normal, color: colors.text.subtle, margin: 0 }}>
-                  Define how many follow-ups should we make in case you don't respond to our first message
-                </p>
-              </div>
             </div>
 
             <div style={{ alignSelf: 'flex-start' }}>
@@ -341,11 +319,17 @@ const PacingPage = () => {
               </p>
             </div>
             
-            <DropdownButton
-              label={recommendationsTime}
-              items={createDropdownItems(recommendationOptions, setRecommendationsTime)}
-              size="sm"
-            />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[12] }}>
+              <InlineTip style={{ fontSize: typography.desktop.size.xs }}>
+                We'll send you personalized content suggestions based on your goals, interests, and recent activities to help spark your next post ideas.
+              </InlineTip>
+              
+              <DropdownButton
+                label={recommendationsTime}
+                items={createDropdownItems(recommendationOptions, setRecommendationsTime)}
+                size="sm"
+              />
+            </div>
 
             <div style={{ alignSelf: 'flex-start' }}>
               <Button
@@ -408,6 +392,7 @@ const PacingPage = () => {
       <div
         style={{
           display: 'flex',
+          flexDirection: isMobile ? 'column' : 'row',
           gap: spacing.spacing[32],
           width: '100%',
         }}
@@ -415,11 +400,13 @@ const PacingPage = () => {
         {/* Left Side Menu */}
         <div
           style={{
-            width: '280px',
+            width: isMobile ? '100%' : '280px',
             display: 'flex',
-            flexDirection: 'column',
+            flexDirection: isMobile ? 'row' : 'column',
             gap: spacing.spacing[8],
             flex: 'none', // Prevent shrinking
+            overflowX: isMobile ? 'auto' : 'visible',
+            paddingBottom: isMobile ? spacing.spacing[8] : 0,
           }}
         >
           {menuItems.map((item) => (
@@ -437,7 +424,7 @@ const PacingPage = () => {
         <div
           style={{
             flex: 1,
-            maxWidth: '480px',
+            maxWidth: isMobile ? 'none' : '480px',
             display: 'flex',
             flexDirection: 'column',
             gap: spacing.spacing[20],

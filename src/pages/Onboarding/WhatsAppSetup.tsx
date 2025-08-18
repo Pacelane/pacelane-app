@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/services/theme-context';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useToast } from '@/design-system/components/Toast';
 
 // Design System Components
 import TopNav from '@/design-system/components/TopNav';
 import Button from '@/design-system/components/Button';
 import ProgressBar from '@/design-system/components/ProgressBar';
+import OnboardingProgressIndicator from '@/design-system/components/OnboardingProgressIndicator';
 import Bichaurinho from '@/design-system/components/Bichaurinho';
 
 // Design System Tokens
@@ -14,9 +16,10 @@ import { spacing } from '@/design-system/tokens/spacing';
 import { cornerRadius } from '@/design-system/tokens/corner-radius';
 import { getShadow } from '@/design-system/tokens/shadows';
 import { typography } from '@/design-system/tokens/typography';
+import { textStyles } from '@/design-system/styles/typography/typography-styles';
 
 // Icons
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight, MessageSquare, CheckCircle, Info } from 'lucide-react';
 
 // Configuration
 const PACELANE_WHATSAPP_NUMBER = '551152360591'; // Business WhatsApp number
@@ -25,6 +28,7 @@ const WhatsAppSetup = () => {
   const navigate = useNavigate();
   const { colors } = useTheme();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [hasClickedWhatsAppButton, setHasClickedWhatsAppButton] = useState(false);
 
   const handleGoBack = () => {
@@ -65,8 +69,8 @@ const WhatsAppSetup = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: spacing.spacing[40],
-          paddingBottom: '160px', // Account for button container height
+          padding: isMobile ? spacing.spacing[24] : spacing.spacing[40],
+          paddingBottom: isMobile ? '140px' : '160px', // Account for button container height
         }}
       >
         {/* Gradient background with 5% opacity */}
@@ -96,13 +100,28 @@ const WhatsAppSetup = () => {
           alignItems: 'center',
         }}>
           {/* Back Button */}
-          <div style={{ alignSelf: 'flex-start', width: '400px' }}>
+          <div style={{ 
+            alignSelf: 'flex-start', 
+            width: isMobile ? '100%' : '400px',
+            maxWidth: isMobile ? '320px' : '400px'
+          }}>
             <Button
               label="Go Back"
               style="dashed"
               size="xs"
               leadIcon={<ArrowLeft size={12} />}
               onClick={handleGoBack}
+            />
+          </div>
+
+          {/* Progress Indicator */}
+          <div style={{ 
+            width: isMobile ? '100%' : '400px',
+            maxWidth: isMobile ? '320px' : '400px'
+          }}>
+            <OnboardingProgressIndicator 
+              currentStep={9}
+              compact={true}
             />
           </div>
 
@@ -113,14 +132,15 @@ const WhatsAppSetup = () => {
               borderRadius: cornerRadius.borderRadius.lg,
               border: `1px solid ${colors.border.darker}`,
               boxShadow: getShadow('regular.card', colors, { withBorder: true }),
-              width: '400px',
+              width: isMobile ? '100%' : '400px',
+              maxWidth: isMobile ? '320px' : '400px',
               overflow: 'hidden',
             }}
           >
             {/* Main Container */}
             <div
               style={{
-                padding: spacing.spacing[36],
+                padding: isMobile ? spacing.spacing[24] : spacing.spacing[36],
                 backgroundColor: colors.bg.card.default,
                 borderBottom: `1px solid ${colors.border.default}`,
                 display: 'flex',
@@ -283,17 +303,20 @@ const WhatsAppSetup = () => {
           bottom: 0,
           left: 0,
           right: 0,
-          height: '80px',
+          height: isMobile ? '70px' : '80px',
           backgroundColor: colors.bg.default,
           borderTop: `1px solid ${colors.border.default}`,
-          padding: spacing.spacing[40],
+          padding: isMobile ? spacing.spacing[24] : spacing.spacing[40],
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 10,
         }}
       >
-        <div style={{ width: '280px' }}>
+        <div style={{ 
+          width: isMobile ? '100%' : '280px',
+          maxWidth: isMobile ? '320px' : '280px'
+        }}>
                      <Button
              label="Continue"
              style="primary"
@@ -310,3 +333,5 @@ const WhatsAppSetup = () => {
 };
 
 export default WhatsAppSetup;
+
+

@@ -1,5 +1,7 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/services/theme-context';
+import { useAuth } from '@/hooks/api/useAuth';
 import { spacing } from '../tokens/spacing';
 import { cornerRadius } from '../tokens/corner-radius';
 import { textStyles } from '../styles/typography/typography-styles';
@@ -14,17 +16,31 @@ const OnboardingProgressCard = ({
   ...rest 
 }) => {
   const { colors } = useTheme();
+  const { profile } = useAuth();
+  const navigate = useNavigate();
 
-  // Use provided onboarding data or fall back to mock data
+  // Check if user has data for each onboarding step
+  const hasGoals = profile?.goals && Array.isArray(profile.goals) && profile.goals.length > 0;
+  const hasGuides = profile?.guides && Array.isArray(profile.guides) && profile.guides.length > 0;
+  const hasPillars = profile?.content_pillars && Array.isArray(profile.content_pillars) && profile.content_pillars.length > 0;
+
+  // Create onboarding steps based on actual user data
   const onboardingSteps = onboardingData || [
-    { id: 'content-pillars', label: 'Content Pillars', completed: false },
-    { id: 'guides', label: 'Guides', completed: false },
-    { id: 'inspirations', label: 'Inspirations', completed: false },
+    { id: 'goals', label: 'Goals', completed: hasGoals },
+    { id: 'guides', label: 'Guides', completed: hasGuides },
+    { id: 'content-pillars', label: 'Content Pillars', completed: hasPillars },
   ];
 
   const completedSteps = onboardingSteps.filter(step => step.completed);
   const totalSteps = onboardingSteps.length;
   const progressPercentage = Math.round((completedSteps.length / totalSteps) * 100);
+
+  // Handle click on incomplete items to navigate to profile
+  const handleStepClick = (step) => {
+    if (!step.completed) {
+      navigate('/profile');
+    }
+  };
 
   // Don't render if collapsed
   if (isCollapsed) {
@@ -101,6 +117,11 @@ const OnboardingProgressCard = ({
     transition: 'background-color 0.15s ease-out',
   };
 
+  const clickableStepItemStyles = {
+    ...stepItemStyles,
+    cursor: 'pointer',
+  };
+
   const stepLabelStyles = {
     ...textStyles.xs.medium,
     color: colors.text.subtle,
@@ -113,6 +134,7 @@ const OnboardingProgressCard = ({
     color: colors.text.default,
     margin: 0,
     flex: 1,
+    textDecoration: 'line-through',
   };
 
 
@@ -139,8 +161,17 @@ const OnboardingProgressCard = ({
             <div
               key={step.id}
               style={{
-                ...stepItemStyles,
+                ...(step.completed ? stepItemStyles : clickableStepItemStyles),
                 backgroundColor: step.completed ? colors.bg.state.soft : 'transparent',
+              }}
+              onClick={() => handleStepClick(step)}
+              role={step.completed ? undefined : "button"}
+              tabIndex={step.completed ? undefined : 0}
+              onKeyDown={(e) => {
+                if (!step.completed && (e.key === 'Enter' || e.key === ' ')) {
+                  e.preventDefault();
+                  handleStepClick(step);
+                }
               }}
             >
               {step.completed ? (

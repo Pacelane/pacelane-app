@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/api/useAuth';
 import { useTheme } from '@/services/theme-context';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/design-system/components/Toast';
 
@@ -9,16 +10,19 @@ import { useToast } from '@/design-system/components/Toast';
 import TopNav from '@/design-system/components/TopNav';
 import Button from '@/design-system/components/Button';
 import Bichaurinho from '@/design-system/components/Bichaurinho';
+import OnboardingProgressIndicator from '@/design-system/components/OnboardingProgressIndicator';
+import AppWorkflowDiagram from '@/design-system/components/AppWorkflowDiagram';
 
 // Design System Tokens
 import { spacing } from '@/design-system/tokens/spacing';
 import { cornerRadius } from '@/design-system/tokens/corner-radius';
 import { getShadow } from '@/design-system/tokens/shadows';
 import { typography } from '@/design-system/tokens/typography';
+import { textStyles } from '@/design-system/styles/typography/typography-styles';
 import { colors as primitiveColors } from '@/design-system/tokens/primitive-colors';
 
 // Icons
-import { ArrowLeft, ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Sparkles, CheckCircle, Calendar, MessageSquare, TrendingUp, Target } from 'lucide-react';
 
 // Confetti piece component
 const ConfettiPiece = ({ delay, duration, left, color }) => {
@@ -44,6 +48,7 @@ const Ready = () => {
   const { user, refreshProfile } = useAuth();
   const { colors } = useTheme();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [isLoading, setIsLoading] = useState(false);
   const [confettiPieces, setConfettiPieces] = useState([]);
 
@@ -267,8 +272,8 @@ const Ready = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: spacing.spacing[40],
-          paddingBottom: '160px', // Account for button container height
+          padding: isMobile ? spacing.spacing[24] : spacing.spacing[40],
+          paddingBottom: isMobile ? '140px' : '160px', // Account for button container height
         }}
       >
         {/* Gradient background with 5% opacity */}
@@ -298,7 +303,11 @@ const Ready = () => {
           alignItems: 'center',
         }}>
           {/* Back Button */}
-          <div style={{ alignSelf: 'flex-start', width: '400px' }}>
+          <div style={{ 
+            alignSelf: 'flex-start', 
+            width: isMobile ? '100%' : '400px',
+            maxWidth: isMobile ? '320px' : '400px'
+          }}>
             <Button
               label="Go Back"
               style="dashed"
@@ -306,7 +315,18 @@ const Ready = () => {
               leadIcon={<ArrowLeft size={12} />}
               onClick={handleGoBack}
             />
-      </div>
+          </div>
+
+          {/* Progress Indicator */}
+          <div style={{ 
+            width: isMobile ? '100%' : '400px',
+            maxWidth: isMobile ? '320px' : '400px'
+          }}>
+            <OnboardingProgressIndicator 
+              currentStep={10}
+              compact={true}
+            />
+          </div>
 
           {/* Main Card */}
           <div
@@ -315,14 +335,15 @@ const Ready = () => {
               borderRadius: cornerRadius.borderRadius.lg,
               border: `1px solid ${colors.border.darker}`,
               boxShadow: getShadow('regular.card', colors, { withBorder: true }),
-              width: '400px',
+              width: isMobile ? '100%' : '400px',
+              maxWidth: isMobile ? '320px' : '400px',
               overflow: 'hidden',
             }}
           >
             {/* Main Container */}
             <div
               style={{
-                padding: spacing.spacing[36],
+                padding: isMobile ? spacing.spacing[24] : spacing.spacing[36],
                 backgroundColor: colors.bg.card.default,
                 borderBottom: `1px solid ${colors.border.default}`,
                 display: 'flex',
@@ -422,17 +443,20 @@ const Ready = () => {
           bottom: 0,
           left: 0,
           right: 0,
-          height: '80px',
+          height: isMobile ? '70px' : '80px',
           backgroundColor: colors.bg.default,
           borderTop: `1px solid ${colors.border.default}`,
-          padding: spacing.spacing[40],
+          padding: isMobile ? spacing.spacing[24] : spacing.spacing[40],
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 10,
         }}
       >
-        <div style={{ width: '280px' }}>
+        <div style={{ 
+          width: isMobile ? '100%' : '280px',
+          maxWidth: isMobile ? '320px' : '280px'
+        }}>
           <Button 
             label={isLoading ? "Setting up your strategy..." : "Let's Go!"}
             style="primary"
