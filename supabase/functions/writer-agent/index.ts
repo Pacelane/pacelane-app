@@ -156,7 +156,7 @@ async function generateContentDraft(
 
   // Generate a more engaging title based on the content and context
   const improvedTitle = generateImprovedTitle(brief, content, citations)
-  
+
   return {
     title: improvedTitle,
     content,
@@ -647,8 +647,8 @@ async function inferRequestedLanguage(brief: any, anthropicApiKey: string, userC
 
         const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json', 
+      headers: {
+        'Content-Type': 'application/json',
         'x-api-key': anthropicApiKey,
         'anthropic-version': '2023-06-01'
       },
@@ -791,19 +791,68 @@ function buildLinkedInPrompt(brief: any, contextText: string, userContext: any):
     return ''
   })()
 
-  return `You are ${userContext.name || 'a business professional'} writing a LinkedIn post in your own voice.
+  // Extract enhanced context from brief
+  const meetingContext = brief.context?.meeting_context || {};
+  const knowledgeContext = brief.context?.knowledge_base_context || {};
+  const userProfile = brief.context || {};
+  
+  // Build professional context
+  const professionalContext = [];
+  if (userContext.headline) professionalContext.push(`Role: ${userContext.headline}`);
+  if (userContext.company) professionalContext.push(`Company: ${userContext.company}`);
+  if (userProfile.content_pillars?.length > 0) {
+    professionalContext.push(`Content Focus: ${userProfile.content_pillars.join(', ')}`);
+  }
 
-Write about: ${brief.topic}
+  // Build recent activity context
+  const recentContext = [];
+  if (meetingContext.recent_meetings?.length > 0) {
+    const meeting = meetingContext.recent_meetings[0];
+    if (meeting.key_insights) {
+      recentContext.push(`Recent meeting insight: ${meeting.key_insights}`);
+    }
+    if (meeting.action_items?.length > 0) {
+      recentContext.push(`Current focus: ${meeting.action_items.slice(0, 2).join(', ')}`);
+    }
+  }
+  if (knowledgeContext.recent_transcripts?.length > 0) {
+    recentContext.push(`Recent work context: ${knowledgeContext.recent_transcripts[0].name}`);
+  }
+
+  // Build writing guidelines
+  const guidelines = [];
+  if (userProfile.content_guides?.length > 0) {
+    guidelines.push('Your content guidelines:');
+    userProfile.content_guides.forEach(guide => guidelines.push(`- ${guide}`));
+  }
+
+  return `You are ${userContext.name || 'a business professional'}, a ${userContext.headline || 'professional'} writing a LinkedIn post in your authentic voice.
+
+YOUR PROFESSIONAL CONTEXT:
+${professionalContext.join(' | ')}
+
+${recentContext.length > 0 ? `RECENT PROFESSIONAL ACTIVITY:
+${recentContext.join('\n')}
+
+` : ''}CONTENT BRIEF:
+Topic: ${brief.topic}
 Tone: ${brief.tone || 'professional'}
+Angle: ${brief.angle || 'insight'}
 Length: ${getLengthGuide(brief.length)}
 
-${contextText ? `Context to reference naturally:\n${contextText}\n` : ''}
+${contextText ? `RELEVANT KNOWLEDGE & CONTEXT:
+${contextText}
 
-Write a ${brief.platform || 'LinkedIn'} post that:
-- Sounds authentic and personal
-- Shares a practical insight or experience
-- Uses your natural speaking voice
-- Doesn't use hashtags or bold formatting
+` : ''}${guidelines.length > 0 ? guidelines.join('\n') + '\n\n' : ''}Write a LinkedIn post that:
+- Reflects YOUR specific professional perspective and experience
+- References your actual work context naturally (if recent activity provided)
+- Shares genuine insights only someone in your role could provide
+- Sounds like your authentic professional voice
+- Connects the topic to your specific expertise and industry
+- Provides practical value based on your experience
+- No hashtags, promotional content, or generic advice
+
+${cadenceHint}
 
 Just write the post - no analysis or commentary.`
 }
