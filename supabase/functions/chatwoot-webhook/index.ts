@@ -1211,6 +1211,26 @@ Return only valid JSON:
       }
 
       console.log('✅ NOTE stored in meeting_notes');
+
+      // ✅ NEW: Trigger RAG processing for text notes
+      if (userId && textContent.trim()) {
+        await this.triggerRAGProcessing(userId, {
+          file_name: `WhatsApp Note - ${new Date(payload.created_at).toLocaleDateString()}`,
+          file_type: 'file', // ✅ FIXED: Use 'file' instead of 'text' to match database constraint
+          content: textContent,
+          gcs_path: null, // Text notes don't have GCS path
+          metadata: {
+            source: 'whatsapp_text',
+            contact_id: contactId,
+            message_id: payload.id,
+            conversation_id: payload.conversation.id,
+            content_type: payload.content_type || 'text',
+            has_transcription: this.hasAudioAttachments(payload), // Check if it has audio attachments
+            processed_at: new Date().toISOString()
+          }
+        });
+      }
+
       return { success: true, message: 'Note stored in knowledge base' };
 
     } catch (error) {
@@ -1271,6 +1291,26 @@ Return only valid JSON:
       }
 
       console.log('✅ NOTE with transcription stored in meeting_notes');
+
+      // ✅ NEW: Trigger RAG processing for text notes
+      if (userId && textContent.trim()) {
+        await this.triggerRAGProcessing(userId, {
+          file_name: `WhatsApp Note - ${new Date(payload.created_at).toLocaleDateString()}`,
+          file_type: 'file', // ✅ FIXED: Use 'file' instead of 'text' to match database constraint
+          content: textContent,
+          gcs_path: null, // Text notes don't have GCS path
+          metadata: {
+            source: 'whatsapp_text',
+            contact_id: contactId,
+            message_id: payload.id,
+            conversation_id: payload.conversation.id,
+            content_type: payload.content_type || 'text',
+            has_transcription: !!transcriptionResult?.text,
+            processed_at: new Date().toISOString()
+          }
+        });
+      }
+
       return { success: true, message: 'Note with transcription stored in knowledge base' };
 
     } catch (error) {
@@ -2135,7 +2175,8 @@ Return only valid JSON:
     const messageId = payload.id;
     const attachmentId = attachment.id;
     
-    return `gs://${bucketName}/whatsapp-audio/${date}/${conversationId}/${messageId}_${attachmentId}.mp3`;
+    // ✅ FIXED: Remove the gs:// prefix since bucketName already includes it
+    return `${bucketName}/whatsapp-audio/${date}/${conversationId}/${messageId}_${attachmentId}.mp3`;
   }
 
   /**
@@ -2315,54 +2356,75 @@ Return only valid JSON:
     payload: ChatwootWebhookPayload
   ): Promise<void> {
     try {
-      // Generate a descriptive filename
-      const timestamp = new Date(payload.created_at).toISOString().split('T')[0];
-      const fileName = `WhatsApp Audio - ${timestamp} - ${contactId}.mp3`;
+      // ✅ MODIFIED: Don't create duplicate entry in knowledge_files table
+      // Audio files are already stored in audio_files table
+      // Just trigger RAG processing for the transcribed content
       
-      // Create knowledge file record
-      const knowledgeFileData = {
-        user_id: userId,
-        name: fileName,
-        type: 'audio',
-        size: attachment.file_size,
-        gcs_bucket: audioGcsPath.split('/')[0], // Extract bucket name from path
-        gcs_path: audioGcsPath,
-        file_hash: `audio_${attachment.id}_${Date.now()}`, // Generate unique hash
-        content_extracted: transcription?.text ? true : false,
-        extracted_content: transcription?.text || null,
-        extraction_metadata: {
-          source: 'whatsapp_audio',
-          contact_id: contactId,
-          chatwoot_attachment_id: attachment.id,
-          transcription_status: transcription?.error ? 'error' : (transcription?.text ? 'completed' : 'error'),
-          openai_model: this.openaiConfig.model,
-          original_message_id: payload.id,
-          recorded_at: payload.created_at
-        },
-        metadata: {
-          original_name: fileName,
-          source: 'whatsapp',
-          contact_identifier: contactId,
-          chatwoot_attachment_id: attachment.id,
+      if (transcription?.text) {
+        console.log(`🎤 Audio transcription available, triggering RAG processing`);
+        
+        // Generate a descriptive filename for RAG processing
+        const timestamp = new Date(payload.created_at).toISOString().split('T')[0];
+        const fileName = `WhatsApp Audio - ${timestamp} - ${contactId}.mp3`;
+        
+        // ✅ NEW: Trigger RAG processing for the transcribed content
+        await this.triggerRAGProcessing(userId, {
+          file_name: fileName,
           file_type: 'audio',
-          duration_seconds: null, // Could be extracted if needed
-          uploaded_at: new Date().toISOString()
-        }
-      };
-
-      const { data: knowledgeFile, error: knowledgeError } = await this.supabase
-        .from('knowledge_files')
-        .insert([knowledgeFileData])
-        .select();
-
-      if (knowledgeError) {
-        console.error('Error adding audio to knowledge base:', knowledgeError);
+          content: transcription.text,
+          gcs_path: audioGcsPath,
+          metadata: {
+            source: 'whatsapp_audio',
+            contact_id: contactId,
+            message_id: payload.id,
+            conversation_id: payload.conversation.id,
+            transcription_model: this.openaiConfig.model,
+            processed_at: new Date().toISOString()
+          }
+        });
       } else {
-        console.log('Audio file added to knowledge base:', knowledgeFile?.[0]?.id);
+        console.log(`⚠️ No transcription available for audio, skipping RAG processing`);
       }
 
     } catch (error) {
-      console.error('Error adding audio to knowledge base:', error);
+      console.error('Error processing audio for knowledge base:', error);
+    }
+  }
+
+  /**
+   * ✅ NEW: Trigger RAG processing for WhatsApp content
+   */
+  private async triggerRAGProcessing(userId: string, fileData: any): Promise<void> {
+    try {
+      console.log(`🚀 Triggering RAG processing for WhatsApp content: ${fileData.file_name}`);
+      
+      // Call knowledge-base-storage function with whatsapp_content action
+      const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/knowledge-base-storage`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+        },
+        body: JSON.stringify({
+          userId: userId,
+          action: 'whatsapp_content',
+          file_name: fileData.file_name,
+          file_type: fileData.file_type,
+          content: fileData.content,
+          gcs_path: fileData.gcs_path,
+          metadata: fileData.metadata
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log(`✅ RAG processing triggered successfully:`, result);
+      } else {
+        const errorText = await response.text();
+        console.warn(`⚠️ Failed to trigger RAG processing: ${response.status} - ${errorText}`);
+      }
+    } catch (error) {
+      console.error('❌ Error triggering RAG processing:', error);
     }
   }
 

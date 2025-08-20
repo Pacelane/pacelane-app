@@ -293,8 +293,8 @@ async function processContentOrder(supabaseClient: any, job: AgentJob, steps: an
   let brief, searchTopic, citations, draft, finalDraft;
 
   if (isSimplifiedFlow) {
-    // SIMPLIFIED FLOW: Skip order-builder, go directly to retrieval
-    console.log(`🚀 Using simplified flow for job ${job.id}`);
+    // SIMPLIFIED FLOW: Use unified RAG + writer agent
+    console.log(`🚀 Using simplified flow with unified agent for job ${job.id}`);
     
     // Create a simple brief from the user message
     brief = {
@@ -310,37 +310,41 @@ async function processContentOrder(supabaseClient: any, job: AgentJob, steps: an
     
     steps.push({ step: 'simplified_brief_created', brief, timestamp: new Date().toISOString() });
     
-    // Step 1: Retrieval - Get relevant context using user message
-    searchTopic = userMessage || order.params_json.topic || 'Content creation';
-    console.log(`🔍 Simplified flow retrieval search topic: "${searchTopic}"`);
+    // Use unified RAG + writer agent for simplified flow too
+    const unifiedResult = await callUnifiedRAGWriterAgent(supabaseClient, brief, order.user_id, steps, order.id);
     
-    citations = await callRetrievalAgent(supabaseClient, order.user_id, searchTopic, brief.platform, steps, null);
+    // Extract results from unified agent
+    finalDraft = {
+      title: unifiedResult.title,
+      content: unifiedResult.content
+    };
     
-    // Step 2: Writer - Generate initial draft (skip editor for now)
-    draft = await callWriterAgent(supabaseClient, brief, citations, order.user_id, steps, null);
+    // Use citations from unified agent
+    citations = unifiedResult.citations;
     
-    // For simplified flow, use draft directly (no editor step)
-    finalDraft = draft;
+    console.log(`✅ Simplified flow unified agent completed: ${unifiedResult.content.length} chars, ${citations.length} citations`);
     
   } else {
-    // COMPLEX FLOW: Use existing multi-agent pipeline
-    console.log(`🔄 Using complex flow for job ${job.id}`);
+    // COMPLEX FLOW: Use unified RAG + writer agent
+    console.log(`🚀 Using unified RAG + writer agent for job ${job.id}`);
     
     // Step 1: Order Builder - Create content brief
     brief = await callOrderBuilder(supabaseClient, order.id, steps)
     
-    // Step 2: Retrieval - Get relevant context
-    // ✅ CRITICAL FIX: Use original topic for semantic matching to preserve keywords
-    searchTopic = brief.original_topic || brief.topic;
-    console.log(`🔍 Content order retrieval search topic: "${searchTopic}" (original: "${brief.original_topic}", enhanced: "${brief.enhanced_topic}")`);
+    // Step 2: Use unified RAG + writer agent (replaces retrieval + writer + editor)
+    const unifiedResult = await callUnifiedRAGWriterAgent(supabaseClient, brief, order.user_id, steps, order.id);
     
-    citations = await callRetrievalAgent(supabaseClient, order.user_id, searchTopic, brief.platform, steps, null) // No meeting context for content orders
+    // Extract results from unified agent
+    finalDraft = {
+      title: unifiedResult.title,
+      content: unifiedResult.content
+    };
     
-    // Step 3: Writer - Generate initial draft
-    draft = await callWriterAgent(supabaseClient, brief, citations, order.user_id, steps, null) // No meeting context for content orders
+    // Use citations from unified agent
+    citations = unifiedResult.citations;
     
-    // Step 4: Editor - Refine and finalize
-    finalDraft = await callEditorAgent(supabaseClient, draft, brief, order.user_id, steps, null) // No meeting context for content orders
+    // Skip separate retrieval, writer, and editor steps since unified agent handles everything
+    console.log(`✅ Unified agent completed: ${unifiedResult.content.length} chars, ${citations.length} citations`);
   }
   
   // Step 5: Save to saved_drafts
@@ -521,40 +525,20 @@ async function processPacingContentGeneration(supabaseClient: any, job: AgentJob
   // Step 1: Order Builder - Create content brief with context
   const brief = await callOrderBuilder(supabaseClient, contentOrder.id, steps)
   
-  // Step 2: Retrieval - Get relevant context (enhanced with meeting insights)
-  // ✅ CRITICAL FIX: Use original topic for semantic matching to preserve keywords like "hotmart"
-  const searchTopic = brief.original_topic || brief.topic;
-  console.log(`🔍 Retrieval agent search topic: "${searchTopic}" (original: "${brief.original_topic}", enhanced: "${brief.enhanced_topic}")`);
+  // Step 2: Use unified RAG + writer agent (replaces retrieval + writer + editor)
+  const unifiedResult = await callUnifiedRAGWriterAgent(supabaseClient, brief, job.user_id, steps, contentOrder.id);
   
-  const citations = await callRetrievalAgent(
-    supabaseClient, 
-    job.user_id, 
-    searchTopic, 
-    brief.platform, 
-    steps,
-    meeting_context // ✅ Pass meeting context for better retrieval
-  )
+  // Extract results from unified agent
+  const finalDraft = {
+    title: unifiedResult.title,
+    content: unifiedResult.content
+  };
   
-  // Step 3: Writer - Generate initial draft with meeting insights
-  const draft = await callWriterAgent(
-    supabaseClient, 
-    brief, 
-    citations, 
-    job.user_id, 
-    steps,
-    meeting_context // ✅ Pass meeting context for personalized content
-  )
+  // Use citations from unified agent
+  const citations = unifiedResult.citations;
   
-  // Step 4: Editor - Refine and finalize with context
-  const finalDraft = await callEditorAgent(
-    supabaseClient, 
-    draft, 
-    brief, 
-    job.user_id, 
-    steps,
-    meeting_context // ✅ Pass meeting context for better refinement
-  )
-  
+  console.log(`✅ Pacing unified agent completed: ${unifiedResult.content.length} chars, ${citations.length} citations`);
+
   // Step 5: Save to saved_drafts
   const { data: savedDraft, error: saveError } = await supabaseClient
     .from('saved_drafts')
@@ -719,6 +703,63 @@ async function callEditorAgent(supabaseClient: any, draft: any, brief: any, user
   steps.push({ step: 'editor_agent_completed', quality_score: result.draft.quality_score, timestamp: new Date().toISOString() })
   
   return result.draft
+}
+
+/**
+ * Call the unified RAG + writer agent for content generation
+ */
+async function callUnifiedRAGWriterAgent(supabaseClient: any, brief: any, userId: string, steps: any[], orderId?: string) {
+  steps.push({ step: 'calling_unified_rag_writer_agent', timestamp: new Date().toISOString() })
+  
+  // Create a prompt from the brief
+  const prompt = brief.topic || brief.enhanced_topic || brief.original_topic || 'Create professional content';
+  
+  // Prepare the brief object for the unified agent
+  const briefForAgent = {
+    topic: brief.topic || brief.enhanced_topic || brief.original_topic,
+    platform: brief.platform,
+    length: brief.length,
+    tone: brief.tone,
+    angle: brief.angle,
+    user_message: brief.user_message
+  };
+  
+  const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/unified-rag-writer-agent`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+    },
+    body: JSON.stringify({ 
+      userId: userId,
+      prompt: prompt,
+      brief: briefForAgent,
+      platform: brief.platform || 'linkedin',
+      maxResults: 5,
+      temperature: 0.7,
+      maxTokens: 2048
+    }),
+  })
+
+  if (!response.ok) {
+    throw new Error(`Unified RAG Writer Agent failed: ${response.status}`)
+  }
+
+  const result = await response.json()
+  
+  if (!result.success) {
+    throw new Error(`Unified RAG Writer Agent error: ${result.error || 'Unknown error'}`)
+  }
+  
+  steps.push({ step: 'unified_rag_writer_agent_completed', content_length: result.content.length, citations_count: result.citations.length, timestamp: new Date().toISOString() })
+  
+  // Return in the format expected by the existing flow
+  return {
+    title: `Generated Content - ${new Date().toLocaleDateString()}`,
+    content: result.content,
+    citations: result.citations,
+    metadata: result.metadata
+  };
 }
 
 async function processDraftReview(supabaseClient: any, job: AgentJob, steps: any[]) {

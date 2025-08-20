@@ -698,6 +698,56 @@ class GCSKnowledgeBaseStorage {
   }
 
   /**
+   * ✅ NEW: Store temporary text file in GCS for RAG processing
+   */
+  private async storeTemporaryFile(userId: string, fileName: string, content: string): Promise<string | null> {
+    try {
+      const bucketName = await this.getUserBucketName(userId);
+      if (!bucketName) {
+        console.error('No bucket found for user:', userId);
+        return null;
+      }
+
+      // Create temporary file path
+      const date = new Date().toISOString().split('T')[0];
+      const tempFilePath = `whatsapp-notes/${date}/${userId}_${Date.now()}_${fileName}`;
+      const gcsPath = `gs://${bucketName}/${tempFilePath}`;
+
+      // Convert content to buffer
+      const contentBuffer = new TextEncoder().encode(content);
+
+      // Upload to GCS
+      const accessToken = await this.getGCSAccessToken();
+      if (!accessToken) {
+        throw new Error('Failed to get GCS access token');
+      }
+
+      const uploadUrl = `https://storage.googleapis.com/upload/storage/v1/b/${bucketName}/o?uploadType=media&name=${encodeURIComponent(tempFilePath)}`;
+      
+      const response = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'text/plain',
+        },
+        body: contentBuffer,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to upload temporary file: ${response.status} - ${errorText}`);
+      }
+
+      console.log(`✅ Temporary file stored in GCS: ${gcsPath}`);
+      return gcsPath;
+
+    } catch (error) {
+      console.error('Error storing temporary file:', error);
+      return null;
+    }
+  }
+
+  /**
    * Get MIME type from file name
    */
   private getMimeTypeFromName(fileName: string): string {
@@ -1140,10 +1190,136 @@ serve(async (req) => {
         }
 
         const success = await storage.deleteFile(userId, file.id);
-        return new Response(JSON.stringify({ data: { success } }), {
+        
+        return new Response(JSON.stringify({ 
+          success,
+          message: success ? 'File deleted successfully' : 'File deletion failed'
+        }), {
           status: success ? 200 : 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
+      } else if (action === 'whatsapp_content') {
+        // ✅ NEW: Handle WhatsApp content (notes and audio transcripts)
+        const { file_name, file_type, content, gcs_path, metadata } = body;
+        
+        if (!file_name || !content) {
+          return new Response(JSON.stringify({ error: 'File name and content are required' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        try {
+          // ✅ MODIFIED: For audio files, don't create duplicate entry in knowledge_files
+          // Just trigger RAG processing since audio is already stored in audio_files table
+          if (file_type === 'audio' && gcs_path) {
+            console.log(`🎤 Audio file detected, skipping knowledge_files creation, triggering RAG directly`);
+            
+            // Trigger RAG processing directly for audio files
+            await storage.triggerRAGProcessing(
+              userId,
+              gcs_path.split('/')[2], // Extract bucket name
+              file_name,
+              gcs_path,
+              'audio',
+              content.length,
+              metadata
+            );
+
+            return new Response(JSON.stringify({ 
+              success: true,
+              message: 'WhatsApp audio processed and RAG processing triggered',
+              file_name: file_name,
+              note: 'Audio file already exists in audio_files table, RAG processing triggered directly'
+            }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          // For text notes, create knowledge file record
+          const knowledgeFileData = {
+            user_id: userId,
+            name: file_name,
+            type: 'file', // ✅ FIXED: Use 'file' instead of 'text' to match database constraint
+            size: content.length,
+            gcs_bucket: gcs_path ? gcs_path.split('/')[2] : null, // Extract bucket from GCS path
+            gcs_path: gcs_path,
+            file_hash: `whatsapp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            content_extracted: true,
+            extracted_content: content,
+            extraction_metadata: {
+              ...metadata,
+              source: 'whatsapp',
+              processed_at: new Date().toISOString()
+            },
+            url: gcs_path || null,
+            created_at: new Date().toISOString()
+          };
+
+          const { data: knowledgeFile, error: insertError } = await supabaseClient
+            .from('knowledge_files')
+            .insert([knowledgeFileData])
+            .select()
+            .single();
+
+          if (insertError) {
+            throw new Error(`Failed to insert knowledge file: ${insertError.message}`);
+          }
+
+          console.log(`✅ WhatsApp content stored in knowledge base: ${knowledgeFile.id}`);
+
+          // Trigger RAG processing for the WhatsApp content
+          if (gcs_path) {
+            // For audio files with GCS path
+            await storage.triggerRAGProcessing(
+              userId,
+              gcs_path.split('/')[2], // Extract bucket name
+              file_name,
+              gcs_path,
+              file_type || 'audio',
+              content.length,
+              metadata
+            );
+          } else {
+            // For text notes without GCS path, create a temporary file for RAG processing
+            const tempFileName = `whatsapp_note_${Date.now()}.txt`;
+            const tempContent = content;
+            
+            // Store temporary file in GCS for RAG processing
+            const tempGcsPath = await storage.storeTemporaryFile(userId, tempFileName, tempContent);
+            
+            if (tempGcsPath) {
+              await storage.triggerRAGProcessing(
+                userId,
+                tempGcsPath.split('/')[2], // Extract bucket name
+                tempFileName,
+                tempGcsPath,
+                'file', // ✅ FIXED: Use 'file' instead of 'text' for RAG processing
+                content.length,
+                metadata
+              );
+            }
+          }
+
+          return new Response(JSON.stringify({ 
+            success: true,
+            message: 'WhatsApp content processed and RAG processing triggered',
+            file_id: knowledgeFile.id,
+            file_name: file_name
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+
+        } catch (error) {
+          console.error('❌ Error processing WhatsApp content:', error);
+          return new Response(JSON.stringify({ 
+            success: false,
+            error: `Failed to process WhatsApp content: ${error.message}` 
+          }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
       } else {
         return new Response(JSON.stringify({ error: 'Invalid action' }), {
           status: 400,
