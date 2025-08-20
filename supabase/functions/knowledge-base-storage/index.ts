@@ -434,6 +434,16 @@ class GCSKnowledgeBaseStorage {
       console.log(`🔄 Triggering content extraction for ${file.name}`);
       const extractionSuccess = await this.extractContentFromFileData(insertedFile.id, file);
 
+      // Trigger RAG processing for the uploaded file
+      console.log(`🚀 Triggering RAG processing for ${file.name}`);
+      try {
+        await this.triggerRAGProcessing(userId, bucketName, fileName, filePath, file.type, file.size, metadata);
+        console.log(`✅ RAG processing triggered successfully for ${file.name}`);
+      } catch (ragError) {
+        console.error(`⚠️ RAG processing failed for ${file.name}:`, ragError);
+        // Don't fail the upload if RAG processing fails
+      }
+
       return { 
         success: true, 
         data: {
@@ -603,6 +613,57 @@ class GCSKnowledgeBaseStorage {
         success: false, 
         error: `Error calling user-bucket service: ${error.message}` 
       };
+    }
+  }
+
+  /**
+   * Trigger RAG processing for uploaded file
+   */
+  private async triggerRAGProcessing(
+    userId: string, 
+    bucketName: string, 
+    fileName: string, 
+    filePath: string, 
+    fileType: string, 
+    fileSize: number, 
+    metadata: any
+  ): Promise<void> {
+    try {
+      console.log(`🚀 Triggering RAG processing for file: ${fileName}`);
+      
+      // Call the vertex-ai-rag-processor edge function
+      const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/vertex-ai-rag-processor`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId,
+          bucketName,
+          fileName,
+          filePath,
+          fileType,
+          fileSize,
+          metadata
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`RAG processor error: ${response.status} ${errorText}`);
+      }
+
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(`RAG processing failed: ${result.error}`);
+      }
+
+      console.log(`✅ RAG processing completed successfully for ${fileName}`);
+      
+    } catch (error) {
+      console.error(`❌ Error triggering RAG processing for ${fileName}:`, error);
+      throw error;
     }
   }
 
