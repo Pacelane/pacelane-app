@@ -1809,10 +1809,12 @@ Return only valid JSON:
       // Process as content order with smart defaults from user preferences
       const orderResult = await this.processOrderWithSmartDefaults(payload, userId, finalContactId, intentResult.parsedParams || {});
       
-      // Process audio attachments if present (store files and update meeting notes)
-      if (this.hasAudioAttachments(payload)) {
-        await this.processAudioAttachmentsWithTranscription(payload, bucketName, userId, finalContactId, gcsPath, transcriptionResult);
-      }
+      // ❌ FIXED: Don't process audio attachments for ORDER intent
+      // Audio content is already included in the order via transcription
+      // This prevents duplicate posts from being created
+      // if (this.hasAudioAttachments(payload)) {
+      //   await this.processAudioAttachmentsWithTranscription(payload, bucketName, userId, finalContactId, gcsPath, transcriptionResult);
+      // }
 
       return {
         success: orderResult.success,
@@ -1830,7 +1832,8 @@ Return only valid JSON:
       // Process as NOTE (default) - NO messages sent for NOTES
       const noteResult = await this.processNoteIntentWithTranscription(payload, userId, finalContactId, transcriptionResult);
       
-      // Process audio attachments if present (will add to knowledge_files)
+      // ✅ Audio processing is allowed for NOTES (adds to knowledge base)
+      // This is different from ORDER intent where audio is already captured in the order
       if (this.hasAudioAttachments(payload)) {
         await this.processAudioAttachmentsWithTranscription(payload, bucketName, userId, finalContactId, gcsPath, transcriptionResult);
       }

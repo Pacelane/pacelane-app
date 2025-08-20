@@ -403,8 +403,10 @@ const ContentEditor = () => {
 
     try {
       // Send message using clean API with selected files and current content
+      const selectedFiles = getSelectedFiles();
       const result = await sendMessage({
         message: messageText,
+        selectedFiles, // Include selected knowledge base files
         currentContent: editorContent // Pass current editor content for context
       });
 

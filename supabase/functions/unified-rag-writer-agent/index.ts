@@ -38,6 +38,8 @@ interface UnifiedResponse {
     resultsCount: number;
     model: string;
     platform: string;
+    ragEnabled?: boolean;
+    message?: string;
   };
 }
 
@@ -86,47 +88,72 @@ class UnifiedRAGWriterAgent {
     const startTime = Date.now();
     
     try {
-      console.log(`🚀 Generating LinkedIn post for user: ${request.userId}`);
+      console.log(`🚀 Gerando post do LinkedIn para o usuário: ${request.userId}`);
       console.log(`📝 Prompt: ${request.prompt}`);
 
-      // 1. Get user's RAG corpus
+      // 1. Get user's RAG corpus (optional)
       const corpus = await this.getUserRAGCorpus(request.userId);
-      if (!corpus) {
-        throw new Error('No RAG corpus found for user');
+      let postContent: string;
+      let citations: any[] = [];
+
+      if (corpus) {
+        console.log(`📚 Usando corpus RAG: ${corpus.corpusId}`);
+        
+        // 2. Generate LinkedIn post using Gemini with RAG corpus
+        postContent = await this.generateWithGemini(
+          request.prompt,
+          corpus.corpusId,
+          request.brief,
+          request.temperature || 0.7,
+          request.maxTokens || 2048
+        );
+        
+        // Citations will be provided by Gemini's RAG-enhanced response
+        citations = [];
+      } else {
+        console.log(`⚠️ Nenhum corpus RAG encontrado para o usuário ${request.userId}, usando geração alternativa`);
+        
+        try {
+          // 3. Fallback: Generate content without RAG context
+          postContent = await this.generateWithoutRAG(
+            request.prompt,
+            request.brief,
+            request.temperature || 0.7,
+            request.maxTokens || 2048
+          );
+          
+          citations = [];
+        } catch (fallbackError) {
+          console.error(`❌ Falha na geração alternativa:`, fallbackError);
+          throw new Error(`Falha na geração de conteúdo. Tente novamente ou entre em contato com o suporte se o problema persistir.`);
+        }
       }
 
-      console.log(`📚 Using RAG corpus: ${corpus.corpusId}`);
-
-      // 2. Generate LinkedIn post using Gemini with RAG corpus directly
-      const postContent = await this.generateWithGemini(
-        request.prompt,
-        corpus.corpusId,
-        request.brief,
-        request.temperature || 0.7,
-        request.maxTokens || 2048
-      );
-
-      // 3. Save to saved_drafts table
+      // 4. Save to saved_drafts table
       const savedDraft = await this.saveToSavedDrafts(
         request.userId,
         postContent,
-        [], // Empty citations since we're using RAG-enhanced API
+        citations,
         request.brief
       );
 
-      console.log(`💾 Draft saved with ID: ${savedDraft.id}`);
+      console.log(`💾 Draft salvo com ID: ${savedDraft.id}`);
 
       const queryTime = Date.now() - startTime;
 
       return {
         success: true,
         content: postContent,
-        citations: [], // Citations will be provided by Gemini's RAG-enhanced response
+        citations: citations,
         metadata: {
           queryTime,
           resultsCount: 0,
-          model: 'gemini-2.5-flash',
-          platform: 'linkedin'
+          model: corpus ? 'gemini-2.5-flash-rag' : 'gemini-2.5-flash',
+          platform: 'linkedin',
+          ragEnabled: !!corpus,
+          message: corpus ? 
+            'Conteúdo gerado usando sua base de conhecimento para maior relevância' : 
+            'Conteúdo gerado com sucesso. Para obter conteúdo mais relevante baseado em seus arquivos, faça upload de documentos para sua base de conhecimento.'
         }
       };
 
@@ -276,29 +303,32 @@ class UnifiedRAGWriterAgent {
     maxTokens: number
   ): Promise<string> {
     try {
-      console.log(`🤖 Generating content with Gemini 2.5 Flash`);
+      console.log(`🤖 Gerando conteúdo com Gemini 2.5 Flash`);
 
       const accessToken = await this.getGCSAccessToken();
       if (!accessToken) {
-        throw new Error('Failed to get GCS access token');
+        throw new Error('Falha ao obter token de acesso do GCS');
       }
 
       // Create LinkedIn post prompt
       const linkedInPrompt = `
-You are a professional LinkedIn content creator. Create an engaging LinkedIn post based on the following:
+Você é um criador de conteúdo profissional do LinkedIn. Crie um post envolvente do LinkedIn baseado no seguinte:
 
-USER REQUEST: ${prompt}
+SOLICITAÇÃO DO USUÁRIO: ${prompt}
 
 BRIEF: ${JSON.stringify(brief, null, 2)}
 
-INSTRUCTIONS:
-- Create a compelling LinkedIn post that addresses the user's request
-- Use the provided RAG context to add value and credibility
-- Keep it professional but engaging
-- Make it actionable and shareable
-- Ground your response in the retrieved knowledge base content
+INSTRUÇÕES:
+- Crie um post do LinkedIn envolvente que atenda à solicitação do usuário
+- Use o contexto RAG fornecido para adicionar valor e credibilidade
+- Mantenha-o profissional, mas envolvente
+- Torne-o acionável e compartilhável
+- Baseie sua resposta no conteúdo da base de conhecimento recuperada
+- **IMPORTANTE: Sempre gere o conteúdo em PORTUGUÊS BRASILEIRO (pt-BR)**
+- Use linguagem natural e coloquial brasileira quando apropriado
+- Mantenha o tom profissional adequado para o LinkedIn
 
-OUTPUT ONLY THE LINKEDIN POST CONTENT, no additional formatting or explanations.
+SAÍDA APENAS O CONTEÚDO DO POST DO LINKEDIN, sem formatação adicional ou explicações.
 `;
 
       const generationUrl = `https://${this.location}-aiplatform.googleapis.com/v1beta1/projects/${this.projectId}/locations/${this.location}/publishers/google/models/gemini-2.5-flash:generateContent`;
@@ -340,22 +370,107 @@ OUTPUT ONLY THE LINKEDIN POST CONTENT, no additional formatting or explanations.
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error(`❌ Gemini generation failed: ${response.status} - ${errorText}`);
-        throw new Error(`Gemini generation failed: ${response.status} - ${errorText}`);
+        console.error(`❌ Falha na geração do Gemini: ${response.status} - ${errorText}`);
+        throw new Error(`Falha na geração do Gemini: ${response.status} - ${errorText}`);
       }
 
       const result = await response.json();
       const generatedContent = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
       if (!generatedContent) {
-        throw new Error('No content generated by Gemini');
+        throw new Error('Nenhum conteúdo foi gerado pelo Gemini');
       }
 
-      console.log(`✅ Content generated successfully (${generatedContent.length} characters)`);
+      console.log(`✅ Conteúdo gerado com sucesso (${generatedContent.length} caracteres)`);
       return generatedContent;
 
     } catch (error) {
       console.error('❌ Error generating with Gemini:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate LinkedIn post using Gemini without RAG context
+   */
+  private async generateWithoutRAG(
+    prompt: string, 
+    brief: any, 
+    temperature: number, 
+    maxTokens: number
+  ): Promise<string> {
+    try {
+      console.log(`🤖 Gerando conteúdo sem RAG`);
+
+      const accessToken = await this.getGCSAccessToken();
+      if (!accessToken) {
+        throw new Error('Falha ao obter token de acesso do GCS');
+      }
+
+      // Create LinkedIn post prompt
+      const linkedInPrompt = `
+Você é um criador de conteúdo profissional do LinkedIn. Crie um post envolvente do LinkedIn baseado no seguinte:
+
+SOLICITAÇÃO DO USUÁRIO: ${prompt}
+
+BRIEF: ${JSON.stringify(brief, null, 2)}
+
+INSTRUÇÕES:
+- Crie um post do LinkedIn envolvente que atenda à solicitação do usuário
+- Não use nenhuma base de conhecimento externa ou contexto RAG
+- Mantenha-o profissional, mas envolvente
+- Torne-o acionável e compartilhável
+- Baseie sua resposta na solicitação do usuário e no brief
+- **IMPORTANTE: Sempre gere o conteúdo em PORTUGUÊS BRASILEIRO (pt-BR)**
+- Use linguagem natural e coloquial brasileira quando apropriado
+- Mantenha o tom profissional adequado para o LinkedIn
+
+SAÍDA APENAS O CONTEÚDO DO POST DO LINKEDIN, sem formatação adicional ou explicações.
+`;
+
+      const generationUrl = `https://${this.location}-aiplatform.googleapis.com/v1beta1/projects/${this.projectId}/locations/${this.location}/publishers/google/models/gemini-2.5-flash:generateContent`;
+
+      // Simple Gemini generation without RAG tools
+      const response = await fetch(generationUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            role: "user",
+            parts: [{
+              text: linkedInPrompt
+            }]
+          }],
+          generation_config: {
+            temperature: temperature,
+            max_output_tokens: maxTokens,
+            top_p: 0.8,
+            top_k: 40
+          }
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`❌ Falha na geração do Gemini: ${response.status} - ${errorText}`);
+        throw new Error(`Falha na geração do Gemini: ${response.status} - ${errorText}`);
+      }
+
+      const result = await response.json();
+      const generatedContent = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+      if (!generatedContent) {
+        throw new Error('Nenhum conteúdo foi gerado pelo Gemini');
+      }
+
+      console.log(`✅ Conteúdo gerado com sucesso (${generatedContent.length} caracteres)`);
+      return generatedContent;
+
+    } catch (error) {
+      console.error(`❌ Erro ao gerar sem RAG:`, error);
       throw error;
     }
   }
