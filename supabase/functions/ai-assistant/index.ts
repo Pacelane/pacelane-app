@@ -17,10 +17,10 @@ serve(async (req) => {
     let userId: string | null = null;
     let isServiceRole = false;
     
-    // Check OpenAI API key first
-    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openAIApiKey) {
-      throw new Error('OPENAI_API_KEY is not set');
+    // Check Anthropic API key first
+    const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
+    if (!anthropicApiKey) {
+      throw new Error('ANTHROPIC_API_KEY is not set');
     }
     
     // Check if this is a service role call (from job-runner or other edge functions)
@@ -159,14 +159,8 @@ serve(async (req) => {
       throw new Error('Failed to fetch conversation history');
     }
 
-    // Prepare file context information
-    let fileContextInfo = '';
-    if (fileContexts && fileContexts.length > 0) {
-      fileContextInfo = `\n\nAdditional Context: The user has selected the following files as reference for this conversation:
-${fileContexts.map((file: any) => `- ${file.name} (${file.type})`).join('\n')}
-
-Please consider these files when providing your response and refer to them if relevant to the user's question.`;
-    }
+    // Process knowledge base files using Claude Files API (like writer-agent)
+    const { contextText, fileAttachments } = await prepareCitationsWithFiles(fileContexts, anthropicApiKey);
 
     // Prepare current content context
     let contentContextInfo = '';
@@ -187,11 +181,8 @@ IMPORTANT: If the user asks for edits or improvements, provide the complete edit
 This allows the user to easily apply your suggestions. Always provide the full edited content, not just suggestions.`;
     }
 
-    // Prepare messages for OpenAI API
-    const messages = [
-      {
-        role: 'system',
-        content: `You are a helpful AI assistant specializing in LinkedIn content creation and editing. You help users write, edit, and improve their professional content. 
+    // Prepare system prompt
+    const systemPrompt = `You are a helpful AI assistant specializing in LinkedIn content creation and editing. You help users write, edit, and improve their professional content. 
 
 Your expertise includes:
 - LinkedIn post optimization and best practices
@@ -202,41 +193,70 @@ Your expertise includes:
 
 Be creative, supportive, and provide actionable suggestions. When suggesting edits, be specific about what to change and why. Keep your responses concise but helpful.
 
-${fileContextInfo}${contentContextInfo}`
-      },
-      ...conversationHistory.map(msg => ({
-        role: msg.role,
-        content: msg.content
-      }))
+${contextText ? `\n\nKnowledge Base Context:\n${contextText}` : ''}${contentContextInfo}`;
+
+    // Prepare conversation messages for Claude
+    const conversationMessages = conversationHistory.map(msg => ({
+      role: msg.role,
+      content: msg.content
+    }));
+
+    // Prepare message content with optional file attachments
+    const messageContent: any[] = [
+      {
+        type: 'text',
+        text: message
+      }
     ];
 
-    console.log('Sending request to OpenAI with', messages.length, 'messages');
+    // Add file attachments if available
+    if (fileAttachments && fileAttachments.length > 0) {
+      console.log(`Adding ${fileAttachments.length} file attachments to Claude request`);
+      for (const attachment of fileAttachments) {
+        messageContent.push(attachment);
+      }
+    }
 
-    // Call OpenAI API
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    console.log('Sending request to Claude with', conversationMessages.length + 1, 'messages');
+
+    // Call Claude API
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')!}`,
         'Content-Type': 'application/json',
+        'x-api-key': anthropicApiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-beta': 'files-api-2025-04-14'
       },
       body: JSON.stringify({
-        model: 'gpt-4.1-2025-04-14',
-        messages: messages,
-        temperature: 0.7,
+        model: 'claude-3-5-haiku-20241022',
         max_tokens: 1000,
+        temperature: 0.7,
+        system: systemPrompt,
+        messages: [
+          ...conversationMessages,
+          {
+            role: 'user',
+            content: messageContent
+          }
+        ]
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('OpenAI API error:', response.status, errorText);
-      throw new Error(`OpenAI API error: ${response.status}`);
+      console.error('Claude API error:', response.status, errorText);
+      throw new Error(`Claude API error: ${response.status}`);
     }
 
     const data = await response.json();
-    const assistantMessage = data.choices[0].message.content;
+    const assistantMessage = data.content[0]?.text;
 
-    console.log('Received response from OpenAI, length:', assistantMessage.length);
+    if (!assistantMessage) {
+      throw new Error('No response content from Claude');
+    }
+
+    console.log('Received response from Claude, length:', assistantMessage.length);
 
     // Save assistant message to database
     const { error: assistantMessageError } = await supabase
@@ -281,3 +301,314 @@ ${fileContextInfo}${contentContextInfo}`
     });
   }
 });
+
+// ========== HELPER FUNCTIONS (copied from writer-agent) ==========
+
+interface GCSConfig {
+  bucketPrefix: string;
+  projectId: string;
+  clientEmail: string;
+  privateKey: string;
+  privateKeyId: string;
+}
+
+// GCS configuration for file downloads
+const gcsConfig: GCSConfig = {
+  bucketPrefix: Deno.env.get('GCS_BUCKET_PREFIX') ?? 'pacelane-whatsapp',
+  projectId: Deno.env.get('GCS_PROJECT_ID') ?? '',
+  clientEmail: Deno.env.get('GCS_CLIENT_EMAIL') ?? '',
+  privateKey: Deno.env.get('GCS_PRIVATE_KEY') ?? '',
+  privateKeyId: Deno.env.get('GCS_PRIVATE_KEY_ID') ?? '',
+};
+
+/**
+ * Get GCS access token using service account credentials
+ */
+async function getGCSAccessToken(): Promise<string | null> {
+  try {
+    const now = Math.floor(Date.now() / 1000);
+    
+    const header = { alg: 'RS256', typ: 'JWT' };
+    const payload = {
+      iss: gcsConfig.clientEmail,
+      scope: 'https://www.googleapis.com/auth/cloud-platform',
+      aud: 'https://oauth2.googleapis.com/token',
+      exp: now + 3600,
+      iat: now
+    };
+
+    const headerB64 = btoa(JSON.stringify(header)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    const payloadB64 = btoa(JSON.stringify(payload)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    
+    const message = `${headerB64}.${payloadB64}`;
+    
+    const privateKeyPem = gcsConfig.privateKey.replace(/\\n/g, '\n');
+    
+    let signature: ArrayBuffer;
+    try {
+      const privateKey = await crypto.subtle.importKey(
+        'pkcs8',
+        pemToArrayBuffer(privateKeyPem),
+        {
+          name: 'RSASSA-PKCS1-v1_5',
+          hash: 'SHA-256',
+        },
+        false,
+        ['sign']
+      );
+
+      signature = await crypto.subtle.sign(
+        'RSASSA-PKCS1-v1_5',
+        privateKey,
+        new TextEncoder().encode(message)
+      );
+    } catch (cryptoError) {
+      console.error('Crypto operation failed:', cryptoError);
+      throw cryptoError;
+    }
+
+    const signatureB64 = btoa(String.fromCharCode(...new Uint8Array(signature)))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=/g, '');
+
+    const jwt = `${message}.${signatureB64}`;
+
+    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+        assertion: jwt
+      })
+    });
+
+    if (tokenResponse.ok) {
+      const tokenData = await tokenResponse.json();
+      return tokenData.access_token;
+    } else {
+      const errorText = await tokenResponse.text();
+      console.error('Token request failed:', errorText);
+      return null;
+    }
+  } catch (error) {
+    console.error('Error getting access token:', error);
+    return null;
+  }
+}
+
+/**
+ * Convert PEM private key to ArrayBuffer
+ */
+function pemToArrayBuffer(pem: string): ArrayBuffer {
+  const pemContents = pem
+    .replace('-----BEGIN PRIVATE KEY-----', '')
+    .replace('-----END PRIVATE KEY-----', '')
+    .replace(/\s/g, '');
+  
+  const binaryString = atob(pemContents);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes.buffer;
+}
+
+/**
+ * Prepare file contexts and upload knowledge base files to Anthropic
+ */
+async function prepareCitationsWithFiles(fileContexts: any[], anthropicApiKey: string): Promise<{ contextText: string, fileAttachments: any[] }> {
+  const fileAttachments: any[] = []
+  const contextParts: string[] = []
+
+  console.log(`Preparing ${fileContexts.length} file contexts for AI assistant`);
+
+  for (const fileContext of fileContexts) {
+    console.log(`Processing file context: ${fileContext.name}`);
+    
+    if (fileContext.url) {
+      try {
+        console.log(`Processing knowledge file: ${fileContext.name}`);
+        
+        // Check if file type is supported by Anthropic Files API
+        const isTextFile = fileContext.name.match(/\.(txt|md|csv|json)$/i)
+        const isSupportedPDF = fileContext.name.match(/\.pdf$/i)
+        
+        if (isTextFile) {
+          // Text files can be uploaded to Anthropic
+          console.log(`Attempting to upload text file: ${fileContext.name}`);
+          const fileId = await uploadFileToAnthropic(fileContext.url, fileContext.name, anthropicApiKey);
+          if (fileId) {
+            fileAttachments.push({
+              type: 'document',
+              source: {
+                type: 'file',
+                file_id: fileId
+              }
+            });
+            contextParts.push(`[KNOWLEDGE_FILE] ${fileContext.name} (attached as document)`);
+            console.log(`Successfully attached document: ${fileContext.name}`);
+          } else {
+            // Fallback to text content if file upload fails
+            console.log(`File upload failed, using name only for: ${fileContext.name}`);
+            contextParts.push(`[KNOWLEDGE_FILE] ${fileContext.name}`);
+          }
+        } else if (isSupportedPDF) {
+          // Try to upload PDFs to Anthropic (may fail for complex/scanned PDFs)
+          console.log(`Attempting to upload PDF file: ${fileContext.name}`);
+          const fileId = await uploadFileToAnthropic(fileContext.url, fileContext.name, anthropicApiKey);
+          if (fileId) {
+            fileAttachments.push({
+              type: 'document',
+              source: {
+                type: 'file',
+                file_id: fileId
+              }
+            });
+            contextParts.push(`[KNOWLEDGE_FILE] ${fileContext.name} (attached as PDF document)`);
+            console.log(`Successfully attached PDF document: ${fileContext.name}`);
+          } else {
+            // Fallback if PDF upload fails
+            console.log(`PDF upload failed, using name only for: ${fileContext.name}`);
+            contextParts.push(`[KNOWLEDGE_FILE] ${fileContext.name} (PDF - content not accessible)`);
+          }
+        } else {
+          // Other file types - use name only
+          console.log(`Unsupported file type: ${fileContext.name} - using name only`);
+          contextParts.push(`[KNOWLEDGE_FILE] ${fileContext.name}`);
+        }
+        
+      } catch (error) {
+        console.warn(`Failed to process file ${fileContext.name}:`, error);
+        // Fallback to name only
+        contextParts.push(`[KNOWLEDGE_FILE] ${fileContext.name}`);
+      }
+    } else {
+      // Handle files without URLs (just use name)
+      contextParts.push(`[FILE] ${fileContext.name}`);
+      console.log(`Added file context: ${fileContext.name}`);
+    }
+  }
+
+  const contextText = contextParts.join('\n\n');
+  console.log(`Final context text length: ${contextText.length} characters`);
+  console.log(`File attachments: ${fileAttachments.length}`);
+  
+  return { contextText, fileAttachments };
+}
+
+/**
+ * Upload a file to Anthropic's file API
+ */
+async function uploadFileToAnthropic(fileUrl: string, filename: string, anthropicApiKey: string): Promise<string | null> {
+  try {
+    console.log(`Uploading file ${filename} from ${fileUrl} to Anthropic`);
+    
+    let fileBuffer: ArrayBuffer;
+    
+    // Handle different URL types
+    if (fileUrl.startsWith('gs://')) {
+      // GCS URL - extract bucket and path, then download via GCS API
+      const gcsMatch = fileUrl.match(/gs:\/\/([^\/]+)\/(.+)/);
+      if (!gcsMatch) {
+        throw new Error(`Invalid GCS URL format: ${fileUrl}`);
+      }
+      
+      const bucketName = gcsMatch[1];
+      const filePath = gcsMatch[2];
+      console.log(`Extracted bucket: ${bucketName}, path: ${filePath}`);
+      
+      // Get GCS access token
+      console.log('Getting GCS access token...');
+      const accessToken = await getGCSAccessToken();
+      if (!accessToken) {
+        throw new Error('Failed to get GCS access token');
+      }
+      console.log('GCS access token obtained successfully');
+      
+      // Download file from GCS using authenticated API
+      const downloadUrl = `https://storage.googleapis.com/storage/v1/b/${bucketName}/o/${encodeURIComponent(filePath)}?alt=media`;
+      console.log(`Downloading from GCS API: ${downloadUrl}`);
+      
+      const fileResponse = await fetch(downloadUrl, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!fileResponse.ok) {
+        throw new Error(`Failed to download file from GCS: ${fileResponse.status} ${fileResponse.statusText}`);
+      }
+      
+      fileBuffer = await fileResponse.arrayBuffer();
+      console.log(`Successfully downloaded file from GCS: ${fileBuffer.byteLength} bytes`);
+      
+    } else if (fileUrl.startsWith('https://storage.googleapis.com/')) {
+      // Already a public HTTP URL
+      const fileResponse = await fetch(fileUrl);
+      if (!fileResponse.ok) {
+        throw new Error(`Failed to fetch file: ${fileResponse.status}`);
+      }
+      fileBuffer = await fileResponse.arrayBuffer();
+    } else {
+      // Other URL types
+      const fileResponse = await fetch(fileUrl);
+      if (!fileResponse.ok) {
+        throw new Error(`Failed to fetch file: ${fileResponse.status}`);
+      }
+      fileBuffer = await fileResponse.arrayBuffer();
+    }
+
+    // Determine MIME type based on file extension
+    // Note: Anthropic only supports PDF and plaintext documents
+    let mimeType = 'text/plain'; // Default for .txt files
+    if (filename.endsWith('.md')) {
+      mimeType = 'text/plain'; // Treat markdown as plain text for Anthropic
+    } else if (filename.endsWith('.csv')) {
+      mimeType = 'text/plain'; // Treat CSV as plain text for Anthropic
+    } else if (filename.endsWith('.json')) {
+      mimeType = 'text/plain'; // Treat JSON as plain text for Anthropic
+    } else if (filename.endsWith('.pdf')) {
+      mimeType = 'application/pdf';
+    }
+    
+    console.log(`Setting MIME type for ${filename}: ${mimeType}`);
+    
+    const fileBlob = new Blob([fileBuffer], { type: mimeType });
+
+    // Create FormData for file upload
+    const formData = new FormData();
+    formData.append('file', fileBlob, filename);
+
+    // Upload to Anthropic
+    console.log(`Uploading file to Anthropic: ${filename}, size: ${fileBlob.size} bytes, type: ${fileBlob.type}`);
+    
+    const uploadResponse = await fetch('https://api.anthropic.com/v1/files', {
+      method: 'POST',
+      headers: {
+        'x-api-key': anthropicApiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-beta': 'files-api-2025-04-14'
+      },
+      body: formData
+    });
+
+    if (!uploadResponse.ok) {
+      const errorText = await uploadResponse.text();
+      console.error('Anthropic file upload failed:', errorText);
+      console.error('Response status:', uploadResponse.status);
+      console.error('Response headers:', Object.fromEntries(uploadResponse.headers.entries()));
+      return null;
+    }
+
+    const uploadData = await uploadResponse.json();
+    console.log(`Successfully uploaded file ${filename} to Anthropic:`, uploadData.id);
+    return uploadData.id;
+
+  } catch (error) {
+    console.error(`Error uploading file ${filename} to Anthropic:`, error);
+    return null;
+  }
+}
