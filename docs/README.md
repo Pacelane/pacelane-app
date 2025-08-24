@@ -4,7 +4,7 @@
 
 Pacelane is an AI-powered content creation assistant designed for executives and founders. It helps create high-quality, personalized content for professional platforms like LinkedIn by leveraging user insights, goals, and inspirations.
 
-## 🚀 Features
+## 🚀 Core Features
 
 - **AI-Powered Content Generation**: Create engaging LinkedIn posts and content using advanced AI
 - **Personal Insights Integration**: Leverage your professional background and expertise
@@ -12,120 +12,124 @@ Pacelane is an AI-powered content creation assistant designed for executives and
 - **Content Strategy**: Align content with your business goals and messaging
 - **Knowledge Base**: Upload and reference your own materials and documents
 - **Analytics Dashboard**: Track content performance and engagement
+- **WhatsApp Notifications**: Automated content delivery and engagement tracking
 
 ## 🛠️ Technology Stack
 
-This project is built with modern web technologies:
-
-- **Frontend**: React 18 with TypeScript
-- **Build Tool**: Vite
-- **Styling**: Tailwind CSS + shadcn/ui components
+- **Frontend**: React 18 with TypeScript, Vite
+- **Design System**: Custom design tokens, components, and theming
+- **Styling**: Tailwind CSS with design system integration
 - **Backend**: Supabase (PostgreSQL + Edge Functions)
-- **Authentication**: Supabase Auth
-- **Storage**: Supabase Storage + Google Cloud Storage
-- **AI Integration**: OpenAI GPT models
+- **Authentication**: Supabase Auth with RLS
+- **Storage**: Google Cloud Storage + Supabase Storage
+- **AI Integration**: OpenAI GPT models, Vertex AI, Read AI
 - **State Management**: TanStack Query (React Query)
 - **Routing**: React Router DOM
+- **Deployment**: Vercel
 
-## 📦 Installation & Setup
+## 📚 Documentation Structure
+
+### 🏗️ [Architecture Overview](./architecture/README.md)
+- System architecture and design patterns
+- Database schema and relationships
+- API design principles
+
+### 🔧 [Supabase & Backend](./supabase/README.md)
+- **Edge Functions**: Complete documentation of all 25+ functions
+- **Database**: Schema, RLS policies, and migrations
+- **Authentication**: User management and security
+- **Storage**: GCS integration and file management
+
+### 🎨 [Design System](./design-system/README.md)
+- **Design Tokens**: Colors, typography, spacing, shadows
+- **Components**: Reusable UI components and patterns
+- **Theming**: Light/dark mode and customization
+- **Usage Guidelines**: Best practices and examples
+
+### 🔌 [Service Layer](./services/README.md)
+- **Business Logic**: Content, user, and AI services
+- **API Integration**: External service connections
+- **Data Management**: CRUD operations and state handling
+- **Error Handling**: Comprehensive error management
+
+### 🚀 [Development Guide](./development/README.md)
+- Local development setup
+- Code standards and patterns
+- Testing and deployment
+- Contributing guidelines
+
+## 🚀 Quick Start
 
 ### Prerequisites
-
-- Node.js 18+ and npm (recommended: [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating))
-- Git
+- Node.js 18+ and npm
+- Supabase CLI
+- Google Cloud Platform account
 
 ### Local Development
+```bash
+# Clone and setup
+git clone <repository-url>
+cd pacelane-app
+npm install
 
-1. **Clone the repository**
-   ```sh
-   git clone <YOUR_GIT_URL>
-   cd pacelane-app
-   ```
+# Environment setup
+cp .env.example .env.local
+# Configure Supabase and GCP credentials
 
-2. **Install dependencies**
-   ```sh
-   npm install
-   ```
-
-3. **Environment Setup**
-   - Copy `.env.example` to `.env.local`
-   - Configure your Supabase project credentials
-   - Add any required API keys
-
-4. **Start development server**
-   ```sh
-   npm run dev
-   ```
-
-5. **Build for production**
-   ```sh
-   npm run build
-   ```
-
-## 🏗️ Project Structure
-
-```
-src/
-├── api/                    # Frontend API layer
-├── components/             # React components
-│   ├── ui/                # shadcn/ui components
-│   └── ...                # Feature components
-├── design-system/          # Design system components & tokens
-│   ├── components/        # Design system components
-│   ├── tokens/           # Design tokens (colors, typography, etc.)
-│   └── styles/           # Style utilities
-├── hooks/                 # Custom React hooks
-├── pages/                # Page components
-├── services/             # Business logic services
-├── types/                # TypeScript type definitions
-└── integrations/         # External service integrations
+# Start development
+npm run dev
 ```
 
-## 🎨 Design System
+### Supabase Setup
+```bash
+# Install Supabase CLI
+npm install -g supabase
 
-Pacelane includes a comprehensive design system with:
+# Start local Supabase
+supabase start
 
-- **Design Tokens**: Colors, typography, spacing, shadows
-- **Component Library**: Pre-built, accessible components
-- **Theme Support**: Light/dark mode compatibility
-- **Motion**: Smooth animations and transitions
+# Deploy edge functions
+supabase functions deploy
+```
 
-See the [design system documentation](.cursorrules) for detailed usage guidelines.
+## 🔍 Key Components
 
-## 🔧 Available Scripts
+### Design System
+- **25+ Design Tokens**: Comprehensive color, typography, and spacing systems
+- **Theme-Aware Components**: Automatic light/dark mode support
+- **Motion & Accessibility**: Smooth animations and ARIA compliance
 
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run build:dev` - Build in development mode
-- `npm run preview` - Preview production build
-- `npm run lint` - Run ESLint
+### Edge Functions
+- **Knowledge Base Storage**: GCS integration with file processing
+- **AI Processing**: Content generation and analysis
+- **WhatsApp Integration**: Automated notifications and engagement
+- **User Management**: Profile and preference handling
 
-## 🌐 Deployment
+### Service Architecture
+- **Layered Architecture**: Clear separation of concerns
+- **Type Safety**: Full TypeScript implementation
+- **Error Handling**: Comprehensive error management and reporting
+- **Performance**: Optimized queries and caching
 
-The application can be deployed to various platforms:
+## 📖 Getting Started
 
-- **Vercel**: Connected via GitHub integration
-- **Netlify**: Deploy from Git repository
-- **Custom hosting**: Build and serve the `dist` folder
-
-## 📚 Documentation
-
-- [Local Development Setup](LOCAL_DEVELOPMENT_SETUP.md)
-- [Refactoring Progress](REFACTORING_PROGRESS.md)
-- [WhatsApp Integration](WHATSAPP_INTEGRATION_IMPLEMENTATION.md)
+1. **Start Here**: Read the [Architecture Overview](./architecture/README.md)
+2. **Backend**: Review [Supabase Documentation](./supabase/README.md)
+3. **Frontend**: Explore [Design System](./design-system/README.md)
+4. **Development**: Follow [Development Guide](./development/README.md)
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+1. Review the [Development Guide](./development/README.md)
+2. Follow the established patterns and design system
+3. Ensure all changes are documented
+4. Test thoroughly before submitting
 
 ## 📄 License
 
 This project is proprietary software. All rights reserved.
 
-## 📞 Support
+---
 
-For support and questions, please contact the development team or open an issue in the repository.
+*Last updated: December 2024*
+*Documentation version: 2.0*
