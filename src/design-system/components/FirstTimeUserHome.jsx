@@ -83,7 +83,7 @@ const FirstTimeUserHome = () => {
         progress: 50
       }));
 
-      const { data, error } = await supabase.functions.invoke('generate-enhanced-content-suggestions', {
+      const { data, error } = await supabase.functions.invoke('generate-content-suggestions', {
         headers: {
           Authorization: `Bearer ${token}`
         }
