@@ -1236,6 +1236,61 @@ serve(async (req) => {
             });
           }
 
+          // ✅ NEW: For image files, create knowledge_files entry and trigger RAG processing
+          if (file_type === 'image' && gcs_path) {
+            console.log(`📷 Image file detected, creating knowledge_files entry and triggering RAG`);
+            
+            // Create knowledge file record for images
+            const knowledgeFileData = {
+              user_id: userId,
+              name: file_name,
+              type: 'image', // Use 'image' type for image files
+              size: content.length,
+              gcs_bucket: gcs_path.split('/')[2], // Extract bucket from GCS path
+              gcs_path: gcs_path,
+              file_hash: `whatsapp_image_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              content_extracted: true,
+              extracted_content: content, // Placeholder content for images
+              extraction_metadata: {
+                ...metadata,
+                source: 'whatsapp_image',
+                processed_at: new Date().toISOString()
+              },
+              url: gcs_path,
+              created_at: new Date().toISOString()
+            };
+
+            const { data: knowledgeFile, error: insertError } = await supabaseClient
+              .from('knowledge_files')
+              .insert([knowledgeFileData])
+              .select()
+              .single();
+
+            if (insertError) {
+              throw new Error(`Failed to insert image knowledge file: ${insertError.message}`);
+            }
+
+            // Trigger RAG processing for the image
+            await storage.triggerRAGProcessing(
+              userId,
+              gcs_path.split('/')[2], // Extract bucket name
+              file_name,
+              gcs_path,
+              'image',
+              content.length,
+              metadata
+            );
+
+            return new Response(JSON.stringify({ 
+              success: true,
+              message: 'WhatsApp image processed and added to knowledge base',
+              file_id: knowledgeFile.id,
+              file_name: file_name
+            }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
           // For text notes, create knowledge file record
           const knowledgeFileData = {
             user_id: userId,

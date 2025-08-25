@@ -922,6 +922,14 @@ class ChatwootWebhookProcessor {
         }
       }
 
+      // ✅ NEW: For image messages, append image count to content
+      if (this.hasImageAttachments(payload)) {
+        const imageCount = payload.attachments?.filter(att => att.file_type === 'image').length || 0;
+        if (imageCount > 0) {
+          messageContent += ` [${imageCount} image${imageCount > 1 ? 's' : ''} attached]`;
+        }
+      }
+
       const insertData = {
         user_id: userId || null, // Will be null for Phase 1
         contact_identifier: contactId, // New field for contact tracking
@@ -1816,6 +1824,12 @@ Return only valid JSON:
       //   await this.processAudioAttachmentsWithTranscription(payload, bucketName, userId, finalContactId, gcsPath, transcriptionResult);
       // }
 
+      // ✅ NEW: Process image attachments for ORDER intent (adds to knowledge base)
+      // Images can provide additional context for content creation
+      if (this.hasImageAttachments(payload)) {
+        await this.processImageAttachments(payload, bucketName, userId, finalContactId, gcsPath);
+      }
+
       return {
         success: orderResult.success,
         message: orderResult.message,
@@ -1836,6 +1850,11 @@ Return only valid JSON:
       // This is different from ORDER intent where audio is already captured in the order
       if (this.hasAudioAttachments(payload)) {
         await this.processAudioAttachmentsWithTranscription(payload, bucketName, userId, finalContactId, gcsPath, transcriptionResult);
+      }
+
+      // ✅ NEW: Process image attachments for NOTES (adds to knowledge base)
+      if (this.hasImageAttachments(payload)) {
+        await this.processImageAttachments(payload, bucketName, userId, finalContactId, gcsPath);
       }
 
       // Minimal policy: NOTES are processed silently, no WhatsApp messages sent
@@ -2714,6 +2733,290 @@ Return only valid JSON:
     } catch (error) {
       console.error('❌ Error sending order confirmation:', error);
       return false;
+    }
+  }
+
+  /**
+   * Check if message has image attachments
+   */
+  private hasImageAttachments(payload: ChatwootWebhookPayload): boolean {
+    return payload.attachments && payload.attachments.some(att => att.file_type === 'image');
+  }
+
+  /**
+   * Process all image attachments in a message
+   */
+  private async processImageAttachments(
+    payload: ChatwootWebhookPayload, 
+    bucketName: string, 
+    userId: string | null, 
+    contactId: string,
+    messageGcsPath: string
+  ): Promise<boolean> {
+    if (!payload.attachments) return true;
+
+    const imageAttachments = payload.attachments.filter(att => att.file_type === 'image');
+    console.log(`Processing ${imageAttachments.length} image attachments`);
+
+    let allSuccessful = true;
+
+    for (const attachment of imageAttachments) {
+      try {
+        const imageSuccess = await this.processSingleImageAttachment(
+          attachment, 
+          payload, 
+          bucketName, 
+          userId, 
+          contactId,
+          messageGcsPath
+        );
+        if (!imageSuccess) {
+          allSuccessful = false;
+        }
+      } catch (error) {
+        console.error(`Error processing image attachment ${attachment.id}:`, error);
+        allSuccessful = false;
+      }
+    }
+
+    return allSuccessful;
+  }
+
+  /**
+   * Process a single image attachment
+   */
+  private async processSingleImageAttachment(
+    attachment: AudioAttachment, // Reuse AudioAttachment interface for images
+    payload: ChatwootWebhookPayload,
+    bucketName: string,
+    userId: string | null,
+    contactId: string,
+    messageGcsPath: string
+  ): Promise<boolean> {
+    try {
+      console.log(`Processing image attachment ${attachment.id} from ${attachment.data_url}`);
+
+      // Download image file from Chatwoot
+      const imageBlob = await this.downloadImageFile(attachment.data_url);
+      if (!imageBlob) {
+        console.error(`Failed to download image file: ${attachment.data_url}`);
+        return false;
+      }
+
+      // Generate GCS path for image file
+      const imageGcsPath = this.generateImageGCSPath(payload, bucketName, attachment);
+
+      // Store image file in GCS
+      const imageStored = await this.storeImageInGCS(imageGcsPath, imageBlob);
+      if (!imageStored) {
+        console.error(`Failed to store image in GCS: ${imageGcsPath}`);
+        return false;
+      }
+
+      // Store image record in database and add to knowledge base
+      const imageRecordStored = await this.storeImageRecord(
+        attachment,
+        payload,
+        imageGcsPath,
+        userId,
+        contactId,
+        messageGcsPath
+      );
+
+      if (!imageRecordStored) {
+        console.error(`Failed to store image record in database`);
+        return false;
+      }
+
+      console.log(`Successfully processed image attachment ${attachment.id}`);
+      return true;
+
+    } catch (error) {
+      console.error(`Error in processSingleImageAttachment:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Download image file from Chatwoot URL
+   */
+  private async downloadImageFile(dataUrl: string): Promise<Blob | null> {
+    try {
+      // Fix relative URLs from Chatwoot by prepending the base URL
+      let fullUrl = dataUrl;
+      if (dataUrl.startsWith('http:///') || dataUrl.startsWith('https:///')) {
+        // Remove the triple slash and construct full URL
+        const path = dataUrl.replace(/^https?:\/\/\//, '/');
+        fullUrl = `${this.chatwootConfig.baseUrl}${path}`;
+      }
+      
+      console.log(`Downloading image from: ${fullUrl}`);
+      
+      const response = await fetch(fullUrl);
+      if (!response.ok) {
+        console.error(`Failed to download image: ${response.status} ${response.statusText}`);
+        return null;
+      }
+
+      const blob = await response.blob();
+      console.log(`Downloaded image file: ${blob.size} bytes, type: ${blob.type}`);
+      return blob;
+
+    } catch (error) {
+      console.error('Error downloading image file:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Generate GCS path for image file storage
+   */
+  private generateImageGCSPath(payload: ChatwootWebhookPayload, bucketName: string, attachment: AudioAttachment): string {
+    const date = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const conversationId = payload.conversation.id;
+    const messageId = payload.id;
+    const attachmentId = attachment.id;
+    
+    // Determine file extension from attachment or default to jpg
+    const fileExtension = this.getImageFileExtension(attachment.data_url) || 'jpg';
+    
+    return `gs://${bucketName}/whatsapp-images/${date}/${conversationId}/${messageId}_${attachmentId}.${fileExtension}`;
+  }
+
+  /**
+   * Get image file extension from URL
+   */
+  private getImageFileExtension(url: string): string | null {
+    try {
+      const urlPath = new URL(url).pathname;
+      const extension = urlPath.split('.').pop()?.toLowerCase();
+      
+      // Common image extensions
+      const validExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'];
+      return validExtensions.includes(extension || '') ? extension : null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Store image file in Google Cloud Storage
+   */
+  private async storeImageInGCS(gcsPath: string, imageBlob: Blob): Promise<boolean> {
+    try {
+      // Extract bucket name from gs://bucket-name/path format
+      const bucketName = gcsPath.split('/')[2];
+      
+      console.log(`Storing image in GCS: ${gcsPath}`);
+
+      // Get access token for GCS API
+      const accessToken = await this.getGCSAccessToken();
+      if (!accessToken) {
+        console.error('Failed to get GCS access token for image upload');
+        return false;
+      }
+
+      // Extract object name from the full path (gs://bucket/path -> path)
+      const objectName = gcsPath.replace(`gs://${bucketName}/`, '');
+
+      // Convert blob to array buffer
+      const imageBuffer = await imageBlob.arrayBuffer();
+
+      // Upload to GCS
+      const response = await fetch(`https://storage.googleapis.com/upload/storage/v1/b/${bucketName}/o?uploadType=media&name=${encodeURIComponent(objectName)}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': imageBlob.type || 'image/jpeg',
+        },
+        body: imageBuffer,
+      });
+
+      if (response.ok) {
+        console.log(`Image stored successfully in GCS: ${gcsPath}`);
+        return true;
+      } else {
+        const errorText = await response.text();
+        console.error(`Error storing image in GCS: ${response.status} ${response.statusText} - ${errorText}`);
+        return false;
+      }
+
+    } catch (error) {
+      console.error('Error storing image in GCS:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Store image record in database and add to knowledge base
+   */
+  private async storeImageRecord(
+    attachment: AudioAttachment,
+    payload: ChatwootWebhookPayload,
+    imageGcsPath: string,
+    userId: string | null,
+    contactId: string,
+    messageGcsPath: string
+  ): Promise<boolean> {
+    try {
+      // Add image to knowledge base so users can access it
+      if (userId) {
+        await this.addImageToKnowledgeBase(
+          attachment,
+          imageGcsPath,
+          userId,
+          contactId,
+          payload
+        );
+      }
+
+      console.log('Image record processed and added to knowledge base');
+      return true;
+
+    } catch (error) {
+      console.error('Error storing image record:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Add image file to knowledge base so users can access it
+   */
+  private async addImageToKnowledgeBase(
+    attachment: AudioAttachment,
+    imageGcsPath: string,
+    userId: string,
+    contactId: string,
+    payload: ChatwootWebhookPayload
+  ): Promise<void> {
+    try {
+      console.log(`📷 Adding image to knowledge base: ${imageGcsPath}`);
+      
+      // Generate a descriptive filename for the image
+      const timestamp = new Date(payload.created_at).toISOString().split('T')[0];
+      const fileExtension = this.getImageFileExtension(attachment.data_url) || 'jpg';
+      const fileName = `WhatsApp Image - ${timestamp} - ${contactId}.${fileExtension}`;
+      
+      // Trigger RAG processing for the image
+      await this.triggerRAGProcessing(userId, {
+        file_name: fileName,
+        file_type: 'image',
+        content: `[Image attachment from WhatsApp conversation on ${timestamp}]`, // Placeholder content for images
+        gcs_path: imageGcsPath,
+        metadata: {
+          source: 'whatsapp_image',
+          contact_id: contactId,
+          message_id: payload.id,
+          conversation_id: payload.conversation.id,
+          attachment_id: attachment.id,
+          attachment_url: attachment.data_url,
+          file_size: attachment.file_size,
+          processed_at: new Date().toISOString()
+        }
+      });
+
+    } catch (error) {
+      console.error('Error adding image to knowledge base:', error);
     }
   }
 }
