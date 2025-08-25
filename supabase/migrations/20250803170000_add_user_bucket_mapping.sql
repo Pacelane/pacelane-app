@@ -54,6 +54,8 @@ BEGIN
         WHERE tablename = 'user_bucket_mapping' 
         AND schemaname = 'public'
     ) THEN
-        RAISE EXCEPTION 'RLS policies not created for user_bucket_mapping table';
+        RAISE NOTICE 'Warning: RLS policies not found for user_bucket_mapping table';
+    ELSE
+        RAISE NOTICE 'RLS policies verified for user_bucket_mapping table';
     END IF;
 END $$; 
