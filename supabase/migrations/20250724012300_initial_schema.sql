@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS public.conversations (
 -- Create messages table to store individual chat messages (only if it doesn't exist)
 CREATE TABLE IF NOT EXISTS public.messages (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  conversation_id INTEGER NOT NULL REFERENCES public.conversations(id) ON DELETE CASCADE,
+  conversation_id UUID NOT NULL REFERENCES public.conversations(id) ON DELETE CASCADE,
   role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system')),
   content TEXT NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()

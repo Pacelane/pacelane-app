@@ -18,7 +18,7 @@ BEGIN
     PERFORM pgmq.create('pacing_content_queue');
     RAISE NOTICE 'Queue pacing_content_queue created successfully';
   ELSE
-    RAISE EXCEPTION 'pgmq extension is not enabled. Please enable Supabase Queues integration first.';
+    RAISE NOTICE 'pgmq extension not available, skipping queue creation (local development)';
   END IF;
 END $$;
 

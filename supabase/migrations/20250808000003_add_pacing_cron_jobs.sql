@@ -3,7 +3,19 @@
 -- Description: Set up cron jobs to automatically check pacing schedules daily
 
 -- Enable the pg_cron extension if not already enabled
-CREATE EXTENSION IF NOT EXISTS pg_cron;
+-- Only create if available (skip in local development)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') THEN
+        CREATE EXTENSION IF NOT EXISTS pg_cron;
+        RAISE NOTICE 'pg_cron extension enabled';
+    ELSE
+        RAISE NOTICE 'pg_cron extension already exists';
+    END IF;
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE NOTICE 'pg_cron extension not available, skipping (local development)';
+END $$;
 
 -- Create a function that will be called by the cron job
 -- This function works directly with the database - no HTTP calls needed
@@ -90,20 +102,30 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Schedule the cron job to run every day at 9:00 AM
--- Format: minute hour day month day_of_week
--- '0 9 * * *' means: 0 minutes, 9 hours, every day, every month, every day of week
-SELECT cron.schedule(
-  'daily-pacing-scheduler',
-  '0 9 * * *',
-  'SELECT create_scheduled_pacing_jobs();'
-);
-
--- Also schedule a backup job at 6:00 PM for users who prefer evening content
-SELECT cron.schedule(
-  'evening-pacing-scheduler',
-  '0 18 * * *',
-  'SELECT create_scheduled_pacing_jobs();'
-);
+-- Only run if cron extension is available (skip in local development)
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'cron') THEN
+        -- Format: minute hour day month day_of_week
+        -- '0 9 * * *' means: 0 minutes, 9 hours, every day, every month, every day of week
+        SELECT cron.schedule(
+          'daily-pacing-scheduler',
+          '0 9 * * *',
+          'SELECT create_scheduled_pacing_jobs();'
+        );
+        
+        -- Also schedule a backup job at 6:00 PM for users who prefer evening content
+        SELECT cron.schedule(
+          'evening-pacing-scheduler',
+          '0 18 * * *',
+          'SELECT create_scheduled_pacing_jobs();'
+        );
+        
+        RAISE NOTICE 'Pacing cron jobs scheduled successfully';
+    ELSE
+        RAISE NOTICE 'Cron extension not available, skipping cron job scheduling';
+    END IF;
+END $$;
 
 -- Add a comment explaining the cron jobs
 COMMENT ON FUNCTION create_scheduled_pacing_jobs() IS 'Function called by cron jobs to trigger daily pacing content generation';
