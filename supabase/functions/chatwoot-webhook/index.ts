@@ -1771,10 +1771,19 @@ Return only valid JSON:
     }
 
     const { userId, bucketName, contactId: finalContactId } = bucketResult.data;
+    
+    console.log(`🔍 Extracted user data:`, {
+      userId: userId || 'NULL',
+      bucketName,
+      finalContactId,
+      hasUserId: !!userId
+    });
 
     // CRITICAL: Create or update conversation entry for WhatsApp notifications
     if (userId) {
       await this.ensureConversationExists(userId, payload.conversation.id);
+    } else {
+      console.warn(`⚠️ No userId found in bucket result, audio processing will be skipped`);
     }
 
     // AUDIO FIX: For audio messages, transcribe first, then detect intent
@@ -1886,6 +1895,12 @@ Return only valid JSON:
 
       const result = await response.json();
       console.log('✅ User-bucket service result:', result);
+      console.log('🔍 Bucket result data structure:', {
+        hasData: !!result.data,
+        dataKeys: result.data ? Object.keys(result.data) : 'NO_DATA',
+        userId: result.data?.userId || 'NULL',
+        bucketName: result.data?.bucketName || 'NULL'
+      });
       
       return { success: true, data: result.data };
 
@@ -1920,22 +1935,29 @@ Return only valid JSON:
       // Download audio file
       const audioBlob = await this.downloadAudioFile(audioAttachment.data_url);
       if (!audioBlob) {
-        console.error('Failed to download audio for transcription');
-        return null;
+        console.error('❌ Failed to download audio for transcription');
+        return { text: '', error: 'Failed to download audio file' };
       }
 
+      console.log(`📁 Audio downloaded successfully: ${audioBlob.size} bytes, type: ${audioBlob.type}`);
+
       // Transcribe with OpenAI
+      console.log(`🤖 Starting OpenAI Whisper transcription...`);
       const transcription = await this.transcribeWithOpenAI(audioBlob);
       
       if (transcription?.text) {
         console.log(`✅ Transcription completed for intent: "${transcription.text.substring(0, 100)}..."`);
+      } else if (transcription?.error) {
+        console.error(`❌ Transcription failed: ${transcription.error}`);
+      } else {
+        console.error(`❌ Transcription returned no text and no error`);
       }
 
       return transcription;
 
     } catch (error) {
-      console.error('Error transcribing audio for intent:', error);
-      return null;
+      console.error('❌ Error transcribing audio for intent:', error);
+      return { text: '', error: `Transcription error: ${error.message}` };
     }
   }
 
@@ -2041,7 +2063,9 @@ Return only valid JSON:
       }
 
       // Generate GCS path for audio file
-      const audioGcsPath = this.generateAudioGCSPath(payload, bucketName, attachment);
+      // ✅ FIXED: Construct full gs:// path by combining bucket name with relative path
+      const relativePath = this.generateAudioGCSPath(payload, bucketName, attachment);
+      const audioGcsPath = `gs://${bucketName}/${relativePath}`;
 
       // Store audio file in GCS
       const audioStored = await this.storeAudioInGCS(audioGcsPath, audioBlob);
@@ -2101,7 +2125,9 @@ Return only valid JSON:
       }
 
       // Generate GCS path for audio file
-      const audioGcsPath = this.generateAudioGCSPath(payload, bucketName, attachment);
+      // ✅ FIXED: Construct full gs:// path by combining bucket name with relative path
+      const relativePath = this.generateAudioGCSPath(payload, bucketName, attachment);
+      const audioGcsPath = `gs://${bucketName}/${relativePath}`;
 
       // Store audio file in GCS
       const audioStored = await this.storeAudioInGCS(audioGcsPath, audioBlob);
@@ -2178,8 +2204,9 @@ Return only valid JSON:
     const messageId = payload.id;
     const attachmentId = attachment.id;
     
-    // ✅ FIXED: Remove the gs:// prefix since bucketName already includes it
-    return `${bucketName}/whatsapp-audio/${date}/${conversationId}/${messageId}_${attachmentId}.mp3`;
+    // ✅ FIXED: Return relative path only, without bucket name
+    // The bucket name will be added when constructing the full gs:// path
+    return `whatsapp-audio/${date}/${conversationId}/${messageId}_${attachmentId}.mp3`;
   }
 
   /**
@@ -2187,10 +2214,13 @@ Return only valid JSON:
    */
   private async storeAudioInGCS(gcsPath: string, audioBlob: Blob): Promise<boolean> {
     try {
-      // Extract bucket name from gs://bucket-name/path format
-      const bucketName = gcsPath.split('/')[2];
+      // ✅ FIXED: Extract bucket name correctly from the full path
+      // gcsPath format: gs://bucket-name/path
+      const pathParts = gcsPath.split('/');
+      const bucketName = pathParts[2]; // Extract bucket name after gs://
       
       console.log(`Storing audio in GCS: ${gcsPath}`);
+      console.log(`Bucket name: ${bucketName}`);
 
       // Get access token for GCS API
       const accessToken = await this.getGCSAccessToken();
@@ -2199,8 +2229,10 @@ Return only valid JSON:
         return false;
       }
 
-      // Extract object name from the full path (gs://bucket/path -> path)
+      // ✅ FIXED: Extract object name correctly
+      // Remove gs://bucket-name/ prefix to get just the path
       const objectName = gcsPath.replace(`gs://${bucketName}/`, '');
+      console.log(`Object name: ${objectName}`);
 
       // Convert blob to array buffer
       const audioBuffer = await audioBlob.arrayBuffer();
@@ -2236,16 +2268,19 @@ Return only valid JSON:
   private async transcribeWithOpenAI(audioBlob: Blob): Promise<{ text: string; error?: string } | null> {
     try {
       if (!this.openaiConfig.apiKey) {
-        console.error('OpenAI API key not configured');
+        console.error('❌ OpenAI API key not configured');
         return { text: '', error: 'OpenAI API key not configured' };
       }
 
-      console.log(`Transcribing audio with OpenAI Whisper (${audioBlob.size} bytes)`);
+      console.log(`🎤 Transcribing audio with OpenAI Whisper (${audioBlob.size} bytes)`);
+      console.log(`🔑 OpenAI model: ${this.openaiConfig.model}`);
 
       // Prepare form data for OpenAI API
       const formData = new FormData();
       formData.append('file', audioBlob, 'audio.mp3');
       formData.append('model', this.openaiConfig.model);
+
+      console.log(`📤 Sending request to OpenAI Whisper API...`);
 
       // Call OpenAI Whisper API
       const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
@@ -2256,20 +2291,32 @@ Return only valid JSON:
         body: formData,
       });
 
+      console.log(`📥 OpenAI API response status: ${response.status} ${response.statusText}`);
+
       if (!response.ok) {
         const errorText = await response.text();
-        console.error(`OpenAI API error: ${response.status} ${response.statusText} - ${errorText}`);
+        console.error(`❌ OpenAI API error: ${response.status} ${response.statusText} - ${errorText}`);
         return { text: '', error: `OpenAI API error: ${response.status} ${response.statusText}` };
       }
 
       const result = await response.json();
-      console.log(`Transcription completed: ${result.text?.substring(0, 100)}...`);
+      console.log(`✅ OpenAI API response received:`, {
+        hasText: !!result.text,
+        textLength: result.text?.length || 0,
+        textPreview: result.text?.substring(0, 100) || 'No text'
+      });
       
-      return { text: result.text || '' };
+      if (result.text) {
+        console.log(`🎉 Transcription completed successfully: "${result.text.substring(0, 100)}..."`);
+        return { text: result.text };
+      } else {
+        console.error(`❌ OpenAI returned no text in response:`, result);
+        return { text: '', error: 'OpenAI returned no text in response' };
+      }
 
     } catch (error) {
-      console.error('Error transcribing audio:', error);
-      return { text: '', error: error.message };
+      console.error('❌ Error transcribing audio with OpenAI:', error);
+      return { text: '', error: `OpenAI transcription error: ${error.message}` };
     }
   }
 
@@ -2329,6 +2376,7 @@ Return only valid JSON:
 
       // Also add to knowledge_files table so it appears in the knowledge base
       if (userId) {
+        console.log(`🔧 Adding audio to knowledge base for user: ${userId}`);
         await this.addAudioToKnowledgeBase(
           attachment,
           audioGcsPath,
@@ -2337,6 +2385,8 @@ Return only valid JSON:
           contactId,
           payload
         );
+      } else {
+        console.warn(`⚠️ Skipping knowledge base addition: userId is null`);
       }
 
       return true;
@@ -2359,22 +2409,41 @@ Return only valid JSON:
     payload: ChatwootWebhookPayload
   ): Promise<void> {
     try {
-      // ✅ MODIFIED: Don't create duplicate entry in knowledge_files table
-      // Audio files are already stored in audio_files table
-      // Just trigger RAG processing for the transcribed content
-      
+      // ✅ FIXED: Add null check for userId
+      if (!userId) {
+        console.error(`❌ Cannot add audio to knowledge base: userId is null or empty`);
+        return;
+      }
+
+      console.log(`🎤 Processing audio for knowledge base - User: ${userId}, Contact: ${contactId}`);
+      console.log(`📁 Audio GCS Path: ${audioGcsPath}`);
+      console.log(`📝 Transcription available: ${!!transcription?.text}`);
+
       if (transcription?.text) {
-        console.log(`🎤 Audio transcription available, triggering RAG processing`);
+        console.log(`🎤 Audio transcription available, sending both audio file and transcription to knowledge base`);
         
-        // Generate a descriptive filename for RAG processing
+        // Validate transcription length (Vertex AI has limits)
+        const maxTranscriptionLength = 100000; // 100KB limit for safety
+        if (transcription.text.length > maxTranscriptionLength) {
+          console.warn(`⚠️ Transcription too long (${transcription.text.length} chars), truncating to ${maxTranscriptionLength} chars`);
+          transcription.text = transcription.text.substring(0, maxTranscriptionLength) + '\n\n[Content truncated due to length]';
+        }
+        
+        // Generate descriptive filenames for both content types
         const timestamp = new Date(payload.created_at).toISOString().split('T')[0];
-        const fileName = `WhatsApp Audio - ${timestamp} - ${contactId}.mp3`;
+        const audioFileName = `WhatsApp Audio - ${timestamp} - ${contactId}.mp3`;
+        const transcriptionFileName = `WhatsApp Audio Transcription - ${timestamp} - ${contactId}.md`;
         
-        // ✅ NEW: Trigger RAG processing for the transcribed content
+        console.log(`📤 Sending audio file to knowledge base: ${audioFileName}`);
+        console.log(`📤 Sending transcription to knowledge base: ${transcriptionFileName} (${transcription.text.length} chars)`);
+        
+        // 1. Send audio file to knowledge base
+        const audioDescription = `Audio file: ${audioFileName}\n\nThis is an audio message from WhatsApp that has been transcribed and stored in Google Cloud Storage.\n\nGCS Path: ${audioGcsPath}\nTranscription: ${transcription.text}\n\nMetadata:\n- Contact: ${contactId}\n- Message ID: ${payload.id}\n- Conversation ID: ${payload.conversation.id}\n- Transcription Model: ${this.openaiConfig.model}\n- Processed: ${new Date().toISOString()}`;
+        
         await this.triggerRAGProcessing(userId, {
-          file_name: fileName,
+          file_name: audioFileName,
           file_type: 'audio',
-          content: transcription.text,
+          content: audioDescription,
           gcs_path: audioGcsPath,
           metadata: {
             source: 'whatsapp_audio',
@@ -2385,12 +2454,57 @@ Return only valid JSON:
             processed_at: new Date().toISOString()
           }
         });
+        
+        // 2. Send transcription as markdown text to knowledge base
+        const formattedTranscription = `# WhatsApp Audio Transcription\n\n**Date:** ${new Date(payload.created_at).toLocaleDateString()}\n**Contact:** ${contactId}\n**Message ID:** ${payload.id}\n\n## Transcription\n\n${transcription.text}\n\n---\n*Transcribed by ${this.openaiConfig.model} on ${new Date().toLocaleString()}*`;
+        
+        await this.triggerRAGProcessing(userId, {
+          file_name: transcriptionFileName,
+          file_type: 'text',
+          content: formattedTranscription,
+          gcs_path: null, // No GCS path needed for text content
+          metadata: {
+            source: 'whatsapp_audio_transcription',
+            contact_id: contactId,
+            message_id: payload.id,
+            conversation_id: payload.conversation.id,
+            transcription_model: this.openaiConfig.model,
+            original_audio_path: audioGcsPath, // Link to original audio file
+            processed_at: new Date().toISOString()
+          }
+        });
+        
+        console.log(`✅ Both audio file and transcription sent to knowledge base successfully`);
+        
       } else {
-        console.log(`⚠️ No transcription available for audio, skipping RAG processing`);
+        console.log(`⚠️ No transcription available for audio, only sending audio file to knowledge base`);
+        
+        // Fallback: Send just the audio file if no transcription
+        const timestamp = new Date(payload.created_at).toISOString().split('T')[0];
+        const audioFileName = `WhatsApp Audio - ${timestamp} - ${contactId}.mp3`;
+        
+        console.log(`📤 Sending audio file only (no transcription): ${audioFileName}`);
+        
+        const audioDescriptionNoTranscription = `Audio file: ${audioFileName}\n\nThis is an audio message from WhatsApp that has been stored in Google Cloud Storage.\n\nNote: No transcription was available for this audio file.\n\nGCS Path: ${audioGcsPath}\n\nMetadata:\n- Contact: ${contactId}\n- Message ID: ${payload.id}\n- Conversation ID: ${payload.conversation.id}\n- Processed: ${new Date().toISOString()}`;
+        
+        await this.triggerRAGProcessing(userId, {
+          file_name: audioFileName,
+          file_type: 'audio',
+          content: audioDescriptionNoTranscription,
+          gcs_path: audioGcsPath,
+          metadata: {
+            source: 'whatsapp_audio',
+            contact_id: contactId,
+            message_id: payload.id,
+            conversation_id: payload.conversation.id,
+            processed_at: new Date().toISOString()
+          }
+        });
       }
 
     } catch (error) {
-      console.error('Error processing audio for knowledge base:', error);
+      console.error('❌ Error processing audio for knowledge base:', error);
+      // Don't throw - we want to continue processing even if knowledge base fails
     }
   }
 
@@ -2399,7 +2513,21 @@ Return only valid JSON:
    */
   private async triggerRAGProcessing(userId: string, fileData: any): Promise<void> {
     try {
+      // ✅ FIXED: Add null check for userId
+      if (!userId) {
+        console.error(`❌ Cannot trigger RAG processing: userId is null or empty`);
+        return;
+      }
+      
       console.log(`🚀 Triggering RAG processing for WhatsApp content: ${fileData.file_name}`);
+      console.log(`🔧 RAG processing details:`, {
+        userId,
+        file_name: fileData.file_name,
+        file_type: fileData.file_type,
+        content_length: fileData.content?.length || 0,
+        gcs_path: fileData.gcs_path,
+        has_metadata: !!fileData.metadata
+      });
       
       // Call knowledge-base-storage function with whatsapp_content action
       const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/knowledge-base-storage`, {
@@ -2421,13 +2549,25 @@ Return only valid JSON:
 
       if (response.ok) {
         const result = await response.json();
-        console.log(`✅ RAG processing triggered successfully:`, result);
+        console.log(`✅ RAG processing triggered successfully for ${fileData.file_name}:`, result);
       } else {
         const errorText = await response.text();
-        console.warn(`⚠️ Failed to trigger RAG processing: ${response.status} - ${errorText}`);
+        console.error(`❌ Failed to trigger RAG processing for ${fileData.file_name}: ${response.status} - ${errorText}`);
+        
+        // Log the request payload for debugging
+        console.log(`🔍 Failed request payload:`, {
+          userId,
+          action: 'whatsapp_content',
+          file_name: fileData.file_name,
+          file_type: fileData.file_type,
+          content_length: fileData.content?.length || 0,
+          gcs_path: fileData.gcs_path,
+          has_metadata: !!fileData.metadata
+        });
       }
     } catch (error) {
-      console.error('❌ Error triggering RAG processing:', error);
+      console.error(`❌ Error triggering RAG processing for ${fileData.file_name}:`, error);
+      // Don't throw - we want to continue processing even if RAG fails
     }
   }
 
@@ -2716,6 +2856,120 @@ Return only valid JSON:
       return false;
     }
   }
+
+  /**
+   * ✅ NEW: Reprocess an existing audio message
+   * This method allows reprocessing of audio messages that failed initially
+   */
+  async reprocessAudioMessage(payload: ChatwootWebhookPayload, userId: string): Promise<{ success: boolean; message: string; details?: any }> {
+    try {
+      console.log(`🔄 Reprocessing audio message for user: ${userId}`);
+      console.log(`📱 Message ID: ${payload.id}`);
+      console.log(`📞 Contact ID: ${payload.sender.id}`);
+      
+      // Check if this message has audio attachments
+      if (!this.hasAudioAttachments(payload)) {
+        return { 
+          success: false, 
+          message: 'Message does not contain audio attachments' 
+        };
+      }
+
+      // Extract contact ID
+      const contactId = `contact_${payload.sender.id}_account_${payload.account.id}`;
+      
+      // Get bucket information
+      const bucketResult = await this.identifyUserAndSetupBucket(
+        this.extractWhatsAppNumber(payload), 
+        contactId
+      );
+      
+      if (!bucketResult.success) {
+        return { 
+          success: false, 
+          message: `Failed to setup bucket: ${bucketResult.error}` 
+        };
+      }
+
+      const { bucketName, userId: actualUserId } = bucketResult.data;
+      
+      // ✅ FIXED: Use the actual user ID from the bucket service, not the passed one
+      if (actualUserId && actualUserId !== userId) {
+        console.log(`🔄 User ID mismatch detected: requested=${userId}, actual=${actualUserId}`);
+        console.log(`🔄 Using actual user ID from bucket service: ${actualUserId}`);
+        userId = actualUserId;
+      }
+      
+      // Generate GCS path for the message
+      const gcsPath = this.generateGCSPath(payload, bucketName);
+      
+      // Process audio attachments with transcription
+      console.log(`🎤 Processing audio attachments for reprocessing`);
+      
+      // ✅ FIXED: Generate fresh transcription for reprocessing
+      let transcriptionResult: { text: string; error?: string } | null = null;
+      
+      if (this.hasAudioAttachments(payload)) {
+        console.log(`🎤 Generating fresh transcription for reprocessing`);
+        transcriptionResult = await this.transcribeAudioForIntent(payload);
+        
+        if (transcriptionResult?.text) {
+          console.log(`✅ Fresh transcription generated: "${transcriptionResult.text.substring(0, 100)}..."`);
+        } else {
+          console.warn(`⚠️ Fresh transcription failed: ${transcriptionResult?.error || 'Unknown error'}`);
+        }
+      }
+      
+      const audioSuccess = await this.processAudioAttachmentsWithTranscription(
+        payload, 
+        bucketName, 
+        userId, 
+        contactId,
+        gcsPath,
+        transcriptionResult // Use the fresh transcription
+      );
+
+      if (!audioSuccess) {
+        return { 
+          success: false, 
+          message: 'Failed to process audio attachments' 
+        };
+      }
+
+      // Store message in database and GCS
+      await this.storeInGCS(gcsPath, payload);
+      await this.storeInDatabase(payload, gcsPath, userId, contactId);
+
+      // Process as NOTE (since it's audio content)
+      const noteResult = await this.processNoteIntentWithTranscription(
+        payload, 
+        userId, 
+        contactId, 
+        null // We'll get transcription from audio processing
+      );
+
+      return {
+        success: true,
+        message: 'Audio message reprocessed successfully',
+        details: {
+          userId,
+          bucketName,
+          contactId,
+          messageId: payload.id,
+          audioProcessed: audioSuccess,
+          noteProcessed: noteResult.success
+        }
+      };
+
+    } catch (error) {
+      console.error('❌ Error reprocessing audio message:', error);
+      return {
+        success: false,
+        message: `Reprocessing failed: ${error.message}`,
+        details: { error: error.message }
+      };
+    }
+  }
 }
 
 // Main handler function
@@ -2725,28 +2979,57 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Only accept POST requests
-  if (req.method !== 'POST') {
-    return new Response(
-      JSON.stringify({ error: 'Method not allowed' }),
-      { 
-        status: 405, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
-  }
-
   try {
-    // Parse webhook payload
-    const payload = await req.json();
+    // Parse request body
+    const body = await req.json();
     
-    console.log('Received webhook payload:', JSON.stringify(payload, null, 2));
+    // Check if this is a reprocessing request
+    if (body.action === 'reprocess_audio') {
+      console.log('🔄 Reprocessing audio message request received');
+      
+      if (!body.payload || !body.userId) {
+        return new Response(
+          JSON.stringify({ error: 'payload and userId are required for reprocessing' }),
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+      
+      // Initialize processor
+      const processor = new ChatwootWebhookProcessor();
+      
+      // Reprocess the audio message
+      const result = await processor.reprocessAudioMessage(body.payload, body.userId);
+      
+      return new Response(
+        JSON.stringify(result),
+        { 
+          status: result.success ? 200 : 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+    
+    // Regular webhook processing
+    if (req.method !== 'POST') {
+      return new Response(
+        JSON.stringify({ error: 'Method not allowed' }),
+        { 
+          status: 405, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    console.log('Received webhook payload:', JSON.stringify(body, null, 2));
     
     // Initialize processor
     const processor = new ChatwootWebhookProcessor();
     
     // Process the webhook
-    const result = await processor.processWebhook(payload);
+    const result = await processor.processWebhook(body);
 
     // Return response
     const status = result.success ? 200 : 400;
@@ -2759,7 +3042,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Webhook processing error:', error);
+    console.error('Request processing error:', error);
     
     return new Response(
       JSON.stringify({ 

@@ -630,6 +630,7 @@ class GCSKnowledgeBaseStorage {
   ): Promise<void> {
     try {
       console.log(`🚀 Triggering RAG processing for file: ${fileName}`);
+      console.log(`🔧 RAG processing params: bucketName=${bucketName}, filePath=${filePath}`);
       
       // Call the vertex-ai-rag-processor edge function
       const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/vertex-ai-rag-processor`, {
@@ -702,16 +703,35 @@ class GCSKnowledgeBaseStorage {
    */
   private async storeTemporaryFile(userId: string, fileName: string, content: string): Promise<string | null> {
     try {
-      const bucketName = await this.getUserBucketName(userId);
-      if (!bucketName) {
-        console.error('No bucket found for user:', userId);
-        return null;
+      console.log(`📁 Storing temporary file for user ${userId}: ${fileName}`);
+      
+      // Try centralized service first
+      let bucketName: string;
+      try {
+        const bucketResult = await this.ensureUserBucketViaService(userId);
+        if (bucketResult.success) {
+          bucketName = bucketResult.data.bucketName;
+          console.log(`✅ Using centralized service bucket: ${bucketName}`);
+        } else {
+          throw new Error(`Centralized service failed: ${bucketResult.error}`);
+        }
+      } catch (error) {
+        console.warn(`⚠️ Centralized service failed, trying direct bucket lookup: ${error.message}`);
+        // Fallback to direct bucket lookup
+        bucketName = await this.getUserBucketName(userId);
+        if (!bucketName) {
+          console.error(`❌ No bucket found for user: ${userId}`);
+          return null;
+        }
+        console.log(`🔧 Using direct bucket lookup: ${bucketName}`);
       }
 
       // Create temporary file path
       const date = new Date().toISOString().split('T')[0];
       const tempFilePath = `whatsapp-notes/${date}/${userId}_${Date.now()}_${fileName}`;
       const gcsPath = `gs://${bucketName}/${tempFilePath}`;
+
+      console.log(`📁 Creating temporary file at: ${tempFilePath}`);
 
       // Convert content to buffer
       const contentBuffer = new TextEncoder().encode(content);
@@ -742,7 +762,7 @@ class GCSKnowledgeBaseStorage {
       return gcsPath;
 
     } catch (error) {
-      console.error('Error storing temporary file:', error);
+      console.error(`❌ Error storing temporary file for user ${userId}:`, error);
       return null;
     }
   }
@@ -1202,7 +1222,17 @@ serve(async (req) => {
         // ✅ NEW: Handle WhatsApp content (notes and audio transcripts)
         const { file_name, file_type, content, gcs_path, metadata } = body;
         
+        console.log(`🔍 Processing WhatsApp content:`, {
+          file_name,
+          file_type,
+          content_length: content?.length || 0,
+          has_gcs_path: !!gcs_path,
+          has_metadata: !!metadata,
+          user_id: userId
+        });
+        
         if (!file_name || !content) {
+          console.error(`❌ Validation failed: file_name=${!!file_name}, content=${!!content}`);
           return new Response(JSON.stringify({ error: 'File name and content are required' }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -1215,12 +1245,43 @@ serve(async (req) => {
           if (file_type === 'audio' && gcs_path) {
             console.log(`🎤 Audio file detected, skipping knowledge_files creation, triggering RAG directly`);
             
-            // Trigger RAG processing directly for audio files
+            // ✅ IMPROVED: More robust bucket resolution with better fallback
+            let bucketName: string;
+            let filePath: string;
+            
+            try {
+              console.log(`🔍 Attempting to get bucket via centralized service for user: ${userId}`);
+              const bucketResult = await storage.ensureUserBucketViaService(userId);
+              if (bucketResult.success) {
+                bucketName = bucketResult.data.bucketName;
+                filePath = gcs_path.replace(`gs://${bucketName}/`, ''); // Extract file path
+                console.log(`✅ Using centralized service bucket: ${bucketName}`);
+              } else {
+                throw new Error(`Centralized service failed: ${bucketResult.error}`);
+              }
+            } catch (error) {
+              console.warn(`⚠️ Centralized service failed, falling back to GCS path extraction: ${error.message}`);
+              // Fallback: Extract bucket name from GCS path
+              const gcsPathParts = gcs_path.split('/');
+              if (gcsPathParts.length >= 3) {
+                bucketName = gcsPathParts[2];
+                filePath = gcsPathParts.slice(3).join('/'); // Get everything after bucket name
+                console.log(`🔧 Fallback: Extracted bucket from GCS path: ${bucketName}, filePath: ${filePath}`);
+              } else {
+                throw new Error(`Invalid GCS path format: ${gcs_path}`);
+              }
+            }
+            
+            // ✅ FIXED: Use the actual filename from the GCS path for RAG processing
+            // This ensures the filename matches what's actually stored in GCS
+            const actualFileName = filePath.split('/').pop() || file_name;
+            console.log(`🔧 Using actual filename for RAG processing: ${actualFileName} (from path: ${filePath})`);
+            
             await storage.triggerRAGProcessing(
               userId,
-              gcs_path.split('/')[2], // Extract bucket name
-              file_name,
-              gcs_path,
+              bucketName,
+              actualFileName, // Use actual filename instead of friendly display name
+              filePath,
               'audio',
               content.length,
               metadata
@@ -1271,17 +1332,50 @@ serve(async (req) => {
           // Trigger RAG processing for the WhatsApp content
           if (gcs_path) {
             // For audio files with GCS path
+            // ✅ IMPROVED: More robust bucket resolution with better fallback
+            let bucketName: string;
+            let filePath: string;
+            
+            try {
+              console.log(`🔍 Attempting to get bucket via centralized service for user: ${userId}`);
+              const bucketResult = await storage.ensureUserBucketViaService(userId);
+              if (bucketResult.success) {
+                bucketName = bucketResult.data.bucketName;
+                filePath = gcs_path.replace(`gs://${bucketName}/`, ''); // Extract file path
+                console.log(`✅ Using centralized service bucket: ${bucketName}`);
+              } else {
+                throw new Error(`Centralized service failed: ${bucketResult.error}`);
+              }
+            } catch (error) {
+              console.warn(`⚠️ Centralized service failed, falling back to GCS path extraction: ${error.message}`);
+              // Fallback: Extract bucket name from GCS path
+              const gcsPathParts = gcs_path.split('/');
+              if (gcsPathParts.length >= 3) {
+                bucketName = gcsPathParts[2];
+                filePath = gcsPathParts.slice(3).join('/'); // Get everything after bucket name
+                console.log(`🔧 Fallback: Extracted bucket from GCS path: ${bucketName}, filePath: ${filePath}`);
+              } else {
+                throw new Error(`Invalid GCS path format: ${gcs_path}`);
+              }
+            }
+            
+            // ✅ FIXED: Use the actual filename from the GCS path for RAG processing
+            // This ensures the filename matches what's actually stored in GCS
+            const actualFileName = filePath.split('/').pop() || file_name;
+            console.log(`🔧 Using actual filename for RAG processing: ${actualFileName} (from path: ${filePath})`);
+            
             await storage.triggerRAGProcessing(
               userId,
-              gcs_path.split('/')[2], // Extract bucket name
-              file_name,
-              gcs_path,
+              bucketName,
+              actualFileName, // Use actual filename instead of friendly display name
+              filePath,
               file_type || 'audio',
               content.length,
               metadata
             );
           } else {
             // For text notes without GCS path, create a temporary file for RAG processing
+            console.log(`📝 Text note detected, creating temporary file for RAG processing`);
             const tempFileName = `whatsapp_note_${Date.now()}.txt`;
             const tempContent = content;
             
@@ -1289,15 +1383,28 @@ serve(async (req) => {
             const tempGcsPath = await storage.storeTemporaryFile(userId, tempFileName, tempContent);
             
             if (tempGcsPath) {
-              await storage.triggerRAGProcessing(
-                userId,
-                tempGcsPath.split('/')[2], // Extract bucket name
-                tempFileName,
-                tempGcsPath,
-                'file', // ✅ FIXED: Use 'file' instead of 'text' for RAG processing
-                content.length,
-                metadata
-              );
+              // ✅ IMPROVED: Extract bucket name and file path correctly from gs:// path
+              const gcsPathParts = tempGcsPath.split('/');
+              if (gcsPathParts.length >= 3) {
+                const bucketName = gcsPathParts[2]; // Extract bucket name
+                const filePath = gcsPathParts.slice(3).join('/'); // Extract file path
+                
+                console.log(`🔧 Temporary file created: bucket=${bucketName}, path=${filePath}`);
+                
+                await storage.triggerRAGProcessing(
+                  userId,
+                  bucketName,
+                  tempFileName,
+                  filePath,
+                  'file', // ✅ FIXED: Use 'file' instead of 'text' for RAG processing
+                  content.length,
+                  metadata
+                );
+              } else {
+                console.error(`❌ Invalid temporary file GCS path format: ${tempGcsPath}`);
+              }
+            } else {
+              console.error(`❌ Failed to create temporary file for text note`);
             }
           }
 
