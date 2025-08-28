@@ -304,11 +304,18 @@ const Posts = () => {
     width: isMobile ? '100%' : 'auto',
   };
 
+  // View toggle row styles
+  const viewToggleRowStyles = {
+    display: 'flex',
+    justifyContent: 'flex-start',
+    width: '100%',
+  };
+
   // Content grid styles - responsive and view-mode aware
   const contentGridStyles = {
     display: 'grid',
     gridTemplateColumns: viewMode === 'line' ? '1fr' : (isMobile ? '1fr' : '1fr 1fr'),
-    gap: spacing.spacing[24],
+    gap: spacing.spacing[12],
   };
 
   // Section styles
@@ -347,7 +354,7 @@ const Posts = () => {
               onTabChange={setSelectedFilter}
             />
 
-            {/* Right: Search, View Toggle and Sort */}
+            {/* Right: Search and Sort */}
             <div style={rightSectionStyles}>
               {/* Search Input */}
               <div style={{ flex: isMobile ? 1 : 'none', width: isMobile ? 'auto' : '280px' }}>
@@ -361,30 +368,6 @@ const Posts = () => {
                 />
               </div>
 
-              {/* View Toggle */}
-              <div style={{ 
-                display: 'flex', 
-                alignItems: 'center',
-                border: `1px solid ${colors.border.default}`,
-                borderRadius: cornerRadius.borderRadius.md,
-                overflow: 'hidden'
-              }}>
-                <Button
-                  variant="iconOnly"
-                  style={viewMode === 'grid' ? 'soft' : 'ghost'}
-                  size="sm"
-                  leadIcon={<LayoutGrid size={16} />}
-                  onClick={() => setViewMode('grid')}
-                />
-                <Button
-                  variant="iconOnly"
-                  style={viewMode === 'line' ? 'soft' : 'ghost'}
-                  size="sm"
-                  leadIcon={<AlignJustify size={16} />}
-                  onClick={() => setViewMode('line')}
-                />
-              </div>
-
               {/* Sort Dropdown */}
               <div style={{ flexShrink: 0 }}>
                 <DropdownButton
@@ -395,8 +378,36 @@ const Posts = () => {
                   minWidth="160px"
                 />
               </div>
-                                  </div>
-                                </div>
+            </div>
+          </div>
+
+          {/* View Toggle Row */}
+          <div style={viewToggleRowStyles}>
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center',
+              border: `1px solid ${colors.border.default}`,
+              borderRadius: cornerRadius.borderRadius.md,
+              overflow: 'hidden'
+            }}>
+                             <Button
+                 variant="default"
+                 style={viewMode === 'grid' ? 'soft' : 'ghost'}
+                 size="sm"
+                 leadIcon={<LayoutGrid size={16} />}
+                 label="Grid"
+                 onClick={() => setViewMode('grid')}
+               />
+               <Button
+                 variant="default"
+                 style={viewMode === 'line' ? 'soft' : 'ghost'}
+                 size="sm"
+                 leadIcon={<AlignJustify size={16} />}
+                 label="List"
+                 onClick={() => setViewMode('line')}
+               />
+            </div>
+          </div>
 
           {/* Loading State */}
           {isLoading && (

@@ -31,12 +31,13 @@ const Templates = () => {
     ? templates 
     : templates.filter(template => template.category === activeCategory);
 
-  // Tab configuration - matches Knowledge Base styling
+  // Tab configuration - simplified for single template
   const tabItems = [
     { id: 'all', label: 'All' },
-    { id: templateCategories.AUTHORITY, label: 'Authority' },
-    { id: templateCategories.CAREER, label: 'Career' },
-    { id: templateCategories.STORYTELLING, label: 'Storytelling' }
+    { id: templateCategories.PERSONAL, label: 'Personal' },
+    { id: templateCategories.EDUCATIONAL, label: 'Educational' },
+    { id: templateCategories.ORGANIZATIONAL, label: 'Organizational' },
+    { id: templateCategories.PROMOTIONAL, label: 'Promotional' }
   ];
 
   // Handle template selection
@@ -93,13 +94,13 @@ const Templates = () => {
     marginTop: spacing.spacing[8], // REQUIRED: 8px gap between title and subtitle
   };
 
-  // Grid container styles - mobile single column, desktop fixed width
+  // Grid container styles - mobile single column, desktop 2 columns
   const gridStyles = {
     display: 'grid',
-    gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, 240px)',
-    gap: spacing.spacing[12],
+    gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)',
+    gap: spacing.spacing[16],
     width: '100%',
-    justifyContent: isMobile ? 'stretch' : 'start',
+    justifyContent: isMobile ? 'stretch' : 'stretch',
   };
 
   return (
@@ -132,13 +133,13 @@ const Templates = () => {
       {filteredTemplates.length > 0 ? (
         <div style={gridStyles}>
           {/* Template Cards - Show filtered templates */}
-          {filteredTemplates.map((template, index) => (
+          {filteredTemplates.map((template) => (
             <TemplateCard 
               key={template.id}
               variant="default"
               title={template.title}
               description={template.description || ''}
-              bichaurinhoVariant={(index % 32) + 1} // Cycle through available variants
+              bichaurinhoVariant={template.bichaurinhoVariant || 1}
               onClick={() => {
                 console.log('TemplateCard onClick called for:', template.id);
                 handleTemplateClick(template.id);

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, FileText } from 'lucide-react';
 import { useTheme } from '../../services/theme-context.jsx';
 import { spacing } from '../tokens/spacing.js';
 import { cornerRadius } from '../tokens/corner-radius.js';
@@ -32,8 +32,8 @@ const ContentListItem = ({
   const [isHovered, setIsHovered] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
 
-  // Get first line of content for preview
-  const displayContent = content.split('\n')[0].substring(0, 120) + (content.length > 120 ? '...' : '');
+  // Get first 3 lines of content for preview
+  const displayContent = content.split('\n').slice(0, 3).join('\n');
 
   // Dropdown menu items
   const dropdownItems = [
@@ -48,6 +48,23 @@ const ContentListItem = ({
   const handleMouseEnter = () => setIsHovered(true);
   const handleMouseLeave = () => setIsHovered(false);
 
+  // Shadow styles - matching ContentCard behavior
+  const cardShadow = isHovered 
+    ? getShadow('regular.modalMd', colors, { withBorder: false })
+    : getShadow('regular.card', colors, { withBorder: false });
+
+  // Cover background styles - matching ContentCard
+  const coverBackground = variant === 'image' && image 
+    ? {
+        backgroundImage: `url(${image})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }
+    : {
+        background: `linear-gradient(to bottom, ${colors.bg.default}, ${colors.bg.subtle})`
+      };
+
   return (
     <motion.div
       className={className}
@@ -59,9 +76,7 @@ const ContentListItem = ({
         borderRadius: cornerRadius.borderRadius.md,
         backgroundColor: colors.bg.card.default,
         border: `1px solid ${colors.border.default}`,
-        boxShadow: isHovered 
-          ? getShadow('regular.card', colors, { withBorder: false })
-          : 'none',
+        boxShadow: cardShadow,
         transition: 'all 0.2s ease-in-out',
         cursor: onClick ? 'pointer' : 'default',
         ...style
@@ -71,72 +86,51 @@ const ContentListItem = ({
       onClick={onClick}
       {...rest}
     >
-      {/* Preview Thumbnail */}
-      <div
-        style={{
-          width: '64px',
-          height: '64px',
-          borderRadius: cornerRadius.borderRadius.sm,
-          flexShrink: 0,
-          background: variant === 'image' && image 
-            ? `url(${image})`
-            : `linear-gradient(135deg, ${colors.bg.state.soft}, ${colors.bg.state.primary})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          border: `1px solid ${colors.border.default}`,
-        }}
-      />
+                    {/* File Icon */}
+       <FileText
+         size={24}
+         color={colors.icon.muted}
+         style={{
+           flexShrink: 0
+         }}
+       />
 
-      {/* Content */}
-      <div style={{ 
-        flex: 1, 
-        minWidth: 0, // Allow text to truncate
-        display: 'flex',
-        flexDirection: 'column',
-        gap: spacing.spacing[4]
-      }}>
-        {/* Title */}
-        <h3
-          style={{
-            ...textStyles.md.medium,
-            color: colors.text.default,
-            margin: 0,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap'
-          }}
-        >
-          {title}
-        </h3>
-        
-        {/* Subtitle */}
-        <p
-          style={{
-            ...textStyles.sm.normal,
-            color: colors.text.muted,
-            margin: 0,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap'
-          }}
-        >
-          {subtitle}
-        </p>
-
-        {/* Content Preview */}
-        <p
-          style={{
-            ...textStyles.xs.normal,
-            color: colors.text.subtle,
-            margin: 0,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap'
-          }}
-        >
-          {displayContent}
-        </p>
-      </div>
+       {/* Content */}
+       <div style={{ 
+         flex: 1, 
+         minWidth: 0, // Allow text to truncate
+         display: 'flex',
+         flexDirection: 'column',
+         gap: spacing.spacing[4]
+       }}>
+         {/* Title */}
+         <h3
+           style={{
+             ...textStyles.md.medium,
+             color: colors.text.default,
+             margin: 0,
+             overflow: 'hidden',
+             textOverflow: 'ellipsis',
+             whiteSpace: 'nowrap'
+           }}
+         >
+           {title}
+         </h3>
+         
+         {/* Subtitle */}
+         <p
+           style={{
+             ...textStyles.sm.normal,
+             color: colors.text.muted,
+             margin: 0,
+             overflow: 'hidden',
+             textOverflow: 'ellipsis',
+             whiteSpace: 'nowrap'
+           }}
+         >
+           {subtitle}
+         </p>
+       </div>
 
       {/* More Options Button */}
       <div style={{ position: 'relative', flexShrink: 0 }}>

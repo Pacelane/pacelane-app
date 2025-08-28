@@ -339,8 +339,9 @@ const ContentPillars = () => {
         }}
       >
         <div style={{ 
-          width: isMobile ? '100%' : '400px',
-          maxWidth: isMobile ? '320px' : '400px'
+          width: '280px',
+          display: 'flex',
+          justifyContent: 'center'
         }}>
           <Button
             label={isLoading ? "Saving..." : "Continue"}
@@ -349,7 +350,7 @@ const ContentPillars = () => {
             tailIcon={!isLoading ? <ArrowRight size={16} /> : undefined}
             onClick={handleContinue}
             disabled={!canContinue || isLoading}
-            className="w-full"
+            fullWidth={true}
           />
         </div>
       </div>

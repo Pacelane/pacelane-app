@@ -375,7 +375,7 @@ const Guides = () => {
             tailIcon={!isLoading ? <ArrowRight size={16} /> : undefined}
             onClick={handleContinue}
             disabled={!canContinue || isLoading}
-            className="w-[280px]"
+            fullWidth={true}
           />
         </div>
       </div>

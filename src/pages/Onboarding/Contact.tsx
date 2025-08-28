@@ -281,10 +281,10 @@ const Contact = () => {
           bottom: 0,
           left: 0,
           right: 0,
-          height: isMobile ? '70px' : '80px',
+          height: '80px',
           backgroundColor: colors.bg.default,
           borderTop: `1px solid ${colors.border.default}`,
-          padding: isMobile ? spacing.spacing[24] : spacing.spacing[40],
+          padding: spacing.spacing[40],
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -292,8 +292,9 @@ const Contact = () => {
         }}
       >
         <div style={{ 
-          width: isMobile ? '100%' : '400px',
-          maxWidth: isMobile ? '320px' : '400px'
+          width: '280px',
+          display: 'flex',
+          justifyContent: 'center'
         }}>
           <Button
             label={isLoading ? "Saving..." : "Continue"}
@@ -302,7 +303,7 @@ const Contact = () => {
             tailIcon={!isLoading ? <ArrowRight size={16} /> : undefined}
             onClick={handleContinue}
             disabled={isLoading || !canContinue}
-            className="w-full"
+            fullWidth={true}
           />
         </div>
       </div>

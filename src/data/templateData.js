@@ -1,425 +1,668 @@
-// Template Data - 10 Viral LinkedIn Post Templates
-// Based on goals, guides, and pillars from onboardingData.js
-
-// Removed goal-based imports since we no longer use goals in onboarding
-// import { goalOptions, goalToGuides, goalToPillars } from './onboardingData.js';
+// Template Data - Single LinkedIn Post Template
+// Simplified template system without database storage
 
 // Template categories for organization
 export const templateCategories = {
-  AUTHORITY: 'authority',
-  NETWORKING: 'networking', 
-  CLIENT_ATTRACTION: 'client_attraction',
-  THOUGHT_LEADERSHIP: 'thought_leadership',
-  CAREER: 'career',
-  STORYTELLING: 'storytelling'
+  PERSONAL: 'personal',
+  EDUCATIONAL: 'educational',
+  ORGANIZATIONAL: 'organizational',
+  PROMOTIONAL: 'promotional'
 };
 
-// 10 Viral LinkedIn Post Templates
+// LinkedIn Post Templates
 export const templateData = [
   {
-    id: 'template-authority-expertise',
-    title: 'The Expertise Showcase',
-    description: 'Share your knowledge and establish authority in your field with data-backed insights',
-    category: templateCategories.AUTHORITY,
-    relatedGoals: ['Build Authority', 'Become a Thought Leader'],
-    relatedPillars: ['Industry Insights', 'Thought Leadership', 'Expert Interviews'],
-    relatedGuides: ['Share your expertise consistently', 'Back claims with evidence and experience'],
-    content: `I've analyzed [SPECIFIC NUMBER] [INDUSTRY/TOPIC] projects over the past [TIME PERIOD], and here's what I discovered:
+    id: 'template-problem-solution-framework',
+    title: 'Problem-Solution Framework',
+    description: 'Opens with a strong stance, contrasts with reality, identifies the gap, provides arrow-bulleted solutions, adds philosophical perspective through parallel statements, and closes with a challenging question.',
+    category: templateCategories.EDUCATIONAL,
+    bichaurinhoVariant: 1,
+    content: `[Bold opening statement].
 
-🔍 **The Problem Everyone Misses:**
-[Describe a common misconception or overlooked issue in your industry]
+But [contradicting reality].
 
-📊 **The Data That Surprised Me:**
-• [Statistic 1] - [Brief explanation]
-• [Statistic 2] - [Brief explanation] 
-• [Statistic 3] - [Brief explanation]
+[Current behavior description].
 
-💡 **What This Means For You:**
-[Practical implication or actionable insight]
+And then [consequence question].
 
-🎯 **My Recommendation:**
-[Specific advice or next steps]
+What's usually missing?
 
-The biggest mistake I see is [COMMON MISTAKE]. Instead, try [BETTER APPROACH].
+→ [Solution/missing element 1]
+→ [Solution/missing element 2]
+→ [Solution/missing element 3]
+→ [Solution/missing element 4]
 
-What's your experience with this? Have you noticed similar patterns?
+[Parallel wisdom statement 1].
 
-#[YourIndustry] #[RelevantHashtag] #[ProfessionalTopic]`
+[Parallel wisdom statement 2].
+
+[Reframe statement].
+
+[Counter-argument].
+
+[Final provocative question]?`
   },
-  
   {
-    id: 'template-networking-connection',
-    title: 'The Connection Builder',
-    description: 'Build meaningful professional relationships by sharing valuable insights and asking engaging questions',
-    category: templateCategories.NETWORKING,
-    relatedGoals: ['Grow Network', 'Stay Visible'],
-    relatedPillars: ['Networking Tips', 'Personal Stories', 'Industry Events'],
-    relatedGuides: ['Engage authentically with others', 'Share valuable insights regularly'],
-    content: `Just had an incredible conversation with [PERSON/ROLE] about [TOPIC], and it completely shifted my perspective.
+    id: 'template-instructional-framework',
+    title: 'Instructional Framework',
+    description: 'Opens with a topic statement followed by bulleted do\'s and don\'ts, includes key insight statements, uses an analogy for deeper understanding, acknowledges challenges, and closes with requirements for success.',
+    category: templateCategories.EDUCATIONAL,
+    bichaurinhoVariant: 2,
+    content: `[Topic] is done like this:
 
-🤔 **The Question That Started Everything:**
-"[Thought-provoking question they asked]"
+[Do item 1]
+[Do item 2]
+[Do item 3]
+[Do item 4]
+[Do item 5]
 
-💭 **My Initial Reaction:**
-[Your honest first thought or assumption]
+What you shouldn't do:
 
-🔄 **The Perspective Shift:**
-[How the conversation changed your thinking]
+[Don't item 1]
+[Don't item 2]
+[Don't item 3]
+[Don't item 4]
+[Don't item 5]
 
-✨ **The Key Insight:**
-[Main takeaway that others can benefit from]
-
-This reminded me why I love connecting with people in [INDUSTRY/FIELD]. Every conversation is a chance to learn something new.
-
-**Question for you:** What's the most perspective-changing conversation you've had recently? 
-
-I'd love to hear about it in the comments! 👇
-
-#Networking #[YourIndustry] #ProfessionalGrowth #Learning`
+[Key mindset statement].
+[Focus statement].
+It's like [analogy subject] ([parenthetical comment about analogies]).
+[Analogy explanation sentence 1]. [Analogy explanation sentence 2].
+[Challenge acknowledgment statement].
+[Success requirement statement].
+[Final reinforcing statement].`
   },
-
   {
-    id: 'template-client-success-story',
-    title: 'The Client Success Story', 
-    description: 'Attract potential clients by showcasing your results and problem-solving approach',
-    category: templateCategories.CLIENT_ATTRACTION,
-    relatedGoals: ['Attract Clients', 'Showcase Work'],
-    relatedPillars: ['Case Studies', 'Customer Stories', 'Success Stories'],
-    relatedGuides: ['Showcase your work and results', 'Address common client pain points'],
-    content: `Client came to me with a problem that's all too common in [INDUSTRY]:
+    id: 'template-opinion-leadership',
+    title: 'Opinion Leadership',
+    description: 'Opens with a bold command, presents a binary choice, includes short declarative statements separated by line breaks, uses historical comparisons, and ends with a defining statement.',
+    category: templateCategories.PERSONAL,
+    bichaurinhoVariant: 3,
+    content: `[Bold opening command].
 
-❌ **The Challenge:**
-[Specific problem the client was facing - be relatable and common]
+[Binary choice statement].
 
-⏰ **The Timeline Pressure:**
-[Time constraint or urgency that made it more challenging]
+[Reality statement]. [Supporting behavioral statement].
 
-🔧 **My Approach:**
-1. [First step you took]
-2. [Second step - focus on your unique process]
-3. [Third step - show your expertise]
+[Action recommendation].
 
-📈 **The Results:**
-• [Quantifiable result 1]
-• [Quantifiable result 2] 
-• [Qualitative improvement]
+[Emphatic transition statement].
 
-💡 **The Key Insight:**
-[What made the difference - your unique value]
+[Conditional logic statement].
 
-**The lesson?** [MAIN TAKEAWAY THAT HELPS OTHERS]
+[Historical comparison statement].
 
-If you're facing similar challenges, here's what I'd recommend: [BRIEF ADVICE]
-
-What's the biggest [RELEVANT CHALLENGE] you're dealing with right now?
-
-#[YourService] #[ClientIndustry] #Results #[ProfessionalTopic]`
+[Final defining statement].`
   },
-
   {
-    id: 'template-thought-leadership-prediction',
-    title: 'The Industry Prediction',
-    description: 'Position yourself as a thought leader by sharing informed predictions about industry trends',
-    category: templateCategories.THOUGHT_LEADERSHIP,
-    relatedGoals: ['Become a Thought Leader', 'Stay Relevant'],
-    relatedPillars: ['Future Predictions', 'Market Analysis', 'Innovation & Trends'],
-    relatedGuides: ['Share unique perspectives and opinions', 'Keep up with industry trends'],
-    content: `Unpopular opinion: [BOLD PREDICTION ABOUT YOUR INDUSTRY] by [TIMEFRAME].
+    id: 'template-thought-provocative',
+    title: 'Thought Provocative',
+    description: 'Opens with a bold controversial statement, acknowledges the harshness, explains the logic with concrete examples, introduces a provocative twist, asks moral questions, admits uncertainty, and ends with a reality check.',
+    category: templateCategories.PERSONAL,
+    bichaurinhoVariant: 4,
+    content: `[Controversial opening statement].
 
-Here's why I believe this is inevitable:
+[Acknowledgment of harshness], [but reinforcement].
 
-🌊 **The Current Wave:**
-[Describe current trends you're observing]
+[Supporting explanation of change].
 
-📊 **The Data Points:**
-• [Supporting evidence 1]
-• [Supporting evidence 2]
-• [Supporting evidence 3]
+[Concrete comparison with numbers/examples].
 
-🔮 **What I'm Seeing That Others Aren't:**
-[Your unique insight or observation]
+[Consequence statement]. [Value judgment].
 
-⚡ **The Catalyst:**
-[What will accelerate this change]
+[Cost statement].
 
-🎯 **What This Means for Professionals:**
-[Practical implications for your audience]
+[Most controversial twist statement]. [Elaboration with parenthetical note].
 
-**My advice?** Start preparing now by:
-1. [Actionable step 1]
-2. [Actionable step 2]
-3. [Actionable step 3]
+[Emotional impact statement], [deeper explanation].
 
-I could be wrong (and I hope the discussion proves me right or wrong!), but the signs are all there.
+[Moral question 1]?
 
-What do you think? Are you seeing similar signals?
+[Moral question 2]?
 
-#FutureOf[Industry] #[IndustryTrends] #ThoughtLeadership #Innovation`
+[Admission of uncertainty].
+
+[Perspective dependency statement].
+
+[Final reality check statement].`
   },
-
   {
-    id: 'template-career-lesson-learned',
-    title: 'The Career Lesson',
-    description: 'Share career insights and attract opportunities by discussing professional growth moments',
-    category: templateCategories.CAREER,
-    relatedGoals: ['Attract Opportunities', 'Professional Growth'],
-    relatedPillars: ['Career Development', 'Leadership Lessons', 'Professional Growth'],
-    relatedGuides: ['Share your vision and aspirations', 'Highlight your skills and achievements'],
-    content: `[X] years ago, I made a career decision that everyone told me was risky.
+    id: 'template-personal-opinion-challenge',
+    title: 'Personal Opinion with Challenge',
+    description: 'Opens with a bold statement, challenges conventional metrics, shares personal experience as proof, defines the correct approach with arrows, asks challenging questions, reframes the problem, and ends with simple wisdom.',
+    category: templateCategories.PERSONAL,
+    bichaurinhoVariant: 5,
+    content: `[Bold opening statement about outdated practice].
 
-Today, I can say it was the best decision I ever made. Here's the story:
+[Conventional metric challenge].
 
-🚪 **The Opportunity:**
-[Describe the situation or opportunity]
+[Personal experience example with specific details].
 
-😰 **The Fear:**
-[What made it scary or risky]
+[One-word descriptor].
 
-💭 **What Everyone Said:**
-"[Common advice/warnings you received]"
+[Correct approach definition]:
 
-🤔 **Why I Did It Anyway:**
-[Your reasoning and what convinced you]
+→ [New metric 1]
+→ [New metric 2]
+→ [New metric 3]
 
-📈 **The Unexpected Outcomes:**
-• [Positive result 1]
-• [Positive result 2]
-• [Personal growth aspect]
+[Challenging personal question about old behavior]?
 
-🎯 **The Real Lesson:**
-[Key insight about career decisions/risk-taking]
+[Reframe statement]. [Strategic judgment].
 
-**What I wish I'd known then:** [WISDOM YOU'D SHARE]
+[Logical statement about planning].
 
-Looking back, the biggest risk would have been staying comfortable.
+[Call to question toxic culture statement].
 
-**For anyone considering a similar leap:** [ENCOURAGEMENT AND ADVICE]
+[Follow-up personal fear question]?
 
-What's the best "risky" career decision you've made? I'd love to hear your story!
+[Problem attribution statement]. [Management blame].
 
-#CareerGrowth #ProfessionalDevelopment #RiskTaking #[YourField]`
+[Consequence description].
+
+[Simple wisdom statement].
+
+[Final simple truth].`
   },
-
   {
-    id: 'template-behind-scenes-process',
-    title: 'The Behind-the-Scenes Process',
-    description: 'Stay visible and build trust by sharing your work process and authentic moments',
-    category: templateCategories.STORYTELLING,
-    relatedGoals: ['Stay Visible', 'Share Ideas'],
-    relatedPillars: ['Behind the Scenes', 'Process Insights', 'Best Practices'],
-    relatedGuides: ['Share behind-the-scenes content', 'Make complex topics accessible'],
-    content: `Ever wonder what goes into [YOUR WORK/PROJECT TYPE]? Here's what my typical [DAY/PROJECT/PROCESS] actually looks like:
+    id: 'template-concept-defense',
+    title: 'Concept Defense',
+    description: 'Opens with a corrective definition, provides the real definition with arrow-bulleted characteristics, explains the progression/evolution, shares a concrete example, addresses criticism, defends the position, and ends with proof of concept.',
+    category: templateCategories.EDUCATIONAL,
+    bichaurinhoVariant: 6,
+    content: `[Subject] isn't [common misconception].
 
-⏰ **6:00 AM - The Foundation:**
-[Early morning routine or preparation]
+[Subject] is [correct definition].
 
-☕ **8:00 AM - The Deep Work:**
-[Main work activity with specific details]
+[Elaboration of definition]:
 
-🧠 **10:30 AM - The Challenge:**
-[Common obstacle you face and how you handle it]
+→ [Characteristic 1]
+→ [Characteristic 2]
+→ [Characteristic 3]
 
-💡 **12:00 PM - The Breakthrough:**
-[Moment when things click or progress is made]
+[Evolution/progression explanation].
 
-🤝 **2:00 PM - The Collaboration:**
-[How you work with others or get input]
+[Next stage explanation].
 
-✅ **4:00 PM - The Polish:**
-[Final refinement or quality check process]
+[Concrete personal example with specifics].
 
-**The Part Nobody Sees:** [HONEST MOMENT ABOUT STRUGGLES OR FAILURES]
+[Simple descriptor].
 
-**What I've Learned:** [KEY INSIGHT FROM YOUR PROCESS]
+[Criticism introduction]:
 
-The glamorous version you see on LinkedIn is real, but so are the 47 revisions, the moments of doubt, and the small wins that add up.
+"[Criticism quote 1]."
+"[Criticism quote 2]."
+"[Criticism quote 3]."
 
-**What does your typical [RELEVANT PROCESS] look like?** Any tips to share?
+[Disagreement statement].
 
-#BehindTheScenes #[YourProfession] #ProcessImprovement #RealTalk`
+[Reinforcement statement].
+
+[Restatement of definition].
+
+[Validation statement].
+
+[Outcome prediction].
+
+[Differentiator question]?
+
+[Key factor answer].
+
+[Challenge statement]:
+
+[Final assertion].
+
+[Proof statement].`
   },
-
   {
-    id: 'template-controversial-take',
-    title: 'The Contrarian View',
-    description: 'Start meaningful conversations by respectfully challenging conventional thinking',
-    category: templateCategories.THOUGHT_LEADERSHIP,
-    relatedGoals: ['Become a Thought Leader', 'Share Ideas'],
-    relatedPillars: ['Thought Leadership', 'Challenges & Solutions', 'Strategic Thinking'],
-    relatedGuides: ['Challenge conventional thinking respectfully', 'Start conversations on important topics'],
-    content: `Hot take: [CONTROVERSIAL BUT THOUGHTFUL OPINION ABOUT YOUR INDUSTRY]
+    id: 'template-leadership-philosophy',
+    title: 'Leadership Philosophy',
+    description: 'Opens with a hook about the most important metric, eliminates common assumptions with "It\'s not" statements, builds suspense, reveals the real metric, explains the logic, provides supporting evidence with bullet points, and ends with philosophical wisdom.',
+    category: templateCategories.EDUCATIONAL,
+    bichaurinhoVariant: 7,
+    content: `[Hook statement about single most important metric]:
 
-I know this goes against conventional wisdom, but hear me out:
+[Elimination 1].
 
-🤔 **The Common Belief:**
-[What most people think/do in your industry]
+[Elimination 2].
 
-❌ **Why I Think It's Wrong:**
-[Your reasoning with specific examples]
+[Elimination 3].
 
-📊 **What I've Observed Instead:**
-[Evidence or experience that supports your view]
+[Strong elimination 4].
 
-💡 **A Better Approach:**
-[Your alternative solution or perspective]
+[Build-up statement]:
 
-🎯 **Why This Matters:**
-[Broader implications for the industry/professionals]
+[The real metric revealed].
 
-**Real Example:** [SPECIFIC CASE THAT ILLUSTRATES YOUR POINT]
+[Explanation of the metric].
 
-Look, I'm not saying I'm right about everything. But I've seen too many [PROFESSIONALS/COMPANIES] struggle because they follow [CONVENTIONAL APPROACH] without questioning it.
+[Causation statement].
 
-**Maybe it's time we rethink this?**
+[Supporting evidence introduction]:
 
-What's your take? Am I completely off base, or have you noticed this too?
+[Consequence 1]
+[Consequence 2]
+[Consequence 3]
 
-Let's have a real conversation about this 👇
+[Success formula statement].
 
-#[IndustryDebate] #ThoughtLeadership #[RelevantTopic] #Innovation`
+[Philosophical leadership statement]. [Counter-statement].
+
+[Closing wisdom about cause and effect].`
   },
-
   {
-    id: 'template-failure-lesson',
-    title: 'The Failure That Taught Me',
-    description: 'Build authentic connections by sharing failures and the valuable lessons learned',
-    category: templateCategories.STORYTELLING,
-    relatedGoals: ['Build Authority', 'Share Ideas'],
-    relatedPillars: ['Lessons Learned', 'Personal Stories', 'Challenges & Solutions'],
-    relatedGuides: ['Be authentic and original', 'Share your experience'],
-    content: `I failed spectacularly at [SPECIFIC PROJECT/GOAL] last year.
+    id: 'template-professional-mindset-challenge',
+    title: 'Professional Mindset Challenge',
+    description: 'Opens by identifying a bad professional habit, calls out the flawed thinking, provides logical counter-arguments, poses a challenging question with arrow-bulleted evidence, asks why people resist, offers a compelling alternative perspective, shares personal stance, and ends with a recommendation and proof.',
+    category: templateCategories.PERSONAL,
+    bichaurinhoVariant: 8,
+    content: `[Bad professional habit identification]:
 
-And it was the best thing that could have happened to my career.
+[The flawed behavior/thinking].
 
-💥 **The Failure:**
-[Describe what went wrong - be specific and honest]
+[Direct criticism of the mindset].
 
-😅 **How Bad Was It?**
-[Quantify the impact or embarrassment]
+[Logical counter-argument 1].
 
-🤦‍♂️ **What I Did Wrong:**
-• [Mistake 1]
-• [Mistake 2] 
-• [Mistake 3]
+[Logical counter-argument 2].
 
-💡 **The Lightbulb Moment:**
-[When you realized what you learned]
+[Dismissive statement about resistance].
 
-🔄 **How I Applied The Lesson:**
-[Specific changes you made based on the failure]
+[Challenging question]: [question for whom]?
 
-📈 **The Unexpected Result:**
-[How the lesson improved your work/approach]
+→ [Evidence point 1]
+→ [Evidence point 2]
+→ [Evidence point 3]
+→ [Evidence point 4]
 
-**The Truth:** Failure isn't the opposite of success—it's a prerequisite.
+[Why question about the resistance]?
 
-**What I wish someone had told me:** [ADVICE YOU'D GIVE YOUR PAST SELF]
+[Compelling logic question with benefits]?
 
-Now when I see others facing similar challenges, I share this story. Because sometimes knowing you're not alone in failing makes all the difference.
+[Personal stance statement].
 
-**What's the best lesson a failure taught you?** 
+[Contrarian value statement].
 
-Share it below—someone might need to hear it today.
+[Reasoning about freed-up time/resources].
 
-#FailureToSuccess #LessonsLearned #Growth #[YourIndustry] #Authenticity`
+[Personal recommendation with action].
+
+[Quality improvement statement].`
   },
-
   {
-    id: 'template-trend-analysis',
-    title: 'The Trend Breakdown',
-    description: 'Stay relevant by analyzing current trends and providing actionable insights',
-    category: templateCategories.THOUGHT_LEADERSHIP,
-    relatedGoals: ['Stay Relevant', 'Build Authority'],
-    relatedPillars: ['Market Analysis', 'Industry Insights', 'Innovation & Trends'],
-    relatedGuides: ['Keep up with industry trends', 'Share timely insights and commentary'],
-    content: `Everyone's talking about [CURRENT TREND], but most are missing the real story.
+    id: 'template-leadership-ethics',
+    title: 'Leadership Ethics',
+    description: 'Opens with a blunt statement about leadership misconceptions, identifies the core confusion, explains the wrong assumption, corrects it with arrow-bulleted principles, contrasts authority vs. character, provides conditional failure scenarios, and ends with the true definition of leadership.',
+    category: templateCategories.EDUCATIONAL,
+    bichaurinhoVariant: 9,
+    content: `[Blunt opening statement about leadership misconception].
 
-After diving deep into this trend, here's what's actually happening:
+[Core confusion identification].
 
-📈 **The Surface Level:** 
-[What everyone sees/talks about]
+[Wrong assumption explanation].
 
-🔍 **The Deeper Reality:**
-[What's really driving this trend]
+[Correction statement].
 
-📊 **The Numbers That Matter:**
-• [Relevant statistic 1]
-• [Relevant statistic 2]
-• [Relevant statistic 3]
+→ [Leadership principle 1]
+→ [Leadership principle 2]
+→ [Leadership principle 3]
 
-⚠️ **The Hidden Risk:**
-[Potential downside most people aren't considering]
+[Authority vs. character contrast].
 
-🎯 **The Real Opportunity:**
-[How smart professionals can capitalize]
+[True follower statement].
 
-💡 **My Prediction:**
-[Where you think this trend is heading]
+[Conditional failure scenario 1].
 
-**For [YOUR AUDIENCE]:** Here's how to navigate this:
+[Conditional failure scenario 2].
 
-✅ **Do This:**
-• [Actionable advice 1]
-• [Actionable advice 2]
+[True leadership definition].
 
-❌ **Avoid This:**
-• [Common mistake to avoid]
-
-**The Bottom Line:** [YOUR KEY TAKEAWAY]
-
-This trend will separate the adapters from the laggers. Which camp will you be in?
-
-What's your take on [TREND]? Are you seeing what I'm seeing?
-
-#[TrendHashtag] #MarketAnalysis #[YourIndustry] #FutureOfWork`
+[Final contrasting wisdom about elevation vs. degradation].`
   },
-
   {
-    id: 'template-tool-recommendation',
-    title: 'The Game-Changing Tool',
-    description: 'Provide value by sharing tools and recommendations that solve common problems',
-    category: templateCategories.CLIENT_ATTRACTION,
-    relatedGoals: ['Share Ideas', 'Build Authority'],
-    relatedPillars: ['Tool Recommendations', 'Best Practices', 'Process Insights'],
-    relatedGuides: ['Make complex topics accessible', 'Share valuable insights regularly'],
-    content: `I just discovered a [TOOL/METHOD/APPROACH] that's completely changed how I [SPECIFIC TASK/PROCESS].
+    id: 'template-business-strategy',
+    title: 'Business Strategy',
+    description: 'Opens with a direct warning against over-behavior, dismisses common excuses, contrasts theory vs. reality, provides arrow-bulleted scenarios showing market unpredictability, shares personal approach, clarifies the nuance, offers wisdom statements, contrasts hesitation vs. action, and ends with learning philosophy.',
+    category: templateCategories.EDUCATIONAL,
+    bichaurinhoVariant: 10,
+    content: `[Warning against over-behavior].
 
-And I think it could help you too.
+[Dismissal of common excuse].
 
-❌ **The Problem I Was Facing:**
-[Specific challenge you had]
+[Theory vs. reality contrast statement].
 
-⏰ **How Much Time It Was Costing:**
-[Quantify the pain point]
+→ [Scenario expectation 1]
+→ [Market reality 1]
+→ [Scenario expectation 2]
+→ [Market reality 2]
 
-🔧 **The Solution I Found:**
-[Name and brief description of the tool/method]
+[Personal approach statement].
 
-⚡ **How It Works:**
-1. [Step 1 - keep it simple]
-2. [Step 2]
-3. [Step 3]
+[Personal preference with reasoning].
 
-📊 **The Results:**
-• [Specific improvement 1]
-• [Specific improvement 2]
-• [Time/money saved]
+[Clarifying transition word]...
 
-💡 **The Best Part:**
-[Unexpected benefit or favorite feature]
+[Clarification statement].
 
-⚠️ **The Catch:**
-[Any limitations or downsides to be aware of]
+[The real problem identification].
 
-**For [YOUR AUDIENCE]:** This is especially useful if you [SPECIFIC USE CASE].
+[Wisdom statement 1].
 
-**Pro Tip:** [ADVANCED USAGE OR OPTIMIZATION SUGGESTION]
+[Wisdom statement 2].
 
-I'm not affiliated with them—just genuinely excited about tools that make our work better.
+[Contrast between hesitators and action-takers].
 
-**What tools have been game-changers for you lately?** Always looking for new recommendations!
+[Learning philosophy statement].
 
-#ProductivityTools #[YourIndustry] #Efficiency #WorkSmarter #[RelevantTech]`
+[Source of learning statement].`
+  },
+  {
+    id: 'template-corporate-strategy',
+    title: 'Corporate Strategy',
+    description: 'Opens with a metaphor about harsh environment, corrects common assumptions about success factors, lists required navigation skills, uses arrow-bulleted reality check, acknowledges the uncomfortable truth, provides the success formula, and ends with a direct challenge question.',
+    category: templateCategories.EDUCATIONAL,
+    bichaurinhoVariant: 11,
+    content: `[Environment metaphor].
+
+[Correction of common survival assumption].
+
+[Real survival requirement].
+
+[Required skill 1].
+
+[Required skill 2].
+
+[Required skill 3].
+
+→ [Competence acknowledgment]
+→ [Navigation reality check]
+
+[Uncomfortable truth acknowledgment].
+
+[Daily reality statement].
+
+[Success formula introduction], [talent component].
+
+[Other component statement].
+
+[Direct challenge question]?`
+  },
+  {
+    id: 'template-professional-psychology',
+    title: 'Professional Psychology',
+    description: 'Opens with an observation about good vs. bad people, identifies a corporate paradox caused by two psychological effects, explains the problem this creates, describes the unfair advantage scenario, makes statements about talent vs. confidence, provides a solution, and ends with a call to action to support real talent.',
+    category: templateCategories.EDUCATIONAL,
+    bichaurinhoVariant: 12,
+    content: `[Opening observation about talent perception].
+
+[Cause identification].
+
+[Paradox introduction], [caused by statement]:
+
+[First psychological effect explanation], [definition].
+
+[Second psychological effect explanation], [definition]. [Alternative name].
+
+[Problem identification]:
+
+[Competence-confidence correlation explanation].
+
+[Impact on talented people].
+
+[Meanwhile contrasting behavior of less competent].
+
+[Talent tendency statement].
+
+[Exploitation opportunity statement].
+
+[Solution for talent development].
+
+[Encouragement call to action].
+
+[Opportunity statement about recognition].
+
+[Value prediction].
+
+[Final call to prevent talent displacement].`
+  },
+  {
+    id: 'template-product-launch-sales',
+    title: 'Product Launch/Sales',
+    description: 'Opens with impressive metrics as proof, reveals the single source/system, describes it with a compelling metaphor, lists features with bullet points, shows dramatic results, includes a meta-reference, explains the process, provides early access offer with features, ends with clear call-to-action and engagement hook.',
+    category: templateCategories.PROMOTIONAL,
+    bichaurinhoVariant: 13,
+    content: `[Time period 1] = [impressive metric 1]
+
+[Time period 2] = [impressive metric 2]
+
+[Time period 3] = [impressive metric 3] ([status qualifier])
+
+[Attribution statement].
+
+[Source revelation statement]...
+
+[Product name].
+
+[Compelling metaphor description].
+
+[Feature introduction]:
+
+[Feature 1]
+[Feature 2]
+[Feature 3]
+[Feature 4]
+[Feature 5]
+[Feature 6]
+
+[Results question]?
+
+[Dramatic results statement] — [automation qualifier].
+
+[What's eliminated - list format]:
+
+[No item 1].
+[No item 2].
+[No item 3].
+[No item 4].
+
+[Meta-reference statement].
+
+[Process simplicity]: [input] → [automated output].
+
+[Product personality description]: [trait 1]. [trait 2]. [trait 3].
+
+[Launch announcement] — [availability window].
+
+[Offer introduction]:
+
+[Included item 1]
+[Included item 2]
+[Included item 3]
+[Included item 4]
+[Included item 5]
+[Included item 6]
+
+[Contrast statement]. [Value proposition].
+
+[Engagement question]?
+
+[Call-to-action instruction].
+
+[Qualifier requirement].
+
+[PS engagement hook].`
+  },
+  {
+    id: 'template-life-philosophy-system',
+    title: 'Life Philosophy System',
+    description: 'Opens with a famous quote, promises a transformation timeline, clarifies a key distinction, provides philosophical foundation, gives foundational tips, then breaks down a numbered system with detailed sub-explanations for each point.',
+    category: templateCategories.PERSONAL,
+    bichaurinhoVariant: 18,
+    content: `[Famous person] once said:
+
+"[Inspirational quote]."
+
+Here's how to [achieve transformation] (in [timeline]):
+
+[Concept A] vs [Concept B]
+
+Most people confuse the two.
+
+[Concept A definition]. [Concept B definition].
+
+Your goal isn't to [misconception]. It's to [correct approach].
+
+When you master this, [benefit] follows.
+
+[Philosophical statement about successful people]:
+
+[Example 1]
+
+[Example 2]
+
+[Example 3]
+
+[Wisdom statement about mastery].
+
+Here are [number] tips I've learned from studying [source]:
+
+The [Principle Name]
+
+[Application example 1].
+
+[Application example 2].
+
+[Application example 3].
+
+[Action statement]. [Elimination statement].
+
+[System Name]
+
+It's not just about [surface level].
+
+It's about:
+
+[Deep factor 1]
+
+[Deep factor 2]
+
+[Deep factor 3]
+
+[Environment principle].
+
+[Technique Name]
+
+Create a list of [type]:
+
+[Rule 1]
+
+[Rule 2]
+
+[Rule 3]
+
+[Wisdom about elimination vs addition].
+
+Next, I want to break down [number] insanely simple systems that you can implement today to make you [desired outcome]:
+
+[System 1]
+
+[System 2]
+
+[System 3]
+
+[System 4]
+
+[System 5]
+
+[System 1 Title]
+
+Here are a few I've set for myself to [achieve goal]:
+
+[Personal rule 1]
+
+[Personal rule 2]
+
+[Personal rule 3]
+
+[Personal rule 4]
+
+[Formula: Component + Component = Result]
+
+[System 2 Title]
+
+[Requirement statement].
+
+When defining them, make sure they follow the [Framework Name]:
+
+[Criteria 1]
+
+[Criteria 2]
+
+[Criteria 3]
+
+[Criteria 4]
+
+[Criteria 5]
+
+[Biblical/philosophical wisdom statement].
+
+[System 3 Title]
+
+[Simple daily action instruction].
+
+[Sports/competitive metaphor]. [Planning principle].
+
+[Formula: Evening action = Morning result].
+
+[System 4 Title]
+
+Your most important asset is [fundamental thing].
+
+Here's my (simplified) [area] protocol:
+
+[Time period]: [Activities list]
+
+[Time period]: [Activities list]
+
+[Time period]: [Activities list]
+
+[Success principle connection].
+
+[System 5 Title]
+
+These [frequency] reminders become your [mental concept]. Some of mine include:
+
+"[Personal affirmation 1]"
+
+"[Personal affirmation 2]"
+
+"[Personal affirmation 3]"
+
+Your words become your reality. [Action instruction].`
+  },
+  {
+    id: 'template-nuanced-opinion',
+    title: 'Nuanced Opinion',
+    description: 'Opens with a contrarian statement about not needing to follow common advice, acknowledges the challenges, clarifies what it doesn\'t guarantee, transitions to sharing personal perspective, explains the positive interpretation, describes the indirect benefits, advocates for the approach, and ends with a rhetorical question.',
+    category: templateCategories.PERSONAL,
+    bichaurinhoVariant: 19,
+    content: `You don't need to be [common expectation], and keep [demanding activity], and do [overwhelming task]...
+
+Definitely, this is very [challenging aspect], and requires [significant commitment]. [Honest admission about difficulty].
+
+This also doesn't mean that [false guarantee about results].
+
+But, I'll share my perspective.
+
+Whenever I see a [professional type 1], [professional type 2], [professional type 3] or [professional category] sharing, I interpret that, beyond the desire to [surface motivation] – in the best sense – they probably have the intention to [deeper positive motivation].
+
+Those who post [value type 1], [value type 2], [value type 3] – and even [lighter value type] – even if their intention is [commercial motive], end up [positive impact] several other colleagues, directly or indirectly.
+
+Besides that, in my view, [key behavior] is one of the most powerful tactics to [achieve goal].
+
+[key behavior] professionally – in the best sense – is [definition/explanation], and this can generate many results. You [benefit 1], [benefit 2], [benefit 3]...
+
+In fact, if I or any other human met you, you probably [engaged in key behavior] at some point. And if you do it frequently, your [asset] grows. Isn't that why we create [related systems]?`
   }
 ];
 
@@ -430,37 +673,6 @@ export const getTemplateById = (templateId) => {
 
 export const getTemplatesByCategory = (category) => {
   return templateData.filter(template => template.category === category);
-};
-
-export const getTemplatesByGoal = (goal) => {
-  return templateData.filter(template => 
-    template.relatedGoals.includes(goal)
-  );
-};
-
-export const getTemplatesByPillar = (pillar) => {
-  return templateData.filter(template => 
-    template.relatedPillars.includes(pillar)
-  );
-};
-
-// Template metadata for database seeding
-export const getTemplateForDatabase = (template) => {
-  return {
-    id: template.id,
-    user_id: null, // System template
-    title: template.title,
-    description: template.description,
-    content: template.content,
-    category: template.category,
-    is_system: true,
-    is_active: true
-  };
-};
-
-// Get all templates formatted for database insertion
-export const getAllTemplatesForDatabase = () => {
-  return templateData.map(getTemplateForDatabase);
 };
 
 export default templateData;

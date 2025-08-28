@@ -548,10 +548,10 @@ const LinkedInSummary = () => {
           bottom: 0,
           left: 0,
           right: 0,
-          height: isMobile ? '70px' : '80px',
+          height: '80px',
           backgroundColor: colors.bg.default,
           borderTop: `1px solid ${colors.border.default}`,
-          padding: isMobile ? spacing.spacing[24] : spacing.spacing[40],
+          padding: spacing.spacing[40],
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -559,8 +559,9 @@ const LinkedInSummary = () => {
         }}
       >
         <div style={{ 
-          width: isMobile ? '100%' : '400px',
-          maxWidth: isMobile ? '320px' : '400px'
+          width: '280px',
+          display: 'flex',
+          justifyContent: 'center'
         }}>
           <Button
             label="Continue"
@@ -568,7 +569,7 @@ const LinkedInSummary = () => {
             size="lg"
             tailIcon={<ArrowRight size={16} />}
             onClick={handleContinue}
-            className="w-full"
+            fullWidth={true}
           />
         </div>
       </div>
