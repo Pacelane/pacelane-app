@@ -29,6 +29,38 @@ export interface ErrorReportData {
 }
 
 export class ErrorReportingService {
+  // Circuit breaker to prevent infinite error loops
+  private static errorReportingFailed = false;
+  private static lastErrorReport = 0;
+  private static readonly ERROR_REPORT_COOLDOWN = 30000; // 30 seconds
+
+  /**
+   * Check if error reporting should be skipped due to circuit breaker
+   */
+  private static shouldSkipErrorReporting(): boolean {
+    const now = Date.now();
+    
+    // If error reporting failed recently, skip for cooldown period
+    if (this.errorReportingFailed && (now - this.lastErrorReport) < this.ERROR_REPORT_COOLDOWN) {
+      return true;
+    }
+    
+    // Reset circuit breaker after cooldown
+    if (this.errorReportingFailed && (now - this.lastErrorReport) >= this.ERROR_REPORT_COOLDOWN) {
+      this.errorReportingFailed = false;
+    }
+    
+    return false;
+  }
+
+  /**
+   * Mark error reporting as failed to trigger circuit breaker
+   */
+  private static markErrorReportingFailed(): void {
+    this.errorReportingFailed = true;
+    this.lastErrorReport = Date.now();
+  }
+
   /**
    * Get current user information for error reporting
    */
@@ -203,6 +235,15 @@ export class ErrorReportingService {
    * Report an error to the customer support system
    */
   static async reportError(errorData: ErrorReportData): Promise<{ success: boolean; ticketId?: string; error?: string }> {
+    // Check circuit breaker
+    if (this.shouldSkipErrorReporting()) {
+      console.warn('Error reporting skipped due to circuit breaker (recent failures detected)');
+      return { 
+        success: false, 
+        error: 'Error reporting temporarily disabled due to recent failures' 
+      };
+    }
+
     try {
       const { error, context, severity, eventType } = errorData;
       
@@ -257,6 +298,7 @@ export class ErrorReportingService {
 
       if (submitError) {
         console.error('Error reporting failed:', submitError);
+        this.markErrorReportingFailed(); // Trigger circuit breaker
         return { 
           success: false, 
           error: submitError.message || 'Failed to report error' 
@@ -265,6 +307,7 @@ export class ErrorReportingService {
 
       if (!data || !data.success) {
         console.error('Error reporting unsuccessful:', data);
+        this.markErrorReportingFailed(); // Trigger circuit breaker
         return { 
           success: false, 
           error: data?.message || 'Failed to report error' 
@@ -279,6 +322,7 @@ export class ErrorReportingService {
 
     } catch (reportingError) {
       console.error('Error in error reporting service:', reportingError);
+      this.markErrorReportingFailed(); // Trigger circuit breaker
       return { 
         success: false, 
         error: 'Failed to submit error report' 
@@ -396,7 +440,11 @@ export class ErrorReportingService {
         const ignoredPatterns = [
           'ResizeObserver loop limit exceeded',
           'Non-Error promise rejection captured',
-          'Loading chunk'
+          'Loading chunk',
+          'customer-support-slack',
+          'Error reporting failed',
+          'Failed to report error',
+          'FunctionsHttpError'
         ];
         
         if (ignoredPatterns.some(pattern => reason.includes(pattern))) {

@@ -38,6 +38,7 @@ import { ChevronRight, Search } from 'lucide-react';
 
 // Additional Components
 import { CalendarService } from '@/services/calendarService';
+import { getUserAvatarUrl } from '@/utils/avatarUtils';
 
 const ProductHome = () => {
   const navigate = useNavigate();
@@ -205,8 +206,8 @@ const ProductHome = () => {
 
   // Get user avatar
   const getUserAvatar = () => {
-    // Use a default avatar for now
-    return 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=48&h=48&fit=crop&crop=face';
+    // Use Bichaurinho avatar utility
+    return getUserAvatarUrl(profile, user);
   };
 
   // Get current month name
@@ -407,11 +408,12 @@ const ProductHome = () => {
           display: 'flex', 
           justifyContent: 'center', 
           alignItems: 'center', 
-          padding: spacing.spacing[40],
-          flexDirection: 'column',
-          gap: spacing.spacing[16]
+          padding: spacing.spacing[40]
         }}>
-          <div style={{ color: colors?.text?.subtle || '#666666' }}>Loading your dashboard...</div>
+          <SubtleLoadingSpinner 
+            title="Loading your dashboard..."
+            size={20}
+          />
         </div>
       </div>
     );

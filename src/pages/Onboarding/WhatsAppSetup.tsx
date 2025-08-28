@@ -120,7 +120,7 @@ const WhatsAppSetup = () => {
             maxWidth: isMobile ? '320px' : '400px'
           }}>
             <OnboardingProgressIndicator 
-              currentStep={9}
+              currentStep={8}
               compact={true}
             />
           </div>
@@ -314,8 +314,8 @@ const WhatsAppSetup = () => {
         }}
       >
         <div style={{ 
-          width: isMobile ? '100%' : '280px',
-          maxWidth: isMobile ? '320px' : '280px'
+          width: isMobile ? '100%' : '400px',
+          maxWidth: isMobile ? '320px' : '400px'
         }}>
                      <Button
              label="Continue"

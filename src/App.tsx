@@ -2,8 +2,6 @@ import { ToastProvider } from "./design-system/components/Toast";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Outlet } from "react-router-dom";
-import { useEffect } from "react";
-import { ErrorReportingService } from "@/services/errorReportingService";
 
 import { ThemeProvider } from "@/services/theme-context";
 import { HelpProvider } from "./services/help-context";
@@ -26,8 +24,7 @@ import PlanBillingPage from "./pages/PlanBillingPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import Welcome from "./pages/Onboarding/Welcome";
 import FirstThingsFirst from "./pages/Onboarding/FirstThingsFirst";
-import Inspirations from "./pages/Onboarding/Inspirations";
-import Goals from "./pages/Onboarding/Goals";
+import LinkedInSummary from "./pages/Onboarding/LinkedInSummary";
 import Guides from "./pages/Onboarding/Guides";
 import ContentPillars from "./pages/Onboarding/ContentPillars";
 import Pacing from "./pages/Onboarding/Pacing";
@@ -43,10 +40,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 const queryClient = new QueryClient();
 
 const App = () => {
-  // Set up global error reporting on app start
-  useEffect(() => {
-    ErrorReportingService.setupGlobalErrorHandling();
-  }, []);
+
 
   return (
   <QueryClientProvider client={queryClient}>
@@ -60,8 +54,7 @@ const App = () => {
           <Route path="/signin" element={<SignIn />} />
           <Route path="/onboarding/welcome" element={<Welcome />} />
           <Route path="/onboarding/first-things-first" element={<FirstThingsFirst />} />
-          <Route path="/onboarding/inspirations" element={<Inspirations />} />
-          <Route path="/onboarding/goals" element={<Goals />} />
+          <Route path="/onboarding/linkedin-summary" element={<LinkedInSummary />} />
           <Route path="/onboarding/guides" element={<Guides />} />
           <Route path="/onboarding/content-pillars" element={<ContentPillars />} />
           <Route path="/onboarding/pacing" element={<Pacing />} />

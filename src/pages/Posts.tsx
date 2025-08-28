@@ -9,6 +9,7 @@ import { useToast } from '@/design-system/components/Toast';
 
 // Design System Components (sidebar provided by MainAppChrome)
 import ContentCard from '@/design-system/components/ContentCard';
+import ContentListItem from '@/design-system/components/ContentListItem';
 import Input from '@/design-system/components/Input';
 import DropdownButton from '@/design-system/components/DropdownButton';
 import Button from '@/design-system/components/Button';
@@ -21,10 +22,12 @@ import { spacing } from '@/design-system/tokens/spacing';
 import { textStyles } from '@/design-system/styles/typography/typography-styles';
 import { typography } from '@/design-system/tokens/typography';
 import { cornerRadius } from '@/design-system/tokens/corner-radius';
-import { getShadow } from '@/design-system/tokens/shadows';
 
 // Icons
-import { Search, Plus, FileText } from 'lucide-react';
+import { Search, Plus, FileText, LayoutGrid, AlignJustify } from 'lucide-react';
+
+// Avatar utilities
+import { getUserAvatarUrl } from '@/utils/avatarUtils';
 
 const Posts = () => {
   const navigate = useNavigate();
@@ -48,6 +51,7 @@ const Posts = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'draft' | 'published' | 'archived'>('all');
   const [sortBy, setSortBy] = useState('lastEdited');
+  const [viewMode, setViewMode] = useState<'grid' | 'line'>('grid');
 
   // Content container is wrapped by MainAppChrome
 
@@ -279,7 +283,7 @@ const Posts = () => {
   };
 
   const getUserAvatar = () => {
-    return 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=48&h=48&fit=crop&crop=face';
+    return getUserAvatarUrl(profile, user);
   };
 
   // Controls row styles for search and sort - responsive
@@ -300,10 +304,10 @@ const Posts = () => {
     width: isMobile ? '100%' : 'auto',
   };
 
-  // Content grid styles - responsive
+  // Content grid styles - responsive and view-mode aware
   const contentGridStyles = {
     display: 'grid',
-    gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+    gridTemplateColumns: viewMode === 'line' ? '1fr' : (isMobile ? '1fr' : '1fr 1fr'),
     gap: spacing.spacing[24],
   };
 
@@ -343,7 +347,7 @@ const Posts = () => {
               onTabChange={setSelectedFilter}
             />
 
-            {/* Right: Search and Sort */}
+            {/* Right: Search, View Toggle and Sort */}
             <div style={rightSectionStyles}>
               {/* Search Input */}
               <div style={{ flex: isMobile ? 1 : 'none', width: isMobile ? 'auto' : '280px' }}>
@@ -354,6 +358,30 @@ const Posts = () => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   leadIcon={<Search size={16} />}
+                />
+              </div>
+
+              {/* View Toggle */}
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center',
+                border: `1px solid ${colors.border.default}`,
+                borderRadius: cornerRadius.borderRadius.md,
+                overflow: 'hidden'
+              }}>
+                <Button
+                  variant="iconOnly"
+                  style={viewMode === 'grid' ? 'soft' : 'ghost'}
+                  size="sm"
+                  leadIcon={<LayoutGrid size={16} />}
+                  onClick={() => setViewMode('grid')}
+                />
+                <Button
+                  variant="iconOnly"
+                  style={viewMode === 'line' ? 'soft' : 'ghost'}
+                  size="sm"
+                  leadIcon={<AlignJustify size={16} />}
+                  onClick={() => setViewMode('line')}
                 />
               </div>
 
@@ -399,23 +427,26 @@ const Posts = () => {
                 />
               ) : (
                 <div style={contentGridStyles}>
-                  {contentItems.map((item) => (
-                    <ContentCard
-                      key={item.id}
-                      variant={item.variant}
-                      title={item.title}
-                      subtitle={item.subtitle}
-                      content={item.content}
-                      onClick={() => {
-                        if (item.type === 'draft') {
-                          handleEditDraft(item.originalData);
-                        } else if (item.type === 'suggestion') {
-                          handleCreateFromSuggestion(item.originalData);
-                        }
-                      }}
-                      onMenuAction={(action) => handleContentAction(action, item.id)}
-                    />
-                  ))}
+                  {contentItems.map((item) => {
+                    const ContentComponent = viewMode === 'grid' ? ContentCard : ContentListItem;
+                    return (
+                      <ContentComponent
+                        key={item.id}
+                        variant={item.variant}
+                        title={item.title}
+                        subtitle={item.subtitle}
+                        content={item.content}
+                        onClick={() => {
+                          if (item.type === 'draft') {
+                            handleEditDraft(item.originalData);
+                          } else if (item.type === 'suggestion') {
+                            handleCreateFromSuggestion(item.originalData);
+                          }
+                        }}
+                        onMenuAction={(action) => handleContentAction(action, item.id)}
+                      />
+                    );
+                  })}
                 </div>
               )}
             </>

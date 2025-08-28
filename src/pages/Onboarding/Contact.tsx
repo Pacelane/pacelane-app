@@ -142,7 +142,7 @@ const Contact = () => {
             maxWidth: isMobile ? '320px' : '400px'
           }}>
             <OnboardingProgressIndicator 
-              currentStep={8}
+              currentStep={7}
               compact={true}
             />
           </div>
@@ -292,8 +292,8 @@ const Contact = () => {
         }}
       >
         <div style={{ 
-          width: isMobile ? '100%' : '280px',
-          maxWidth: isMobile ? '320px' : '280px'
+          width: isMobile ? '100%' : '400px',
+          maxWidth: isMobile ? '320px' : '400px'
         }}>
           <Button
             label={isLoading ? "Saving..." : "Continue"}

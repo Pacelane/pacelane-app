@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/api/useAuth';
 import { useTheme } from '@/services/theme-context';
@@ -9,7 +9,7 @@ import Toast from '@/design-system/components/Toast';
 // Design System Components
 import TopNav from '@/design-system/components/TopNav';
 import Button from '@/design-system/components/Button';
-import Chips from '@/design-system/components/Chips';
+import Input from '@/design-system/components/Input';
 import ProgressBar from '@/design-system/components/ProgressBar';
 import OnboardingProgressIndicator from '@/design-system/components/OnboardingProgressIndicator';
 import Bichaurinho from '@/design-system/components/Bichaurinho';
@@ -21,68 +21,46 @@ import { getShadow } from '@/design-system/tokens/shadows';
 import { typography } from '@/design-system/tokens/typography';
 
 // Icons
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Plus, Trash2 } from 'lucide-react';
 
-// Data
-import { allPillarOptions, getPillarsForGoals } from '@/data/onboardingData';
+interface TopicOption {
+  id: number;
+  value: string;
+}
 
 const ContentPillars = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { colors } = useTheme();
   const isMobile = useIsMobile();
-  const [selectedPillars, setSelectedPillars] = useState<string[]>([]);
+  const [topicOptions, setTopicOptions] = useState<TopicOption[]>([
+    {
+      id: 1,
+      value: ''
+    }
+  ]);
   const [isLoading, setIsLoading] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-  const [userGoals, setUserGoals] = useState<string[]>([]);
-  const [goalBasedPillars, setGoalBasedPillars] = useState<string[]>([]);
 
-  // Fetch user goals and set goal-based pillars
-  useEffect(() => {
-    const fetchUserGoals = async () => {
-      if (!user) return;
+  const addTopicOption = () => {
+    const newId = topicOptions.length > 0 ? Math.max(...topicOptions.map(t => t.id)) + 1 : 1;
+    setTopicOptions(prev => [...prev, { id: newId, value: '' }]);
+  };
 
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('goals')
-          .eq('user_id', user.id)
-          .single();
+  const removeTopicOption = (id: number) => {
+    setTopicOptions(prev => prev.filter(option => option.id !== id));
+  };
 
-        if (error) {
-          console.error('Error fetching user goals:', error);
-          return;
-        }
-
-        const goals = (data?.goals as string[]) || [];
-        setUserGoals(goals);
-
-        // Get suggested pillars based on goals
-        const suggestedPillars = getPillarsForGoals(goals);
-        setGoalBasedPillars(suggestedPillars);
-        
-        // Pre-select the goal-based pillars
-        setSelectedPillars(suggestedPillars);
-      } catch (error) {
-        console.error('Error loading user goals:', error);
-      }
-    };
-
-    fetchUserGoals();
-  }, [user]);
+  const updateTopicOption = (id: number, value: string) => {
+    setTopicOptions(prev =>
+      prev.map(option =>
+        option.id === id ? { ...option, value } : option
+      )
+    );
+  };
 
   const handleGoBack = () => {
     navigate('/onboarding/guides');
-  };
-
-  const togglePillar = (pillar: string) => {
-    setSelectedPillars(prev => {
-      if (prev.includes(pillar)) {
-        return prev.filter(p => p !== pillar);
-      } else {
-        return [...prev, pillar];
-      }
-    });
   };
 
   const handleContinue = async () => {
@@ -91,10 +69,15 @@ const ContentPillars = () => {
     setIsLoading(true);
     
     try {
+      // Get all topic options with content
+      const validTopicOptions = topicOptions
+        .filter(option => option.value && option.value.trim().length > 0)
+        .map(option => option.value.trim());
+
       const { error } = await supabase
         .from('profiles')
         .update({ 
-          content_pillars: selectedPillars
+          content_pillars: validTopicOptions
         } as any)
         .eq('user_id', user.id);
 
@@ -102,15 +85,15 @@ const ContentPillars = () => {
 
       navigate('/onboarding/pacing');
     } catch (error) {
-      console.error('Error saving content pillars:', error);
-      setToast({ message: 'Failed to save content pillars. Please try again.', type: 'error' });
+      console.error('Error saving editorial topics:', error);
+      setToast({ message: 'Failed to save editorial topics. Please try again.', type: 'error' });
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Check if at least one pillar is selected
-  const canContinue = selectedPillars.length > 0;
+  // Check if we have at least one topic option with content
+  const canContinue = topicOptions.some(option => option.value.trim());
 
   return (
     <div
@@ -184,7 +167,7 @@ const ContentPillars = () => {
             maxWidth: isMobile ? '320px' : '400px'
           }}>
             <OnboardingProgressIndicator 
-              currentStep={6}
+              currentStep={5}
               compact={true}
             />
           </div>
@@ -247,7 +230,7 @@ const ContentPillars = () => {
                       textAlign: 'left',
                     }}
                   >
-                    Content Pillars
+                    Editorial Topics
                   </h1>
 
                   {/* Subtitle */}
@@ -262,100 +245,47 @@ const ContentPillars = () => {
                       textAlign: 'left',
                     }}
                   >
-                    {userGoals.length > 0 
-                      ? `Based on your goals (${userGoals.join(', ')}), we've pre-selected some content pillars. Choose additional ones or modify as needed.`
-                      : 'These pillars will help us create your content plan so we stay on formats you like to use'
-                    }
+                    What topics do you want to write about? Add the main themes and subjects that interest you and your audience.
                   </p>
                 </div>
               </div>
 
-              {/* Pillars Chips Container */}
+              {/* Dynamic Topic Inputs Container */}
               <div
                 style={{
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: spacing.spacing[20],
+                  gap: spacing.spacing[12],
                 }}
               >
-                {/* Goal-based suggestions (if any) */}
-                {goalBasedPillars.length > 0 && (
-                  <div>
-                    <h3
-                      style={{
-                        fontFamily: typography.fontFamily.body,
-                        fontSize: typography.desktop.size.xs,
-                        fontWeight: typography.desktop.weight.semibold,
-                        color: colors.text.subtle,
-                        margin: 0,
-                        marginBottom: spacing.spacing[8],
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em',
+                {topicOptions.map((option) => (
+                  <div key={option.id}>
+                    <Input
+                      placeholder="Enter your editorial topic"
+                      value={option.value}
+                      onChange={(e) => updateTopicOption(option.id, e.target.value)}
+                      style="tail-action"
+                      size="lg"
+                      disabled={isLoading}
+                      tailAction={{
+                        icon: <Trash2 size={16} />,
+                        onClick: () => removeTopicOption(option.id)
                       }}
-                    >
-                      Suggested for Your Goals
-                    </h3>
-                    <div
-                      style={{
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        gap: spacing.spacing[8],
-                        alignItems: 'flex-start',
-                        justifyContent: 'flex-start',
-                      }}
-                    >
-                      {goalBasedPillars.map((pillar) => (
-                        <Chips
-                          key={pillar}
-                          label={pillar}
-                          style="default"
-                          size="lg"
-                          selected={selectedPillars.includes(pillar)}
-                          onClick={() => togglePillar(pillar)}
-                        />
-                      ))}
-                    </div>
+                    />
                   </div>
-                )}
+                ))}
 
-                {/* All other pillars */}
-                <div>
-                  <h3
-                    style={{
-                      fontFamily: typography.fontFamily.body,
-                      fontSize: typography.desktop.size.xs,
-                      fontWeight: typography.desktop.weight.semibold,
-                      color: colors.text.subtle,
-                      margin: 0,
-                      marginBottom: spacing.spacing[8],
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.05em',
-                    }}
-                  >
-                    {goalBasedPillars.length > 0 ? 'More Options' : 'All Content Pillars'}
-                  </h3>
-                  <div
-                    style={{
-                      display: 'flex',
-                      flexWrap: 'wrap',
-                      gap: spacing.spacing[8],
-                      alignItems: 'flex-start',
-                      justifyContent: 'flex-start',
-                    }}
-                  >
-                    {allPillarOptions
-                      .filter(pillar => !goalBasedPillars.includes(pillar))
-                      .map((pillar) => (
-                        <Chips
-                          key={pillar}
-                          label={pillar}
-                          style="default"
-                          size="lg"
-                          selected={selectedPillars.includes(pillar)}
-                          onClick={() => togglePillar(pillar)}
-                        />
-                      ))}
-                  </div>
+                {/* Add Topic Option Button */}
+                <div style={{ marginTop: spacing.spacing[8], width: '100%' }}>
+                  <Button
+                    label="Add Topic"
+                    style="secondary"
+                    size="sm"
+                    leadIcon={<Plus size={16} />}
+                    onClick={addTopicOption}
+                    disabled={isLoading}
+                    className="w-full"
+                  />
                 </div>
               </div>
             </div>
@@ -381,9 +311,9 @@ const ContentPillars = () => {
                   textAlign: 'center',
                 }}
               >
-                {selectedPillars.length === 0 
-                  ? "Select your content pillars to continue."
-                  : `${selectedPillars.length} pillar${selectedPillars.length === 1 ? '' : 's'} selected.`
+                {!canContinue 
+                  ? "Please add at least one editorial topic to continue."
+                  : `${topicOptions.filter(o => o.value.trim()).length} topic${topicOptions.filter(o => o.value.trim()).length === 1 ? '' : 's'} ready.`
                 }
               </p>
             </div>
@@ -408,7 +338,10 @@ const ContentPillars = () => {
           zIndex: 10,
         }}
       >
-        <div style={{ width: '280px' }}>
+        <div style={{ 
+          width: isMobile ? '100%' : '400px',
+          maxWidth: isMobile ? '320px' : '400px'
+        }}>
           <Button
             label={isLoading ? "Saving..." : "Continue"}
             style="primary"

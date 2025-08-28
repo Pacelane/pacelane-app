@@ -242,7 +242,7 @@ const Pacing = () => {
             maxWidth: isMobile ? '320px' : '400px'
           }}>
             <OnboardingProgressIndicator 
-              currentStep={7}
+              currentStep={6}
               compact={true}
             />
           </div>
@@ -383,6 +383,7 @@ const Pacing = () => {
               <div style={{ height: spacing.spacing[16] }} />
 
               {/* Time Preferences */}
+              {/* Commented out for PCL-117
               <InnerSection
                 title="Daily Summary"
                 subtitle="When should we send you a daily summary?"
@@ -424,6 +425,7 @@ const Pacing = () => {
                   />
                 </div>
               </InnerSection>
+              */}
 
 
             </div>
@@ -477,8 +479,8 @@ const Pacing = () => {
         }}
       >
         <div style={{ 
-          width: isMobile ? '100%' : '280px',
-          maxWidth: isMobile ? '320px' : '280px'
+          width: isMobile ? '100%' : '400px',
+          maxWidth: isMobile ? '320px' : '400px'
         }}>
           <Button
             label={isLoading ? "Saving..." : "Continue"}

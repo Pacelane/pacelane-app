@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/api/useAuth';
 import { useTheme } from '@/services/theme-context';
@@ -23,10 +23,9 @@ import { typography } from '@/design-system/tokens/typography';
 // Icons
 import { ArrowLeft, ArrowRight, Plus, Trash2 } from 'lucide-react';
 
-// Data
-import { getGuidesForGoals } from '@/data/onboardingData';
 
-interface Guide {
+
+interface ToneOption {
   id: number;
   value: string;
   isPreSelected: boolean;
@@ -40,104 +39,86 @@ const Guides = () => {
   const isMobile = useIsMobile();
 
   const [isLoading, setIsLoading] = useState(false);
-  const [userGoals, setUserGoals] = useState<string[]>([]);
 
-  // Initialize with empty guides - will be populated based on user goals
-  const [guides, setGuides] = useState<Guide[]>([]);
+  // Initialize with pre-selected tone of voice option
+  const [toneOptions, setToneOptions] = useState<ToneOption[]>([
+    {
+      id: 1,
+      value: 'Professional but not formal',
+      isPreSelected: true
+    }
+  ]);
 
-  // Fetch user goals and populate guides
-  useEffect(() => {
-    const fetchUserGoals = async () => {
-      if (!user) return;
+  // No need to fetch user goals anymore since we're not suggesting based on goals
 
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('goals')
-          .eq('user_id', user.id)
-          .single();
-
-        if (error) {
-          console.error('Error fetching user goals:', error);
-          return;
-        }
-
-        const goals = (data?.goals as string[]) || [];
-        setUserGoals(goals);
-
-        // Get suggested guides based on goals
-        const suggestedGuides = getGuidesForGoals(goals);
-        
-        // Convert to Guide format with pre-selected status
-        const initialGuides: Guide[] = suggestedGuides.map((guide, index) => ({
-          id: index + 1,
-          value: guide,
-          isPreSelected: true
-        }));
-
-        setGuides(initialGuides);
-      } catch (error) {
-        console.error('Error loading user goals:', error);
-      }
-    };
-
-    fetchUserGoals();
-  }, [user]);
-
-  const addGuide = () => {
-    const newId = guides.length > 0 ? Math.max(...guides.map(g => g.id)) + 1 : 1;
-    setGuides(prev => [...prev, { id: newId, value: '', isPreSelected: false }]);
+  const addToneOption = () => {
+    const newId = toneOptions.length > 0 ? Math.max(...toneOptions.map(g => g.id)) + 1 : 1;
+    setToneOptions(prev => [...prev, { id: newId, value: '', isPreSelected: false }]);
   };
 
-  const removeGuide = (id: number) => {
-    setGuides(prev => prev.filter(guide => guide.id !== id));
+  const removeToneOption = (id: number) => {
+    setToneOptions(prev => prev.filter(option => option.id !== id));
   };
 
-  const updateGuide = (id: number, value: string) => {
-    setGuides(prev =>
-      prev.map(guide =>
-        guide.id === id ? { ...guide, value } : guide
+  const updateToneOption = (id: number, value: string) => {
+    setToneOptions(prev =>
+      prev.map(option =>
+        option.id === id ? { ...option, value } : option
       )
     );
   };
 
   const handleGoBack = () => {
-    navigate('/onboarding/goals');
+    navigate('/onboarding/linkedin-summary');
   };
 
 
 
   const handleContinue = async () => {
-    if (!user) return;
+    console.log('Continue button clicked');
+    console.log('User:', user);
+    console.log('Tone options:', toneOptions);
+    
+    if (!user) {
+      console.log('No user found, returning early');
+      toast.error('Please sign in to continue');
+      return;
+    }
     
     setIsLoading(true);
     
     try {
-      // Get all guides with content (including pre-selected ones)
-      const validGuides = guides
-        .filter(guide => guide.value && guide.value.trim().length > 0)
-        .map(guide => guide.value.trim());
+      // Get all tone options with content (including pre-selected ones)
+      const validToneOptions = toneOptions
+        .filter(option => option.value && option.value.trim().length > 0)
+        .map(option => option.value.trim());
 
-      // Always save the guides - the pre-selected ones should be included by default
-      // since they have values: 'Be authentic', 'Share your experience', 'Avoid hype'
+      console.log('Valid tone options:', validToneOptions);
+
+      // Always save the tone of voice preferences - the pre-selected ones should be included by default
+      // since they have values: 'Professional but not formal'
       const { error } = await supabase
         .from('profiles')
-        .update({ guides: validGuides })
+        .update({ guides: validToneOptions })
         .eq('user_id', user.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
 
+      console.log('Successfully saved tone preferences, navigating to content-pillars');
       navigate('/onboarding/content-pillars');
     } catch (error) {
-      console.error('Error saving guides:', error);
-      toast.error('Failed to save guides. Please try again.');
+      console.error('Error saving tone of voice preferences:', error);
+      toast.error('Failed to save tone of voice preferences. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Check if we have at least one guide with content
-  const canContinue = guides.some(guide => guide.value.trim());
+  // Check if we have at least one tone option with content
+  const canContinue = toneOptions.some(option => option.value.trim());
 
   return (
     <div
@@ -211,7 +192,7 @@ const Guides = () => {
             maxWidth: isMobile ? '320px' : '400px'
           }}>
             <OnboardingProgressIndicator 
-              currentStep={5}
+              currentStep={4}
               compact={true}
             />
           </div>
@@ -274,7 +255,7 @@ const Guides = () => {
                       textAlign: 'left',
                     }}
                   >
-                    What Are<br />Your Guides?
+                    Tone of Voice
                   </h1>
 
                   {/* Subtitle */}
@@ -289,10 +270,7 @@ const Guides = () => {
                       textAlign: 'left',
                     }}
                   >
-                    {userGoals.length > 0 
-                      ? `Based on your goals (${userGoals.join(', ')}), here are some suggested guides. Feel free to edit or add your own.`
-                      : 'What values guide the way you want to create content? (For example: be authentic, share your experience, avoid hype)'
-                    }
+                    How do you want your content to sound? We've pre-selected a professional but approachable tone. Add more options that reflect your unique voice.
                   </p>
                 </div>
               </div>
@@ -305,31 +283,31 @@ const Guides = () => {
                   gap: spacing.spacing[12],
                 }}
               >
-                {guides.map((guide) => (
-                  <div key={guide.id}>
+                {toneOptions.map((option) => (
+                  <div key={option.id}>
                     <Input
-                      placeholder="Enter your content guide"
-                      value={guide.value}
-                      onChange={(e) => updateGuide(guide.id, e.target.value)}
+                      placeholder="Enter your tone of voice preference"
+                      value={option.value}
+                      onChange={(e) => updateToneOption(option.id, e.target.value)}
                       style="tail-action"
                       size="lg"
                       disabled={isLoading}
                       tailAction={{
                         icon: <Trash2 size={16} />,
-                        onClick: () => removeGuide(guide.id)
+                        onClick: () => removeToneOption(option.id)
                       }}
                     />
                   </div>
                 ))}
 
-                {/* Add Guide Button */}
+                {/* Add Tone Option Button */}
                 <div style={{ marginTop: spacing.spacing[8], width: '100%' }}>
                   <Button
-                    label="Add Guide"
+                    label="Add Tone Option"
                     style="secondary"
                     size="sm"
                     leadIcon={<Plus size={16} />}
-                    onClick={addGuide}
+                    onClick={addToneOption}
                     disabled={isLoading}
                     className="w-full"
                   />
@@ -359,8 +337,8 @@ const Guides = () => {
                 }}
               >
                 {!canContinue 
-                  ? "Please add at least one guide to continue."
-                  : `${guides.filter(g => g.value.trim()).length} guide${guides.filter(g => g.value.trim()).length === 1 ? '' : 's'} ready.`
+                  ? "Please add at least one tone of voice option to continue."
+                  : `${toneOptions.filter(o => o.value.trim()).length} tone option${toneOptions.filter(o => o.value.trim()).length === 1 ? '' : 's'} ready.`
                 }
               </p>
             </div>
@@ -385,7 +363,11 @@ const Guides = () => {
           zIndex: 10,
         }}
       >
-        <div style={{ width: '280px' }}>
+        <div style={{ 
+          width: '280px',
+          display: 'flex',
+          justifyContent: 'center'
+        }}>
           <Button
             label={isLoading ? "Saving..." : "Continue"}
             style="primary"
@@ -393,7 +375,7 @@ const Guides = () => {
             tailIcon={!isLoading ? <ArrowRight size={16} /> : undefined}
             onClick={handleContinue}
             disabled={!canContinue || isLoading}
-            className="w-full"
+            className="w-[280px]"
           />
         </div>
       </div>

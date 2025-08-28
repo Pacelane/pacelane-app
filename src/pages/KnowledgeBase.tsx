@@ -18,6 +18,8 @@ import Input from '@/design-system/components/Input';
 import EmptyState from '@/design-system/components/EmptyState';
 import SubtleLoadingSpinner from '@/design-system/components/SubtleLoadingSpinner';
 import Button from '@/design-system/components/Button';
+import ButtonGroup from '@/design-system/components/ButtonGroup';
+import Pagination from '@/design-system/components/Pagination';
 import TranscriptPasteModal from '@/design-system/components/TranscriptPasteModal';
 
 // Design System Tokens
@@ -28,7 +30,10 @@ import { cornerRadius } from '@/design-system/tokens/corner-radius';
 import { getShadow } from '@/design-system/tokens/shadows';
 
 // Icons
-import { Search, FileText } from 'lucide-react';
+import { Search, FileText, Grid3X3, List, Calendar, MoreHorizontal } from 'lucide-react';
+
+// Avatar utilities
+import { getUserAvatarUrl } from '@/utils/avatarUtils';
 
 const KnowledgeBase = () => {
   const navigate = useNavigate();
@@ -71,6 +76,11 @@ const KnowledgeBase = () => {
   const [urlInput, setUrlInput] = useState('');
   const [showTranscriptModal, setShowTranscriptModal] = useState(false);
   const [processingTranscript, setProcessingTranscript] = useState(false);
+  
+  // View and pagination state
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'line'
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(12); // Fixed items per page
   
   // Ref for FileUpload component to trigger file selection
   const fileUploadRef = useRef(null);
@@ -274,6 +284,54 @@ const KnowledgeBase = () => {
         return files; // Already sorted by creation date from backend
     }
   };
+
+  // Get final filtered, sorted, and paginated files
+  const getDisplayFiles = () => {
+    const filteredFiles = getFilteredFiles();
+    const searchedFiles = filteredFiles.filter(file => 
+      searchQuery === '' || 
+      file.title.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    const sortedFiles = getSortedFiles(searchedFiles);
+    
+    // Calculate pagination
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedFiles = sortedFiles.slice(startIndex, endIndex);
+    
+    return {
+      files: paginatedFiles,
+      totalFiles: sortedFiles.length,
+      totalPages: Math.ceil(sortedFiles.length / itemsPerPage)
+    };
+  };
+
+  // View mode button items
+  const viewModeItems = [
+    {
+      id: 'grid',
+      leadIcon: <Grid3X3 />,
+      label: 'Grid',
+      onClick: () => {
+        setViewMode('grid');
+        setCurrentPage(1); // Reset to first page when changing view
+      }
+    },
+    {
+      id: 'line',
+      leadIcon: <List />,
+      label: 'List',
+      onClick: () => {
+        setViewMode('line');
+        setCurrentPage(1); // Reset to first page when changing view
+      }
+    }
+  ];
+
+  // Reset page when search query or filter changes
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, activeTab, sortBy]);
 
   // File upload handlers
   const handleFileSelect = async (files) => {
@@ -652,7 +710,7 @@ const KnowledgeBase = () => {
   };
 
   const getUserAvatar = () => {
-    return 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=48&h=48&fit=crop&crop=face';
+    return getUserAvatarUrl(profile, user);
   };
 
   // Grid styles for file cards - responsive
@@ -664,6 +722,178 @@ const KnowledgeBase = () => {
     // Ensure children don't affect grid sizing
     minHeight: 0,
     minWidth: 0,
+  };
+
+  // Line view styles for file list
+  const lineStyles = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacing.spacing[8],
+    width: '100%',
+  };
+
+  // Individual line item styles
+  const getLineItemStyles = (isHovered) => ({
+    display: 'flex',
+    alignItems: 'center',
+    padding: spacing.spacing[12],
+    backgroundColor: isHovered ? colors.bg.state.ghostHover : 'transparent',
+    borderRadius: cornerRadius.borderRadius.md,
+    border: `1px solid ${colors.border.default}`,
+    transition: 'background-color 0.15s ease-out',
+    cursor: 'pointer',
+    gap: spacing.spacing[12],
+  });
+
+  // File line item component
+  const FileLineItem = ({ file }) => {
+    const [isHovered, setIsHovered] = useState(false);
+    
+    const getFileIcon = () => {
+      switch (file.fileType) {
+        case 'image':
+          return <div style={{ 
+            width: '16px', 
+            height: '16px', 
+            backgroundColor: colors.bg.state.success,
+            borderRadius: '2px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>📷</div>;
+        case 'audio':
+          return <div style={{ 
+            width: '16px', 
+            height: '16px', 
+            backgroundColor: colors.bg.state.primary,
+            borderRadius: '2px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>🎵</div>;
+        case 'pdf':
+          return <div style={{ 
+            width: '16px', 
+            height: '16px', 
+            backgroundColor: colors.bg.state.destructive,
+            borderRadius: '2px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>📄</div>;
+        case 'link':
+          return <div style={{ 
+            width: '16px', 
+            height: '16px', 
+            backgroundColor: colors.bg.state.soft,
+            borderRadius: '2px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>🔗</div>;
+        default:
+          return <FileText size={16} color={colors.icon.muted} />;
+      }
+    };
+
+    const formatFileSize = (bytes) => {
+      if (!bytes) return '';
+      const kb = bytes / 1024;
+      if (kb < 1024) return `${kb.toFixed(1)} KB`;
+      const mb = kb / 1024;
+      return `${mb.toFixed(1)} MB`;
+    };
+
+    const formatDate = (dateString) => {
+      if (!dateString) return '';
+      return new Date(dateString).toLocaleDateString();
+    };
+
+    return (
+      <div
+        style={getLineItemStyles(isHovered)}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        onClick={file.onClick}
+      >
+        {/* File Icon */}
+        <div style={{ flexShrink: 0 }}>
+          {getFileIcon()}
+        </div>
+
+        {/* File Info */}
+        <div style={{ 
+          flex: 1, 
+          display: 'flex',
+          alignItems: 'center',
+          gap: spacing.spacing[16],
+          minWidth: 0
+        }}>
+          {/* Name */}
+          <div style={{ 
+            flex: isMobile ? 1 : '2',
+            minWidth: 0
+          }}>
+            <div style={{
+              ...textStyles.sm.medium,
+              color: colors.text.default,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap'
+            }}>
+              {file.title}
+            </div>
+          </div>
+
+          {!isMobile && (
+            <>
+              {/* Size */}
+              <div style={{ 
+                flex: '1',
+                minWidth: '80px',
+                textAlign: 'right'
+              }}>
+                <span style={{
+                  ...textStyles.xs.normal,
+                  color: colors.text.muted
+                }}>
+                  {formatFileSize(file.fileSize)}
+                </span>
+              </div>
+
+              {/* Date */}
+              <div style={{ 
+                flex: '1',
+                minWidth: '100px',
+                textAlign: 'right'
+              }}>
+                <span style={{
+                  ...textStyles.xs.normal,
+                  color: colors.text.muted
+                }}>
+                  {formatDate(file.subtitle?.split(' • ')[1])}
+                </span>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div style={{ flexShrink: 0 }}>
+          <Button
+            variant="iconOnly"
+            style="ghost"
+            size="xs"
+            leadIcon={<MoreHorizontal size={12} />}
+            onClick={(e) => {
+              e.stopPropagation();
+              // Handle menu action - for now just show delete
+              handleFileAction('delete', file.id);
+            }}
+          />
+        </div>
+      </div>
+    );
   };
 
   // Row styles for tabs and search - responsive
@@ -768,8 +998,21 @@ const KnowledgeBase = () => {
               onTabChange={setActiveTab}
             />
 
-            {/* Right: Search and Sort */}
+            {/* Right: View Toggle, Search and Sort */}
             <div style={rightSectionStyles}>
+              {/* View Toggle */}
+              <div style={{ flexShrink: 0 }}>
+                <ButtonGroup
+                  type="default"
+                  size="md"
+                  items={viewModeItems.map(item => ({
+                    ...item,
+                    disabled: false,
+                    onClick: () => item.onClick()
+                  }))}
+                />
+              </div>
+
               {/* Search Input */}
               <div style={{ flex: isMobile ? 1 : 'none', width: isMobile ? 'auto' : '280px' }}>
                 <Input
@@ -809,52 +1052,133 @@ const KnowledgeBase = () => {
             </div>
           )}
 
-          {/* File Grid - 2 columns */}
-          {!loading && !uploading && (
-            <div style={gridStyles}>
-              {getSortedFiles(getFilteredFiles())
-                .filter(file => 
-                  searchQuery === '' || 
-                  file.title.toLowerCase().includes(searchQuery.toLowerCase())
-                )
-                .map((file) => (
-                  <FileCard
-                    key={file.id}
-                    variant="gradient"
-                    title={file.title}
-                    subtitle={file.subtitle}
-                    fileType={file.fileType}
-                    status={file.status}
-                    fileSize={file.fileSize}
-                    onMenuAction={(action) => handleFileAction(action, file.id)}
-                    onClick={file.onClick}
-                    style={{
-                      width: '100%',
-                      minWidth: 0, // Allow shrinking below content size
-                      maxWidth: '100%', // Prevent growing beyond grid cell
-                    }}
-                  />
-                ))}
-            </div>
-          )}
+          {/* File Listing */}
+          {!loading && !uploading && (() => {
+            const { files, totalFiles, totalPages } = getDisplayFiles();
+            
+            if (totalFiles === 0) {
+              return (
+                <EmptyState
+                  title="No files found"
+                  subtitle={searchQuery ? 'Try adjusting your search or filter' : 'Upload some files to get started'}
+                  buttonLabel={!searchQuery ? 'Upload Files' : undefined}
+                  onButtonClick={!searchQuery ? () => {
+                    // Trigger file selection dialog
+                    if (fileUploadRef.current?.triggerFileSelect) {
+                      fileUploadRef.current.triggerFileSelect();
+                    }
+                  } : undefined}
+                />
+              );
+            }
 
-          {/* Empty state when no files match */}
-          {!loading && !uploading && getSortedFiles(getFilteredFiles()).filter(file => 
-            searchQuery === '' || 
-            file.title.toLowerCase().includes(searchQuery.toLowerCase())
-          ).length === 0 && (
-            <EmptyState
-              title="No files found"
-              subtitle={searchQuery ? 'Try adjusting your search or filter' : 'Upload some files to get started'}
-              buttonLabel={!searchQuery ? 'Upload Files' : undefined}
-              onButtonClick={!searchQuery ? () => {
-                // Trigger file selection dialog
-                if (fileUploadRef.current?.triggerFileSelect) {
-                  fileUploadRef.current.triggerFileSelect();
-                }
-              } : undefined}
-            />
-          )}
+            return (
+              <>
+                {/* Files Display */}
+                {viewMode === 'grid' ? (
+                  <div style={gridStyles}>
+                    {files.map((file) => (
+                      <FileCard
+                        key={file.id}
+                        variant="gradient"
+                        title={file.title}
+                        subtitle={file.subtitle}
+                        fileType={file.fileType}
+                        status={file.status}
+                        fileSize={file.fileSize}
+                        onMenuAction={(action) => handleFileAction(action, file.id)}
+                        onClick={file.onClick}
+                        style={{
+                          width: '100%',
+                          minWidth: 0, // Allow shrinking below content size
+                          maxWidth: '100%', // Prevent growing beyond grid cell
+                        }}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div style={lineStyles}>
+                    {/* List Header (desktop only) */}
+                    {!isMobile && (
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: `${spacing.spacing[8]} ${spacing.spacing[12]}`,
+                        backgroundColor: colors.bg.subtle,
+                        borderRadius: cornerRadius.borderRadius.md,
+                        border: `1px solid ${colors.border.default}`,
+                        gap: spacing.spacing[12],
+                      }}>
+                        <div style={{ width: '16px' }} /> {/* Icon space */}
+                        <div style={{ 
+                          flex: '2',
+                          ...textStyles.xs.medium,
+                          color: colors.text.subtle,
+                        }}>
+                          Name
+                        </div>
+                        <div style={{ 
+                          flex: '1',
+                          textAlign: 'right',
+                          ...textStyles.xs.medium,
+                          color: colors.text.subtle,
+                          minWidth: '80px'
+                        }}>
+                          Size
+                        </div>
+                        <div style={{ 
+                          flex: '1',
+                          textAlign: 'right',
+                          ...textStyles.xs.medium,
+                          color: colors.text.subtle,
+                          minWidth: '100px'
+                        }}>
+                          Date Added
+                        </div>
+                        <div style={{ width: '32px' }} /> {/* Actions space */}
+                      </div>
+                    )}
+                    
+                    {/* File List Items */}
+                    {files.map((file) => (
+                      <FileLineItem key={file.id} file={file} />
+                    ))}
+                  </div>
+                )}
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    marginTop: spacing.spacing[32],
+                  }}>
+                    <Pagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      onPageChange={setCurrentPage}
+                      showLabels={!isMobile}
+                      size={isMobile ? 'sm' : 'md'}
+                    />
+                  </div>
+                )}
+
+                {/* Results Summary */}
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  marginTop: spacing.spacing[16],
+                }}>
+                  <span style={{
+                    ...textStyles.sm.normal,
+                    color: colors.text.muted,
+                  }}>
+                    Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalFiles)} of {totalFiles} files
+                  </span>
+                </div>
+              </>
+            );
+          })()}
 
           {/* Audio Transcription Modal */}
           {showAudioModal && selectedAudioFile && (

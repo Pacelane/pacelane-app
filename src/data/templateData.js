@@ -1,7 +1,8 @@
 // Template Data - 10 Viral LinkedIn Post Templates
 // Based on goals, guides, and pillars from onboardingData.js
 
-import { goalOptions, goalToGuides, goalToPillars } from './onboardingData.js';
+// Removed goal-based imports since we no longer use goals in onboarding
+// import { goalOptions, goalToGuides, goalToPillars } from './onboardingData.js';
 
 // Template categories for organization
 export const templateCategories = {

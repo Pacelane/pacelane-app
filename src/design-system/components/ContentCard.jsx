@@ -36,7 +36,7 @@ const ContentCard = ({
   image,                         // Image URL for image variant
   
   // Interaction handlers
-  onMenuAction,                  // Function called with action type ('delete' | 'move')
+  onMenuAction,                  // Function called with action type ('delete')
   onClick,                       // Card click handler
   
   // Standard props
@@ -55,10 +55,6 @@ const ContentCard = ({
 
   // Dropdown menu items
   const dropdownItems = [
-    {
-      label: 'Move',
-      onClick: () => onMenuAction?.('move')
-    },
     {
       label: 'Delete',
       type: 'destructive',

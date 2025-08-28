@@ -2,30 +2,42 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/services/theme-context';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { templateData } from '@/data/templateData';
+import { templateData, templateCategories } from '@/data/templateData';
 
 // Design System Components
 import TemplateCard from '@/design-system/components/TemplateCard';
 import Button from '@/design-system/components/Button';
 import EmptyState from '@/design-system/components/EmptyState';
+import Tabs from '@/design-system/components/Tabs';
 
 // Design System Tokens
 import { spacing } from '@/design-system/tokens/spacing';
 import { textStyles } from '@/design-system/styles/typography/typography-styles';
 import { typography } from '@/design-system/tokens/typography';
 
-// Icons
-import { ArrowLeft } from 'lucide-react';
-
 const Templates = () => {
   const navigate = useNavigate();
   const { colors } = useTheme();
   const isMobile = useIsMobile();
-  const [templates] = useState(templateData); // Use local template data directly
+  const [templates] = useState(templateData);
+  const [activeCategory, setActiveCategory] = useState('all');
 
   // Debug: Log template data
   console.log('Templates loaded:', templates.length, 'templates');
   console.log('First template:', templates[0]);
+
+  // Filter templates by category
+  const filteredTemplates = activeCategory === 'all' 
+    ? templates 
+    : templates.filter(template => template.category === activeCategory);
+
+  // Tab configuration - matches Knowledge Base styling
+  const tabItems = [
+    { id: 'all', label: 'All' },
+    { id: templateCategories.AUTHORITY, label: 'Authority' },
+    { id: templateCategories.CAREER, label: 'Career' },
+    { id: templateCategories.STORYTELLING, label: 'Storytelling' }
+  ];
 
   // Handle template selection
   const handleTemplateClick = (templateId: string) => {
@@ -49,22 +61,16 @@ const Templates = () => {
     navigate('/content-editor', { state: { templateId } });
   };
 
-  // Handle start from scratch
-  const handleStartFromScratch = () => {
-    console.log('Start from scratch clicked');
-    navigate('/content-editor');
+  // Handle tab change
+  const handleTabChange = (tabId: string) => {
+    setActiveCategory(tabId);
   };
 
-  // Handle back navigation
-  const handleGoBack = () => {
-    navigate('/product-home');
-  };
-
-  // Page container styles
+  // Page container styles - matches Knowledge Base layout
   const containerStyles = {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: spacing.spacing[32],
+    gap: spacing.spacing[24],
     backgroundColor: 'transparent',
   };
 
@@ -96,34 +102,37 @@ const Templates = () => {
     justifyContent: isMobile ? 'stretch' : 'start',
   };
 
-
-
   return (
     <div style={containerStyles}>
-      {/* Back Button */}
-      <div style={{ alignSelf: 'flex-start' }}>
-        <Button 
-          style="dashed"
-          size="xs"
-          leadIcon={<ArrowLeft size={16} />}
-          label="Go Back"
-          onClick={handleGoBack}
-        />
-      </div>
-
       {/* REQUIRED: Page Header Section */}
       <div>
-        <h1 style={titleStyle}>How do you want to start?</h1>
+        <h1 style={titleStyle}>Templates</h1>
         <p style={subtitleStyle}>
-          Select a template or start from scratch.
+          Choose from our collection of proven LinkedIn post templates to kickstart your content creation
         </p>
       </div>
 
+      {/* Tab Navigation */}
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: isMobile ? 'column' : 'row',
+        gap: spacing.spacing[16],
+        alignItems: isMobile ? 'stretch' : 'flex-start'
+      }}>
+        <Tabs
+          style="segmented"
+          type="default"
+          tabs={tabItems}
+          activeTab={activeCategory}
+          onTabChange={handleTabChange}
+        />
+      </div>
+
       {/* Templates Grid */}
-      {templates.length > 0 ? (
+      {filteredTemplates.length > 0 ? (
         <div style={gridStyles}>
-          {/* Template Cards - Show all templates */}
-          {templates.map((template, index) => (
+          {/* Template Cards - Show filtered templates */}
+          {filteredTemplates.map((template, index) => (
             <TemplateCard 
               key={template.id}
               variant="default"
@@ -137,21 +146,12 @@ const Templates = () => {
               style={{ width: isMobile ? '100%' : 'auto' }}
             />
           ))}
-          
-          {/* Start from Scratch Card - Always at the end */}
-          <TemplateCard 
-            variant="empty"
-            onClick={handleStartFromScratch}
-            style={{ width: isMobile ? '100%' : 'auto' }}
-          />
         </div>
       ) : (
         /* Empty State */
         <EmptyState
-          title="No templates available"
-          subtitle="Start creating your content from scratch!"
-          buttonLabel="Start from Scratch"
-          onButtonClick={handleStartFromScratch}
+          title="No templates in this category"
+          subtitle="Try selecting a different category to find templates that match your needs"
         />
       )}
     </div>

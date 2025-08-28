@@ -315,7 +315,10 @@ const Welcome = () => {
           zIndex: 10,
         }}
       >
-        <div style={{ width: '320px' }}>
+        <div style={{ 
+          width: isMobile ? '100%' : '400px',
+          maxWidth: isMobile ? '320px' : '400px'
+        }}>
           <Button
             label="Let's Get Started"
             style="primary"

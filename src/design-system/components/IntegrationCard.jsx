@@ -4,8 +4,6 @@ import { spacing } from '@/design-system/tokens/spacing';
 import { cornerRadius } from '@/design-system/tokens/corner-radius';
 import { textStyles } from '@/design-system/styles/typography/typography-styles';
 import { getShadow } from '@/design-system/tokens/shadows';
-import Toggle from '@/design-system/components/Toggle';
-
 import Button from '@/design-system/components/Button';
 import { Settings, ExternalLink } from 'lucide-react';
 
@@ -18,11 +16,11 @@ import { Settings, ExternalLink } from 'lucide-react';
  * @param {React.ReactNode} props.icon - Icon component for the service
  * @param {string} props.iconColor - Color for the icon (brand color)
  * @param {string[]} props.features - Array of feature descriptions
- * @param {boolean} props.connected - Whether the integration is connected
- * @param {boolean} props.enabled - Whether the integration is enabled
- * @param {function} props.onToggle - Callback when toggle is changed
+
  * @param {function} props.onConfigure - Callback when configure button is clicked
+ * @param {function} props.onSync - Callback when sync button is clicked (optional)
  * @param {string} props.className - Additional CSS classes
+ * @param {Object} props.style - Inline styles (for flex layout)
  */
 const IntegrationCard = ({
   name,
@@ -30,12 +28,11 @@ const IntegrationCard = ({
   icon,
   iconColor,
   features = [],
-  connected = false,
-  enabled = false,
-  onToggle,
+
   onConfigure,
   onSync,
   className = '',
+  style = {},
 }) => {
   const { colors } = useTheme();
 
@@ -50,6 +47,7 @@ const IntegrationCard = ({
     borderRadius: cornerRadius.borderRadius.lg,
     boxShadow: getShadow('regular.card', colors),
     overflow: 'hidden', // Ensures border radius is maintained
+    ...style, // Apply external styles (flex, width, etc.)
   };
 
   // Header section styles
@@ -96,6 +94,7 @@ const IntegrationCard = ({
   const mainContentStyles = {
     display: 'flex',
     flexDirection: 'column',
+    flex: 1, // Take all available height
     padding: spacing.spacing[24],
     backgroundColor: 'transparent', // No background - uses wrapper background
   };
@@ -105,19 +104,13 @@ const IntegrationCard = ({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
+    flexShrink: 0, // Prevent shrinking, hug content
     padding: spacing.spacing[16],
     backgroundColor: colors.bg.card.default,
     borderTop: `1px solid ${colors.border.default}`,
   };
 
 
-
-  // Handle toggle change
-  const handleToggleChange = (newValue) => {
-    if (onToggle) {
-      onToggle(newValue);
-    }
-  };
 
   // Handle configure button click
   const handleConfigureClick = () => {
@@ -167,12 +160,7 @@ const IntegrationCard = ({
           )}
         </div>
 
-        <Toggle
-          size="md"
-          checked={enabled}
-          disabled={!connected}
-          onChange={handleToggleChange}
-        />
+
       </div>
     </div>
   );

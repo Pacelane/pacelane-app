@@ -323,7 +323,7 @@ const Ready = () => {
             maxWidth: isMobile ? '320px' : '400px'
           }}>
             <OnboardingProgressIndicator 
-              currentStep={10}
+              currentStep={9}
               compact={true}
             />
           </div>
@@ -454,8 +454,8 @@ const Ready = () => {
         }}
       >
         <div style={{ 
-          width: isMobile ? '100%' : '280px',
-          maxWidth: isMobile ? '320px' : '280px'
+          width: isMobile ? '100%' : '400px',
+          maxWidth: isMobile ? '320px' : '400px'
         }}>
           <Button 
             label={isLoading ? "Setting up your strategy..." : "Let's Go!"}

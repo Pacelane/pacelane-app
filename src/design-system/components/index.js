@@ -2,6 +2,7 @@ export { default as Bichaurinho } from './Bichaurinho.jsx';
 export { default as Logo } from './Logo.jsx';
 export { default as LogoSymbol } from './LogoSymbol.jsx';
 export { default as Button } from './Button.jsx';
+export { default as UserAvatar } from './UserAvatar.jsx';
 export { default as LoadingSpinner } from './LoadingSpinner.jsx';
 export { default as SpinningBichaurinho } from './SpinningBichaurinho.jsx';
 export { default as SubtleLoadingSpinner } from './SubtleLoadingSpinner.jsx';
@@ -37,6 +38,7 @@ export { default as CalendarSnippetsCard } from './CalendarSnippetsCard.jsx';
 export { default as NotificationItem } from './NotificationItem.jsx';
 export { default as ProtectedRoute } from './ProtectedRoute.tsx';
 export { default as Toggle } from './Toggle.jsx';
+export { default as Pagination } from './Pagination.jsx';
 export { default as IntegrationCard } from './IntegrationCard.jsx';
 export { default as Modal } from './Modal.jsx';
 export { default as HelpModal } from './HelpModal.jsx';
@@ -45,7 +47,7 @@ export { default as TranscriptPasteModal } from './TranscriptPasteModal.jsx';
 export { default as WhatsAppConfigModal } from './WhatsAppConfigModal.jsx';
 export { default as SetupCard } from './SetupCard.jsx';
 export { default as FirstTimeUserHome } from './FirstTimeUserHome.jsx';
-export { default as OnboardingProgressCard } from './OnboardingProgressCard.jsx';
+
 export { default as OnboardingProgressIndicator } from './OnboardingProgressIndicator.jsx';
 export { default as AppWorkflowDiagram } from './AppWorkflowDiagram.jsx';
 

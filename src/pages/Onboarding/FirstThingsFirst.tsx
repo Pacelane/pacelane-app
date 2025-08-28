@@ -114,7 +114,7 @@ const FirstThingsFirst = () => {
       }
 
       toast.success('Profile setup completed!');
-      navigate('/onboarding/inspirations');
+      navigate('/onboarding/linkedin-summary');
     } catch (error: any) {
       toast.error(error.message || 'Failed to complete setup');
     }
@@ -359,8 +359,8 @@ const FirstThingsFirst = () => {
         }}
       >
         <div style={{ 
-          width: isMobile ? '100%' : '280px',
-          maxWidth: isMobile ? '320px' : '280px'
+          width: isMobile ? '100%' : '400px',
+          maxWidth: isMobile ? '320px' : '400px'
         }}>
           <Button
             label={saving ? "Analyzing LinkedIn Profile..." : "Continue"}

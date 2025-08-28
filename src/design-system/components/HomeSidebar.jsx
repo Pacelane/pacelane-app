@@ -5,6 +5,7 @@ import { spacing } from '../tokens/spacing.js';
 import { textStyles } from '../styles/typography/typography-styles.js';
 import { stroke } from '../tokens/stroke.js';
 import { cornerRadius } from '../tokens/corner-radius.js';
+import { getBichaurinhoAvatarUrl } from '@/utils/avatarUtils';
 
 // Design System Components
 import Button from './Button.jsx';
@@ -13,7 +14,7 @@ import SidebarMenuItem from './SidebarMenuItem.jsx';
 import Logo from './Logo.jsx';
 import LogoSymbol from './LogoSymbol.jsx';
 import DropdownMenu from './DropdownMenu.jsx';
-import OnboardingProgressCard from './OnboardingProgressCard.jsx';
+
 
 // Icons
 import {
@@ -34,7 +35,8 @@ import {
   Monitor,
   HelpCircle,
   Settings,
-  LogOut
+  LogOut,
+  LayoutTemplate
 } from 'lucide-react';
 
 /**
@@ -58,7 +60,7 @@ const HomeSidebar = ({
   isCollapsed = false,
   onToggleCollapsed,
   userName = 'John Doe',
-  userAvatar = 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=48&h=48&fit=crop&crop=face',
+  userAvatar = null, // Will use Bichaurinho avatar as default
   activeMenuItem = 'home',
   onMenuItemClick,
   onCreateNewClick,
@@ -74,6 +76,10 @@ const HomeSidebar = ({
   const { openHelp } = useHelp();
   const [isAvatarHovered, setIsAvatarHovered] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+
+  // Determine avatar source - use Bichaurinho as fallback
+  const avatarSrc = userAvatar || getBichaurinhoAvatarUrl();
+  const isBichaurinho = avatarSrc.includes('bichaurinhos');
 
   // Handle theme selection
   const handleThemeSelect = (item, index) => {
@@ -125,6 +131,7 @@ const HomeSidebar = ({
     { id: 'home', label: 'Home', icon: <Home />, section: 'main' },
     { id: 'profile', label: 'Profile', icon: <User />, section: 'main' },
     { id: 'knowledge', label: 'Knowledge', icon: <BookOpen />, section: 'main' },
+    { id: 'templates', label: 'Templates', icon: <LayoutTemplate />, section: 'main' },
     { id: 'history', label: 'Posts', icon: <FileText />, section: 'main' },
     { id: 'pacing', label: 'Pacing', icon: <Gauge />, section: 'main' },
     { id: 'integrations', label: 'Integrations', icon: <Plug />, section: 'main' },
@@ -210,7 +217,9 @@ const HomeSidebar = ({
     height: '24px',
     borderRadius: cornerRadius.borderRadius.sm,
     border: `${stroke.DEFAULT} solid ${colors.border.default}`,
-    objectFit: 'cover',
+    objectFit: isBichaurinho ? 'contain' : 'cover',
+    backgroundColor: isBichaurinho ? '#FFFFFF' : 'transparent',
+    padding: isBichaurinho ? '2px' : '0',
   };
 
   // Button container styles
@@ -285,7 +294,7 @@ const HomeSidebar = ({
         type="button"
       >
         <img
-          src={userAvatar}
+          src={avatarSrc}
           alt={`${userName}'s avatar`}
           style={avatarImageStyles}
         />
@@ -374,8 +383,7 @@ const HomeSidebar = ({
         ))}
       </div>
 
-      {/* Onboarding Progress Card */}
-      <OnboardingProgressCard isCollapsed={isCollapsed} />
+
 
       {/* Actions Container */}
       <div style={actionsContainerStyles}>
