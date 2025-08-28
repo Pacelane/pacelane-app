@@ -1,0 +1,72 @@
+{
+  "button": {
+    "loading": "Carregando...",
+    "disabled": "Desabilitado"
+  },
+  "input": {
+    "placeholder": "Digite o texto...",
+    "search": "Pesquisar...",
+    "email": "Digite o endereço de email",
+    "password": "Digite a senha",
+    "confirmPassword": "Confirme a senha",
+    "name": "Digite seu nome",
+    "phone": "Digite o número de telefone",
+    "message": "Digite sua mensagem",
+    "optional": "(opcional)",
+    "required": "Obrigatório"
+  },
+  "modal": {
+    "close": "Fechar",
+    "confirm": "Confirmar",
+    "cancel": "Cancelar",
+    "title": "Título do Modal"
+  },
+  "dialog": {
+    "confirmDelete": {
+      "title": "Confirmar Exclusão",
+      "message": "Tem certeza de que deseja excluir este item? Esta ação não pode ser desfeita.",
+      "confirm": "Excluir",
+      "cancel": "Cancelar"
+    },
+    "confirmLeave": {
+      "title": "Alterações Não Salvas",
+      "message": "Você tem alterações não salvas. Tem certeza de que deseja sair desta página?",
+      "confirm": "Sair",
+      "cancel": "Ficar"
+    }
+  },
+  "table": {
+    "noData": "Nenhum dado disponível",
+    "loading": "Carregando dados...",
+    "error": "Erro ao carregar dados",
+    "rowsPerPage": "Linhas por página:",
+    "of": "de",
+    "page": "Página",
+    "firstPage": "Primeira página",
+    "previousPage": "Página anterior",
+    "nextPage": "Próxima página",
+    "lastPage": "Última página"
+  },
+  "fileUpload": {
+    "dragDrop": "Arraste e solte arquivos aqui",
+    "browse": "Procurar arquivos",
+    "uploading": "Enviando...",
+    "success": "Upload bem-sucedido",
+    "error": "Falha no upload",
+    "invalidType": "Tipo de arquivo inválido",
+    "tooLarge": "Arquivo muito grande",
+    "maxSize": "Tamanho máximo do arquivo: {{size}}"
+  },
+  "search": {
+    "placeholder": "Pesquisar...",
+    "noResults": "Nenhum resultado encontrado",
+    "searching": "Pesquisando...",
+    "clear": "Limpar pesquisa"
+  },
+  "pagination": {
+    "previous": "Anterior",
+    "next": "Próximo",
+    "page": "Página {{current}} de {{total}}",
+    "showing": "Mostrando {{start}}-{{end}} de {{total}} resultados"
+  }
+}

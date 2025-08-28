@@ -1,0 +1,112 @@
+{
+  "productHome": {
+    "title": "Welcome to Pacelane!",
+    "subtitle": "Let's get you set up with the tools you need to create amazing content",
+    "stats": {
+      "title": "Your Stats",
+      "projects": "Projects",
+      "knowledge": "Knowledge", 
+      "ideas": "Ideas"
+    },
+    "streak": {
+      "title": "Current Streak",
+      "days": "days"
+    },
+    "suggestions": {
+      "title": "Content Suggestions",
+      "empty": "No suggestions available"
+    },
+    "recentDrafts": {
+      "title": "Recent Drafts",
+      "empty": "No drafts yet"
+    },
+    "templates": {
+      "title": "Templates",
+      "viewAll": "View All Templates"
+    },
+    "search": {
+      "placeholder": "Search templates, drafts, and more..."
+    }
+  },
+  "knowledgeBase": {
+    "title": "Knowledge Base",
+    "subtitle": "Organize and access all your project files, documents, and resources in one place",
+    "empty": {
+      "title": "Your knowledge base is empty",
+      "description": "Upload documents, add notes, and organize your resources",
+      "action": "Add First Document"
+    },
+    "upload": {
+      "title": "Upload Files",
+      "description": "Drag and drop files or click to browse",
+      "success": "File uploaded successfully",
+      "error": "Failed to upload file"
+    }
+  },
+  "profile": {
+    "title": "Profile Settings",
+    "subtitle": "Manage your personal information, company details, and content preferences",
+    "sections": {
+      "personal": "Personal Information",
+      "preferences": "Preferences",
+      "security": "Security",
+      "billing": "Billing",
+      "integrations": "Integrations"
+    },
+    "fields": {
+      "name": "Full Name",
+      "email": "Email Address",
+      "language": "Language",
+      "timezone": "Timezone",
+      "notifications": "Email Notifications"
+    }
+  },
+  "contentEditor": {
+    "title": "Content Editor",
+    "subtitle": "Create and edit your content with AI assistance",
+    "toolbar": {
+      "bold": "Bold",
+      "italic": "Italic",
+      "underline": "Underline",
+      "link": "Add Link",
+      "image": "Add Image",
+      "list": "Bullet List",
+      "numberedList": "Numbered List",
+      "quote": "Quote",
+      "code": "Code Block"
+    },
+    "placeholders": {
+      "title": "Enter title...",
+      "content": "Start writing your content..."
+    },
+    "actions": {
+      "publish": "Publish",
+      "saveDraft": "Save Draft",
+      "preview": "Preview",
+      "export": "Export"
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "subtitle": "Stay updated with important alerts and messages",
+    "empty": "No notifications yet",
+    "markAllRead": "Mark All as Read",
+    "types": {
+      "system": "System",
+      "content": "Content",
+      "billing": "Billing",
+      "integration": "Integration"
+    }
+  },
+  "billing": {
+    "title": "Plan & Billing",
+    "subtitle": "Manage your subscription and billing information",
+    "currentPlan": "Current Plan",
+    "usage": "Usage",
+    "billingHistory": "Billing History",
+    "paymentMethod": "Payment Method",
+    "upgrade": "Upgrade Plan",
+    "downgrade": "Downgrade Plan",
+    "cancel": "Cancel Subscription"
+  }
+}

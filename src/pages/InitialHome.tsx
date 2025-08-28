@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/api/useAuth';
 import { useTheme } from '@/services/theme-context';
+import { usePageTranslation } from '@/hooks/useTranslation';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { templateData } from '@/data/templateData';
 import { supabase } from '@/integrations/supabase/client';
@@ -32,6 +33,7 @@ const InitialHome = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { colors } = useTheme();
+  const { t } = usePageTranslation();
   const isMobile = useIsMobile();
   const { toast } = useToast();
   
@@ -199,9 +201,9 @@ const InitialHome = () => {
     <div style={contentContainerStyles}>
       {/* Header Section */}
       <div>
-        <h1 style={welcomeHeadingStyle}>Welcome to Pacelane!</h1>
+        <h1 style={welcomeHeadingStyle}>{t('productHome.title')}</h1>
         <p style={subtitleStyle}>
-          Let's get you set up with the tools you need to create amazing content
+          {t('productHome.subtitle')}
         </p>
       </div>
 

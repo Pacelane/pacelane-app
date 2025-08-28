@@ -1,6 +1,7 @@
 import React, { useState, useRef, forwardRef } from 'react';
 import { motion } from 'framer-motion';
-import { useTheme } from '../../services/theme-context.jsx';
+import { useTheme } from '@/services/theme-context';
+import { useComponentTranslation } from '@/hooks/useTranslation';
 import { spacing } from '../tokens/spacing.js';
 import { cornerRadius } from '../tokens/corner-radius.js';
 import { textStyles } from '../styles/typography/typography-styles.js';
@@ -42,6 +43,7 @@ const Input = forwardRef(({
   ...rest
 }, ref) => {
   const { colors } = useTheme();
+  const { t } = useComponentTranslation();
   const [isFocused, setIsFocused] = useState(false);
   const [isTailActionHovered, setIsTailActionHovered] = useState(false);
   const inputRef = useRef(null);

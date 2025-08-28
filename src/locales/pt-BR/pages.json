@@ -1,0 +1,112 @@
+{
+  "productHome": {
+    "title": "Bem-vindo ao Pacelane!",
+    "subtitle": "Vamos configurar você com as ferramentas necessárias para criar conteúdo incrível",
+    "stats": {
+      "title": "Suas Estatísticas",
+      "projects": "Projetos",
+      "knowledge": "Conhecimento",
+      "ideas": "Ideias"
+    },
+    "streak": {
+      "title": "Sequência Atual",
+      "days": "dias"
+    },
+    "suggestions": {
+      "title": "Sugestões de Conteúdo",
+      "empty": "Nenhuma sugestão disponível"
+    },
+    "recentDrafts": {
+      "title": "Rascunhos Recentes",
+      "empty": "Nenhum rascunho ainda"
+    },
+    "templates": {
+      "title": "Modelos",
+      "viewAll": "Ver Todos os Modelos"
+    },
+    "search": {
+      "placeholder": "Pesquisar modelos, rascunhos e mais..."
+    }
+  },
+  "knowledgeBase": {
+    "title": "Base de Conhecimento",
+    "subtitle": "Organize e acesse todos os seus arquivos de projeto, documentos e recursos em um só lugar",
+    "empty": {
+      "title": "Sua base de conhecimento está vazia",
+      "description": "Faça upload de documentos, adicione notas e organize seus recursos",
+      "action": "Adicionar Primeiro Documento"
+    },
+    "upload": {
+      "title": "Enviar Arquivos",
+      "description": "Arraste e solte arquivos ou clique para navegar",
+      "success": "Arquivo enviado com sucesso",
+      "error": "Falha ao enviar arquivo"
+    }
+  },
+  "profile": {
+    "title": "Configurações do Perfil",
+    "subtitle": "Gerencie suas informações pessoais, detalhes da empresa e preferências de conteúdo",
+    "sections": {
+      "personal": "Informações Pessoais",
+      "preferences": "Preferências",
+      "security": "Segurança",
+      "billing": "Cobrança",
+      "integrations": "Integrações"
+    },
+    "fields": {
+      "name": "Nome Completo",
+      "email": "Endereço de Email",
+      "language": "Idioma",
+      "timezone": "Fuso Horário",
+      "notifications": "Notificações por Email"
+    }
+  },
+  "contentEditor": {
+    "title": "Editor de Conteúdo",
+    "subtitle": "Crie e edite seu conteúdo com assistência de IA",
+    "toolbar": {
+      "bold": "Negrito",
+      "italic": "Itálico",
+      "underline": "Sublinhado",
+      "link": "Adicionar Link",
+      "image": "Adicionar Imagem",
+      "list": "Lista com Marcadores",
+      "numberedList": "Lista Numerada",
+      "quote": "Citação",
+      "code": "Bloco de Código"
+    },
+    "placeholders": {
+      "title": "Digite o título...",
+      "content": "Comece a escrever seu conteúdo..."
+    },
+    "actions": {
+      "publish": "Publicar",
+      "saveDraft": "Salvar Rascunho",
+      "preview": "Visualizar",
+      "export": "Exportar"
+    }
+  },
+  "notifications": {
+    "title": "Notificações",
+    "subtitle": "Mantenha-se atualizado com alertas e mensagens importantes",
+    "empty": "Nenhuma notificação ainda",
+    "markAllRead": "Marcar Todas como Lidas",
+    "types": {
+      "system": "Sistema",
+      "content": "Conteúdo",
+      "billing": "Cobrança",
+      "integration": "Integração"
+    }
+  },
+  "billing": {
+    "title": "Plano e Cobrança",
+    "subtitle": "Gerencie sua assinatura e informações de cobrança",
+    "currentPlan": "Plano Atual",
+    "usage": "Uso",
+    "billingHistory": "Histórico de Cobrança",
+    "paymentMethod": "Método de Pagamento",
+    "upgrade": "Fazer Upgrade do Plano",
+    "downgrade": "Fazer Downgrade do Plano",
+    "cancel": "Cancelar Assinatura"
+  }
+}

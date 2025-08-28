@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/api/useAuth';
 import { useProfile } from '@/hooks/api/useProfile';
 import { useTheme } from '@/services/theme-context';
+import { usePageTranslation } from '@/hooks/useTranslation';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -38,6 +39,7 @@ const Profile = () => {
   const { user, signOut } = useAuth();
   const { profile, saving, updateBasicProfile } = useProfile();
   const { colors } = useTheme();
+  const { t } = usePageTranslation();
   const isMobile = useIsMobile();
   
   // Sidebar state
@@ -811,9 +813,9 @@ const Profile = () => {
             gap: isMobile ? spacing.spacing[16] : 0
           }}>
             <div>
-              <h1 style={titleStyle}>Profile Settings</h1>
+              <h1 style={titleStyle}>{t('profile.title')}</h1>
               <p style={subtitleStyle}>
-                Manage your personal information, company details, and content preferences
+                {t('profile.subtitle')}
               </p>
             </div>
             <div style={{ 

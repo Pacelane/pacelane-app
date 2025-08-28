@@ -1,0 +1,72 @@
+{
+  "button": {
+    "loading": "Loading...",
+    "disabled": "Disabled"
+  },
+  "input": {
+    "placeholder": "Enter text...",
+    "search": "Search...",
+    "email": "Enter email address",
+    "password": "Enter password",
+    "confirmPassword": "Confirm password",
+    "name": "Enter your name",
+    "phone": "Enter phone number",
+    "message": "Enter your message",
+    "optional": "(optional)",
+    "required": "Required"
+  },
+  "modal": {
+    "close": "Close",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "title": "Modal Title"
+  },
+  "dialog": {
+    "confirmDelete": {
+      "title": "Confirm Delete",
+      "message": "Are you sure you want to delete this item? This action cannot be undone.",
+      "confirm": "Delete",
+      "cancel": "Cancel"
+    },
+    "confirmLeave": {
+      "title": "Unsaved Changes",
+      "message": "You have unsaved changes. Are you sure you want to leave this page?",
+      "confirm": "Leave",
+      "cancel": "Stay"
+    }
+  },
+  "table": {
+    "noData": "No data available",
+    "loading": "Loading data...",
+    "error": "Error loading data",
+    "rowsPerPage": "Rows per page:",
+    "of": "of",
+    "page": "Page",
+    "firstPage": "First page",
+    "previousPage": "Previous page", 
+    "nextPage": "Next page",
+    "lastPage": "Last page"
+  },
+  "fileUpload": {
+    "dragDrop": "Drag and drop files here",
+    "browse": "Browse files",
+    "uploading": "Uploading...",
+    "success": "Upload successful",
+    "error": "Upload failed",
+    "invalidType": "Invalid file type",
+    "tooLarge": "File too large",
+    "maxSize": "Maximum file size: {{size}}"
+  },
+  "search": {
+    "placeholder": "Search...",
+    "noResults": "No results found",
+    "searching": "Searching...",
+    "clear": "Clear search"
+  },
+  "pagination": {
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page {{current}} of {{total}}",
+    "showing": "Showing {{start}}-{{end}} of {{total}} results"
+  }
+}
