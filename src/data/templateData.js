@@ -1213,7 +1213,7 @@ They're [credibility statement] that continue to work.`
     title: 'Mindset Evolution Comparison',
     description: 'Opens with timeframe reference and old mindset label, lists the old approach with bullet points, presents binary outcomes with arrow indicators, introduces new mindset with emphasis, provides numbered step-by-step new approach, validates effectiveness with concrete proof, identifies the key factor, and closes with motivational statement about potential impact.',
     category: templateCategories.EDUCATIONAL,
-    bichaurinhoVariant: 32,
+    bichaurinhoVariant: 1,
     content: `[Time period] ago, the mindset was "[old philosophy/approach]".
 
 [Old approach item 1]
@@ -1261,7 +1261,7 @@ The secret is in the [key factor]. [Supporting statement about available resourc
     title: 'Priority Misalignment Revelation',
     description: 'Opens with a contrarian statement about business failure causes, introduces a compelling character example with credentials, describes the contradiction between knowledge and action through a dialogue sequence, uses a visual element for emphasis, provides universal wisdom about self-awareness, poses a reflective challenge question, and closes with an uncomfortable truth acknowledgment.',
     category: templateCategories.EDUCATIONAL,
-    bichaurinhoVariant: 33,
+    bichaurinhoVariant: 2,
     content: `[Contrarian statement about failure cause].
 
 [Real reason for failure].
@@ -1302,7 +1302,7 @@ Because [uncomfortable truth about self-awareness].`
     title: 'Experience-Based Wisdom List',
     description: 'Opens with credibility statement about experience duration, promises a specific number of valuable insights, delivers arrow-bulleted lessons learned, provides philosophical wisdom about time and shortcuts, connects lessons to journey improvement, and closes with engagement question inviting additions.',
     category: templateCategories.PERSONAL,
-    bichaurinhoVariant: 34,
+    bichaurinhoVariant: 3,
     content: `[Activity/profession] for more than [time period] ..
 
 Here are the [number] things that made my [area/journey] [improvement adjective] [directional indicator]
@@ -1339,7 +1339,7 @@ What would you add to this list? [engagement symbol]`
     title: 'Small vs. Big Advantage Framework',
     description: 'Opens with empowering statement about small business advantages, contrasts big vs. small company dynamics, connects to current trend/technology, provides arrow-bulleted transformation examples, identifies market gap, gives leadership advice, includes paradoxical wisdom, acknowledges early stage timing, reframes the challenge, and closes with universal courage call-to-action.',
     category: templateCategories.EDUCATIONAL,
-    bichaurinhoVariant: 35,
+    bichaurinhoVariant: 4,
     content: `Having a [small entity] is having superpowers.
 
 And the best part is [key advantage behavior].
@@ -1376,7 +1376,7 @@ regardless of your [size/status].`
     title: 'Balance Paradox Framework',
     description: 'Opens with role comparison title, introduces the central challenge metaphor, explains the cyclical nature of focus, establishes the impossibility of perfect balance, provides either/or choice examples with varied arrow symbols, offers acceptance statement, shares key discoveries, delivers bullet-pointed insights, and closes with philosophical acceptance of imperfection.',
     category: templateCategories.PERSONAL,
-    bichaurinhoVariant: 36,
+    bichaurinhoVariant: 5,
     content: `[Role A] vs [Role B]
 
 The challenge of [balancing metaphor].
@@ -1406,7 +1406,7 @@ Being [role/profession] is accepting that [metaphor elements] will fall.`
     title: 'Trend Analysis with Data Framework',
     description: 'Opens with trend observation and provocative question, presents comparative data points with arrow bullets, adds deeper data analysis with contrasting segments, poses interpretive question, provides arrow-bulleted explanations for the trend, makes definitive trend statement, supports with personal research data, lists characteristic behaviors with arrows, concludes with bold prediction and reframes the question from "if" to "when".',
     category: templateCategories.EDUCATIONAL,
-    bichaurinhoVariant: 37,
+    bichaurinhoVariant: 6,
     content: `[Trend/behavior] is becoming fashionable.
 
 Will it be the new normal for [industry/sector]? 
@@ -1445,7 +1445,7 @@ It's "[when statement]."`
     title: 'Success Case Study Framework',
     description: 'Opens with intriguing concept question, introduces case study with impressive metrics, provides context setup with initial struggles, details the journey with arrow-bulleted milestones including failures, offers philosophical wisdom about learning, explains the breakthrough moment and model discovery, defines the concept with memorable phrase, breaks down practical components with arrows, emphasizes key success factor, shows dramatic improvement comparison, establishes authority, describes strategic expansion, delivers powerful contrast statement, closes with broader meaning and empowerment message.',
     category: templateCategories.PROMOTIONAL,
-    bichaurinhoVariant: 38,
+    bichaurinhoVariant: 7,
     content: `Have you heard of [concept/business model]?
 
 Meet the case of [person name] with [impressive metric].
@@ -1499,7 +1499,7 @@ It's about freedom to choose how to grow, using [tools] as your team.`
     title: 'Founder Mistakes Confession Framework',
     description: 'Opens with naive initial belief, reveals universal founder delusion with humor, confesses to making all common mistakes, provides numbered list of detailed mistakes with arrow-bulleted explanations for each, acknowledges the harsh reality of entrepreneurship, includes inspirational quote with formatting, identifies the key differentiator for success, and closes with reframe about persistence over starting.',
     category: templateCategories.PERSONAL,
-    bichaurinhoVariant: 39,
+    bichaurinhoVariant: 8,
     content: `When I [started major endeavor], I thought I would [unrealistic expectation] in [timeframe].
 
 Later I discovered that almost every [person in similar situation] thinks like this :P
@@ -1563,7 +1563,7 @@ But those who [achieve success] have one thing in common: [success behavior].
     title: 'Milestone Achievement Journey',
     description: 'Opens with impressive milestone announcement, provides backstory context with timeline, describes humble beginnings without traditional advantages, explains the origin story and motivation, shares initial simple strategy with specific metrics, reveals organic evolution and market need discovery, describes product creation without typical marketing tactics, shows growth metrics and timeline, clarifies original intention vs. actual outcome, acknowledges dual role development, celebrates the milestone achievement, emphasizes impact over numbers with specific success metrics, adds bonus achievement/recognition, reflects on the journey\'s unexpected nature, and closes with celebratory offer tied to the milestone.',
     category: templateCategories.PROMOTIONAL,
-    bichaurinhoVariant: 40,
+    bichaurinhoVariant: 9,
     content: `This month we will reach [impressive financial milestone] with my [product/service type].
 
 [Time period] ago, I [entered new field/situation] by accident.
@@ -1602,7 +1602,7 @@ Who would have thought, that [niche concept] would end up on [prestigious platfo
     title: 'Extreme Success Case Analysis',
     description: 'Opens with impressive quantified achievement, adds shocking constraint detail, introduces personal discovery moment with emotional impact, provides context with specific metrics and business model, establishes that success is systematic not lucky, contrasts typical approach with the successful method, delivers arrow-bulleted process steps with specific platforms and actions, emphasizes timing and efficiency principles, highlights the most interesting aspect, explains the systematic cycle with arrows, shows predictable results with multiple metrics, closes with philosophical wisdom about market value and problem-solving.',
     category: templateCategories.EDUCATIONAL,
-    bichaurinhoVariant: 41,
+    bichaurinhoVariant: 10,
     content: `[He/She] built [impressive number] [achievements] from scratch.
 
 And did this with only [shocking constraint].
@@ -1644,7 +1644,7 @@ Stories like this remind me of one thing:
     title: 'Contrarian Business Advice Framework',
     description: 'Opens with numbered contrarian statement and promise of reasoning, establishes credibility through experience and role, delivers arrow-bulleted detailed explanations for each point with specific challenges, consequences, and real-world context including personal examples where relevant.',
     category: templateCategories.EDUCATIONAL,
-    bichaurinhoVariant: 42,
+    bichaurinhoVariant: 11,
     content: `The [number] worst [category] to [action] in my opinion.
 
 And the reason for each one of them.
@@ -1668,7 +1668,7 @@ Based on what I learned as [role/experience] and [additional credibility] in the
     title: 'Speed-First Success Story',
     description: 'Opens with impressive achievement hook combining person, method, and results, establishes the broader trend significance, provides proof statement, details the rapid execution timeline with context, shows concrete results, emphasizes authenticity over hype, breaks down product features with arrows, explains success factors with arrow bullets, shares the simple playbook with dashed bullet points, connects to leadership philosophy with arrows showing cultural impact, and closes with organizational transformation details using arrows for structural changes.',
     category: templateCategories.PROMOTIONAL,
-    bichaurinhoVariant: 43,
+    bichaurinhoVariant: 12,
     content: `This CEO made [product/achievement] in [method/approach] alone and earned [impressive result] in [timeframe].
 
 [Superlative description] case of [concept/trend] in the world.
@@ -1722,7 +1722,7 @@ And [organizational change description]
     title: 'Honest Reality Check Framework',
     description: 'Opens with specific personal situation and decision, shares internal concerns through questioning format, expresses desire to give idealistic answer, admits to honest reality instead, acknowledges the trade-offs while maintaining overall belief, provides nuanced context with variations, gives concrete counter-example, identifies content gap in the market, calls for more balanced discussion, and closes with engagement request for deeper exploration.',
     category: templateCategories.PERSONAL,
-    bichaurinhoVariant: 44,
+    bichaurinhoVariant: 13,
     content: `I was in [meeting/situation] and my [role/person] asked if [specific question/request].
 
 I said [initial response].
@@ -1756,7 +1756,7 @@ React here on the post if you want me to write a specific post about the real [a
     title: 'Leadership Philosophy Reversal',
     description: 'Opens with contrarian statement about undervalued leadership quality, anticipates and addresses skeptical question, provides surprising answer, shares formative learning experience with key concept definition, describes personal transformation and impact, connects to current organizational growth, acknowledges team expertise superiority, offers multiple forms of support through rhetorical questions, states leadership purpose, and closes with accountability expectation for other leaders.',
     category: templateCategories.PERSONAL,
-    bichaurinhoVariant: 45,
+    bichaurinhoVariant: 14,
     content: `The most underestimated quality of a leader is [contrarian leadership trait].
 
 "But who [does this thing] to you, for example, [Name]?".
@@ -1792,7 +1792,7 @@ And it's also the posture I demand from [other leadership level] at [company].`
     title: 'Startup Journey Reality Framework',
     description: 'Opens with founding year and journey timeline, details multiple failures and restarts with specific years and contexts, shows growth metrics and apparent success, reveals another near-failure, poses reflective question, delivers arrow-bulleted hard-learned lessons covering emotional, financial, and market realities, provides reassuring perspective about scaling pressure, lists what\'s not required for success, acknowledges that not all startups scale, encourages vulnerability and honesty, and closes with solidarity and reality-check statements.',
     category: templateCategories.PERSONAL,
-    bichaurinhoVariant: 46,
+    bichaurinhoVariant: 15,
     content: `In [year] I founded my first [venture/company]
 
 In [year] I [failed/broke] it for the first time. [Reason/context].
@@ -1835,7 +1835,7 @@ You're not alone in this. The grass isn't greener on the other side.`
     title: 'Fast Process Success Story',
     description: 'Opens with contrarian statement about process efficiency, introduces specific example with impressive timeline, provides concrete proof of speed, establishes the strategic decision moment with date and priority, shows immediate leadership action with role assumption, details systematic acceleration approach, delivers day-by-day timeline breakdown with specific actions and outcomes, acknowledges the successful result with current status, offers future content expansion, and closes with reinforcing principle about speed vs quality misconception.',
     category: templateCategories.ORGANIZATIONAL,
-    bichaurinhoVariant: 47,
+    bichaurinhoVariant: 16,
     content: `[Slow process type] is bad for [affected party] and doesn't improve [quality outcome].
 
 We're doing [process type] in [short timeframe], and [Person Name] was a crazy example.
@@ -1865,7 +1865,7 @@ But today the post was just to show that [process type] don't need to be slow to
     title: 'David vs. Goliath Validation Story',
     description: 'Opens with dramatic scene setting and provocative quote from audience member, provides context about the academic setting and discussion topic, delivers the contrarian Brazilian perspective with cultural insight, transitions to educational analysis with direct address to audience, breaks down systematic reasons why big companies struggle against focused startups using bullet points, provides concrete example of the principle in action, shows long-term validation with impressive metrics, connects to broader success narrative, transitions to content promotion with personal endorsement, and closes with engagement request acknowledging effort invested.',
     category: templateCategories.EDUCATIONAL,
-    bichaurinhoVariant: 48,
+    bichaurinhoVariant: 17,
     content: `[Person] was talking about [Company] at [Prestigious Institution] and a [nationality/demographic] in the audience says: "[Provocative prediction quote]".
 
 [Company] was the case study for the class.
@@ -1898,7 +1898,7 @@ And like this post, please, because it took work to make this [content creation]
     title: 'Behind-the-Scenes Explanation',
     description: 'Opens with quoted question about unique business decision, introduces external content creation acknowledging the source, provides simplified answer with bullet-pointed benefits, confirms positive results, shares cost-efficiency insight with specific numbers and location context, explains strategic integration beyond just workspace, promotes full content with platform reference, and closes with engagement request tied to broader industry impact.',
     category: templateCategories.ORGANIZATIONAL,
-    bichaurinhoVariant: 49,
+    bichaurinhoVariant: 18,
     content: `"[Question about unique business decision/approach]?" 
 
 The [external team/creator] made a [content type] about this, answering that question.
@@ -1924,7 +1924,7 @@ Leave your like to encourage and have more content like this in [industry/market
     title: 'Scale Realization Moment',
     description: 'Opens with impressive speaking engagement achievement, reveals lesser-known product strength with authority positioning, provides concrete business impact example with financial metrics, redirects focus from product promotion to personal reflection, lists multiple impact metrics with bullet points showing reach across different channels, connects to deeper business impact with daily user interaction, acknowledges the surreal nature of the achievement, reflects on original vision versus accelerated timeline, and closes with amazement at the speed of realization.',
     category: templateCategories.PERSONAL,
-    bichaurinhoVariant: 50,
+    bichaurinhoVariant: 19,
     content: `Yesterday I spoke at the biggest [industry/topic] event in [country/region] - to [large number] people on the main stage.
 
 Many people don't know, but [company]'s product is a reference in terms of [technology/approach] in practice.
@@ -1954,7 +1954,7 @@ I always knew we could [create/achieve original vision], but I didn't think it w
     title: 'Tool Limitation Discovery',
     description: 'Opens with context about frequent activity and tool usage pattern, describes the productivity paradox experienced, details the typical workflow that leads to problems, explains the initial optimistic expectation, reveals the disappointing reality with specific negative outcomes, identifies the core value that gets lost in the process, and closes with decisive action based on the learning.',
     category: templateCategories.PERSONAL,
-    bichaurinhoVariant: 51,
+    bichaurinhoVariant: 20,
     content: `We [do activity] a lot at [company/context]. And the more I've used [tool/technology] for this, the more unproductive I've become.
 
 It starts like this: I need to [think about/work on] [large task/project].
@@ -1980,7 +1980,7 @@ So, I'm abandoning [tool] as a [specific role/function].`
     title: 'Organizational Change Announcement',
     description: 'Opens with change announcement, provides context for the decision, explains the reasoning with bullet points, acknowledges challenges or concerns, outlines implementation timeline, shares expected benefits, addresses team/stakeholder impact, and closes with commitment to transparency.',
     category: templateCategories.ORGANIZATIONAL,
-    bichaurinhoVariant: 52,
+    bichaurinhoVariant: 21,
     content: `[Change announcement statement].
 
 [Context for why this change is happening].
@@ -2012,7 +2012,7 @@ We'll keep you updated every step of the way.`
     title: 'Team Culture Insight',
     description: 'Opens with observation about team behavior or culture, provides specific example or scenario, explains why this matters for the organization, connects to broader business impact, shares how the culture developed, describes what others can learn, and closes with actionable takeaway.',
     category: templateCategories.ORGANIZATIONAL,
-    bichaurinhoVariant: 53,
+    bichaurinhoVariant: 22,
     content: `[Observation about team behavior/culture].
 
 [Specific example or recent scenario].
@@ -2041,7 +2041,7 @@ What other [teams/companies] can take from this:
     title: 'Operational Efficiency Discovery',
     description: 'Opens with problem identification, describes previous inefficient state, explains what triggered the search for solution, details the solution or new approach, provides before/after metrics, explains implementation process, shares unexpected benefits, and closes with broader application potential.',
     category: templateCategories.ORGANIZATIONAL,
-    bichaurinhoVariant: 54,
+    bichaurinhoVariant: 23,
     content: `We had a [operational problem/inefficiency].
 
 [Description of previous state/process].
@@ -2071,7 +2071,7 @@ This same approach could work for [broader application/other areas].`
     title: 'Decision-Making Framework Reveal',
     description: 'Opens with decision-making challenge, introduces the framework used, breaks down each step of the process, provides real example of framework in action, explains why each step matters, shares common pitfalls to avoid, describes team adoption process, and closes with framework accessibility or sharing.',
     category: templateCategories.ORGANIZATIONAL,
-    bichaurinhoVariant: 55,
+    bichaurinhoVariant: 24,
     content: `[Decision-making challenge we faced].
 
 We developed a [framework name/type] to handle this.
@@ -2106,7 +2106,7 @@ Getting the team to adopt this took [approach/timeframe].
     title: 'Resource Allocation Philosophy',
     description: 'Opens with resource allocation challenge or principle, explains the philosophy or approach taken, provides specific allocation criteria, gives examples of difficult decisions made, explains the trade-offs involved, describes how priorities are evaluated, shares results or outcomes, and closes with broader principle application.',
     category: templateCategories.ORGANIZATIONAL,
-    bichaurinhoVariant: 56,
+    bichaurinhoVariant: 25,
     content: `[Resource allocation challenge/principle statement].
 
 Our philosophy: [Core approach/principle].
@@ -2140,7 +2140,7 @@ This same thinking applies to [broader applications].
     title: 'Event Success Celebration',
     description: 'Opens with enthusiastic event announcement and attendance metrics, introduces what made the event special, provides numbered list of key highlights with specific acknowledgments and gratitude expressions, includes partnership recognitions, describes valuable outcomes achieved, teases future announcements, and closes with gratitude and forward-looking enthusiasm.',
     category: templateCategories.ORGANIZATIONAL,
-    bichaurinhoVariant: 57,
+    bichaurinhoVariant: 26,
     content: `What a [superlative] event we had [timeframe]! We brought together [impressive number] [target audience/companies] [working on/building] [topic/platform].
 
 It was special for several reasons:
@@ -2164,7 +2164,7 @@ What a day! Thank you to everyone who was there! Bring on more!`
     title: 'Product Feature Announcement',
     description: 'Opens with feature announcement and excitement indicator, establishes learning context from related concept, explains the underlying principle and benefits, connects the principle to current product domain, announces the automatic implementation, contrasts past manual process with new automatic approach, lists multiple benefits with icons, provides concrete real-world example with visual proof, addresses opt-out scenario with simple instructions, and maintains technical precision throughout.',
     category: templateCategories.PROMOTIONAL,
-    bichaurinhoVariant: 58,
+    bichaurinhoVariant: 27,
     content: `Today, we're making [product/service] more [improvement adjective] [emoji]
 
 The [related concept/format] taught us an important lesson:
@@ -2196,7 +2196,7 @@ Let's take a real-life [example type] from [company/source]. This will now autom
     title: 'Team Addition Announcement',
     description: 'Opens with exciting team expansion announcement, introduces new team members with bullet-pointed names, provides context about their previous company and relevant expertise, explains why their background makes them valuable, presents detailed individual profiles with numbered sections, includes specific achievements and experience highlights, provides links to their profiles or work, and maintains professional tone throughout while emphasizing the value they bring to the organization.',
     category: templateCategories.ORGANIZATIONAL,
-    bichaurinhoVariant: 59,
+    bichaurinhoVariant: 28,
     content: `This [timeframe], we have [number] [new team members] officially joining the team!
 
 • [Name 1]
@@ -2225,7 +2225,7 @@ Before [current company], [he/she] was the [previous role] of [company], and bef
     title: 'Industry Observation Insight',
     description: 'Opens with industry observation, provides supporting evidence or examples, explains why this matters now, connects to broader implications, offers practical advice, shares personal perspective, and closes with thought-provoking question.',
     category: templateCategories.EDUCATIONAL,
-    bichaurinhoVariant: 60,
+    bichaurinhoVariant: 29,
     content: `I've been noticing [industry trend/pattern] lately.
 
 [Supporting evidence or specific examples].
@@ -2248,7 +2248,7 @@ What are you seeing in your [industry/field]?`
     title: 'Learning Journey Share',
     description: 'Opens with learning challenge or goal, describes the journey with obstacles, shares key discoveries, explains how thinking changed, provides actionable takeaways, acknowledges ongoing learning, and invites others to share their experiences.',
     category: templateCategories.PERSONAL,
-    bichaurinhoVariant: 61,
+    bichaurinhoVariant: 30,
     content: `I set out to learn [skill/topic] [timeframe] ago.
 
 Thought it would be [initial expectation].
@@ -2275,7 +2275,7 @@ What's something you learned recently that surprised you?`
     title: 'Client Success Highlight',
     description: 'Opens with client achievement, provides context about their situation, explains the challenge they faced, describes the solution or approach, shares specific results, explains what made the difference, gives credit to the client, and connects to broader lesson.',
     category: templateCategories.PROMOTIONAL,
-    bichaurinhoVariant: 62,
+    bichaurinhoVariant: 31,
     content: `[Client name/type] just [achieved impressive result].
 
 When we started working together, they were [initial situation/challenge].
@@ -2303,7 +2303,7 @@ This reinforced something important: [Broader lesson/principle].`
     title: 'Workflow Optimization Story',
     description: 'Opens with workflow problem, describes the pain points, explains the solution discovery process, details the new approach, provides before/after comparison, shares team adoption experience, and offers the solution to others.',
     category: templateCategories.ORGANIZATIONAL,
-    bichaurinhoVariant: 63,
+    bichaurinhoVariant: 32,
     content: `Our [process/workflow] was driving everyone crazy.
 
 The problems:
@@ -2334,7 +2334,7 @@ If you're dealing with similar [workflow issues], happy to share more details.`
     title: 'Market Shift Analysis',
     description: 'Opens with market change observation, provides evidence of the shift, explains driving forces, analyzes implications for different stakeholders, offers strategic recommendations, shares personal positioning, and invites discussion.',
     category: templateCategories.EDUCATIONAL,
-    bichaurinhoVariant: 64,
+    bichaurinhoVariant: 1,
     content: `The [market/industry] is shifting faster than most people realize.
 
 Evidence:
@@ -2366,7 +2366,7 @@ How are you adapting to these changes?`
     title: 'Personal Milestone Reflection',
     description: 'Opens with milestone achievement, reflects on the journey, shares what was learned along the way, acknowledges people who helped, explains what this milestone means, discusses next goals, and expresses gratitude.',
     category: templateCategories.PERSONAL,
-    bichaurinhoVariant: 65,
+    bichaurinhoVariant: 2,
     content: `Just hit [milestone/achievement].
 
 [Timeframe] ago, this felt [impossible/distant/challenging].
@@ -2395,7 +2395,7 @@ What milestone are you working toward?`
     title: 'Product Behind-the-Scenes',
     description: 'Opens with product feature or decision, explains the hidden complexity, describes the decision-making process, shares what users don\'t see, explains trade-offs made, reveals interesting technical details, and connects to user benefits.',
     category: templateCategories.PROMOTIONAL,
-    bichaurinhoVariant: 66,
+    bichaurinhoVariant: 3,
     content: `That [simple feature/interaction] in [product]?
 
 It's way more complex than it looks.
@@ -2428,7 +2428,7 @@ Sometimes the best user experiences require the most work behind the scenes.`
     title: 'Team Challenge Solution',
     description: 'Opens with team challenge, describes impact on work, explains solution discovery, details implementation approach, shares results and team feedback, explains what made it work, and offers to help others facing similar issues.',
     category: templateCategories.ORGANIZATIONAL,
-    bichaurinhoVariant: 67,
+    bichaurinhoVariant: 4,
     content: `Our team was struggling with [specific challenge].
 
 It was affecting [work impact/team morale].
@@ -2461,7 +2461,7 @@ If your team is facing [similar challenges], I'm happy to share more about our a
     title: 'Skill Development Guide',
     description: 'Opens with skill importance, explains why it matters now, breaks down the learning path, shares practical exercises, provides resource recommendations, addresses common obstacles, and encourages action.',
     category: templateCategories.EDUCATIONAL,
-    bichaurinhoVariant: 68,
+    bichaurinhoVariant: 5,
     content: `[Skill] is becoming essential for [target audience].
 
 Here's why it matters more than ever:
@@ -2503,7 +2503,7 @@ Start with [specific first step]. You'll be surprised how quickly you progress.`
     title: 'Personal Philosophy Share',
     description: 'Opens with philosophy statement, explains how it developed, provides examples of application, shares benefits experienced, acknowledges when it\'s challenging, explains evolution over time, and invites others to share their principles.',
     category: templateCategories.PERSONAL,
-    bichaurinhoVariant: 69,
+    bichaurinhoVariant: 6,
     content: `I live by this principle: [Core philosophy/belief].
 
 This came from [origin story/experience that shaped it].
@@ -2534,7 +2534,7 @@ What principle guides your decisions?`
     title: 'System Sharing Framework',
     description: 'Opens with engaging offer to share system for free, introduces the system structure with numbered phases, breaks down each phase with bullet points and focus explanation, connects phases with feedback loops, provides system flow summary, adds personal philosophy disclaimer, acknowledges different approaches, and encourages experimentation.',
     category: templateCategories.EDUCATIONAL,
-    bichaurinhoVariant: 70,
+    bichaurinhoVariant: 7,
     content: `Want to [achieve goal/skill]?
 
 Copy my system! For free!!!
@@ -2596,7 +2596,7 @@ Test and discover what works best for you!`
     title: 'Complete Business Case Study',
     description: 'Opens with impressive achievement and methodology teaser, references visual proof, provides context and background story, breaks down chronological milestones with arrows, details investment breakdown, explains practical implementation process, contrasts what they don\'t have vs what they do have, shares lessons learned, outlines future plans, connects to broader mission, provides key learnings with arrows, reduces to core requirements, emphasizes content strategy importance, expresses gratitude, and closes with soft call-to-action.',
     category: templateCategories.PROMOTIONAL,
-    bichaurinhoVariant: 71,
+    bichaurinhoVariant: 8,
     content: `From 0 to [impressive number] [target customers] via [platform] in [timeframe].
 
 Without [resource 1] and without [resource 2]. How I did it 👇 
