@@ -2704,6 +2704,39 @@ Thank you to those who follow and support.
 Thank you to those who trusted and are already our clients.
 
 PS: [soft call-to-action]? [contact invitation] 👋`
+  },
+  {
+    id: 'template-leadership-misconception-correction',
+    title: 'Leadership Misconception Correction',
+    description: 'Opens with common leadership misconception, contrasts with what leaders actually need, provides examples of impressive but ineffective leaders, describes the real-world consequence of missing the key element, states the simple truth, explains the negative outcomes without the key element, clarifies what the key skill doesn\'t require, explains what it actually requires with repetition for emphasis, and closes with the importance of role clarity.',
+    category: templateCategories.PERSONAL,
+    bichaurinhoVariant: 9,
+    content: `Everyone thinks [role/person] has to [common expectation].
+
+But what [role/person] needs is: 
+
+[Real requirement].
+
+I've seen [role/people] who are [impressive trait].
+[Description of their impressive abilities].
+
+But, day-to-day, [team/people] still [negative outcome 1], [negative outcome 2] or [negative outcome 3].
+
+The truth is simple:
+
+[Direct statement about ineffectiveness without key element].
+
+Without [key element], [consequence 1].
+Without [key element], [consequence 2].
+And then [dramatic consequence].
+
+[Key skill] doesn't require [misconception 1], nor [misconception 2].
+
+It requires [actual requirement 1].
+
+It requires [actual requirement 2].
+
+It requires [actual requirement 3], until [desired outcome].`
   }
 ];
 
