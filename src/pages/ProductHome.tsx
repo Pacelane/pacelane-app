@@ -6,6 +6,7 @@ import { useAnalytics } from '../hooks/api/useAnalytics';
 import { useTheme } from '../services/theme-context';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { templateData } from '@/data/templateData';
+import { usePostHogService } from '@/services/postHogService';
 import { supabase } from '../integrations/supabase/client';
 
 // First-time user utilities
@@ -46,6 +47,7 @@ const ProductHome = () => {
   const { streak, stats, weekActivity, loading: analyticsLoading, trackActivity } = useAnalytics();
   const { colors } = useTheme();
   const isMobile = useIsMobile();
+  const postHogService = usePostHogService();
   const [searchQuery, setSearchQuery] = useState('');
   const [hasLoadedInitialData, setHasLoadedInitialData] = useState(false);
 
@@ -324,6 +326,10 @@ const ProductHome = () => {
     if (trackActivity) {
       await trackActivity('content_creation');
     }
+    
+    // Track content creation with PostHog
+    postHogService.trackContentCreationStarted('blank');
+    
     navigate('/content-editor');
   };
 
@@ -344,6 +350,15 @@ const ProductHome = () => {
     if (trackActivity) {
       await trackActivity('content_creation');
     }
+    
+    // Find template name for tracking
+    const template = templateData.find(t => t.id === templateId);
+    const templateName = template?.title || 'Unknown Template';
+    
+    // Track template selection with PostHog
+    postHogService.trackTemplateSelected(templateId, templateName);
+    postHogService.trackContentCreationStarted('template', templateId);
+    
     navigate('/content-editor', { state: { templateId } });
   };
 

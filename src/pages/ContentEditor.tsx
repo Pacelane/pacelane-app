@@ -7,6 +7,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useHelp } from '../services/help-context';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/design-system/components/Toast';
+import { usePostHogService } from '@/services/postHogService';
 
 import { getTemplateById } from '@/data/templateData';
 
@@ -79,6 +80,7 @@ const ContentEditor = () => {
   const { openHelp } = useHelp();
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const postHogService = usePostHogService();
   
   console.log('ContentEditor: Location state:', location.state);
   
@@ -399,9 +401,13 @@ const ContentEditor = () => {
     if (!chatInput.trim() || aiLoading) return;
 
     const messageText = chatInput;
+    const messageStartTime = Date.now();
     setChatInput('');
 
     try {
+      // Track AI chat message sent
+      postHogService.trackAiChatMessageSent(messageText.length, 'content_editor');
+
       // Send message using clean API with selected files and current content
       const selectedFiles = getSelectedFiles();
       const result = await sendMessage({
@@ -413,6 +419,11 @@ const ContentEditor = () => {
       if (result.error) {
         throw new Error(result.error);
       }
+
+      // Track AI chat response received
+      const responseTime = Date.now() - messageStartTime;
+      const responseLength = result.data?.message?.length || 0;
+      postHogService.trackAiChatResponseReceived(responseLength, responseTime);
 
       // Check if the AI response contains an edit suggestion
       if (result.data?.message) {
@@ -438,6 +449,9 @@ const ContentEditor = () => {
       'storytelling': 'Add storytelling elements to make this more engaging. Provide the edited version.',
       'actionable': 'Make this content more actionable with specific steps or takeaways. Provide the edited version.'
     };
+
+    // Track AI suggestion usage
+    postHogService.trackAiSuggestionApplied(action);
 
     const message = actionMessages[action as keyof typeof actionMessages] || action;
     setChatInput(message);
@@ -514,7 +528,7 @@ const ContentEditor = () => {
   };
 
   // Main content area styles (below nav) - responsive
-  const mainContentStyles = {
+  const mainContentStyles: React.CSSProperties = {
     display: 'flex',
     flexDirection: isMobile ? 'column' : 'row',
     flex: 1,
