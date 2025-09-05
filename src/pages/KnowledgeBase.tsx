@@ -5,6 +5,7 @@ import { useContent } from '@/hooks/api/useContent';
 import { useTheme } from '@/services/theme-context';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useToast } from '@/design-system/components/Toast';
+import { usePostHogService } from '@/services/postHogService';
 import TranscriptService from '@/services/transcriptService';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -36,6 +37,7 @@ const KnowledgeBase = () => {
   const { colors } = useTheme();
   const isMobile = useIsMobile();
   const { toast, removeToast } = useToast();
+  const postHogService = usePostHogService();
   
   console.log('KnowledgeBase: Component rendered, user:', user?.id, 'profile:', profile?.id);
   
@@ -282,14 +284,22 @@ const KnowledgeBase = () => {
     console.log('KnowledgeBase: Starting file upload for', files.length, 'files');
 
     // Validate files before upload
-    const fileArray = Array.from(files);
-    const validationErrors = [];
-    const validFiles = [];
+    const fileArray = Array.from(files) as File[];
+    const validationErrors: string[] = [];
+    const validFiles: File[] = [];
 
     for (const file of fileArray) {
       const validation = validateFileType(file);
-      if (!validation.valid) {
-        validationErrors.push(`${file.name}: ${validation.error}`);
+      // validateFileType returns a boolean, so we need to handle it differently
+      if (!validation) {
+        // Create a more specific error message based on file properties
+        let errorMessage = 'Invalid file type';
+        if (file.size > 10 * 1024 * 1024) { // 10MB limit
+          errorMessage = 'File too large (max 10MB)';
+        } else if (!file.type) {
+          errorMessage = 'Unknown file type';
+        }
+        validationErrors.push(`${file.name}: ${errorMessage}`);
       } else {
         validFiles.push(file);
       }
@@ -342,6 +352,13 @@ const KnowledgeBase = () => {
       }
       
       console.log('KnowledgeBase: Files uploaded successfully:', result);
+      
+      // Track file uploads with PostHog
+      validFiles.forEach(file => {
+        const fileType = file.type || 'unknown';
+        const fileSize = file.size;
+        postHogService.trackKnowledgeBaseFileAdded(fileType, fileSize, 'upload');
+      });
       
       // Show success message with file count
       const successMessage = validFiles.length === 1 
@@ -400,6 +417,9 @@ const KnowledgeBase = () => {
         });
         return;
       }
+      
+      // Track link addition with PostHog
+      postHogService.trackKnowledgeBaseTextAdded(url.trim().length, 'url');
       
       toast.success('Link added successfully to your knowledge base', {
         title: 'Link Added',
@@ -656,7 +676,7 @@ const KnowledgeBase = () => {
   };
 
   // Grid styles for file cards - responsive
-  const gridStyles = {
+  const gridStyles: React.CSSProperties = {
     display: 'grid',
     gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)',
     gap: spacing.spacing[20],
@@ -667,7 +687,7 @@ const KnowledgeBase = () => {
   };
 
   // Row styles for tabs and search - responsive
-  const controlRowStyles = {
+  const controlRowStyles: React.CSSProperties = {
     display: 'flex',
     flexDirection: isMobile ? 'column' : 'row',
     alignItems: isMobile ? 'stretch' : 'center',
@@ -677,7 +697,7 @@ const KnowledgeBase = () => {
   };
 
   // Right section styles for search and dropdown - responsive
-  const rightSectionStyles = {
+  const rightSectionStyles: React.CSSProperties = {
     display: 'flex',
     alignItems: 'center',
     gap: spacing.spacing[12],

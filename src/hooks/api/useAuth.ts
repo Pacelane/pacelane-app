@@ -3,6 +3,7 @@
 // Frontend developers will use this instead of directly calling the API
 
 import { useState, useEffect } from 'react';
+import { usePostHog } from 'posthog-js/react';
 import { authApi } from '@/api/auth';
 import { profileApi } from '@/api/profile';
 import { ProfileService } from '@/services/profileService';
@@ -23,6 +24,8 @@ export const useAuth = () => {
     profile: null,
     loading: true,
   });
+
+  const posthog = usePostHog();
 
   // ========== HELPER FUNCTIONS ==========
 
@@ -45,13 +48,29 @@ export const useAuth = () => {
     
     if (result.data) {
       console.log('useAuth: Profile loaded successfully');
+      const profile = result.data;
+      
       setAuthState(prev => ({ 
         ...prev, 
-        profile: result.data! 
+        profile 
       }));
       
+      // Identify user with PostHog when profile is available
+      if (posthog && profile) {
+        // Get user email from auth state since it's not in profile
+        const userEmail = authState.user?.email || null;
+        
+        posthog.identify(userId, {
+          email: userEmail,
+          name: profile.display_name || profile.linkedin_name,
+          onboarding_completed: profile.onboarding_completed,
+          created_at: profile.created_at,
+        });
+        console.log('PostHog: User identified:', userId);
+      }
+      
       // Check if onboarding is complete (for logging purposes only)
-      const isOnboardingComplete = result.data.onboarding_completed;
+      const isOnboardingComplete = profile.onboarding_completed;
       console.log('useAuth: Onboarding status:', isOnboardingComplete ? 'Complete' : 'Incomplete');
       
       // Note: We don't redirect here anymore - let ProtectedRoute handle it
@@ -115,6 +134,14 @@ export const useAuth = () => {
    */
   const signOut = async () => {
     console.log('useAuth: Attempting to sign out');
+    
+    // Track sign out event with PostHog
+    if (posthog) {
+      posthog.capture('user_signed_out');
+      posthog.reset(); // Clear user identification
+      console.log('PostHog: User signed out and reset');
+    }
+    
     return authApi.signOut();
   };
 

@@ -141,7 +141,7 @@ export interface ContentActions {
   markSuggestionAsUsed: (suggestionId: string) => Promise<any>;
   
   // AI Assistant Actions
-  sendMessage: (messageData: AIMessageData) => Promise<any>;
+  sendMessage: (messageData: { message: string; selectedFiles?: KnowledgeFile[]; currentContent?: string }) => Promise<any>;
   clearConversation: () => void;
   loadConversationMessages: (conversationId: string) => Promise<any>;
   
