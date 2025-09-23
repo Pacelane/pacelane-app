@@ -120,7 +120,7 @@ const WhatsAppSetup = () => {
             maxWidth: isMobile ? '320px' : '400px'
           }}>
             <OnboardingProgressIndicator 
-              currentStep={9}
+              currentStep={8}
               compact={true}
             />
           </div>
@@ -303,10 +303,10 @@ const WhatsAppSetup = () => {
           bottom: 0,
           left: 0,
           right: 0,
-          height: isMobile ? '70px' : '80px',
+          height: '80px',
           backgroundColor: colors.bg.default,
           borderTop: `1px solid ${colors.border.default}`,
-          padding: isMobile ? spacing.spacing[24] : spacing.spacing[40],
+          padding: spacing.spacing[40],
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -314,18 +314,19 @@ const WhatsAppSetup = () => {
         }}
       >
         <div style={{ 
-          width: isMobile ? '100%' : '280px',
-          maxWidth: isMobile ? '320px' : '280px'
+          width: '280px',
+          display: 'flex',
+          justifyContent: 'center'
         }}>
-                     <Button
-             label="Continue"
-             style="primary"
-             size="lg"
-             tailIcon={<ArrowRight size={16} />}
-             onClick={handleContinue}
-             disabled={!hasClickedWhatsAppButton}
-             className="w-full"
-           />
+          <Button
+            label="Continue"
+            style="primary"
+            size="lg"
+            tailIcon={<ArrowRight size={16} />}
+            onClick={handleContinue}
+            disabled={!hasClickedWhatsAppButton}
+            fullWidth={true}
+          />
         </div>
       </div>
     </div>

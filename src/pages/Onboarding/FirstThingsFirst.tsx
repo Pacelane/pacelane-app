@@ -114,7 +114,7 @@ const FirstThingsFirst = () => {
       }
 
       toast.success('Profile setup completed!');
-      navigate('/onboarding/inspirations');
+      navigate('/onboarding/linkedin-summary');
     } catch (error: any) {
       toast.error(error.message || 'Failed to complete setup');
     }
@@ -348,10 +348,10 @@ const FirstThingsFirst = () => {
           bottom: 0,
           left: 0,
           right: 0,
-          height: isMobile ? '70px' : '80px',
+          height: '80px',
           backgroundColor: colors.bg.default,
           borderTop: `1px solid ${colors.border.default}`,
-          padding: isMobile ? spacing.spacing[24] : spacing.spacing[40],
+          padding: spacing.spacing[40],
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -359,8 +359,9 @@ const FirstThingsFirst = () => {
         }}
       >
         <div style={{ 
-          width: isMobile ? '100%' : '280px',
-          maxWidth: isMobile ? '320px' : '280px'
+          width: '280px',
+          display: 'flex',
+          justifyContent: 'center'
         }}>
           <Button
             label={saving ? "Analyzing LinkedIn Profile..." : "Continue"}
@@ -370,7 +371,7 @@ const FirstThingsFirst = () => {
             tailIcon={!saving ? <ArrowRight size={16} /> : undefined}
             onClick={handleContinue}
             disabled={!canContinue || saving}
-            className="w-full"
+            fullWidth={true}
           />
         </div>
       </div>

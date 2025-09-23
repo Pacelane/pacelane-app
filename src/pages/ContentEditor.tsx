@@ -23,6 +23,7 @@ import Modal from '@/design-system/components/Modal';
 import LoadingSpinner from '@/design-system/components/LoadingSpinner';
 import Bichaurinho from '@/design-system/components/Bichaurinho';
 import EmptyState from '@/design-system/components/EmptyState';
+import FileUpload from '@/design-system/components/FileUpload';
 
 import Tabs from '@/design-system/components/Tabs';
 
@@ -87,8 +88,11 @@ const ContentEditor = () => {
     // Knowledge Base State & Actions
     knowledgeFiles,
     loadingFiles,
+    uploading,
     selectKnowledgeFile,
     getSelectedFiles,
+    uploadFiles,
+    addLink,
     
     // Drafts State & Actions  
     savedDrafts,
@@ -127,6 +131,8 @@ const ContentEditor = () => {
     explanation: string;
   } | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showFileUploadModal, setShowFileUploadModal] = useState(false);
+  const [urlInput, setUrlInput] = useState('');
 
   
   // Mobile-specific state
@@ -343,6 +349,50 @@ const ContentEditor = () => {
 
   const handleFileSelection = (fileId: string, selected: boolean) => {
     selectKnowledgeFile(fileId, selected);
+  };
+
+  // ========== FILE UPLOAD HANDLERS ==========
+  
+  const handleFileSelect = async (files: File[]) => {
+    console.log('ContentEditor: Files selected for upload:', files.length);
+    const result = await uploadFiles(files);
+    
+    if (result.error) {
+      toast({
+        type: 'error',
+        message: result.error,
+      });
+    } else {
+      setShowFileUploadModal(false);
+      toast({
+        type: 'success',
+        message: `Successfully uploaded ${files.length} file${files.length > 1 ? 's' : ''}`,
+      });
+    }
+  };
+
+  const handleUrlSubmit = async (url: string) => {
+    console.log('ContentEditor: URL submitted for processing:', url);
+    const result = await addLink({ url });
+    
+    if (result.error) {
+      toast({
+        type: 'error',
+        message: result.error,
+      });
+    } else {
+      setUrlInput('');
+      setShowFileUploadModal(false);
+      toast({
+        type: 'success',
+        message: 'Link added successfully',
+      });
+    }
+  };
+
+  const handleUploadModalClose = () => {
+    setShowFileUploadModal(false);
+    setUrlInput('');
   };
 
   const handleLoadDraft = async (draft: any) => {
@@ -754,13 +804,26 @@ const ContentEditor = () => {
             height: `${sidebarSplit}%` 
           }}>
             <div style={sectionHeaderStyles}>
-              <h3 style={{ 
-                ...textStyles.sm.semibold, 
-                color: colors.text.default,
-                margin: 0 
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
               }}>
-                Knowledge Base
-              </h3>
+                <h3 style={{ 
+                  ...textStyles.sm.semibold, 
+                  color: colors.text.default,
+                  margin: 0 
+                }}>
+                  Knowledge Base
+                </h3>
+                <Button
+                  size="2xs"
+                  style="soft"
+                  leadIcon={<Plus size={12} />}
+                  onClick={() => setShowFileUploadModal(true)}
+                  disabled={uploading}
+                />
+              </div>
             </div>
             <div style={sectionContentStyles}>
               {/* File Tree */}
@@ -1407,7 +1470,32 @@ const ContentEditor = () => {
          </Modal>
         )}
 
-
+        {/* File Upload Modal */}
+        {showFileUploadModal && (
+          <Modal
+            isOpen={showFileUploadModal}
+            onClose={handleUploadModalClose}
+            title="Add Files to Knowledge Base"
+            size="md"
+          >
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: spacing.spacing[24],
+            }}>
+              <FileUpload
+                onFileSelect={handleFileSelect}
+                onUrlSubmit={handleUrlSubmit}
+                urlValue={urlInput}
+                onUrlChange={setUrlInput}
+                uploading={uploading}
+                disabled={uploading}
+                maxFiles={10}
+                maxTotalSize={100 * 1024 * 1024} // 100MB
+              />
+            </div>
+          </Modal>
+        )}
 
         
     </div>

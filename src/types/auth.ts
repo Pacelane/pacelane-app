@@ -27,7 +27,6 @@ export interface Profile {
   phone_number?: string;
   whatsapp_number?: string;           // WhatsApp number for notifications
   content_guides?: any;               // JSON data
-  goals?: any;                        // JSON data  
   pacing_preferences?: any;           // JSON data
 }
 

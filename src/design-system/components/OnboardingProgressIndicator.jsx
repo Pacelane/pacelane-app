@@ -45,55 +45,48 @@ const OnboardingProgressIndicator = ({
     },
     {
       id: 3,
-      title: 'Inspirations',
-      description: 'Add competitors and benchmarks',
-      icon: Lightbulb,
-      route: '/onboarding/inspirations'
+      title: 'Profile Summary',
+      description: 'Review your LinkedIn information',
+      icon: User,
+      route: '/onboarding/linkedin-summary'
     },
     {
       id: 4,
-      title: 'Goals',
-      description: 'Define your content objectives',
-      icon: Target,
-      route: '/onboarding/goals'
-    },
-    {
-      id: 5,
-      title: 'Content Guides',
-      description: 'Set your content preferences',
+      title: 'Tone of Voice',
+      description: 'Set your content style preferences',
       icon: BookOpen,
       route: '/onboarding/guides'
     },
     {
-      id: 6,
-      title: 'Content Pillars',
+      id: 5,
+      title: 'Editorial Topics',
       description: 'Choose your topic focus areas',
       icon: Layers,
       route: '/onboarding/content-pillars'
     },
     {
-      id: 7,
+      id: 6,
       title: 'Pacing',
       description: 'Set posting schedule and frequency',
       icon: Clock,
       route: '/onboarding/pacing'
     },
     {
-      id: 8,
+      id: 7,
       title: 'Contact Info',
       description: 'Add your contact information',
       icon: Phone,
       route: '/onboarding/contact'
     },
     {
-      id: 9,
+      id: 8,
       title: 'WhatsApp Setup',
       description: 'Connect WhatsApp notifications',
       icon: MessageSquare,
       route: '/onboarding/whatsapp-setup'
     },
     {
-      id: 10,
+      id: 9,
       title: 'Ready',
       description: 'Complete your setup',
       icon: Check,

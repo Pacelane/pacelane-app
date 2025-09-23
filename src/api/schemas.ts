@@ -39,10 +39,6 @@ export const linkedInProfileSchema = z.object({
 
 // ========== ONBOARDING SCHEMAS ==========
 
-export const goalsSchema = z.object({
-  goals: z.array(z.string()).min(1, 'Please select at least one goal'),
-});
-
 export const contentPillarsSchema = z.object({
   pillars: z.array(z.string()).min(1, 'Please select at least one content pillar'),
 });
@@ -75,15 +71,7 @@ export const fileUploadSchema = z.object({
   userId: z.string().min(1, 'User ID is required'),
 });
 
-// ========== INSPIRATIONS SCHEMAS ==========
 
-export const addInspirationSchema = z.object({
-  linkedinUrl: z.string()
-    .url({ message: 'Please enter a valid URL' })
-    .refine((url) => url.includes('linkedin.com/in/'), {
-      message: 'Please enter a valid LinkedIn profile URL (e.g., linkedin.com/in/username)',
-    }),
-});
 
 // ========== EXPORT TYPES ==========
 
@@ -91,14 +79,12 @@ export type SignInFormData = z.infer<typeof signInSchema>;
 export type SignUpFormData = z.infer<typeof signUpSchema>;
 export type ProfileUpdateFormData = z.infer<typeof profileUpdateSchema>;
 export type LinkedInProfileFormData = z.infer<typeof linkedInProfileSchema>;
-export type GoalsFormData = z.infer<typeof goalsSchema>;
 export type ContentPillarsFormData = z.infer<typeof contentPillarsSchema>;
 export type GuidesFormData = z.infer<typeof guidesSchema>;
 export type PacingFormData = z.infer<typeof pacingSchema>;
 export type ContactFormData = z.infer<typeof contactSchema>;
 export type LinkDataFormData = z.infer<typeof linkDataSchema>;
 export type FileUploadFormData = z.infer<typeof fileUploadSchema>;
-export type AddInspirationFormData = z.infer<typeof addInspirationSchema>;
 
 // ========== VALIDATION HELPERS ==========
 

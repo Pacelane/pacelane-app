@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '@/services/theme-context';
 import { spacing } from '@/design-system/tokens/spacing';
+import { typography } from '@/design-system/tokens/typography';
 import { textStyles } from '@/design-system/styles/typography/typography-styles';
 import { cornerRadius } from '@/design-system/tokens/corner-radius';
 import { getShadow } from '@/design-system/tokens/shadows';
@@ -15,13 +16,17 @@ import Input from '@/design-system/components/Input';
 import LoadingSpinner from '@/design-system/components/LoadingSpinner';
 
 // Icons
-import { User, RefreshCw, ExternalLink, CheckCircle, AlertCircle, Trash2 } from 'lucide-react';
+import { User, RefreshCw, ExternalLink, CheckCircle, AlertCircle, Trash2, Linkedin } from 'lucide-react';
 
 /**
  * LinkedInConfigModal - Configure LinkedIn integration for writing style analysis
- * Allows users to scrape their LinkedIn posts and analyze their writing tone
+ * 
+ * @param {Object} props - Component props
+ * @param {boolean} props.isOpen - Whether the modal is open
+ * @param {function} props.onClose - Callback when modal should close
+ * @param {function} props.onComplete - Callback when setup is marked as complete
  */
-const LinkedInConfigModal = ({ isOpen, onClose, onComplete }) => {
+const LinkedInConfigModal = ({ isOpen = false, onClose, onComplete }) => {
   const { colors } = useTheme();
   const { toast } = useToast();
   const { user } = useAuth();
@@ -55,30 +60,7 @@ const LinkedInConfigModal = ({ isOpen, onClose, onComplete }) => {
     }
   };
 
-  const handleScrapeClick = async () => {
-    if (!username.trim()) {
-      toast.error('Please enter your LinkedIn username');
-      return;
-    }
 
-    setIsLoading(true);
-    try {
-      const result = await ContentService.scrapeLinkedInPosts(username.trim(), 20);
-      
-      if (result.data?.success) {
-        toast.success(`Successfully scraped ${result.data.postsCount} posts!`);
-        await loadExistingPosts(); // Reload to show new posts
-        setStep('posts');
-      } else {
-        toast.error(result.error || 'Failed to scrape LinkedIn posts');
-      }
-    } catch (error) {
-      console.error('Error scraping LinkedIn posts:', error);
-      toast.error('Failed to scrape LinkedIn posts');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleAnalyzeTone = async () => {
     setIsAnalyzing(true);
@@ -118,234 +100,454 @@ const LinkedInConfigModal = ({ isOpen, onClose, onComplete }) => {
     }
   };
 
-  const modalContent = () => {
+  // Modal content styles - matching WhatsApp and Read.ai modals
+  const headerStyles = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacing.spacing[8],
+    padding: spacing.spacing[24],
+    paddingBottom: spacing.spacing[16],
+  };
+
+  const titleStyle = {
+    fontFamily: typography.fontFamily['awesome-serif'],
+    fontSize: typography.desktop.size.xl,
+    fontWeight: typography.desktop.weight.semibold,
+    lineHeight: typography.desktop.lineHeight.leading6,
+    color: colors.text.default,
+    margin: 0,
+  };
+
+  const subtitleStyle = {
+    ...textStyles.sm.normal,
+    color: colors.text.subtle,
+    margin: 0,
+  };
+
+  const contentStyles = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacing.spacing[20],
+    padding: `0 ${spacing.spacing[24]}`,
+    flex: 1,
+    overflow: 'auto',
+    minHeight: 0,
+  };
+
+  const footerStyles = {
+    display: 'flex',
+    gap: spacing.spacing[12],
+    padding: spacing.spacing[24],
+    paddingTop: spacing.spacing[16],
+    borderTop: `1px solid ${colors.border.default}`,
+    justifyContent: 'flex-end',
+    flexShrink: 0,
+  };
+
+  const infoBoxStyles = {
+    backgroundColor: colors.bg.card.subtle,
+    border: `1px solid ${colors.border.default}`,
+    borderRadius: cornerRadius.borderRadius.sm,
+    padding: spacing.spacing[12],
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacing.spacing[8],
+  };
+
+  // Validation for username
+  const validateUsername = (username) => {
+    if (!username.trim()) {
+      return 'LinkedIn username is required';
+    }
+    // Basic validation for LinkedIn username format
+    const cleanUsername = username.trim().replace(/[^a-zA-Z0-9-]/g, '');
+    if (cleanUsername.length < 3) {
+      return 'Username must be at least 3 characters long';
+    }
+    return '';
+  };
+
+  const [usernameError, setUsernameError] = useState('');
+
+  const handleUsernameChange = (e) => {
+    const newUsername = e.target.value;
+    setUsername(newUsername);
+    if (usernameError) {
+      setUsernameError(''); // Clear error when user starts typing
+    }
+  };
+
+  const handleScrapeClick = async () => {
+    const validationError = validateUsername(username);
+    if (validationError) {
+      setUsernameError(validationError);
+      return;
+    }
+
+    setIsLoading(true);
+    setUsernameError('');
+    
+    try {
+      const result = await ContentService.scrapeLinkedInPosts(username.trim(), 20);
+      
+      if (result.data?.success) {
+        toast.success(`Successfully scraped ${result.data.postsCount} posts!`);
+        await loadExistingPosts(); // Reload to show new posts
+        setStep('posts');
+      } else {
+        toast.error(result.error || 'Failed to scrape LinkedIn posts');
+      }
+    } catch (error) {
+      console.error('Error scraping LinkedIn posts:', error);
+      toast.error('Failed to scrape LinkedIn posts');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Check if user has any posts already
+  const hasExistingPosts = posts.length > 0;
+  const canScrape = username.trim() && !usernameError && !isLoading;
+
+  const getModalContent = () => {
     // Setup Step
     if (step === 'setup') {
       return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[24] }}>
-          <div>
-            <h3 style={{ ...textStyles.lg.semibold, color: colors.text.default, margin: 0 }}>
-              LinkedIn Writing Style Analysis
-            </h3>
-            <p style={{ ...textStyles.sm.normal, color: colors.text.subtle, margin: 0, marginTop: spacing.spacing[8] }}>
-              Import your LinkedIn posts to analyze your writing style and improve content personalization
-            </p>
-          </div>
+        <>
+          {/* Content */}
+          <div style={contentStyles}>
+            {/* Username Input */}
+            <div>
+              <Input
+                label="LinkedIn Username"
+                placeholder="your-linkedin-username"
+                value={username}
+                onChange={handleUsernameChange}
+                style="default"
+                size="lg"
+                disabled={isLoading}
+                failed={!!usernameError}
+                caption={usernameError || 'Enter your LinkedIn username (the part after linkedin.com/in/)'}
+                leadIcon={<User size={18} />}
+              />
+            </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[16] }}>
-            <Input
-              label="LinkedIn Username"
-              placeholder="your-linkedin-username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              leadIcon={<User size={16} />}
-              helper="Enter your LinkedIn username (the part after linkedin.com/in/)"
-            />
-
-            <div style={{
-              padding: spacing.spacing[16],
-              backgroundColor: colors.bg.muted,
-              borderRadius: cornerRadius.borderRadius.md,
-              border: `1px solid ${colors.border.default}`
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: spacing.spacing[8], marginBottom: spacing.spacing[8] }}>
-                <CheckCircle size={16} color={colors.icon.success} />
-                <span style={{ ...textStyles.sm.medium, color: colors.text.default }}>
-                  What we'll analyze:
-                </span>
-              </div>
-              <ul style={{ ...textStyles.sm.normal, color: colors.text.subtle, margin: 0, paddingLeft: spacing.spacing[20] }}>
+            {/* Information Box */}
+            <div style={infoBoxStyles}>
+              <h4 style={{
+                ...textStyles.sm.semibold,
+                color: colors.text.default,
+                margin: 0,
+              }}>
+                What we'll analyze:
+              </h4>
+              <ul style={{
+                ...textStyles.xs.normal,
+                color: colors.text.muted,
+                margin: 0,
+                paddingLeft: spacing.spacing[16],
+                listStyleType: 'disc',
+              }}>
                 <li>Writing tone and style patterns</li>
                 <li>Sentence structure preferences</li>
                 <li>Content themes and topics</li>
-                <li>Engagement patterns</li>
+                <li>Engagement patterns for better content strategy</li>
               </ul>
+              <p style={{
+                ...textStyles.xs.normal,
+                color: colors.text.muted,
+                margin: 0,
+                marginTop: spacing.spacing[8],
+                fontStyle: 'italic',
+              }}>
+                Your posts are used only for analysis and are not stored or shared.
+              </p>
             </div>
+
+            {/* Show existing posts if any */}
+            {hasExistingPosts && (
+              <div style={{
+                ...infoBoxStyles,
+                borderColor: colors.border.success,
+                backgroundColor: colors.bg.state.soft,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: spacing.spacing[8] }}>
+                  <CheckCircle size={16} color={colors.icon.success} />
+                  <span style={{ ...textStyles.sm.medium, color: colors.text.default }}>
+                    Found {posts.length} existing posts
+                  </span>
+                </div>
+                <p style={{
+                  ...textStyles.xs.normal,
+                  color: colors.text.muted,
+                  margin: 0,
+                }}>
+                  You can scrape new posts or proceed to analyze your existing posts.
+                </p>
+              </div>
+            )}
           </div>
 
-          <div style={{ display: 'flex', gap: spacing.spacing[12], justifyContent: 'flex-end' }}>
+          {/* Footer */}
+          <div style={footerStyles}>
             <Button
               label="Cancel"
-              style="ghost"
+              style="secondary"
+              size="sm"
               onClick={onClose}
+              disabled={isLoading}
             />
+            {hasExistingPosts && (
+              <Button
+                label="Use Existing Posts"
+                style="soft"
+                size="sm"
+                leadIcon={<CheckCircle size={16} />}
+                onClick={() => setStep('posts')}
+                disabled={isLoading}
+              />
+            )}
             <Button
-              label="Scrape Posts"
+              label={isLoading ? "Scraping..." : "Scrape Posts"}
               style="primary"
-              leadIcon={<RefreshCw size={16} />}
+              size="sm"
+              leadIcon={isLoading ? undefined : <RefreshCw size={16} />}
               onClick={handleScrapeClick}
+              disabled={!canScrape}
               loading={isLoading}
-              disabled={!username.trim()}
             />
           </div>
-        </div>
+        </>
       );
     }
 
     // Posts Step
     if (step === 'posts') {
       return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[24] }}>
-          <div>
-            <h3 style={{ ...textStyles.lg.semibold, color: colors.text.default, margin: 0 }}>
-              Scraped Posts ({posts.length})
-            </h3>
-            <p style={{ ...textStyles.sm.normal, color: colors.text.subtle, margin: 0, marginTop: spacing.spacing[8] }}>
-              Review your imported LinkedIn posts and analyze your writing style
-            </p>
-          </div>
+        <>
+          {/* Content */}
+          <div style={contentStyles}>
+            <div>
+              <h3 style={{
+                ...textStyles.md.semibold,
+                color: colors.text.default,
+                margin: 0,
+              }}>
+                Found {posts.length} LinkedIn Posts
+              </h3>
+              <p style={{
+                ...textStyles.sm.normal,
+                color: colors.text.subtle,
+                margin: 0,
+                marginTop: spacing.spacing[4],
+              }}>
+                Review your imported posts and proceed to analyze your writing style
+              </p>
+            </div>
 
-          <div style={{
-            maxHeight: '300px',
-            overflowY: 'auto',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: spacing.spacing[12]
-          }}>
-            {posts.slice(0, 5).map((post, index) => (
-              <div
-                key={post.id || index}
-                style={{
-                  padding: spacing.spacing[16],
-                  backgroundColor: colors.bg.subtle,
-                  borderRadius: cornerRadius.borderRadius.md,
-                  border: `1px solid ${colors.border.default}`
-                }}
-              >
+            {/* Posts Preview */}
+            <div style={{
+              maxHeight: '280px',
+              overflowY: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: spacing.spacing[12],
+              border: `1px solid ${colors.border.default}`,
+              borderRadius: cornerRadius.borderRadius.sm,
+              padding: spacing.spacing[12],
+              backgroundColor: colors.bg.subtle,
+            }}>
+              {posts.slice(0, 3).map((post, index) => (
+                <div
+                  key={post.id || index}
+                  style={{
+                    padding: spacing.spacing[12],
+                    backgroundColor: colors.bg.card.default,
+                    borderRadius: cornerRadius.borderRadius.sm,
+                    border: `1px solid ${colors.border.default}`,
+                  }}
+                >
+                  <p style={{ 
+                    ...textStyles.sm.normal, 
+                    color: colors.text.default, 
+                    margin: 0,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical'
+                  }}>
+                    {post.content}
+                  </p>
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center',
+                    marginTop: spacing.spacing[8]
+                  }}>
+                    <span style={{ ...textStyles.xs.normal, color: colors.text.muted }}>
+                      {new Date(post.publishedAt).toLocaleDateString()}
+                    </span>
+                    <span style={{ ...textStyles.xs.normal, color: colors.text.muted }}>
+                      {post.engagement?.likes || 0} likes • {post.engagement?.comments || 0} comments
+                    </span>
+                  </div>
+                </div>
+              ))}
+              {posts.length > 3 && (
                 <p style={{ 
                   ...textStyles.sm.normal, 
-                  color: colors.text.default, 
+                  color: colors.text.subtle, 
+                  textAlign: 'center', 
                   margin: 0,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  display: '-webkit-box',
-                  WebkitLineClamp: 3,
-                  WebkitBoxOrient: 'vertical'
+                  fontStyle: 'italic',
                 }}>
-                  {post.content}
+                  And {posts.length - 3} more posts...
                 </p>
-                <div style={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
-                  alignItems: 'center',
-                  marginTop: spacing.spacing[8]
-                }}>
-                  <span style={{ ...textStyles.xs.normal, color: colors.text.muted }}>
-                    {new Date(post.publishedAt).toLocaleDateString()}
-                  </span>
-                  <span style={{ ...textStyles.xs.normal, color: colors.text.muted }}>
-                    {post.engagement.likes} likes • {post.engagement.comments} comments
-                  </span>
-                </div>
-              </div>
-            ))}
-            {posts.length > 5 && (
-              <p style={{ ...textStyles.sm.normal, color: colors.text.subtle, textAlign: 'center', margin: 0 }}>
-                And {posts.length - 5} more posts...
-              </p>
-            )}
+              )}
+            </div>
           </div>
 
-          <div style={{ display: 'flex', gap: spacing.spacing[12], justifyContent: 'space-between' }}>
+          {/* Footer */}
+          <div style={footerStyles}>
             <Button
               label="Delete Posts"
               style="ghost"
+              size="sm"
               leadIcon={<Trash2 size={16} />}
               onClick={handleDeletePosts}
+              disabled={isAnalyzing}
             />
             <div style={{ display: 'flex', gap: spacing.spacing[12] }}>
               <Button
-                label="Cancel"
+                label="Back"
                 style="secondary"
-                onClick={onClose}
+                size="sm"
+                onClick={() => setStep('setup')}
+                disabled={isAnalyzing}
               />
               <Button
-                label="Analyze Writing Style"
+                label={isAnalyzing ? "Analyzing..." : "Analyze Writing Style"}
                 style="primary"
-                leadIcon={<CheckCircle size={16} />}
+                size="sm"
+                leadIcon={isAnalyzing ? undefined : <CheckCircle size={16} />}
                 onClick={handleAnalyzeTone}
                 loading={isAnalyzing}
               />
             </div>
           </div>
-        </div>
+        </>
       );
     }
 
     // Analysis Step
     if (step === 'analysis' && toneAnalysis) {
       return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[24] }}>
-          <div>
-            <h3 style={{ ...textStyles.lg.semibold, color: colors.text.default, margin: 0 }}>
-              Writing Style Analysis Complete
-            </h3>
-            <p style={{ ...textStyles.sm.normal, color: colors.text.subtle, margin: 0, marginTop: spacing.spacing[8] }}>
-              Your LinkedIn posts have been analyzed to understand your unique writing style
-            </p>
-          </div>
+        <>
+          {/* Content */}
+          <div style={contentStyles}>
+            <div>
+              <h3 style={{
+                ...textStyles.md.semibold,
+                color: colors.text.default,
+                margin: 0,
+              }}>
+                Writing Style Analysis Complete
+              </h3>
+              <p style={{
+                ...textStyles.sm.normal,
+                color: colors.text.subtle,
+                margin: 0,
+                marginTop: spacing.spacing[4],
+              }}>
+                Your LinkedIn posts have been analyzed to understand your unique writing style
+              </p>
+            </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[16] }}>
-            <div style={{
-              padding: spacing.spacing[16],
-              backgroundColor: colors.bg.subtle,
-              borderRadius: cornerRadius.borderRadius.md,
-              border: `1px solid ${colors.border.default}`
-            }}>
-              <h4 style={{ ...textStyles.md.medium, color: colors.text.default, margin: 0, marginBottom: spacing.spacing[8] }}>
-                Tone Profile
+            {/* Analysis Results */}
+            <div style={infoBoxStyles}>
+              <h4 style={{
+                ...textStyles.sm.semibold,
+                color: colors.text.default,
+                margin: 0,
+                marginBottom: spacing.spacing[8],
+              }}>
+                Your Writing Profile
               </h4>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing.spacing[12] }}>
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: '1fr 1fr', 
+                gap: spacing.spacing[12],
+                marginBottom: spacing.spacing[12],
+              }}>
                 <div>
-                  <span style={{ ...textStyles.sm.medium, color: colors.text.subtle }}>Overall Tone:</span>
-                  <span style={{ ...textStyles.sm.normal, color: colors.text.default, marginLeft: spacing.spacing[8] }}>
-                    {toneAnalysis.tone}
+                  <span style={{ ...textStyles.xs.medium, color: colors.text.subtle }}>Overall Tone:</span>
+                  <br />
+                  <span style={{ ...textStyles.sm.normal, color: colors.text.default }}>
+                    {toneAnalysis.tone || 'Professional'}
                   </span>
                 </div>
                 <div>
-                  <span style={{ ...textStyles.sm.medium, color: colors.text.subtle }}>Sentence Length:</span>
-                  <span style={{ ...textStyles.sm.normal, color: colors.text.default, marginLeft: spacing.spacing[8] }}>
-                    {toneAnalysis.writingStyle?.sentenceLength}
+                  <span style={{ ...textStyles.xs.medium, color: colors.text.subtle }}>Sentence Style:</span>
+                  <br />
+                  <span style={{ ...textStyles.sm.normal, color: colors.text.default }}>
+                    {toneAnalysis.writingStyle?.sentenceLength || 'Balanced'}
                   </span>
                 </div>
                 <div>
-                  <span style={{ ...textStyles.sm.medium, color: colors.text.subtle }}>Vocabulary:</span>
-                  <span style={{ ...textStyles.sm.normal, color: colors.text.default, marginLeft: spacing.spacing[8] }}>
-                    {toneAnalysis.writingStyle?.vocabularyLevel}
+                  <span style={{ ...textStyles.xs.medium, color: colors.text.subtle }}>Vocabulary:</span>
+                  <br />
+                  <span style={{ ...textStyles.sm.normal, color: colors.text.default }}>
+                    {toneAnalysis.writingStyle?.vocabularyLevel || 'Business'}
                   </span>
                 </div>
                 <div>
-                  <span style={{ ...textStyles.sm.medium, color: colors.text.subtle }}>Emoji Usage:</span>
-                  <span style={{ ...textStyles.sm.normal, color: colors.text.default, marginLeft: spacing.spacing[8] }}>
-                    {toneAnalysis.contentPreferences?.emojiUsage}
+                  <span style={{ ...textStyles.xs.medium, color: colors.text.subtle }}>Emoji Usage:</span>
+                  <br />
+                  <span style={{ ...textStyles.sm.normal, color: colors.text.default }}>
+                    {toneAnalysis.contentPreferences?.emojiUsage || 'Minimal'}
                   </span>
                 </div>
               </div>
             </div>
 
+            {/* Success Message */}
             <div style={{
-              padding: spacing.spacing[16],
+              ...infoBoxStyles,
+              borderColor: colors.border.success,
               backgroundColor: colors.bg.state.soft,
-              borderRadius: cornerRadius.borderRadius.md,
-              border: `1px solid ${colors.border.default}`
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: spacing.spacing[8] }}>
                 <CheckCircle size={16} color={colors.icon.success} />
                 <span style={{ ...textStyles.sm.medium, color: colors.text.default }}>
-                  Style analysis saved! Your future content will match your writing tone.
+                  Writing style analysis saved successfully!
                 </span>
               </div>
+              <p style={{
+                ...textStyles.xs.normal,
+                color: colors.text.muted,
+                margin: 0,
+                marginTop: spacing.spacing[4],
+              }}>
+                Your future content will be personalized to match your unique writing tone and style.
+              </p>
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: spacing.spacing[12], justifyContent: 'flex-end' }}>
+          {/* Footer */}
+          <div style={footerStyles}>
             <Button
-              label="Done"
+              label="Complete Setup"
               style="primary"
-              onClick={onClose}
+              size="sm"
+              leadIcon={<CheckCircle size={16} />}
+              onClick={() => {
+                onComplete?.();
+                onClose?.();
+              }}
             />
           </div>
-        </div>
+        </>
       );
     }
 
@@ -353,13 +555,35 @@ const LinkedInConfigModal = ({ isOpen, onClose, onComplete }) => {
   };
 
   return (
-    <Modal
-      isOpen={isOpen}
+    <Modal 
+      isOpen={isOpen} 
       onClose={onClose}
-      title="LinkedIn Integration"
+      showCloseButton={true}
       size="lg"
     >
-      {modalContent()}
+      {/* Header */}
+      <div style={headerStyles}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: spacing.spacing[12] }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: spacing.spacing[32],
+            height: spacing.spacing[32],
+            backgroundColor: '#0A66C2',
+            borderRadius: cornerRadius.borderRadius.sm,
+          }}>
+            <Linkedin size={16} color="white" />
+          </div>
+          <h2 style={titleStyle}>LinkedIn Integration Setup</h2>
+        </div>
+        <p style={subtitleStyle}>
+          Analyze your LinkedIn posts to understand your writing style and create personalized content
+        </p>
+      </div>
+
+      {/* Dynamic Content */}
+      {getModalContent()}
     </Modal>
   );
 };

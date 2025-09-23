@@ -29,6 +29,7 @@ import signinBichaurinho from '@/assets/images/signin-bichaurinho.svg';
 
 const SignIn = () => {
   const [isSignUp, setIsSignUp] = useState(false);
+  const [showEmailForm, setShowEmailForm] = useState(false);
   const navigate = useNavigate();
   const { user, signIn, signUp, signInWithGoogle } = useAuth();
   const { colors } = useTheme();
@@ -66,6 +67,18 @@ const SignIn = () => {
     });
   }, [isSignUp, form]);
 
+  // Clear form when switching between Google and email
+  useEffect(() => {
+    if (!showEmailForm) {
+      form.reset({
+        email: '',
+        password: '',
+        ...(isSignUp && { name: '' }),
+      });
+      form.clearErrors();
+    }
+  }, [showEmailForm, isSignUp, form]);
+
   const onSubmit = async (data: SignInFormData | SignUpFormData) => {
     try {
       if (isSignUp) {
@@ -73,7 +86,6 @@ const SignIn = () => {
         toast.info('Creating your account...');
         
         const result = await signUp({
-          name: (data as SignUpFormData).name,
           email: data.email,
           password: data.password,
           options: {
@@ -85,21 +97,21 @@ const SignIn = () => {
         
         if (result.error) {
           // Handle specific Supabase errors with user-friendly messages
-          let errorMessage = result.error;
+          let errorMessage = String(result.error);
           
           console.error('Sign-up error:', result.error);
           
-          if (result.error.includes('already registered') || result.error.includes('User already registered')) {
+          if (errorMessage.includes('already registered') || errorMessage.includes('User already registered')) {
             errorMessage = 'An account with this email already exists. Please sign in instead.';
-          } else if (result.error.includes('Password should be at least')) {
+          } else if (errorMessage.includes('Password should be at least')) {
             errorMessage = 'Password must be at least 8 characters long with uppercase, lowercase, and number.';
-          } else if (result.error.includes('Invalid email')) {
+          } else if (errorMessage.includes('Invalid email')) {
             errorMessage = 'Please enter a valid email address.';
-          } else if (result.error.includes('weak password') || result.error.includes('Password is too weak')) {
+          } else if (errorMessage.includes('weak password') || errorMessage.includes('Password is too weak')) {
             errorMessage = 'Password must contain at least one uppercase letter, one lowercase letter, and one number.';
-          } else if (result.error.includes('signup is disabled')) {
+          } else if (errorMessage.includes('signup is disabled')) {
             errorMessage = 'Account creation is currently disabled. Please contact support.';
-          } else if (result.error.includes('rate limit')) {
+          } else if (errorMessage.includes('rate limit')) {
             errorMessage = 'Too many sign-up attempts. Please wait a moment and try again.';
           } else {
             // Default error handler for unexpected errors
@@ -127,15 +139,15 @@ const SignIn = () => {
         
         if (result.error) {
           // Handle specific Supabase errors with user-friendly messages
-          let errorMessage = result.error;
+          let errorMessage = String(result.error);
           
-          if (result.error.includes('Invalid login credentials')) {
+          if (errorMessage.includes('Invalid login credentials')) {
             errorMessage = 'Invalid email or password. Please check your credentials and try again.';
-          } else if (result.error.includes('Email not confirmed')) {
+          } else if (errorMessage.includes('Email not confirmed')) {
             errorMessage = 'Please check your email and click the confirmation link before signing in.';
-          } else if (result.error.includes('Too many requests')) {
+          } else if (errorMessage.includes('Too many requests')) {
             errorMessage = 'Too many login attempts. Please wait a moment and try again.';
-          } else if (result.error.includes('Invalid email')) {
+          } else if (errorMessage.includes('Invalid email')) {
             errorMessage = 'Please enter a valid email address.';
           }
           
@@ -213,6 +225,12 @@ const SignIn = () => {
   const toggleAuthMode = () => {
     setIsSignUp(!isSignUp);
     form.clearErrors();
+    // Clear form when switching between sign in/up modes
+    form.reset({
+      email: '',
+      password: '',
+      ...((!isSignUp) && { name: '' }),
+    });
   };
 
   // Check if form has required values and is valid for submission
@@ -351,7 +369,7 @@ const SignIn = () => {
                   fontFamily: 'Awesome Serif VAR, ui-serif, Georgia, serif',
                   margin: 0
                 }}>
-                  {isSignUp ? 'Sign Up' : 'Sign In'}
+                  {showEmailForm ? (isSignUp ? 'Sign Up with Email' : 'Sign In with Email') : (isSignUp ? 'Sign Up' : 'Sign In')}
                 </h1>
 
                 {/* Subtitle */}
@@ -361,108 +379,156 @@ const SignIn = () => {
                   margin: 0,
                   textAlign: 'left'
                 }}>
-                  {isSignUp ? 'Get started with your free account' : 'Welcome back! Please enter your details.'}
+                  {showEmailForm 
+                    ? (isSignUp ? 'Create your account with email and password' : 'Sign in with your email and password')
+                    : (isSignUp ? 'Get started with your free account' : 'Welcome back! Sign in to continue.')
+                  }
                 </p>
               </div>
 
               {/* Form Section */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[20], width: '100%' }}>
-                {/* Email and Password Form Container */}
-                <form onSubmit={form.handleSubmit(onSubmit)} style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[16], width: '100%' }}>
-                  {isSignUp && (
-                    <Input
-                      type="text"
-                      label="Full Name"
-                      placeholder="Enter your full name"
-                      value={form.watch('name') || ''}
-                      onChange={(e) => form.setValue('name', e.target.value)}
-                      required
-                      size="lg"
-                      failed={!!(form.formState.errors as any).name}
-                      caption={(form.formState.errors as any).name?.message}
-                    />
-                  )}
+                {!showEmailForm ? (
+                  <>
+                    {/* Google Sign In Button - Secondary Action */}
+                    <div style={{ width: '100%' }}>
+                      <Button
+                        label={`${isSignUp ? 'Sign Up' : 'Sign In'} with Google`}
+                        style="secondary"
+                        size="lg"
+                        leadIcon={<FcGoogle size={18} />}
+                        onClick={handleGoogleSignIn}
+                        className="w-full"
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Email and Password Form Container */}
+                    <form onSubmit={form.handleSubmit(onSubmit)} style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[16], width: '100%' }}>
+                      {isSignUp && (
+                        <Input
+                          type="text"
+                          label="Full Name"
+                          placeholder="Enter your full name"
+                          value={form.watch('name') || ''}
+                          onChange={(e) => form.setValue('name', e.target.value)}
+                          required
+                          size="lg"
+                          failed={!!(form.formState.errors as any).name}
+                          caption={(form.formState.errors as any).name?.message}
+                        />
+                      )}
 
-                  <Input
-                    type="email"
-                    label="Email address"
-                    placeholder="Enter your email"
-                    value={form.watch('email') || ''}
-                    onChange={(e) => form.setValue('email', e.target.value)}
-                    required
-                    size="lg"
-                    failed={!!form.formState.errors.email}
-                    caption={form.formState.errors.email?.message}
-                  />
+                      <Input
+                        type="email"
+                        label="Email address"
+                        placeholder="Enter your email"
+                        value={form.watch('email') || ''}
+                        onChange={(e) => form.setValue('email', e.target.value)}
+                        required
+                        size="lg"
+                        failed={!!form.formState.errors.email}
+                        caption={form.formState.errors.email?.message}
+                      />
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[4] }}>
-                    <Input
-                      type="password"
-                      label="Password"
-                      placeholder="Enter your password"
-                      value={form.watch('password') || ''}
-                      onChange={(e) => form.setValue('password', e.target.value)}
-                      required
-                      size="lg"
-                      failed={!!form.formState.errors.password}
-                      caption={form.formState.errors.password?.message}
-                    />
-                    {isSignUp && (
-                      <p style={{
-                        ...textStyles.xs.normal,
-                        color: colors.text.muted,
-                        margin: 0,
-                      }}>
-                        At least 8 characters, 1 uppercase, 1 lowercase, 1 number
-                      </p>
-                    )}
-                  </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[4] }}>
+                        <Input
+                          type="password"
+                          label="Password"
+                          placeholder="Enter your password"
+                          value={form.watch('password') || ''}
+                          onChange={(e) => form.setValue('password', e.target.value)}
+                          required
+                          size="lg"
+                          failed={!!form.formState.errors.password}
+                          caption={form.formState.errors.password?.message}
+                        />
+                        {isSignUp && (
+                          <p style={{
+                            ...textStyles.xs.normal,
+                            color: colors.text.muted,
+                            margin: 0,
+                          }}>
+                            At least 8 characters, 1 uppercase, 1 lowercase, 1 number
+                          </p>
+                        )}
+                      </div>
 
-                  {/* Sign In/Up Button */}
-                  <Button
-                    label={form.formState.isSubmitting ? 'Loading...' : (isSignUp ? 'Create account' : 'Sign In')}
-                    style="primary"
-                    size="lg"
-                    onClick={handleFormSubmit}
-                    loading={form.formState.isSubmitting}
-                    disabled={form.formState.isSubmitting || !isFormValid}
-                    className="w-full"
-                  />
-                </form>
+                      {/* Sign In/Up Button */}
+                      <Button
+                        label={form.formState.isSubmitting ? 'Loading...' : (isSignUp ? 'Create account' : 'Sign In')}
+                        style="primary"
+                        size="lg"
+                        onClick={handleFormSubmit}
+                        loading={form.formState.isSubmitting}
+                        disabled={form.formState.isSubmitting || !isFormValid}
+                        className="w-full"
+                      />
+                    </form>
 
-                {/* Divider */}
-                <Divider label="or" maxWidth={400} />
-
-                {/* Google Sign In Button */}
-                <div style={{ width: '100%' }}>
-                  <Button
-                    label={`${isSignUp ? 'Sign Up' : 'Sign In'} with Google`}
-                    style="secondary"
-                    size="lg"
-                    leadIcon={<FcGoogle size={18} />}
-                    onClick={handleGoogleSignIn}
-                    className="w-full"
-                  />
-                </div>
+                    {/* Back to Google option */}
+                    <div style={{ textAlign: 'center' }}>
+                      <button
+                        type="button"
+                        onClick={() => setShowEmailForm(false)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          padding: 0,
+                          cursor: 'pointer',
+                          ...textStyles.sm.normal,
+                          color: colors.text.informative,
+                          textDecoration: 'none',
+                        }}
+                      >
+                        ← Back to Google Sign In
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
             {/* Text Container */}
             <div style={textContainerStyles}>
-              <p style={{
-                ...textStyles.sm.normal,
-                color: colors.text.muted,
-                margin: 0,
-                textAlign: 'center'
-              }}>
-                {isSignUp ? 'Already have an account? ' : "Don't have an account? "}
-                <span 
-                  style={{ color: colors.text.informative, cursor: 'pointer' }}
-                  onClick={toggleAuthMode}
-                >
-                  {isSignUp ? 'Sign In' : 'Sign Up'}
-                </span>
-              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[12], alignItems: 'center' }}>
+                {/* Sign Up/Sign In toggle */}
+                <p style={{
+                  ...textStyles.sm.normal,
+                  color: colors.text.muted,
+                  margin: 0,
+                  textAlign: 'center'
+                }}>
+                  {isSignUp ? 'Already have an account? ' : "Don't have an account? "}
+                  <span 
+                    style={{ color: colors.text.informative, cursor: 'pointer' }}
+                    onClick={toggleAuthMode}
+                  >
+                    {isSignUp ? 'Sign In' : 'Sign Up'}
+                  </span>
+                </p>
+
+                {/* Email login option - only show when not already showing email form */}
+                {!showEmailForm && (
+                  <button
+                    type="button"
+                    onClick={() => setShowEmailForm(true)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      padding: 0,
+                      cursor: 'pointer',
+                      ...textStyles.xs.normal,
+                      color: colors.text.hint,
+                      textDecoration: 'underline',
+                      fontSize: '11px',
+                    }}
+                  >
+                    Continue with email instead
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -488,12 +554,14 @@ const SignIn = () => {
                 transition: 'color 0.2s ease',
               }}
               onMouseEnter={(e) => {
-                e.target.style.color = colors.text.muted;
-                e.target.style.textDecoration = 'underline';
+                const target = e.target as HTMLButtonElement;
+                target.style.color = colors.text.muted;
+                target.style.textDecoration = 'underline';
               }}
               onMouseLeave={(e) => {
-                e.target.style.color = colors.text.hint;
-                e.target.style.textDecoration = 'none';
+                const target = e.target as HTMLButtonElement;
+                target.style.color = colors.text.hint;
+                target.style.textDecoration = 'none';
               }}
             >
               Terms of Service
@@ -520,12 +588,14 @@ const SignIn = () => {
                 transition: 'color 0.2s ease',
               }}
               onMouseEnter={(e) => {
-                e.target.style.color = colors.text.muted;
-                e.target.style.textDecoration = 'underline';
+                const target = e.target as HTMLButtonElement;
+                target.style.color = colors.text.muted;
+                target.style.textDecoration = 'underline';
               }}
               onMouseLeave={(e) => {
-                e.target.style.color = colors.text.hint;
-                e.target.style.textDecoration = 'none';
+                const target = e.target as HTMLButtonElement;
+                target.style.color = colors.text.hint;
+                target.style.textDecoration = 'none';
               }}
             >
               Privacy Policy

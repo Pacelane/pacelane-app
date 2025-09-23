@@ -34,7 +34,7 @@ const TemplateCard = ({
 
   // Base card styles
   const baseCardStyles = {
-    width: '240px',
+    width: '100%',
     height: '180px',
     padding: spacing.spacing[16],
     borderRadius: cornerRadius.borderRadius.xl,
