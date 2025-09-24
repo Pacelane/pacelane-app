@@ -14,6 +14,7 @@ import TextArea from '@/design-system/components/TextArea';
 import SidebarMenuItem from '@/design-system/components/SidebarMenuItem';
 import Chips from '@/design-system/components/Chips';
 import EmptyState from '@/design-system/components/EmptyState';
+import UserAvatar from '@/design-system/components/UserAvatar';
 
 // Design System Tokens
 import { spacing } from '@/design-system/tokens/spacing';
@@ -52,18 +53,10 @@ const Profile = () => {
     profession: '',
     avatar: '',
     linkedinUrl: '',
-    bio: '',
-    city: '',
-    country: ''
+    bio: ''
   });
 
-  // Company Information state - connected to real profile data
-  const [companyInfo, setCompanyInfo] = useState({
-    name: '',
-    industry: '',
-    avatar: '',
-    about: ''
-  });
+
 
   // Load inspirations from separate table
   const loadInspirations = async () => {
@@ -148,26 +141,14 @@ const Profile = () => {
       setPersonalInfo({
         name: profile.display_name || profile.linkedin_name || '',
         profession: profile.linkedin_headline || '',
-        avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=96&h=96&fit=crop&crop=face',
+        avatar: null, // Will use Bichaurinho avatar as fallback
         linkedinUrl: profile.linkedin_profile || '',
-
-        bio: profile.linkedin_about || '',
-        city: '',
-        country: ''
+        bio: profile.linkedin_about || ''
       });
 
-      setCompanyInfo({
-        name: profile.linkedin_company || '',
-        industry: profile.linkedin_headline || '',
-        avatar: 'https://images.unsplash.com/photo-1549923746-c502d488b3ea?w=96&h=96&fit=crop&crop=center',
-        about: ''
-      });
 
-      // Load goals, guides, pillars, and inspirations from profile
-      if (profile.goals) {
-        const goalsArray = Array.isArray(profile.goals) ? profile.goals : [];
-        setGoals(goalsArray.map((goal, index) => ({ id: index + 1, value: goal })));
-      }
+
+      // Load guides, pillars, and inspirations from profile
 
       // Check both 'guides' and 'content_guides' columns for backward compatibility
       const guidesData = profile.guides || profile.content_guides;
@@ -204,10 +185,6 @@ const Profile = () => {
     { id: 1, value: '' }
   ]);
 
-  const [goals, setGoals] = useState([
-    { id: 1, value: '' }
-  ]);
-
   const [guides, setGuides] = useState([
     { id: 1, value: '' }
   ]);
@@ -217,7 +194,6 @@ const Profile = () => {
   ]);
 
   // New item input states
-  const [newGoal, setNewGoal] = useState('');
   const [newPillar, setNewPillar] = useState('');
   const [newGuide, setNewGuide] = useState('');
 
@@ -231,13 +207,9 @@ const Profile = () => {
   const [savedStates, setSavedStates] = useState({
     profile: false,
     bio: false,
-    address: false,
-    companyProfile: false,
-    companyAbout: false,
     inspirations: false,
     targetPersona: false,
     competitors: false,
-    goals: false,
     guides: false,
     pillars: false
   });
@@ -250,18 +222,14 @@ const Profile = () => {
     return 'User';
   };
 
-  const getUserAvatar = () => {
-    return 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=48&h=48&fit=crop&crop=face';
-  };
+
 
   // Side menu items
   const menuItems = [
     { id: 'personal', label: 'Personal Information' },
-    { id: 'company', label: 'Company Information' },
-    { id: 'inspirations', label: 'Inspirations' },
-    { id: 'goals', label: 'Goals' },
-    { id: 'guides', label: 'Guides' },
-    { id: 'pillars', label: 'Pillars' }
+    // { id: 'inspirations', label: 'Inspirations' }, // Commented out per PCL-106
+    { id: 'guides', label: 'Tone of Voice' },
+    { id: 'pillars', label: 'Editorial Topics' }
   ];
 
   // Generic functions for managing dynamic lists
@@ -286,7 +254,6 @@ const Profile = () => {
   const getCurrentList = (listType) => {
     switch (listType) {
       case 'inspirations': return inspirations;
-      case 'goals': return goals;
       case 'guides': return guides;
       case 'pillars': return pillars;
       default: return [];
@@ -296,7 +263,6 @@ const Profile = () => {
   const getSetterFunction = (listType) => {
     switch (listType) {
       case 'inspirations': return setInspirations;
-      case 'goals': return setGoals;
       case 'guides': return setGuides;
       case 'pillars': return setPillars;
       default: return () => {};
@@ -316,11 +282,7 @@ const Profile = () => {
           };
           break;
 
-        case 'goals':
-          updateData = {
-            goals: goals.filter(g => g.value.trim()).map(g => g.value)
-          };
-          break;
+
         case 'guides':
           updateData = {
             guides: guides.filter(g => g.value.trim()).map(g => g.value)
@@ -399,25 +361,7 @@ const Profile = () => {
     }
   };
 
-  // Goals chips functions
-  const addGoalChip = () => {
-    if (newGoal.trim()) {
-      const newId = Math.max(...goals.map(goal => goal.id), 0) + 1;
-      setGoals(prev => [...prev, { id: newId, value: newGoal.trim() }]);
-      setNewGoal('');
-    }
-  };
 
-  const removeGoalChip = (goalId) => {
-    setGoals(prev => prev.filter(goal => goal.id !== goalId));
-  };
-
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      addGoalChip();
-    }
-  };
 
   // Guides chips functions
   const addGuideChip = () => {
@@ -484,42 +428,9 @@ const Profile = () => {
     }));
   };
 
-  const handleCompanyInfoChange = (field, value) => {
-    setCompanyInfo(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
 
-  // Avatar component
-  const Avatar = ({ src, alt, size = '64px' }) => (
-    <div
-      style={{
-        width: size,
-        height: size,
-        borderRadius: '50%',
-        overflow: 'hidden', // Ensures any image overflow is hidden
-        border: `2px solid ${colors.border.default}`,
-        flexShrink: 0,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: colors.bg.subtle, // Fallback background color
-      }}
-    >
-      <img
-        src={src}
-        alt={alt}
-        style={{
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          objectPosition: 'center',
-          display: 'block',
-        }}
-      />
-    </div>
-  );
+
+
 
   // Main content container is wrapped by MainAppChrome 840px container
 
@@ -552,96 +463,15 @@ const Profile = () => {
   // Render different section content
   const renderSectionContent = () => {
     switch (activeSection) {
-      case 'goals':
-        return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[16] }}>
-            <div>
-              <h3 style={{ ...textStyles.sm.semibold, color: colors.text.default, margin: 0 }}>
-                Goals
-              </h3>
-              <p style={{ ...textStyles.xs.normal, color: colors.text.subtle, margin: 0 }}>
-                What are your key objectives and aspirations?
-              </p>
-            </div>
-
-            <div style={{ 
-              display: 'flex', 
-              flexWrap: 'wrap', 
-              gap: spacing.spacing[8],
-              minHeight: '44px',
-              alignItems: 'flex-start'
-            }}>
-              {goals.filter(goal => goal.value.trim()).map((goal) => (
-                <Chips
-                  key={goal.id}
-                  label={goal.value}
-                  style="default"
-                  size="lg"
-                  selected={true}
-                  leadingIcon={<X size={16} />}
-                  onClick={() => removeGoalChip(goal.id)}
-                />
-              ))}
-              {goals.filter(goal => goal.value.trim()).length === 0 && (
-                <EmptyState
-                  title="No goals set yet"
-                  fullSpace={true}
-                />
-              )}
-            </div>
-
-            <Input
-              placeholder="Enter a new goal..."
-              value={newGoal}
-              onChange={(e) => setNewGoal(e.target.value)}
-              onKeyPress={handleKeyPress}
-              style="tail-action"
-              tailAction={{
-                icon: <Plus size={14} />,
-                onClick: addGoalChip,
-                disabled: !newGoal.trim()
-              }}
-            />
-
-            {/* Divider */}
-            <div style={{
-              width: '100%',
-              height: '1px',
-              backgroundColor: colors.border.default
-            }} />
-
-            {/* Give me some ideas button */}
-            <Button
-              label="Give me some ideas"
-              style="dashed"
-              size="md"
-              leadIcon={<Sparkles size={16} />}
-              tailIcon={<Info size={16} />}
-              onClick={() => console.log('Generate goal ideas')}
-            />
-
-            <div style={{ alignSelf: 'flex-start' }}>
-              <Button
-                label={savedStates.goals ? "Saved!" : "Save"}
-                style="primary"
-                size="sm"
-                leadIcon={savedStates.goals ? <Check size={16} /> : undefined}
-                onClick={() => handleSave('goals')}
-                disabled={savedStates.goals}
-              />
-            </div>
-          </div>
-        );
-
       case 'guides':
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[16] }}>
             <div>
               <h3 style={{ ...textStyles.sm.semibold, color: colors.text.default, margin: 0 }}>
-                Guides
+                Tone of Voice
               </h3>
               <p style={{ ...textStyles.xs.normal, color: colors.text.subtle, margin: 0 }}>
-                What values and principles guide your content creation?
+                Define the personality and style that should come through in your content
               </p>
             </div>
 
@@ -665,14 +495,14 @@ const Profile = () => {
               ))}
               {guides.filter(guide => guide.value.trim()).length === 0 && (
                 <EmptyState
-                  title="No guides defined yet"
+                  title="No tone of voice elements defined yet"
                   fullSpace={true}
                 />
               )}
             </div>
 
             <Input
-              placeholder="Enter a new guide..."
+              placeholder="Enter a tone of voice element (e.g., Professional, Friendly, Authoritative)..."
               value={newGuide}
               onChange={(e) => setNewGuide(e.target.value)}
               onKeyPress={handleGuideKeyPress}
@@ -698,7 +528,7 @@ const Profile = () => {
               size="md"
               leadIcon={<Sparkles size={16} />}
               tailIcon={<Info size={16} />}
-              onClick={() => console.log('Generate guide ideas')}
+              onClick={() => console.log('Generate tone of voice ideas')}
             />
 
             <div style={{ alignSelf: 'flex-start' }}>
@@ -719,10 +549,10 @@ const Profile = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[16] }}>
             <div>
               <h3 style={{ ...textStyles.sm.semibold, color: colors.text.default, margin: 0 }}>
-                Pillars
+                Editorial Topics
               </h3>
               <p style={{ ...textStyles.xs.normal, color: colors.text.subtle, margin: 0 }}>
-                What are the core pillars that define your approach?
+                What are the main topics and themes you want to cover in your content?
               </p>
             </div>
 
@@ -746,14 +576,14 @@ const Profile = () => {
               ))}
               {pillars.filter(pillar => pillar.value.trim()).length === 0 && (
                 <EmptyState
-                  title="No pillars established yet"
+                  title="No editorial topics defined yet"
                   fullSpace={true}
                 />
               )}
             </div>
 
             <Input
-              placeholder="Enter a new pillar..."
+              placeholder="Enter a content topic (e.g., Technology Trends, Industry Insights, Leadership)..."
               value={newPillar}
               onChange={(e) => setNewPillar(e.target.value)}
               onKeyPress={handlePillarKeyPress}
@@ -779,7 +609,7 @@ const Profile = () => {
               size="md"
               leadIcon={<Sparkles size={16} />}
               tailIcon={<Info size={16} />}
-              onClick={() => console.log('Generate pillar ideas')}
+              onClick={() => console.log('Generate editorial topic ideas')}
             />
 
             <div style={{ alignSelf: 'flex-start' }}>
@@ -881,10 +711,12 @@ const Profile = () => {
                     gap: spacing.spacing[12],
                   }}>
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: spacing.spacing[16] }}>
-                      <Avatar
+                      <UserAvatar
                         src={personalInfo.avatar}
                         alt={personalInfo.name}
                         size="64px"
+                        profile={profile}
+                        user={user}
                       />
                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: spacing.spacing[12] }}>
                         <div>
@@ -977,173 +809,14 @@ const Profile = () => {
                     </div>
                   </div>
 
-                  {/* Address Card */}
-                  <div style={{
-                    backgroundColor: colors.bg.card.default,
-                    border: `1px solid ${colors.border.default}`,
-                    borderRadius: cornerRadius.borderRadius.lg,
-                    boxShadow: getShadow('regular.card', colors, { withBorder: true }),
-                    padding: spacing.spacing[20],
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: spacing.spacing[12],
-                  }}>
-                    <h4 style={{ ...textStyles.sm.semibold, color: colors.text.default, margin: 0 }}>
-                      Address
-                    </h4>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[12] }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[4] }}>
-                        <label style={{
-                          ...textStyles.xs.medium,
-                          color: colors.text.default,
-                          margin: 0
-                        }}>
-                          City
-                        </label>
-                        <Input
-                          placeholder="Enter your city"
-                          value={personalInfo.city}
-                          onChange={(e) => handlePersonalInfoChange('city', e.target.value)}
-                          style="default"
-                        />
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[4] }}>
-                        <label style={{
-                          ...textStyles.xs.medium,
-                          color: colors.text.default,
-                          margin: 0
-                        }}>
-                          Country
-                        </label>
-                        <Input
-                          placeholder="Enter your country"
-                          value={personalInfo.country}
-                          onChange={(e) => handlePersonalInfoChange('country', e.target.value)}
-                          style="default"
-                        />
-                      </div>
-                    </div>
-                    <div style={{ alignSelf: 'flex-start' }}>
-                      <Button
-                        label={savedStates.address ? "Saved!" : "Save"}
-                        style="primary"
-                        size="sm"
-                        leadIcon={savedStates.address ? <Check size={16} /> : undefined}
-                        onClick={() => handleSave('address')}
-                        disabled={savedStates.address}
-                      />
-                    </div>
-                  </div>
+
                 </>
               )}
 
-              {/* Company Information Cards */}
-              {activeSection === 'company' && (
-                <>
-                  {/* Company Profile Card */}
-                  <div style={{
-                    backgroundColor: colors.bg.card.default,
-                    border: `1px solid ${colors.border.default}`,
-                    borderRadius: cornerRadius.borderRadius.lg,
-                    boxShadow: getShadow('regular.card', colors, { withBorder: true }),
-                    padding: spacing.spacing[20],
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: spacing.spacing[12],
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: spacing.spacing[16] }}>
-                      <Avatar
-                        src={companyInfo.avatar}
-                        alt={companyInfo.name}
-                        size="64px"
-                      />
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: spacing.spacing[12] }}>
-                        <div>
-                          <h2 style={{
-                            fontFamily: typography.fontFamily['awesome-serif'],
-                            fontSize: typography.desktop.size['2xl'],
-                            fontWeight: typography.desktop.weight.semibold,
-                            color: colors.text.default,
-                            margin: 0,
-                          }}>
-                            {companyInfo.name || 'Your Company'}
-                          </h2>
-                          <p style={{
-                            ...textStyles.sm.normal,
-                            color: colors.text.subtle,
-                            margin: 0,
-                            marginTop: spacing.spacing[4],
-                          }}>
-                            {companyInfo.industry || 'Industry'}
-                          </p>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[8] }}>
-                          <Input
-                            placeholder="Company Name"
-                            value={companyInfo.name}
-                            onChange={(e) => handleCompanyInfoChange('name', e.target.value)}
-                            style="default"
-                          />
-                          <Input
-                            placeholder="Industry / Field"
-                            value={companyInfo.industry}
-                            onChange={(e) => handleCompanyInfoChange('industry', e.target.value)}
-                            style="default"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    <div style={{ alignSelf: 'flex-start' }}>
-                      <Button 
-                        label={savedStates.companyProfile ? "Saved!" : "Save"}
-                        style="primary"
-                        size="sm"
-                        leadIcon={savedStates.companyProfile ? <Check size={16} /> : undefined}
-                        onClick={() => handleSave('companyProfile')}
-                        disabled={savedStates.companyProfile}
-                      />
-                    </div>
-                  </div>
 
-                  {/* About Company Card */}
-                  <div style={{
-                    backgroundColor: colors.bg.card.default,
-                    border: `1px solid ${colors.border.default}`,
-                    borderRadius: cornerRadius.borderRadius.lg,
-                    boxShadow: getShadow('regular.card', colors, { withBorder: true }),
-                    padding: spacing.spacing[20],
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: spacing.spacing[12],
-                  }}>
-                    <h4 style={{ ...textStyles.sm.semibold, color: colors.text.default, margin: 0 }}>
-                      About the Company
-                    </h4>
-                    <TextArea
-                      placeholder="Tell us about your company..."
-                      value={companyInfo.about}
-                      onChange={(e) => handleCompanyInfoChange('about', e.target.value)}
-                      rows={3}
-                      autoResize={true}
-                      minRows={3}
-                      maxRows={6}
-                    />
-                    <div style={{ alignSelf: 'flex-start' }}>
-                      <Button
-                        label={savedStates.companyAbout ? "Saved!" : "Save"}
-                        style="primary"
-                        size="sm"
-                        leadIcon={savedStates.companyAbout ? <Check size={16} /> : undefined}
-                        onClick={() => handleSave('companyAbout')}
-                        disabled={savedStates.companyAbout}
-                      />
-                    </div>
-                  </div>
-                </>
-              )}
 
-              {/* Dynamic Sections (Goals, Guides, Pillars) */}
-              {(activeSection === 'goals' || activeSection === 'guides' || activeSection === 'pillars') && (
+              {/* Dynamic Sections (Guides, Pillars) */}
+              {(activeSection === 'guides' || activeSection === 'pillars') && (
                 <div style={{
                   backgroundColor: colors.bg.card.default,
                   border: `1px solid ${colors.border.default}`,
@@ -1155,10 +828,10 @@ const Profile = () => {
                 </div>
               )}
 
-              {/* Inspirations Section */}
-              {activeSection === 'inspirations' && (
+              {/* Inspirations Section - Commented out per PCL-106 */}
+              {/* {activeSection === 'inspirations' && (
                 <>
-                  {/* Inspirations List Card */}
+                  {/* Inspirations List Card *//*}
                   <div style={{ 
                     backgroundColor: colors.bg.card.default,
                     border: `1px solid ${colors.border.default}`,
@@ -1176,7 +849,7 @@ const Profile = () => {
                         </p>
                       </div>
                       
-                      {/* Show inputs or empty state */}
+                      {/* Show inputs or empty state *//*}
                       {inspirations.length === 0 ? (
                         <EmptyState
                           title="No inspirations added yet"
@@ -1235,7 +908,7 @@ const Profile = () => {
                     </div>
                   </div>
 
-                  {/* Target Persona Card */}
+                  {/* Target Persona Card *//*}
                   <div style={{ 
                     backgroundColor: colors.bg.card.default,
                     border: `1px solid ${colors.border.default}`,
@@ -1246,7 +919,7 @@ const Profile = () => {
                     flexDirection: 'column',
                     gap: spacing.spacing[16],
                   }}>
-                    {/* Header */}
+                    {/* Header *//*}
                     <div>
                       <h3 style={{ 
                         ...textStyles.sm.semibold, 
@@ -1260,7 +933,7 @@ const Profile = () => {
                       </p>
                     </div>
 
-                    {/* TextArea */}
+                    {/* TextArea *//*}
                     <TextArea
                       placeholder="Describe your target persona..."
                       value={targetPersona}
@@ -1271,7 +944,7 @@ const Profile = () => {
                       maxRows={8}
                     />
 
-                    {/* Save Button */}
+                    {/* Save Button *//*}
                     <div style={{ alignSelf: 'flex-start' }}>
                       <Button
                         label={savedStates.targetPersona ? "Saved!" : "Save"}
@@ -1284,7 +957,7 @@ const Profile = () => {
                     </div>
                   </div>
 
-                  {/* Competitors Card */}
+                  {/* Competitors Card *//*}
                   <div style={{ 
                     backgroundColor: colors.bg.card.default,
                     border: `1px solid ${colors.border.default}`,
@@ -1295,7 +968,7 @@ const Profile = () => {
                     flexDirection: 'column',
                     gap: spacing.spacing[16]
                   }}>
-                    {/* Header */}
+                    {/* Header *//*}
                     <div>
                       <h3 style={{ 
                         ...textStyles.sm.semibold, 
@@ -1309,7 +982,7 @@ const Profile = () => {
                       </p>
                     </div>
 
-                    {/* Competitors List */}
+                    {/* Competitors List *//*}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[8] }}>
                       {competitors.map((competitor) => (
                         <Input
@@ -1336,7 +1009,7 @@ const Profile = () => {
                       </div>
                     </div>
 
-                    {/* Save Button */}
+                    {/* Save Button *//*}
                     <div style={{ alignSelf: 'flex-start' }}>
                       <Button
                         label={savedStates.competitors ? "Saved!" : "Save"}
@@ -1349,7 +1022,7 @@ const Profile = () => {
                     </div>
                   </div>
                 </>
-              )}
+              )} */}
             </div>
           </div>
     </div>

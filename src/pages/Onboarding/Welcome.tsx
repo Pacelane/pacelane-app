@@ -306,23 +306,28 @@ const Welcome = () => {
           bottom: 0,
           left: 0,
           right: 0,
+          height: '80px',
           backgroundColor: colors.bg.default,
           borderTop: `1px solid ${colors.border.default}`,
-          padding: spacing.spacing[24],
+          padding: spacing.spacing[40],
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 10,
         }}
       >
-        <div style={{ width: '320px' }}>
+        <div style={{ 
+          width: '280px',
+          display: 'flex',
+          justifyContent: 'center'
+        }}>
           <Button
             label="Let's Get Started"
             style="primary"
             size="lg"
             tailIcon={<ArrowRight size={16} />}
             onClick={handleContinue}
-            className="w-full"
+            fullWidth={true}
           />
         </div>
       </div>

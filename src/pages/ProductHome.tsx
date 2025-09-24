@@ -38,6 +38,7 @@ import { ChevronRight, Search } from 'lucide-react';
 
 // Additional Components
 import { CalendarService } from '@/services/calendarService';
+import { getUserAvatarUrl } from '@/utils/avatarUtils';
 
 const ProductHome = () => {
   const navigate = useNavigate();
@@ -205,8 +206,8 @@ const ProductHome = () => {
 
   // Get user avatar
   const getUserAvatar = () => {
-    // Use a default avatar for now
-    return 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=48&h=48&fit=crop&crop=face';
+    // Use Bichaurinho avatar utility
+    return getUserAvatarUrl(profile, user);
   };
 
   // Get current month name
@@ -391,28 +392,17 @@ const ProductHome = () => {
   // Show loading state only on initial load
   if (!hasLoadedInitialData && !error) {
     return (
-      <div style={contentContainerStyles}>
-        {/* Header Section */}
-        <div>
-          <h1 style={welcomeHeadingStyle}>
-            Welcome, {getUserName()}!
-          </h1>
-          <p style={subtitleStyle}>
-            Your content creation dashboard with insights, templates, and quick actions
-          </p>
-        </div>
-
-        {/* Loading indicator */}
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center', 
-          padding: spacing.spacing[40],
-          flexDirection: 'column',
-          gap: spacing.spacing[16]
-        }}>
-          <div style={{ color: colors?.text?.subtle || '#666666' }}>Loading your dashboard...</div>
-        </div>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        minHeight: '400px',
+        backgroundColor: 'transparent'
+      }}>
+        <SubtleLoadingSpinner 
+          title="Loading your dashboard..."
+          size={20}
+        />
       </div>
     );
   }

@@ -7,6 +7,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { spacing } from '@/design-system/tokens/spacing';
 import { cornerRadius } from '@/design-system/tokens/corner-radius';
 import { stroke } from '@/design-system/tokens/stroke';
+import { getUserAvatarUrl, getUserDisplayName } from '@/utils/avatarUtils';
 import HomeSidebar from '@/design-system/components/HomeSidebar';
 import Logo from '@/design-system/components/Logo';
 
@@ -19,7 +20,7 @@ import Logo from '@/design-system/components/Logo';
 const MainAppChrome = ({ className = '', children, ...rest }) => {
   const { colors } = useTheme();
   const { openHelp } = useHelp();
-  const { user, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useIsMobile();
@@ -36,7 +37,7 @@ const MainAppChrome = ({ className = '', children, ...rest }) => {
   // Active menu mapping based on current route
   const activeMenuItem = (() => {
     if (location.pathname.startsWith('/product-home')) return 'home';
-    if (location.pathname.startsWith('/templates')) return 'home'; // Templates is part of home flow
+    if (location.pathname.startsWith('/templates')) return 'templates';
     if (location.pathname.startsWith('/knowledge')) return 'knowledge';
     if (location.pathname.startsWith('/profile')) return 'profile';
     if (location.pathname.startsWith('/posts')) return 'history';
@@ -57,6 +58,9 @@ const MainAppChrome = ({ className = '', children, ...rest }) => {
     switch (menuId) {
       case 'home':
         navigate('/product-home');
+        break;
+      case 'templates':
+        navigate('/templates');
         break;
       case 'profile':
         navigate('/profile');
@@ -215,8 +219,8 @@ const MainAppChrome = ({ className = '', children, ...rest }) => {
           onHelpClick={handleHelpClick}
           onAvatarClick={handleAvatarClick}
           onSignOut={handleSignOut}
-          userName={user?.email?.split('@')[0] || 'User'}
-          userAvatar="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=48&h=48&fit=crop&crop=face"
+          userName={getUserDisplayName(profile, user)}
+          userAvatar={getUserAvatarUrl(profile, user)}
           style={isMobile ? {
             position: 'fixed',
             zIndex: 1002, // Higher than topbar (1001) to appear above it

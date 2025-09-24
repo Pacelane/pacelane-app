@@ -40,8 +40,6 @@ export const getOnboardingCompletionStatus = (profile) => {
   if (!profile) {
     return {
       linkedinProfile: false,
-      inspirations: false,
-      goals: false,
       contentGuides: false,
       pacingPreferences: false,
       whatsappNumber: false,
@@ -51,8 +49,6 @@ export const getOnboardingCompletionStatus = (profile) => {
 
   return {
     linkedinProfile: !!(profile.linkedin_profile && profile.linkedin_name),
-    inspirations: !!(profile.inspirations && Array.isArray(profile.inspirations) && profile.inspirations.length > 0),
-    goals: !!(profile.goals && Array.isArray(profile.goals) && profile.goals.length > 0),
     contentGuides: !!(profile.content_guides && Array.isArray(profile.content_guides) && profile.content_guides.length > 0),
     pacingPreferences: !!(profile.pacing_preferences && profile.pacing_preferences.pace),
     whatsappNumber: !!(profile.whatsapp_number && profile.whatsapp_number.trim()),
@@ -97,10 +93,6 @@ export const getNextRecommendedAction = (profile, knowledgeFiles = []) => {
   // Priority order: Core onboarding → Integrations → Content creation
   if (!onboardingStatus.linkedinProfile) {
     return 'complete_linkedin_profile';
-  }
-  
-  if (!onboardingStatus.goals) {
-    return 'set_goals';
   }
   
   if (!onboardingStatus.pacingPreferences) {

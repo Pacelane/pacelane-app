@@ -41,19 +41,15 @@ const IntegrationsPage = () => {
   // Integration states
   const [integrations, setIntegrations] = useState({
     whatsapp: {
-      enabled: false,
       connected: false,
     },
     readai: {
-      enabled: false,
-      connected: true, // Simulating already connected but not enabled
+      connected: false,
     },
     googleCalendar: {
-      enabled: true,
       connected: true,
     },
     linkedin: {
-      enabled: false,
       connected: false,
     },
   });
@@ -81,7 +77,6 @@ const IntegrationsPage = () => {
           whatsapp: {
             ...prev.whatsapp,
             connected: !!hasNumber,
-            enabled: !!hasNumber, // Enable if number exists
           }
         }));
       } catch (error) {
@@ -92,16 +87,7 @@ const IntegrationsPage = () => {
     fetchWhatsAppNumber();
   }, [user]);
 
-  // Handle toggle changes
-  const handleToggleChange = (integrationKey, newValue) => {
-    setIntegrations(prev => ({
-      ...prev,
-      [integrationKey]: {
-        ...prev[integrationKey],
-        enabled: newValue,
-      }
-    }));
-  };
+
 
   // Handle WhatsApp number save
   const handleWhatsAppSave = async (number) => {
@@ -126,7 +112,6 @@ const IntegrationsPage = () => {
         whatsapp: {
           ...prev.whatsapp,
           connected: !!hasNumber,
-          enabled: !!hasNumber, // Enable if number exists, disable if removed
         }
       }));
 
@@ -262,13 +247,12 @@ const IntegrationsPage = () => {
 
   // Handle Read.ai setup completion
   const handleReadaiComplete = () => {
-    // Update integration status to connected and enabled
+    // Update integration status to connected
     setIntegrations(prev => ({
       ...prev,
       readai: {
         ...prev.readai,
         connected: true,
-        enabled: true,
       }
     }));
     
@@ -277,13 +261,12 @@ const IntegrationsPage = () => {
 
   // Handle LinkedIn setup completion
   const handleLinkedInComplete = () => {
-    // Update integration status to connected and enabled
+    // Update integration status to connected
     setIntegrations(prev => ({
       ...prev,
       linkedin: {
         ...prev.linkedin,
         connected: true,
-        enabled: true,
       }
     }));
     
@@ -311,8 +294,6 @@ const IntegrationsPage = () => {
             iconColor={integration.iconColor}
             features={integration.features}
             connected={integrations[integration.key].connected}
-            enabled={integrations[integration.key].enabled}
-            onToggle={(newValue) => handleToggleChange(integration.key, newValue)}
             onConfigure={() => handleConfigureClick(integration.key)}
             onSync={integration.key === 'googleCalendar' ? handleSyncNow : undefined}
           />

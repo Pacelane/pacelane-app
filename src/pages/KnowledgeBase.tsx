@@ -18,6 +18,7 @@ import Input from '@/design-system/components/Input';
 import EmptyState from '@/design-system/components/EmptyState';
 import SubtleLoadingSpinner from '@/design-system/components/SubtleLoadingSpinner';
 import Button from '@/design-system/components/Button';
+import Pagination from '@/design-system/components/Pagination';
 import TranscriptPasteModal from '@/design-system/components/TranscriptPasteModal';
 
 // Design System Tokens
@@ -28,7 +29,10 @@ import { cornerRadius } from '@/design-system/tokens/corner-radius';
 import { getShadow } from '@/design-system/tokens/shadows';
 
 // Icons
-import { Search, FileText } from 'lucide-react';
+import { Search, FileText, Calendar, MoreHorizontal } from 'lucide-react';
+
+// Avatar utilities
+import { getUserAvatarUrl } from '@/utils/avatarUtils';
 
 const KnowledgeBase = () => {
   const navigate = useNavigate();
@@ -71,6 +75,10 @@ const KnowledgeBase = () => {
   const [urlInput, setUrlInput] = useState('');
   const [showTranscriptModal, setShowTranscriptModal] = useState(false);
   const [processingTranscript, setProcessingTranscript] = useState(false);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(12); // Fixed items per page
   
   // Ref for FileUpload component to trigger file selection
   const fileUploadRef = useRef(null);
@@ -274,6 +282,32 @@ const KnowledgeBase = () => {
         return files; // Already sorted by creation date from backend
     }
   };
+
+  // Get final filtered, sorted, and paginated files
+  const getDisplayFiles = () => {
+    const filteredFiles = getFilteredFiles();
+    const searchedFiles = filteredFiles.filter(file => 
+      searchQuery === '' || 
+      file.title.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    const sortedFiles = getSortedFiles(searchedFiles);
+    
+    // Calculate pagination
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedFiles = sortedFiles.slice(startIndex, endIndex);
+    
+    return {
+      files: paginatedFiles,
+      totalFiles: sortedFiles.length,
+      totalPages: Math.ceil(sortedFiles.length / itemsPerPage)
+    };
+  };
+
+  // Reset page when search query or filter changes
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, activeTab, sortBy]);
 
   // File upload handlers
   const handleFileSelect = async (files) => {
@@ -652,7 +686,7 @@ const KnowledgeBase = () => {
   };
 
   const getUserAvatar = () => {
-    return 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=48&h=48&fit=crop&crop=face';
+    return getUserAvatarUrl(profile, user);
   };
 
   // Grid styles for file cards - responsive
@@ -667,7 +701,7 @@ const KnowledgeBase = () => {
   };
 
   // Row styles for tabs and search - responsive
-  const controlRowStyles = {
+  const controlRowStyles: React.CSSProperties = {
     display: 'flex',
     flexDirection: isMobile ? 'column' : 'row',
     alignItems: isMobile ? 'stretch' : 'center',
@@ -809,52 +843,83 @@ const KnowledgeBase = () => {
             </div>
           )}
 
-          {/* File Grid - 2 columns */}
-          {!loading && !uploading && (
-            <div style={gridStyles}>
-              {getSortedFiles(getFilteredFiles())
-                .filter(file => 
-                  searchQuery === '' || 
-                  file.title.toLowerCase().includes(searchQuery.toLowerCase())
-                )
-                .map((file) => (
-                  <FileCard
-                    key={file.id}
-                    variant="gradient"
-                    title={file.title}
-                    subtitle={file.subtitle}
-                    fileType={file.fileType}
-                    status={file.status}
-                    fileSize={file.fileSize}
-                    onMenuAction={(action) => handleFileAction(action, file.id)}
-                    onClick={file.onClick}
-                    style={{
-                      width: '100%',
-                      minWidth: 0, // Allow shrinking below content size
-                      maxWidth: '100%', // Prevent growing beyond grid cell
-                    }}
-                  />
-                ))}
-            </div>
-          )}
+          {/* File Listing */}
+          {!loading && !uploading && (() => {
+            const { files, totalFiles, totalPages } = getDisplayFiles();
+            
+            if (totalFiles === 0) {
+              return (
+                <EmptyState
+                  title="No files found"
+                  subtitle={searchQuery ? 'Try adjusting your search or filter' : 'Upload some files to get started'}
+                  buttonLabel={!searchQuery ? 'Upload Files' : undefined}
+                  onButtonClick={!searchQuery ? () => {
+                    // Trigger file selection dialog
+                    if (fileUploadRef.current?.triggerFileSelect) {
+                      fileUploadRef.current.triggerFileSelect();
+                    }
+                  } : undefined}
+                />
+              );
+            }
 
-          {/* Empty state when no files match */}
-          {!loading && !uploading && getSortedFiles(getFilteredFiles()).filter(file => 
-            searchQuery === '' || 
-            file.title.toLowerCase().includes(searchQuery.toLowerCase())
-          ).length === 0 && (
-            <EmptyState
-              title="No files found"
-              subtitle={searchQuery ? 'Try adjusting your search or filter' : 'Upload some files to get started'}
-              buttonLabel={!searchQuery ? 'Upload Files' : undefined}
-              onButtonClick={!searchQuery ? () => {
-                // Trigger file selection dialog
-                if (fileUploadRef.current?.triggerFileSelect) {
-                  fileUploadRef.current.triggerFileSelect();
-                }
-              } : undefined}
-            />
-          )}
+            return (
+              <>
+                {/* Files Display */}
+                <div style={gridStyles}>
+                  {files.map((file) => (
+                    <FileCard
+                      key={file.id}
+                      variant="gradient"
+                      title={file.title}
+                      subtitle={file.subtitle}
+                      fileType={file.fileType}
+                      status={file.status}
+                      fileSize={file.fileSize}
+                      onMenuAction={(action) => handleFileAction(action, file.id)}
+                      onClick={file.onClick}
+                      style={{
+                        width: '100%',
+                        minWidth: 0, // Allow shrinking below content size
+                        maxWidth: '100%', // Prevent growing beyond grid cell
+                      }}
+                    />
+                  ))}
+                </div>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    marginTop: spacing.spacing[32],
+                  }}>
+                    <Pagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      onPageChange={setCurrentPage}
+                      showLabels={!isMobile}
+                      size={isMobile ? 'sm' : 'md'}
+                    />
+                  </div>
+                )}
+
+                {/* Results Summary */}
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  marginTop: spacing.spacing[16],
+                }}>
+                  <span style={{
+                    ...textStyles.sm.normal,
+                    color: colors.text.muted,
+                  }}>
+                    Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalFiles)} of {totalFiles} files
+                  </span>
+                </div>
+              </>
+            );
+          })()}
 
           {/* Audio Transcription Modal */}
           {showAudioModal && selectedAudioFile && (

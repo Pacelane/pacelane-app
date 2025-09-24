@@ -242,7 +242,7 @@ const Pacing = () => {
             maxWidth: isMobile ? '320px' : '400px'
           }}>
             <OnboardingProgressIndicator 
-              currentStep={7}
+              currentStep={6}
               compact={true}
             />
           </div>
@@ -383,6 +383,7 @@ const Pacing = () => {
               <div style={{ height: spacing.spacing[16] }} />
 
               {/* Time Preferences */}
+              {/* Commented out for PCL-117
               <InnerSection
                 title="Daily Summary"
                 subtitle="When should we send you a daily summary?"
@@ -424,6 +425,7 @@ const Pacing = () => {
                   />
                 </div>
               </InnerSection>
+              */}
 
 
             </div>
@@ -466,10 +468,10 @@ const Pacing = () => {
           bottom: 0,
           left: 0,
           right: 0,
-          height: isMobile ? '70px' : '80px',
+          height: '80px',
           backgroundColor: colors.bg.default,
           borderTop: `1px solid ${colors.border.default}`,
-          padding: isMobile ? spacing.spacing[24] : spacing.spacing[40],
+          padding: spacing.spacing[40],
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -477,8 +479,9 @@ const Pacing = () => {
         }}
       >
         <div style={{ 
-          width: isMobile ? '100%' : '280px',
-          maxWidth: isMobile ? '320px' : '280px'
+          width: '280px',
+          display: 'flex',
+          justifyContent: 'center'
         }}>
           <Button
             label={isLoading ? "Saving..." : "Continue"}
@@ -487,7 +490,7 @@ const Pacing = () => {
             tailIcon={!isLoading ? <ArrowRight size={16} /> : undefined}
             onClick={handleContinue}
             disabled={!canContinue || isLoading}
-            className="w-full"
+            fullWidth={true}
           />
         </div>
       </div>
