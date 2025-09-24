@@ -1151,8 +1151,21 @@ serve(async (req) => {
         }
 
         // Convert base64 back to File object
-        const fileBuffer = Uint8Array.from(atob(fileData.content), c => c.charCodeAt(0));
-        const file = new File([fileBuffer], fileData.name, { type: fileData.type });
+        let file;
+        try {
+          console.log(`🔄 Decoding base64 for file: ${fileData.name}, base64 length: ${fileData.content.length}`);
+          const decodedBinary = atob(fileData.content);
+          console.log(`✅ Decoded to binary string of length: ${decodedBinary.length}`);
+          const fileBuffer = Uint8Array.from(decodedBinary, c => c.charCodeAt(0));
+          console.log(`✅ Created buffer of size: ${fileBuffer.length} bytes`);
+          file = new File([fileBuffer], fileData.name, { type: fileData.type });
+        } catch (decodeError) {
+          console.error(`❌ Failed to decode base64 for file ${fileData.name}:`, decodeError);
+          return new Response(JSON.stringify({ success: false, error: 'Failed to decode base64' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
 
         const result = await storage.uploadFile(userId, file, metadata);
 
@@ -1390,6 +1403,9 @@ serve(async (req) => {
                 const filePath = gcsPathParts.slice(3).join('/'); // Extract file path
                 
                 console.log(`🔧 Temporary file created: bucket=${bucketName}, path=${filePath}`);
+                
+                // Add a longer delay to ensure file is fully written to GCS and indexed
+                await new Promise(resolve => setTimeout(resolve, 3000));
                 
                 await storage.triggerRAGProcessing(
                   userId,

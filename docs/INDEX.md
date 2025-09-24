@@ -1,174 +1,147 @@
-# Documentation Index
+# Pacelane Documentation Index
 
-Welcome to Pacelane's comprehensive documentation! This directory contains all the documentation for the Pacelane application, organized by category for easy navigation.
+Welcome to the Pacelane documentation hub. This index provides a comprehensive overview of all documentation organized by category and purpose.
 
-## 📚 Documentation Structure
+## 📁 Documentation Structure
 
-### 🏗️ [Architecture Overview](./architecture/README.md)
-**Complete system architecture and design patterns**
-- System architecture and design principles
-- Technology stack and infrastructure
-- Database schema and relationships
-- API design principles and patterns
-- Security architecture and data flow
-- Performance optimization strategies
-- Future architecture considerations
+### 🚀 [Getting Started](./development/)
+- [Local Development Setup](./development/LOCAL_DEVELOPMENT_SETUP.md)
+- [Style Guidelines](./development/STYLE_GUIDELINE.md)
+- [Development README](./development/README.md)
 
-### 🔧 [Supabase & Backend](./supabase/README.md)
-**Complete backend architecture and edge functions documentation**
-- **Edge Functions**: Complete documentation of all 25+ functions
-- **Database**: Schema, RLS policies, and migrations
-- **Authentication**: User management and security
-- **Storage**: GCS integration and file management
-- **Development Workflow**: Local development and deployment
-- **Performance & Monitoring**: Optimization and debugging
+### 🏗️ [Architecture](./architecture/)
+- [Content Creation Flow](./architecture/CONTENT_CREATION_FLOW.md)
+- [Architecture Overview](./architecture/README.md)
 
-### 🎨 [Design System](./design-system/README.md)
-**Comprehensive design system documentation**
-- **Design Tokens**: Colors, typography, spacing, shadows, borders
-- **Components**: Reusable UI components and patterns
-- **Theming**: Light/dark mode and customization
-- **Usage Guidelines**: Best practices and examples
-- **Development Rules**: Import patterns and coding standards
-- **Component Patterns**: Theme-aware and responsive components
+### 🎨 [Design System](./design-system/)
+- [Design System Documentation](./design-system/README.md)
 
-### 🔌 [Service Layer](./services/README.md)
-**Business logic and API integration documentation**
-- **Business Logic**: Content, user, and AI services
-- **API Integration**: External service connections
-- **Data Management**: CRUD operations and state handling
-- **Error Handling**: Comprehensive error management
-- **Performance**: Caching and optimization strategies
-- **Testing**: Service testing and integration testing
+### 🔧 [Features](./features/)
+Core application features and their implementation plans:
 
-### 🚀 [Development Guide](./development/README.md)
-**Complete development setup and workflow**
-- **Local Development**: Setup and environment configuration
-- **Coding Standards**: Design system and service patterns
-- **Testing**: Component and service testing
-- **Performance**: Optimization and debugging
-- **Deployment**: CI/CD and production deployment
-- **Documentation**: Code documentation standards
+#### Content & AI Features
+- [Context Engineering Implementation Plan](./features/CONTEXT_ENGINEERING_IMPLEMENTATION_PLAN.md)
+- [Enhanced Content Suggestions](./features/ENHANCED_CONTENT_SUGGESTIONS_IMPLEMENTATION_PLAN.md)
+- [Knowledge Base Content Integration](./features/KNOWLEDGE_BASE_CONTENT_INTEGRATION_PLAN.md)
+- [Knowledge Base GCS Integration](./features/KNOWLEDGE_BASE_GCS_INTEGRATION.md)
+- [Vertex AI Analysis](./features/VERTEX_AI_ANALYSIS.md)
 
-## 📖 Quick Navigation
+#### Pacing & Scheduling
+- [Pacing Content Improvements](./features/PACING_CONTENT_IMPROVEMENTS.md)
+- [Redesigned Pacing Scheduler Architecture](./features/REDESIGNED_PACING_SCHEDULER_ARCHITECTURE.md)
 
-### For New Developers
-1. **Start Here**: [Architecture Overview](./architecture/README.md) - Understand the system design
-2. **Setup**: [Development Guide](./development/README.md) - Get your environment running
-3. **Frontend**: [Design System](./design-system/README.md) - Learn UI components and patterns
-4. **Backend**: [Supabase & Backend](./supabase/README.md) - Understand backend architecture
+#### Integrations & Services
+- [Google Calendar Setup](./features/GOOGLE_CALENDAR_SETUP.md)
+- [Read AI Integration Setup](./features/READ_AI_INTEGRATION_SETUP.md)
+- [UI Agent Integration Plan](./features/UI_AGENT_INTEGRATION_PLAN.md)
+- [User Bucket Integration Solution](./features/USER_BUCKET_INTEGRATION_SOLUTION.md)
 
-### For Frontend Development
-1. **Design System**: [Design System](./design-system/README.md) - UI components and styling
-2. **Development**: [Development Guide](./development/README.md) - Coding standards and patterns
-3. **Architecture**: [Architecture Overview](./architecture/README.md) - System design and patterns
+#### Migration & Refactoring
+- [Langchain Migration Plan](./features/LANGCHAIN_MIGRATION_PLAN.md)
+- [Refactoring Progress](./features/REFACTORING_PROGRESS.md)
+- [PCL-51 Implementation Plan](./features/PCL-51_IMPLEMENTATION_PLAN.md)
 
-### For Backend Development
-1. **Supabase**: [Supabase & Backend](./supabase/README.md) - Edge functions and database
-2. **Services**: [Service Layer](./services/README.md) - Business logic and API integration
-3. **Architecture**: [Architecture Overview](./architecture/README.md) - Backend design patterns
+### 📱 [WhatsApp Integration](./whatsapp/)
+Complete WhatsApp integration documentation:
 
-### For DevOps & Deployment
-1. **Architecture**: [Architecture Overview](./architecture/README.md) - Infrastructure and deployment
-2. **Supabase**: [Supabase & Backend](./supabase/README.md) - Backend deployment
-3. **Development**: [Development Guide](./development/README.md) - CI/CD and deployment
+#### Core System
+- [WhatsApp Buffer System Documentation](./whatsapp/WHATSAPP_BUFFER_SYSTEM_DOCUMENTATION.md) ⭐ **Main Documentation**
+- [WhatsApp Chatwoot Rebuild Plan](./whatsapp/WHATSAPP_CHATWOOT_REBUILD_PLAN.md)
+- [Deploy WhatsApp Buffer System](./whatsapp/deploy-whatsapp-buffer-system.md)
 
-## 🔍 Documentation Features
+#### Implementation & Setup
+- [WhatsApp Integration Implementation](./whatsapp/WHATSAPP_INTEGRATION_IMPLEMENTATION.md)
+- [WhatsApp Chatwoot API Integration](./whatsapp/WHATSAPP_CHATWOOT_API_INTEGRATION.md)
+- [WhatsApp Integration Execution Plan](./whatsapp/WHATSAPP_INTEGRATION_EXECUTION_PLAN.md)
+- [WhatsApp Notification System](./whatsapp/WHATSAPP_NOTIFICATION_SYSTEM.md)
+- [WhatsApp Reprocessing Guide](./whatsapp/WHATSAPP_REPROCESSING_GUIDE.md)
 
-### Comprehensive Coverage
-- **25+ Edge Functions**: Complete documentation of all backend functions
-- **10+ Services**: Full service layer documentation
-- **Design System**: Complete token and component documentation
-- **Architecture**: System-wide design patterns and principles
+#### Fixes & Maintenance
+- [WhatsApp Bucket Fixes](./whatsapp/WHATSAPP_BUCKET_FIXES.md)
 
-### Developer Experience
-- **Code Examples**: Practical examples for all patterns
-- **Best Practices**: Established coding standards and guidelines
-- **Troubleshooting**: Common issues and solutions
-- **Performance**: Optimization strategies and monitoring
+### 🎯 [Onboarding](./onboarding/)
+- [Interactive Onboarding Implementation](./onboarding/INTERACTIVE_ONBOARDING_IMPLEMENTATION.md)
 
-### Maintenance
-- **Regular Updates**: Documentation updated with code changes
-- **Version Control**: Documentation versioning and changelog
-- **Quality Assurance**: Documentation review and validation
-- **Community Feedback**: Continuous improvement based on usage
+### 🔌 [API Documentation](./api/)
+- [API Overview](./api/README.md)
+- [Frontend Customer Support Integration](./api/FRONTEND_CUSTOMER_SUPPORT_INTEGRATION.md)
+- [Customer Support Slack Integration](./api/CUSTOMER_SUPPORT_SLACK_INTEGRATION.md)
 
-## 🚀 Getting Started
+### 🛠️ [Services](./services/)
+- [Services Documentation](./services/README.md)
 
-### Quick Start Path
-1. **Read**: [Architecture Overview](./architecture/README.md) for system understanding
-2. **Setup**: [Development Guide](./development/README.md) for local environment
-3. **Explore**: [Design System](./design-system/README.md) for UI patterns
-4. **Build**: [Service Layer](./services/README.md) for business logic
-5. **Deploy**: [Supabase & Backend](./supabase/README.md) for backend deployment
+### 🗄️ [Supabase](./supabase/)
+- [Edge Functions Documentation](./supabase/edge-functions-documentation.md)
+- [Supabase Overview](./supabase/README.md)
 
-### Documentation Standards
-- **Consistent Structure**: All documents follow the same format
-- **Code Examples**: Practical, copy-paste ready examples
-- **Cross-References**: Links between related documentation sections
-- **Version Information**: Clear indication of documentation versions
+### 🔧 [Fixes](./fixes/)
+- [RLS Security Fixes](./fixes/RLS_SECURITY_FIXES.md)
 
-## 🔗 External Resources
+---
 
-### Development Tools
-- **Supabase CLI**: [Installation Guide](https://supabase.com/docs/guides/cli)
-- **Node.js**: [Version Management with nvm](https://github.com/nvm-sh/nvm)
-- **Vercel**: [Deployment Platform](https://vercel.com/docs)
+## 🎯 Quick Navigation
 
-### Technology Documentation
-- **React 18**: [Official Documentation](https://react.dev/)
-- **TypeScript**: [Handbook](https://www.typescriptlang.org/docs/)
-- **Tailwind CSS**: [Documentation](https://tailwindcss.com/docs)
-- **Supabase**: [Documentation](https://supabase.com/docs)
+### For Developers
+- Start with [Local Development Setup](./development/LOCAL_DEVELOPMENT_SETUP.md)
+- Review [Architecture Overview](./architecture/README.md)
+- Check [Style Guidelines](./development/STYLE_GUIDELINE.md)
 
-### Design Resources
-- **Lucide Icons**: [Icon Library](https://lucide.dev/)
-- **Design Tokens**: [Design System Fundamentals](https://www.designtokens.org/)
+### For WhatsApp Integration
+- **Main Guide**: [WhatsApp Buffer System Documentation](./whatsapp/WHATSAPP_BUFFER_SYSTEM_DOCUMENTATION.md)
+- **Setup**: [WhatsApp Integration Implementation](./whatsapp/WHATSAPP_INTEGRATION_IMPLEMENTATION.md)
+- **Deployment**: [Deploy WhatsApp Buffer System](./whatsapp/deploy-whatsapp-buffer-system.md)
 
-## 📝 Contributing to Documentation
+### For Feature Development
+- Browse [Features](./features/) for specific implementation plans
+- Check [API Documentation](./api/) for integration details
+- Review [Services](./services/) for backend components
 
-### Documentation Updates
-1. **Follow Standards**: Use established documentation patterns
-2. **Include Examples**: Provide practical, working code examples
-3. **Cross-Reference**: Link to related documentation sections
-4. **Version Control**: Update version information and dates
-
-### Documentation Review
-- **Accuracy**: Ensure all information is current and correct
-- **Completeness**: Cover all aspects of the documented feature
-- **Clarity**: Use clear, concise language and examples
-- **Consistency**: Follow established formatting and structure
+### For System Administration
+- [Supabase Documentation](./supabase/) for database and functions
+- [Fixes](./fixes/) for known issues and solutions
+- [Architecture](./architecture/) for system design
 
 ---
 
 ## 📊 Documentation Status
 
-### ✅ Completed Sections
-- [x] Architecture Overview - Complete system design documentation
-- [x] Supabase & Backend - Full backend and edge function documentation
-- [x] Design System - Comprehensive UI component and token documentation
-- [x] Service Layer - Complete business logic and API documentation
-- [x] Development Guide - Full development setup and workflow
-- [x] Main README - Project overview and navigation
+### ✅ Complete & Current
+- WhatsApp Buffer System (Production Ready)
+- Local Development Setup
+- Design System Documentation
+- Core Architecture
 
-### 🔄 Maintenance Status
-- **Last Updated**: December 2024
-- **Documentation Version**: 2.0
-- **Coverage**: 100% of core application features
-- **Quality**: Comprehensive examples and best practices
+### 🚧 In Progress
+- Interactive Onboarding
+- Enhanced Content Suggestions
+- UI Agent Integration
+
+### 📋 Planned
+- Advanced Analytics
+- Multi-language Support
+- Performance Optimization
 
 ---
 
-<<<<<<< Current (Your changes)
-<<<<<<< Current (Your changes)
-*This index was created to help navigate the project documentation efficiently.*
-=======
-*This documentation index provides comprehensive coverage of all aspects of the Pacelane application. Each section contains detailed information, practical examples, and best practices for development and maintenance.*
+## 🔍 Search Tips
 
-*For questions or suggestions about the documentation, please contact the development team or open an issue in the repository.*
->>>>>>> Incoming (Background Agent changes)
-=======
-*This documentation index provides comprehensive coverage of all aspects of the Pacelane application. Each section contains detailed information, practical examples, and best practices for development and maintenance.*
+- **WhatsApp**: All WhatsApp-related docs are in the `whatsapp/` folder
+- **Features**: Implementation plans are in the `features/` folder
+- **Setup**: Development and deployment guides are in `development/` and `whatsapp/`
+- **Architecture**: System design and flow documentation in `architecture/`
 
-*For questions or suggestions about the documentation, please contact the development team or open an issue in the repository.*
->>>>>>> Incoming (Background Agent changes)
+---
+
+## 📝 Contributing to Documentation
+
+When adding new documentation:
+
+1. **Choose the right folder** based on the content type
+2. **Use descriptive filenames** in UPPER_CASE_WITH_UNDERSCORES.md
+3. **Update this INDEX.md** to include your new document
+4. **Follow the existing structure** and naming conventions
+5. **Include a brief description** in the index entry
+
+---
+
+*Last updated: September 23, 2025*
