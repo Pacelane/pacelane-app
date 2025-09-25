@@ -171,6 +171,113 @@ export class ContentService {
     }
   }
 
+  /**
+   * Get file preview URL for secure access
+   * @param fileId - The file ID to get preview URL for
+   * @returns Promise with preview URL or error
+   */
+  static async getFilePreviewUrl(fileId: string): Promise<ApiResponse<string>> {
+    try {
+      console.log('ContentService: Getting file preview URL:', fileId);
+      
+      // Get user's JWT token for authentication
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        return { error: 'User not authenticated' };
+      }
+
+      // Get user ID from session
+      const userId = session.user?.id;
+      if (!userId) {
+        return { error: 'User ID not found' };
+      }
+
+      // Call the GCS edge function to get preview URL
+      const { data, error } = await supabase.functions.invoke('knowledge-base-storage', {
+        body: {
+          userId: userId,
+          action: 'preview',
+          fileId: fileId
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
+
+      if (error) {
+        console.error('ContentService: GCS preview URL error:', error);
+        return { error: error.message || 'Failed to get file preview URL' };
+      }
+
+      if (!data || !data.success) {
+        console.error('ContentService: GCS preview URL failed:', data?.error);
+        return { error: data?.error || 'Failed to get file preview URL' };
+      }
+
+      console.log('ContentService: File preview URL generated successfully');
+      return { data: data.url };
+    } catch (error: any) {
+      console.error('ContentService: getFilePreviewUrl failed:', error);
+      return { error: error.message || 'Failed to get file preview URL' };
+    }
+  }
+
+  /**
+   * Get file content for text-based previews
+   * @param fileId - The file ID to get content for
+   * @returns Promise with file content or error
+   */
+  static async getFileContent(fileId: string): Promise<ApiResponse<{ content: string; contentType: string }>> {
+    try {
+      console.log('ContentService: Getting file content:', fileId);
+      
+      // Get user's JWT token for authentication
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        return { error: 'User not authenticated' };
+      }
+
+      // Get user ID from session
+      const userId = session.user?.id;
+      if (!userId) {
+        return { error: 'User ID not found' };
+      }
+
+      // Call the GCS edge function to get file content
+      const { data, error } = await supabase.functions.invoke('knowledge-base-storage', {
+        body: {
+          userId: userId,
+          action: 'content',
+          fileId: fileId
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
+
+      if (error) {
+        console.error('ContentService: GCS file content error:', error);
+        return { error: error.message || 'Failed to get file content' };
+      }
+
+      if (!data || !data.success) {
+        console.error('ContentService: GCS file content failed:', data?.error);
+        return { error: data?.error || 'Failed to get file content' };
+      }
+
+      console.log('ContentService: File content retrieved successfully');
+      return { 
+        data: {
+          content: data.content,
+          contentType: data.contentType
+        }
+      };
+    } catch (error: any) {
+      console.error('ContentService: getFileContent failed:', error);
+      return { error: error.message || 'Failed to get file content' };
+    }
+  }
+
   // ========== DRAFTS OPERATIONS ==========
 
   /**

@@ -641,6 +641,8 @@ export const useContent = (): ContentState & ContentActions => {
     uploadFiles,
     deleteKnowledgeFile,
     addLink,
+    getFilePreviewUrl: contentApi.getFilePreviewUrl,
+    getFileContent: contentApi.getFileContent,
     
     // Drafts Actions
     loadSavedDrafts,

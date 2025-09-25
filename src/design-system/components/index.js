@@ -19,6 +19,7 @@ export { default as PhoneInput } from './PhoneInput.jsx';
 export { default as ProgressBar } from './ProgressBar.jsx';
 export { default as ContentCard } from './ContentCard.jsx';
 export { default as FileCard } from './FileCard.jsx';
+export { default as FilePreviewModal } from './FilePreviewModal.jsx';
 export { default as DropdownButton } from './DropdownButton.jsx';
 export { default as DropdownMenu } from './DropdownMenu.jsx';
 export { default as Badge } from './Badge.jsx';

@@ -125,6 +125,34 @@ export const contentApi = {
     return ContentService.addLink(userId, linkData);
   },
 
+  /**
+   * Get file preview URL for secure access
+   * @param fileId - File ID to get preview URL for
+   * @returns Promise with preview URL
+   */
+  async getFilePreviewUrl(fileId: string) {
+    // Frontend validation
+    if (!fileId) {
+      return { error: 'File ID is required' };
+    }
+
+    return ContentService.getFilePreviewUrl(fileId);
+  },
+
+  /**
+   * Get file content for text-based previews
+   * @param fileId - File ID to get content for
+   * @returns Promise with file content
+   */
+  async getFileContent(fileId: string) {
+    // Frontend validation
+    if (!fileId) {
+      return { error: 'File ID is required' };
+    }
+
+    return ContentService.getFileContent(fileId);
+  },
+
   // ========== DRAFTS OPERATIONS ==========
 
   /**
@@ -409,6 +437,8 @@ export const {
   createUIContentOrder,
   getFileTypeFromName,
   validateFileType,
+  getFilePreviewUrl,
+  getFileContent,
   generateFileUrl,
   fileMatchesFilter,
   formatFileSize,
