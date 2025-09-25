@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/services/theme-context';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useAuth } from '@/hooks/api/useAuth';
 
 // Design System Components
 import TopNav from '@/design-system/components/TopNav';
@@ -24,6 +25,52 @@ const Welcome = () => {
   const navigate = useNavigate();
   const { colors } = useTheme();
   const isMobile = useIsMobile();
+  const { user, profile, loading } = useAuth();
+
+  // Check onboarding status and redirect accordingly
+  useEffect(() => {
+    if (user && profile && !loading) {
+      console.log('Welcome: Checking onboarding status', {
+        userId: user.id,
+        isOnboarded: (profile as any).is_onboarded,
+        profile: profile
+      });
+
+      // If user has completed onboarding, redirect to product home
+      if ((profile as any).is_onboarded === true) {
+        console.log('Welcome: User has completed onboarding, redirecting to product-home');
+        navigate('/product-home');
+        return;
+      }
+
+      // If user hasn't completed onboarding, stay on welcome page
+      console.log('Welcome: User has not completed onboarding, staying on welcome page');
+    }
+  }, [user, profile, loading, navigate]);
+
+  // Show loading state while checking authentication
+  if (loading || !user || !profile) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colors.bg.default,
+        flexDirection: 'column',
+        gap: spacing.spacing[24]
+      }}>
+        <Bichaurinho variant={1} size={64} />
+        <p style={{
+          ...textStyles.md.normal,
+          color: colors.text.muted,
+          margin: 0
+        }}>
+          Loading...
+        </p>
+      </div>
+    );
+  }
 
   const handleContinue = () => {
     navigate('/onboarding/first-things-first');
