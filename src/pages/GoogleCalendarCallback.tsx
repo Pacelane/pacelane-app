@@ -47,7 +47,7 @@ export const GoogleCalendarCallback: React.FC = () => {
           setStatus('success');
           setMessage('Google Calendar connected successfully!');
 
-          // Redirect after a short delay
+          // Redirect after a short delay - let ProtectedRoute handle onboarding check
           setTimeout(() => {
             navigate('/product-home');
           }, 2000);

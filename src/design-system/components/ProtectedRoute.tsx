@@ -10,7 +10,7 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { user, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
   const location = useLocation();
   const { colors } = useTheme();
 
@@ -35,8 +35,29 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     return <Navigate to="/signin" state={{ from: location }} replace />;
   }
 
-  // If user is authenticated, allow access to everything
-  // No complex onboarding checks - just let them through
+  // Check if user has completed onboarding
+  // If profile is still loading, show loading state
+  if (!profile) {
+    return (
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100vh',
+        backgroundColor: colors.bg.default,
+        padding: spacing.spacing[24],
+      }}>
+        <SpinningBichaurinho title="Loading your profile..." />
+      </div>
+    );
+  }
+
+  // If user is authenticated but hasn't completed onboarding, redirect to onboarding
+  if (!profile.onboarding_completed) {
+    return <Navigate to="/onboarding/welcome" replace />;
+  }
+
+  // If user is authenticated and has completed onboarding, allow access
   return <>{children}</>;
 };
 
