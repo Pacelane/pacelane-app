@@ -52,7 +52,7 @@ const SignIn = () => {
   useEffect(() => {
     if (user && profile) {
       // Check if user has completed onboarding
-      if (profile.onboarding_completed) {
+      if ((profile as any).is_onboarded) {
         navigate('/product-home');
       } else {
         navigate('/onboarding/welcome');
@@ -219,7 +219,7 @@ const SignIn = () => {
       }
       
       // On success, let the useEffect handle the redirect based on onboarding status
-      // The useEffect will check profile.onboarding_completed and redirect accordingly
+      // The useEffect will check profile.is_onboarded and redirect accordingly
 
     } catch (error: any) {
       console.error('Google sign-in error:', error);

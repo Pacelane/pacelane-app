@@ -149,12 +149,12 @@ const Ready = () => {
     if (!user) return null;
 
     try {
-      console.log('Ready: Updating profile with onboarding_completed: true');
+      console.log('Ready: Updating profile with is_onboarded: true');
       
       const { data, error } = await supabase
         .from('profiles')
         .update({ 
-          onboarding_completed: true,
+          is_onboarded: true,
           updated_at: new Date().toISOString()
         })
         .eq('user_id', user.id)
@@ -186,7 +186,7 @@ const Ready = () => {
       const { error } = await supabase
         .from('profiles')
         .update({ 
-          onboarding_completed: true,
+          is_onboarded: true,
           updated_at: new Date().toISOString()
         })
         .eq('user_id', user.id);

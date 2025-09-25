@@ -52,7 +52,7 @@ export const getOnboardingCompletionStatus = (profile) => {
     contentGuides: !!(profile.content_guides && Array.isArray(profile.content_guides) && profile.content_guides.length > 0),
     pacingPreferences: !!(profile.pacing_preferences && profile.pacing_preferences.pace),
     whatsappNumber: !!(profile.whatsapp_number && profile.whatsapp_number.trim()),
-    onboardingCompleted: !!(profile.onboarding_completed)
+    onboardingCompleted: !!(profile.is_onboarded)
   };
 };
 

@@ -53,7 +53,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }
 
   // If user is authenticated but hasn't completed onboarding, redirect to onboarding
-  if (!profile.onboarding_completed) {
+  if (!(profile as any).is_onboarded) {
     return <Navigate to="/onboarding/welcome" replace />;
   }
 
