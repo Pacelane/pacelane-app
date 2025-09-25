@@ -197,6 +197,7 @@ const Ready = () => {
       }
       
       console.log('Ready: Onboarding completed successfully');
+      console.log('Ready: Setting is_onboarded to true for user:', user.id);
       
       // Navigate directly - no complex verification
       toast.success('Welcome to Pacelane! Your content strategy is ready.');
