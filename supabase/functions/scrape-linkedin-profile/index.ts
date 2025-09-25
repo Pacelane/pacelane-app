@@ -7,15 +7,21 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  console.log(`[${new Date().toISOString()}] LinkedIn Scraper: Request received - Method: ${req.method}`);
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log(`[${new Date().toISOString()}] LinkedIn Scraper: Handling CORS preflight`);
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    console.log(`[${new Date().toISOString()}] LinkedIn Scraper: Parsing request body`);
     const { linkedinUrl } = await req.json();
+    console.log(`[${new Date().toISOString()}] LinkedIn Scraper: Received URL: ${linkedinUrl}`);
 
     if (!linkedinUrl) {
+      console.log(`[${new Date().toISOString()}] LinkedIn Scraper: ERROR - No LinkedIn URL provided`);
       return new Response(
         JSON.stringify({ error: 'LinkedIn URL is required' }),
         { 
@@ -26,7 +32,10 @@ serve(async (req) => {
     }
 
     const apifyApiKey = Deno.env.get('APIFY_API_KEY');
+    console.log(`[${new Date().toISOString()}] LinkedIn Scraper: Checking Apify API key - ${apifyApiKey ? 'Found' : 'Missing'}`);
+    
     if (!apifyApiKey) {
+      console.log(`[${new Date().toISOString()}] LinkedIn Scraper: ERROR - Apify API key not configured`);
       return new Response(
         JSON.stringify({ error: 'Apify API key not configured' }),
         { 
@@ -36,11 +45,12 @@ serve(async (req) => {
       );
     }
 
-    console.log('Starting LinkedIn profile scraping for:', linkedinUrl);
+    console.log(`[${new Date().toISOString()}] LinkedIn Scraper: Starting LinkedIn profile scraping for: ${linkedinUrl}`);
 
     // Extract username from LinkedIn URL
     const usernameMatch = linkedinUrl.match(/linkedin\.com\/in\/([^\/]+)/);
     const username = usernameMatch ? usernameMatch[1] : linkedinUrl;
+    console.log(`[${new Date().toISOString()}] LinkedIn Scraper: Extracted username: ${username}`);
 
     // Prepare Actor input
     const input = {
@@ -48,9 +58,10 @@ serve(async (req) => {
       "usernames": [username]
     };
 
-    console.log('Actor input:', input);
+    console.log(`[${new Date().toISOString()}] LinkedIn Scraper: Actor input:`, JSON.stringify(input, null, 2));
 
     // Run the Actor
+    console.log(`[${new Date().toISOString()}] LinkedIn Scraper: Starting Apify actor...`);
     const runResponse = await fetch(`https://api.apify.com/v2/acts/5fajYOBUfeb6fgKlB/runs`, {
       method: 'POST',
       headers: {
@@ -60,9 +71,11 @@ serve(async (req) => {
       body: JSON.stringify(input),
     });
 
+    console.log(`[${new Date().toISOString()}] LinkedIn Scraper: Apify actor response status: ${runResponse.status}`);
+
     if (!runResponse.ok) {
       const errorText = await runResponse.text();
-      console.error('Error starting Apify actor:', errorText);
+      console.error(`[${new Date().toISOString()}] LinkedIn Scraper: ERROR starting Apify actor:`, errorText);
       return new Response(
         JSON.stringify({ error: 'Failed to start LinkedIn scraping' }),
         { 
@@ -73,10 +86,10 @@ serve(async (req) => {
     }
 
     const runData = await runResponse.json();
-    console.log('Full runData response:', JSON.stringify(runData, null, 2));
+    console.log(`[${new Date().toISOString()}] LinkedIn Scraper: Full runData response:`, JSON.stringify(runData, null, 2));
     
     if (!runData.data || !runData.data.id) {
-      console.error('Invalid response from Apify API:', runData);
+      console.error(`[${new Date().toISOString()}] LinkedIn Scraper: ERROR - Invalid response from Apify API:`, runData);
       return new Response(
         JSON.stringify({ error: 'Failed to start LinkedIn scraping - invalid API response' }),
         { 
@@ -87,13 +100,16 @@ serve(async (req) => {
     }
     
     const runId = runData.data.id;
-    console.log('Actor run started with ID:', runId);
+    console.log(`[${new Date().toISOString()}] LinkedIn Scraper: Actor run started with ID: ${runId}`);
 
     // Wait for the run to complete (reduced timeout for edge functions)
     let attempts = 0;
     const maxAttempts = 12; // 2 minutes max (12 * 5 seconds avg)
+    console.log(`[${new Date().toISOString()}] LinkedIn Scraper: Starting polling loop with max ${maxAttempts} attempts`);
     
     while (attempts < maxAttempts) {
+      console.log(`[${new Date().toISOString()}] LinkedIn Scraper: Polling attempt ${attempts + 1}/${maxAttempts}`);
+      
       const statusResponse = await fetch(`https://api.apify.com/v2/acts/5fajYOBUfeb6fgKlB/runs/${runId}`, {
         headers: {
           'Authorization': `Bearer ${apifyApiKey}`,
@@ -101,7 +117,7 @@ serve(async (req) => {
       });
 
       if (!statusResponse.ok) {
-        console.error('Error checking run status:', statusResponse.status);
+        console.error(`[${new Date().toISOString()}] LinkedIn Scraper: ERROR checking run status:`, statusResponse.status);
         return new Response(
           JSON.stringify({ error: 'Failed to check scraping status' }),
           { 
@@ -112,17 +128,21 @@ serve(async (req) => {
       }
 
       const statusData = await statusResponse.json();
-      console.log(`Run status response (attempt ${attempts + 1}):`, JSON.stringify(statusData, null, 2));
+      console.log(`[${new Date().toISOString()}] LinkedIn Scraper: Run status response (attempt ${attempts + 1}):`, JSON.stringify(statusData, null, 2));
       
       // Fix: Access nested status from statusData.data.status
       const runStatus = statusData.data?.status;
-      console.log(`Run status (attempt ${attempts + 1}):`, runStatus);
+      console.log(`[${new Date().toISOString()}] LinkedIn Scraper: Run status (attempt ${attempts + 1}): ${runStatus}`);
 
       if (runStatus === 'SUCCEEDED') {
+        console.log(`[${new Date().toISOString()}] LinkedIn Scraper: SUCCESS - Actor run completed successfully`);
+        
         // Fix: Access nested defaultDatasetId from statusData.data.defaultDatasetId
         const datasetId = statusData.data?.defaultDatasetId;
+        console.log(`[${new Date().toISOString()}] LinkedIn Scraper: Dataset ID: ${datasetId}`);
+        
         if (!datasetId) {
-          console.error('No dataset ID found in successful run');
+          console.error(`[${new Date().toISOString()}] LinkedIn Scraper: ERROR - No dataset ID found in successful run`);
           return new Response(
             JSON.stringify({ error: 'No dataset found for scraping results' }),
             { 
@@ -133,14 +153,17 @@ serve(async (req) => {
         }
 
         // Fetch results from the dataset
+        console.log(`[${new Date().toISOString()}] LinkedIn Scraper: Fetching results from dataset...`);
         const datasetResponse = await fetch(`https://api.apify.com/v2/datasets/${datasetId}/items`, {
           headers: {
             'Authorization': `Bearer ${apifyApiKey}`,
           },
         });
 
+        console.log(`[${new Date().toISOString()}] LinkedIn Scraper: Dataset response status: ${datasetResponse.status}`);
+
         if (!datasetResponse.ok) {
-          console.error('Error fetching dataset results:', datasetResponse.status);
+          console.error(`[${new Date().toISOString()}] LinkedIn Scraper: ERROR fetching dataset results:`, datasetResponse.status);
           return new Response(
             JSON.stringify({ error: 'Failed to fetch scraping results' }),
             { 
@@ -151,8 +174,8 @@ serve(async (req) => {
         }
 
         const results = await datasetResponse.json();
-        console.log('Scraping completed successfully, items found:', results.length);
-        console.log('First result:', JSON.stringify(results[0], null, 2));
+        console.log(`[${new Date().toISOString()}] LinkedIn Scraper: Scraping completed successfully, items found: ${results.length}`);
+        console.log(`[${new Date().toISOString()}] LinkedIn Scraper: First result:`, JSON.stringify(results[0], null, 2));
 
         return new Response(
           JSON.stringify({ 
@@ -165,7 +188,7 @@ serve(async (req) => {
           }
         );
       } else if (runStatus === 'FAILED') {
-        console.error('Actor run failed');
+        console.error(`[${new Date().toISOString()}] LinkedIn Scraper: ERROR - Actor run failed`);
         return new Response(
           JSON.stringify({ error: 'LinkedIn profile scraping failed' }),
           { 
@@ -175,18 +198,19 @@ serve(async (req) => {
         );
       } else if (runStatus === 'RUNNING') {
         // Wait 5 seconds before checking again
+        console.log(`[${new Date().toISOString()}] LinkedIn Scraper: Still running, waiting 5 seconds...`);
         await new Promise(resolve => setTimeout(resolve, 5000));
         attempts++;
       } else {
         // Wait 3 seconds for other statuses
-        console.log(`Waiting for status: ${runStatus}`);
+        console.log(`[${new Date().toISOString()}] LinkedIn Scraper: Waiting for status: ${runStatus}, waiting 3 seconds...`);
         await new Promise(resolve => setTimeout(resolve, 3000));
         attempts++;
       }
     }
 
     // Timeout
-    console.error('Actor run timed out');
+    console.error(`[${new Date().toISOString()}] LinkedIn Scraper: ERROR - Actor run timed out after ${maxAttempts} attempts`);
     return new Response(
       JSON.stringify({ error: 'LinkedIn profile scraping timed out. Please try again.' }),
       { 
@@ -196,7 +220,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error in scrape-linkedin-profile function:', error);
+    console.error(`[${new Date().toISOString()}] LinkedIn Scraper: FATAL ERROR in scrape-linkedin-profile function:`, error);
     return new Response(
       JSON.stringify({ error: error.message || 'Internal server error' }),
       { 

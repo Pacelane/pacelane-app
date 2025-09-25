@@ -131,7 +131,6 @@ const HomeSidebar = ({
     { id: 'home', label: 'Home', icon: <Home />, section: 'main' },
     { id: 'profile', label: 'Profile', icon: <User />, section: 'main' },
     { id: 'knowledge', label: 'Knowledge', icon: <BookOpen />, section: 'main' },
-    { id: 'templates', label: 'Templates', icon: <LayoutTemplate />, section: 'main' },
     { id: 'history', label: 'Posts', icon: <FileText />, section: 'main' },
     { id: 'pacing', label: 'Pacing', icon: <Gauge />, section: 'main' },
     { id: 'integrations', label: 'Integrations', icon: <Plug />, section: 'main' },

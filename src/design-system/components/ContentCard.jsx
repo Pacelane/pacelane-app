@@ -163,7 +163,13 @@ const ContentCard = ({
               ...textStyles.md.normal,
               lineHeight: '1.5',
               whiteSpace: 'pre-line',
-              wordWrap: 'break-word'
+              wordWrap: 'break-word',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              display: '-webkit-box',
+              WebkitLineClamp: 8,
+              WebkitBoxOrient: 'vertical',
+              height: '100%'
             }}
           >
             {displayContent}
