@@ -17,6 +17,7 @@ import { shadows, getShadow } from '@/design-system/tokens/shadows';
 import { getResponsivePadding, getResponsiveWidth } from '@/design-system/utils/responsive';
 import Logo from '@/design-system/components/Logo';
 import Bichaurinho from '@/design-system/components/Bichaurinho';
+import SpinningBichaurinho from '@/design-system/components/SpinningBichaurinho';
 import Input from '@/design-system/components/Input';
 import Button from '@/design-system/components/Button';
 import Divider from '@/design-system/components/Divider';
@@ -30,6 +31,7 @@ import signinBichaurinho from '@/assets/images/signin-bichaurinho.svg';
 const SignIn = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
+  const [isProcessingAuth, setIsProcessingAuth] = useState(false);
   const navigate = useNavigate();
   const { user, profile, signIn, signUp, signInWithGoogle } = useAuth();
   const { colors } = useTheme();
@@ -57,17 +59,12 @@ const SignIn = () => {
         profile: profile 
       });
       
-      // Check if user has completed onboarding
-      // Handle case where is_onboarded might be null, undefined, or false
-      const isOnboarded = (profile as any).is_onboarded === true;
+      // Reset processing state
+      setIsProcessingAuth(false);
       
-      if (isOnboarded) {
-        console.log('SignIn: User has completed onboarding, redirecting to product-home');
-        navigate('/product-home');
-      } else {
-        console.log('SignIn: User has not completed onboarding, redirecting to onboarding');
-        navigate('/onboarding/welcome');
-      }
+      // Always redirect to onboarding welcome page - it will handle the onboarding check
+      console.log('SignIn: Redirecting to onboarding welcome page for onboarding status check');
+      navigate('/onboarding/welcome');
     }
   }, [user, profile, navigate]);
 
@@ -148,6 +145,7 @@ const SignIn = () => {
       } else {
         // Show loading toast for sign in
         toast.info('Signing you in...');
+        setIsProcessingAuth(true);
         
         const result = await signIn({
           email: data.email,
@@ -169,12 +167,14 @@ const SignIn = () => {
           }
           
           toast.error(errorMessage);
+          setIsProcessingAuth(false);
           return;
         }
         
         toast.success('Welcome back!');
-        // Don't navigate directly - let the auth state change listener handle onboarding validation
-        // navigate('/product-home');
+        // The useEffect will handle the redirect based on onboarding status once profile loads
+        console.log('SignIn: Sign-in successful, waiting for profile to load for redirect decision');
+        // Don't set isProcessingAuth to false here - let the redirect happen
       }
     } catch (error: any) {
       console.error('Authentication error:', error);
@@ -212,6 +212,7 @@ const SignIn = () => {
   const handleGoogleSignIn = async () => {
     try {
       toast.info('Redirecting to Google...');
+      setIsProcessingAuth(true);
       
       const result = await signInWithGoogle();
       
@@ -227,15 +228,18 @@ const SignIn = () => {
         }
         
         toast.error(errorMessage);
+        setIsProcessingAuth(false);
         return;
       }
       
       // On success, let the useEffect handle the redirect based on onboarding status
       // The useEffect will check profile.is_onboarded and redirect accordingly
+      console.log('SignIn: Google sign-in successful, waiting for profile to load for redirect decision');
 
     } catch (error: any) {
       console.error('Google sign-in error:', error);
       toast.error('Failed to sign in with Google. Please try again.');
+      setIsProcessingAuth(false);
     }
   };
 
@@ -365,6 +369,30 @@ const SignIn = () => {
     position: 'relative' as const,
     overflow: 'hidden' as const,
   };
+
+  // Show loading state while processing authentication
+  if (isProcessingAuth) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colors.bg.default,
+        flexDirection: 'column',
+        gap: spacing.spacing[24]
+      }}>
+        <SpinningBichaurinho title="Signing you in..." />
+        <p style={{
+          ...textStyles.md.normal,
+          color: colors.text.muted,
+          margin: 0
+        }}>
+          Please wait while we load your profile...
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div style={pageContainerStyles}>
