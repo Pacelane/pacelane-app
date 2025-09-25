@@ -247,6 +247,7 @@ const TemplateCard = ({
         flexDirection: 'column', 
         gap: spacing.spacing[8],
         flex: 1,
+        minHeight: 0, // Allow flex item to shrink
         pointerEvents: 'none',
       }}>
         {/* Title */}
@@ -255,6 +256,13 @@ const TemplateCard = ({
           margin: 0,
           pointerEvents: 'none',
           userSelect: 'none',
+          display: '-webkit-box',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          lineHeight: '1.2',
+          maxHeight: '2.4em', // 2 lines * 1.2 line height
         }}>
           {title}
         </h3>

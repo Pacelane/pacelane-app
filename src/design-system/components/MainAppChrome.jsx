@@ -37,7 +37,6 @@ const MainAppChrome = ({ className = '', children, ...rest }) => {
   // Active menu mapping based on current route
   const activeMenuItem = (() => {
     if (location.pathname.startsWith('/product-home')) return 'home';
-    if (location.pathname.startsWith('/templates')) return 'templates';
     if (location.pathname.startsWith('/knowledge')) return 'knowledge';
     if (location.pathname.startsWith('/profile')) return 'profile';
     if (location.pathname.startsWith('/posts')) return 'history';
@@ -58,9 +57,6 @@ const MainAppChrome = ({ className = '', children, ...rest }) => {
     switch (menuId) {
       case 'home':
         navigate('/product-home');
-        break;
-      case 'templates':
-        navigate('/templates');
         break;
       case 'profile':
         navigate('/profile');

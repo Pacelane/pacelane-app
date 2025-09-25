@@ -31,7 +31,7 @@ const SignIn = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
   const navigate = useNavigate();
-  const { user, signIn, signUp, signInWithGoogle } = useAuth();
+  const { user, profile, signIn, signUp, signInWithGoogle } = useAuth();
   const { colors } = useTheme();
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -50,10 +50,15 @@ const SignIn = () => {
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (user) {
-      navigate('/product-home');
+    if (user && profile) {
+      // Check if user has completed onboarding
+      if (profile.onboarding_completed) {
+        navigate('/product-home');
+      } else {
+        navigate('/onboarding/welcome');
+      }
     }
-  }, [user, navigate]);
+  }, [user, profile, navigate]);
 
   // Update form validation when switching modes
   useEffect(() => {
@@ -213,8 +218,8 @@ const SignIn = () => {
         return;
       }
       
-      // On success, navigate directly to the product home page.
-      navigate('/product-home');
+      // On success, let the useEffect handle the redirect based on onboarding status
+      // The useEffect will check profile.onboarding_completed and redirect accordingly
 
     } catch (error: any) {
       console.error('Google sign-in error:', error);

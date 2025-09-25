@@ -28,7 +28,7 @@ interface LinkedInProfile {
   location?: string;
   company?: string;
   website?: string;
-  joinedDate?: string;
+  about?: string;
   skills?: string[];
   experience?: Array<{
     title: string;
@@ -59,38 +59,94 @@ const LinkedInSummary = () => {
       try {
         const { data, error } = await supabase
           .from('profiles')
-          .select('linkedin_profile_data')
+          .select('linkedin_data, linkedin_name, linkedin_headline, linkedin_company, linkedin_location, linkedin_about, linkedin_scraped_at')
           .eq('user_id', user.id)
           .single();
 
         if (error) {
           console.error('Error fetching LinkedIn profile:', error);
-          // For now, show mock data since backend isn't implemented yet
+          toast.error('Failed to load profile data');
+          return;
+        }
+
+        // Use scraped data if available, otherwise fallback to mock data
+        if (data?.linkedin_data?.summary || data?.linkedin_name) {
+          console.log('Using scraped LinkedIn data:', data);
+          console.log('Raw scraped data:', data.linkedin_data?.last_scrape_raw);
+          
+          // Extract data from the scraped structure
+          const summary = data.linkedin_data?.summary || {};
+          const rawData = data.linkedin_data?.last_scrape_raw || {};
+          
+          // Helper function to extract skill names from objects or arrays
+          const extractSkills = (skillsData) => {
+            if (!skillsData) return ['Skills not available'];
+            if (Array.isArray(skillsData)) {
+              return skillsData.map(skill => {
+                if (typeof skill === 'string') return skill;
+                if (typeof skill === 'object' && skill.name) return skill.name;
+                return String(skill);
+              });
+            }
+            return ['Skills not available'];
+          };
+
+          // Helper function to extract experience data
+          const extractExperience = (expData) => {
+            if (!expData) return [{ title: 'Experience not available', company: 'Unknown', duration: 'Unknown' }];
+            if (Array.isArray(expData)) {
+              return expData.map(exp => {
+                if (typeof exp === 'object') {
+                  return {
+                    title: exp.title || exp.position || 'Unknown',
+                    company: exp.company || exp.organization || 'Unknown',
+                    duration: exp.duration || exp.period || exp.startDate + ' - ' + (exp.endDate || 'Present') || 'Unknown'
+                  };
+                }
+                return { title: 'Unknown', company: 'Unknown', duration: 'Unknown' };
+              });
+            }
+            return [{ title: 'Experience not available', company: 'Unknown', duration: 'Unknown' }];
+          };
+
+          // Helper function to extract education data
+          const extractEducation = (eduData) => {
+            if (!eduData) return [{ degree: 'Education not available', school: 'Unknown', year: 'Unknown' }];
+            if (Array.isArray(eduData)) {
+              return eduData.map(edu => {
+                if (typeof edu === 'object') {
+                  return {
+                    degree: edu.degree || edu.fieldOfStudy || 'Unknown',
+                    school: edu.school || edu.institution || 'Unknown',
+                    year: edu.year || edu.graduationYear || 'Unknown'
+                  };
+                }
+                return { degree: 'Unknown', school: 'Unknown', year: 'Unknown' };
+              });
+            }
+            return [{ degree: 'Education not available', school: 'Unknown', year: 'Unknown' }];
+          };
+
+          setProfile({
+            name: rawData.basic_info?.fullname || summary.name || data.linkedin_name || 'Unknown',
+            headline: rawData.basic_info?.headline || summary.headline || data.linkedin_headline || 'No headline available',
+            location: rawData.basic_info?.location?.full || rawData.basic_info?.location?.city || summary.location || data.linkedin_location || 'Location not available',
+            company: rawData.basic_info?.current_company || summary.company || data.linkedin_company || 'Company not available',
+            website: summary.url || rawData.profileUrl || 'No website available',
+            about: rawData.basic_info?.about || summary.about || data.linkedin_about || '',
+            skills: extractSkills(rawData.skills || rawData.topSkills),
+            experience: extractExperience(rawData.experience || rawData.workExperience),
+            education: extractEducation(rawData.education || rawData.educationalBackground)
+          });
+        } else {
+          console.log('No scraped data found, using fallback data');
+          // Fallback to mock data if no scraped data is available
           setProfile({
             name: 'John Doe',
             headline: 'Senior Software Engineer at Tech Company',
             location: 'San Francisco, CA',
             company: 'Tech Company',
             website: 'johndoe.com',
-            joinedDate: '2020',
-            skills: ['JavaScript', 'React', 'Node.js', 'Python', 'AWS'],
-            experience: [
-              { title: 'Senior Software Engineer', company: 'Tech Company', duration: '2020 - Present' },
-              { title: 'Software Engineer', company: 'Previous Company', duration: '2018 - 2020' }
-            ],
-            education: [
-              { degree: 'Bachelor of Science in Computer Science', school: 'University of Technology', year: '2018' }
-            ]
-          });
-        } else {
-          // Use real data when available
-          setProfile(data?.linkedin_profile_data || {
-            name: 'John Doe',
-            headline: 'Senior Software Engineer at Tech Company',
-            location: 'San Francisco, CA',
-            company: 'Tech Company',
-            website: 'johndoe.com',
-            joinedDate: '2020',
             skills: ['JavaScript', 'React', 'Node.js', 'Python', 'AWS'],
             experience: [
               { title: 'Senior Software Engineer', company: 'Tech Company', duration: '2020 - Present' },
@@ -366,17 +422,34 @@ const LinkedInSummary = () => {
                         </span>
                       </div>
                     )}
-
-                    {profile?.joinedDate && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: spacing.spacing[8] }}>
-                        <Calendar size={16} color={colors.icon.subtle} />
-                        <span style={{ ...textStyles.sm.normal, color: colors.text.subtle }}>
-                          Member since {profile.joinedDate}
-                        </span>
-                      </div>
-                    )}
                   </div>
                 </div>
+
+                {/* About Section */}
+                {profile?.about && profile.about.trim() && (
+                  <div>
+                    <h4
+                      style={{
+                        ...textStyles.sm.semibold,
+                        color: colors.text.default,
+                        margin: 0,
+                        marginBottom: spacing.spacing[12],
+                      }}
+                    >
+                      About
+                    </h4>
+                    <p
+                      style={{
+                        ...textStyles.sm.normal,
+                        color: colors.text.subtle,
+                        margin: 0,
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      {profile.about}
+                    </p>
+                  </div>
+                )}
 
                 {/* Skills */}
                 {profile?.skills && profile.skills.length > 0 && (

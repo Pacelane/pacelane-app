@@ -109,11 +109,21 @@ const FirstThingsFirst = () => {
         profileUrl: fullLinkedInUrl
       });
 
-      if (result.error) {
+      // Check if there was a critical error that prevented profile URL from being saved
+      if (result.error && (result.error.includes('required') || result.error.includes('User must be logged in'))) {
         throw new Error(result.error);
       }
 
-      toast.success('Profile setup completed!');
+      // Always proceed to next page if profile URL was processed (even if scraping failed)
+      // The scraping can fail but the URL should still be saved in the database
+      if (result.error) {
+        // Scraping failed but URL was saved - show informative message
+        toast.success('LinkedIn profile saved! We\'ll try to gather more details in the background.');
+      } else {
+        // Complete success
+        toast.success('Profile setup completed!');
+      }
+      
       navigate('/onboarding/linkedin-summary');
     } catch (error: any) {
       toast.error(error.message || 'Failed to complete setup');
