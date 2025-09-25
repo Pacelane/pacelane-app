@@ -539,6 +539,7 @@ ${message.content}
    */
   private async processAudioMessage(message: BufferedMessage, userId: string): Promise<void> {
     console.log(`🎤 Processing audio message ${message.chatwoot_message_id}`);
+    console.log(`📊 Audio message details: attachments=${message.attachments?.length || 0}, content="${message.content || 'none'}", messageType="${message.message_type}"`);
     
     try {
       // Check if we have existing transcription and GCS path
@@ -570,7 +571,18 @@ ${message.content}
         if (message.attachments && message.attachments.length > 0) {
           for (let i = 0; i < message.attachments.length; i++) {
             const attachment = message.attachments[i];
-            if (attachment.content_type && attachment.content_type.startsWith('audio/')) {
+            // More flexible audio detection - check content_type, file_type, or filename
+            const contentType = attachment.content_type || attachment.file_type || '';
+            const fileName = attachment.file_name || attachment.filename || '';
+            
+            const isAudio = contentType.startsWith('audio/') || 
+                           contentType === 'audio' ||
+                           fileName.match(/\.(ogg|mp3|wav|m4a|aac|opus)$/i) ||
+                           message.message_type === 'audio';
+            
+            console.log(`🔍 Audio detection for attachment ${i}: contentType="${contentType}", fileName="${fileName}", messageType="${message.message_type}", isAudio=${isAudio}`);
+            
+            if (isAudio) {
               await this.processAudioAttachment(attachment, message, userId, i);
               audioProcessed = true;
             }
@@ -579,7 +591,10 @@ ${message.content}
         
         // If no audio attachments were processed, create a placeholder
         if (!audioProcessed) {
+          console.log(`⚠️ No audio attachments were processed, creating placeholder document for message ${message.chatwoot_message_id}`);
           await this.createAudioPlaceholderDocument(message, userId);
+        } else {
+          console.log(`✅ Successfully processed ${audioProcessed ? 'some' : 'no'} audio attachments for message ${message.chatwoot_message_id}`);
         }
       }
     } catch (error) {
@@ -740,6 +755,7 @@ Audio transcription may be available separately if the file was processed throug
    * Create placeholder document for audio without transcription
    */
   private async createAudioPlaceholderDocument(message: BufferedMessage, userId: string): Promise<void> {
+    console.log(`📝 Creating audio placeholder document for message ${message.chatwoot_message_id}, user: ${userId}`);
     const timestamp = new Date(message.received_at).toISOString().split('T')[0];
     const fileName = `WhatsApp Audio - ${timestamp} - ${message.chatwoot_message_id}.md`;
     
