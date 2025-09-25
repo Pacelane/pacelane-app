@@ -11,9 +11,10 @@ import { supabase } from '@/integrations/supabase/client';
 import Button from '@/design-system/components/Button';
 import Input from '@/design-system/components/Input';
 import TextArea from '@/design-system/components/TextArea';
-import SidebarMenuItem from '@/design-system/components/SidebarMenuItem';
-import Chips from '@/design-system/components/Chips';
-import EmptyState from '@/design-system/components/EmptyState';
+// Removed unused imports per PCL-264, PCL-265, PCL-266
+// import SidebarMenuItem from '@/design-system/components/SidebarMenuItem';
+// import Chips from '@/design-system/components/Chips';
+// import EmptyState from '@/design-system/components/EmptyState';
 import UserAvatar from '@/design-system/components/UserAvatar';
 
 // Design System Tokens
@@ -25,13 +26,14 @@ import { textStyles } from '@/design-system/styles/typography/typography-styles'
 
 // Icons
 import { 
-  Plus,
-  Trash2,
+  // Plus, // Removed per PCL-265, PCL-266
+  // Trash2, // Removed per PCL-265, PCL-266
   Check,
-  X,
-  Sparkles,
-  Info,
-  LogOut
+  // X, // Removed per PCL-265, PCL-266
+  // Sparkles, // Removed per PCL-265, PCL-266
+  // Info, // Removed per PCL-265, PCL-266
+  LogOut,
+  RefreshCw
 } from 'lucide-react';
 
 const Profile = () => {
@@ -44,8 +46,8 @@ const Profile = () => {
   // Sidebar state
   // Sidebar handled by layout
   
-  // State for active section in side menu
-  const [activeSection, setActiveSection] = useState('personal');
+  // State for active section in side menu - REMOVED per PCL-264
+  // const [activeSection, setActiveSection] = useState('personal');
   
   // Personal Information state - connected to real profile data
   const [personalInfo, setPersonalInfo] = useState({
@@ -58,160 +60,71 @@ const Profile = () => {
 
 
 
-  // Load inspirations from separate table
-  const loadInspirations = async () => {
-    if (!user) return;
+  // Load inspirations from separate table - REMOVED per PCL-265, PCL-266
+  // const loadInspirations = async () => { ... }
+  // const saveInspirationsToTable = async () => { ... }
 
-    try {
-      const { data: inspirationsData, error } = await supabase
-        .from('inspirations')
-        .select('*')
-        .eq('user_id', user.id);
-
-      if (error) {
-        console.error('Error loading inspirations:', error);
-        return;
-      }
-
-      if (inspirationsData && inspirationsData.length > 0) {
-        // Convert inspirations table data to format expected by Profile component
-        const inspirationValues = inspirationsData.map(insp => {
-          // Extract username from LinkedIn URL for display
-          const username = insp.linkedin_url?.split('/in/')?.pop() || insp.linkedin_url;
-          return username;
-        });
-        setInspirations(inspirationValues.map((inspiration, index) => ({ 
-          id: index + 1, 
-          value: inspiration 
-        })));
-      }
-    } catch (error) {
-      console.error('Error loading inspirations:', error);
+  // Extract LinkedIn bio from nested JSON structure
+  const extractLinkedInBio = (profile) => {
+    // With the new edge function, linkedin_about should be automatically populated
+    // But we still keep the extraction logic as a fallback for existing data
+    
+    // Primary: Use the flattened field (populated by edge function)
+    if (profile?.linkedin_about) {
+      return profile.linkedin_about;
     }
-  };
-
-  // Save inspirations to separate table
-  const saveInspirationsToTable = async () => {
-    if (!user) return;
-
-    try {
-      // First, delete existing inspirations for this user
-      const { error: deleteError } = await supabase
-        .from('inspirations')
-        .delete()
-        .eq('user_id', user.id);
-
-      if (deleteError) throw deleteError;
-
-      // Filter out empty inspirations and create LinkedIn URL objects
-      const validInspirations = inspirations
-        .filter(insp => insp.value.trim())
-        .map(insp => {
-          const username = insp.value.trim();
-          // Ensure it's a proper LinkedIn URL
-          const linkedinUrl = username.startsWith('http') 
-            ? username 
-            : `https://linkedin.com/in/${username}`;
-          
-          return {
-            user_id: user.id,
-            linkedin_url: linkedinUrl
-          };
-        });
-
-      // Insert new inspirations if any exist
-      if (validInspirations.length > 0) {
-        const { error: insertError } = await supabase
-          .from('inspirations')
-          .insert(validInspirations);
-
-        if (insertError) throw insertError;
-      }
-
-      console.log('Inspirations saved successfully');
-    } catch (error) {
-      console.error('Error saving inspirations:', error);
-      throw error;
+    
+    // Fallback: Extract from nested structure for older data
+    if (!profile?.linkedin_data) return '';
+    
+    // Try to get bio from the nested structure: linkedin_data.last_scrape_raw.basic_info.about
+    const lastScrapeRaw = profile.linkedin_data.last_scrape_raw;
+    if (lastScrapeRaw?.basic_info?.about) {
+      return lastScrapeRaw.basic_info.about;
     }
+    
+    // Fallback to summary.about if available
+    if (profile.linkedin_data.summary?.about) {
+      return profile.linkedin_data.summary.about;
+    }
+    
+    return '';
   };
 
   // Load profile data into state when profile loads
   useEffect(() => {
     if (profile) {
+      // Extract LinkedIn bio from nested structure
+      const linkedinBio = extractLinkedInBio(profile);
+      
       setPersonalInfo({
         name: profile.display_name || profile.linkedin_name || '',
         profession: profile.linkedin_headline || '',
         avatar: null, // Will use Bichaurinho avatar as fallback
         linkedinUrl: profile.linkedin_profile || '',
-        bio: profile.linkedin_about || ''
+        bio: linkedinBio
       });
 
-
-
-      // Load guides, pillars, and inspirations from profile
-
-      // Check both 'guides' and 'content_guides' columns for backward compatibility
-      const guidesData = profile.guides || profile.content_guides;
-      if (guidesData) {
-        const guidesArray = Array.isArray(guidesData) ? guidesData : [];
-        setGuides(guidesArray.map((guide, index) => ({ id: index + 1, value: guide })));
-        
-        // If data was in content_guides, migrate it to guides column
-        if (!profile.guides && profile.content_guides) {
-          console.log('Profile: Migrating content_guides to guides column');
-          // The next save will put it in the correct 'guides' column
-        }
-      }
-
-      if (profile.content_pillars) {
-        const pillarsArray = Array.isArray(profile.content_pillars) ? profile.content_pillars : [];
-        setPillars(pillarsArray.map((pillar, index) => ({ id: index + 1, value: pillar })));
-      }
-
-      // Load inspirations from separate table
-      loadInspirations();
+      // Removed loading of guides, pillars, and inspirations per PCL-265, PCL-266
     }
   }, [profile]);
 
-  // Load inspirations when user changes
-  useEffect(() => {
-    if (user) {
-      loadInspirations();
-    }
-  }, [user]);
+  // Removed inspirations loading useEffect per PCL-265, PCL-266
 
-  // Dynamic lists state - will be connected to profile fields
-  const [inspirations, setInspirations] = useState([
-    { id: 1, value: '' }
-  ]);
-
-  const [guides, setGuides] = useState([
-    { id: 1, value: '' }
-  ]);
-
-  const [pillars, setPillars] = useState([
-    { id: 1, value: '' }
-  ]);
-
-  // New item input states
-  const [newPillar, setNewPillar] = useState('');
-  const [newGuide, setNewGuide] = useState('');
-
-  // Target persona and competitors
-  const [targetPersona, setTargetPersona] = useState('');
-  const [competitors, setCompetitors] = useState([
-    { id: 1, url: '' }
-  ]);
+  // Dynamic lists state - REMOVED per PCL-265, PCL-266
+  // const [inspirations, setInspirations] = useState([{ id: 1, value: '' }]);
+  // const [guides, setGuides] = useState([{ id: 1, value: '' }]);
+  // const [pillars, setPillars] = useState([{ id: 1, value: '' }]);
+  // const [newPillar, setNewPillar] = useState('');
+  // const [newGuide, setNewGuide] = useState('');
+  // const [targetPersona, setTargetPersona] = useState('');
+  // const [competitors, setCompetitors] = useState([{ id: 1, url: '' }]);
 
   // Saved states for each section
   const [savedStates, setSavedStates] = useState({
     profile: false,
-    bio: false,
-    inspirations: false,
-    targetPersona: false,
-    competitors: false,
-    guides: false,
-    pillars: false
+    bio: false
+    // Removed unused sections per PCL-265, PCL-266: inspirations, targetPersona, competitors, guides, pillars
   });
 
   // Get user display info
@@ -224,50 +137,20 @@ const Profile = () => {
 
 
 
-  // Side menu items
-  const menuItems = [
-    { id: 'personal', label: 'Personal Information' },
-    // { id: 'inspirations', label: 'Inspirations' }, // Commented out per PCL-106
-    { id: 'guides', label: 'Tone of Voice' },
-    { id: 'pillars', label: 'Editorial Topics' }
-  ];
+  // Side menu items - REMOVED per PCL-264
+  // const menuItems = [
+  //   { id: 'personal', label: 'Personal Information' },
+  //   // { id: 'inspirations', label: 'Inspirations' }, // Commented out per PCL-106
+  //   { id: 'guides', label: 'Tone of Voice' },
+  //   { id: 'pillars', label: 'Editorial Topics' }
+  // ];
 
-  // Generic functions for managing dynamic lists
-  const addListItem = (listType, setterFunction) => {
-    const currentList = getCurrentList(listType);
-    const newId = Math.max(...currentList.map(item => item.id), 0) + 1;
-    setterFunction(prev => [...prev, { id: newId, value: '' }]);
-  };
-
-  const removeListItem = (listType, setterFunction, id) => {
-    setterFunction(prev => prev.filter(item => item.id !== id));
-  };
-
-  const updateListItem = (listType, setterFunction, id, value) => {
-    setterFunction(prev => 
-      prev.map(item => 
-        item.id === id ? { ...item, value } : item
-      )
-    );
-  };
-
-  const getCurrentList = (listType) => {
-    switch (listType) {
-      case 'inspirations': return inspirations;
-      case 'guides': return guides;
-      case 'pillars': return pillars;
-      default: return [];
-    }
-  };
-
-  const getSetterFunction = (listType) => {
-    switch (listType) {
-      case 'inspirations': return setInspirations;
-      case 'guides': return setGuides;
-      case 'pillars': return setPillars;
-      default: return () => {};
-    }
-  };
+  // Generic functions for managing dynamic lists - REMOVED per PCL-265, PCL-266
+  // const addListItem = (listType, setterFunction) => { ... }
+  // const removeListItem = (listType, setterFunction, id) => { ... }
+  // const updateListItem = (listType, setterFunction, id, value) => { ... }
+  // const getCurrentList = (listType) => { ... }
+  // const getSetterFunction = (listType) => { ... }
 
   // Save functions for different sections
   const handleSave = async (sectionId) => {
@@ -281,24 +164,12 @@ const Profile = () => {
             linkedin_profile: personalInfo.linkedinUrl
           };
           break;
-
-
-        case 'guides':
+        case 'bio':
           updateData = {
-            guides: guides.filter(g => g.value.trim()).map(g => g.value)
+            linkedin_about: personalInfo.bio
           };
           break;
-        case 'inspirations':
-          // Handle inspirations separately since they're in a different table
-          await saveInspirationsToTable();
-          setSavedStates(prev => ({ ...prev, inspirations: true }));
-          setTimeout(() => setSavedStates(prev => ({ ...prev, inspirations: false })), 2000);
-          return; // Exit early since we handle the saved state above
-        case 'pillars':
-          updateData = {
-            content_pillars: pillars.filter(p => p.value.trim()).map(p => p.value)
-          };
-          break;
+        // Removed unused cases per PCL-265, PCL-266: guides, inspirations, pillars
         default:
           // For sections not yet connected to backend, just show saved state
           break;
@@ -363,69 +234,42 @@ const Profile = () => {
 
 
 
-  // Guides chips functions
-  const addGuideChip = () => {
-    if (newGuide.trim()) {
-      const newId = Math.max(...guides.map(guide => guide.id), 0) + 1;
-      setGuides(prev => [...prev, { id: newId, value: newGuide.trim() }]);
-      setNewGuide('');
-    }
-  };
-
-  const removeGuideChip = (guideId) => {
-    setGuides(prev => prev.filter(guide => guide.id !== guideId));
-  };
-
-  const handleGuideKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      addGuideChip();
-    }
-  };
-
-  // Pillars chips functions
-  const addPillarChip = () => {
-    if (newPillar.trim()) {
-      const newId = Math.max(...pillars.map(pillar => pillar.id), 0) + 1;
-      setPillars(prev => [...prev, { id: newId, value: newPillar.trim() }]);
-      setNewPillar('');
-    }
-  };
-
-  const removePillarChip = (pillarId) => {
-    setPillars(prev => prev.filter(pillar => pillar.id !== pillarId));
-  };
-
-  const handlePillarKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      addPillarChip();
-    }
-  };
-
-  // Competitors management functions
-  const removeCompetitor = (competitorId) => {
-    setCompetitors(prev => prev.filter(comp => comp.id !== competitorId));
-  };
-
-  const addCompetitor = () => {
-    const newId = Math.max(...competitors.map(comp => comp.id), 0) + 1;
-    setCompetitors(prev => [...prev, { id: newId, url: '' }]);
-  };
-
-  const updateCompetitor = (competitorId, url) => {
-    setCompetitors(prev => 
-      prev.map(comp => 
-        comp.id === competitorId ? { ...comp, url } : comp
-      )
-    );
-  };
+  // Guides, Pillars, and Competitors functions - REMOVED per PCL-265, PCL-266
+  // const addGuideChip = () => { ... }
+  // const removeGuideChip = (guideId) => { ... }
+  // const handleGuideKeyPress = (e) => { ... }
+  // const addPillarChip = () => { ... }
+  // const removePillarChip = (pillarId) => { ... }
+  // const handlePillarKeyPress = (e) => { ... }
+  // const removeCompetitor = (competitorId) => { ... }
+  // const addCompetitor = () => { ... }
+  // const updateCompetitor = (competitorId, url) => { ... }
 
   const handlePersonalInfoChange = (field, value) => {
     setPersonalInfo(prev => ({
       ...prev,
       [field]: value
     }));
+  };
+
+  // Auto-populate bio from LinkedIn data
+  const handleAutoPopulateBio = () => {
+    if (!profile) return;
+    
+    const linkedinBio = extractLinkedInBio(profile);
+    if (linkedinBio) {
+      setPersonalInfo(prev => ({
+        ...prev,
+        bio: linkedinBio
+      }));
+    }
+  };
+
+  // Check if LinkedIn bio is available and different from current bio
+  const hasLinkedInBio = () => {
+    if (!profile) return false;
+    const linkedinBio = extractLinkedInBio(profile);
+    return linkedinBio && linkedinBio !== personalInfo.bio;
   };
 
 
@@ -460,175 +304,8 @@ const Profile = () => {
     marginTop: spacing.spacing[8],
   };
 
-  // Render different section content
-  const renderSectionContent = () => {
-    switch (activeSection) {
-      case 'guides':
-        return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[16] }}>
-            <div>
-              <h3 style={{ ...textStyles.sm.semibold, color: colors.text.default, margin: 0 }}>
-                Tone of Voice
-              </h3>
-              <p style={{ ...textStyles.xs.normal, color: colors.text.subtle, margin: 0 }}>
-                Define the personality and style that should come through in your content
-              </p>
-            </div>
-
-            <div style={{ 
-              display: 'flex', 
-              flexWrap: 'wrap', 
-              gap: spacing.spacing[8],
-              minHeight: '44px',
-              alignItems: 'flex-start'
-            }}>
-              {guides.filter(guide => guide.value.trim()).map((guide) => (
-                <Chips
-                  key={guide.id}
-                  label={guide.value}
-                  style="default"
-                  size="lg"
-                  selected={true}
-                  leadingIcon={<X size={16} />}
-                  onClick={() => removeGuideChip(guide.id)}
-                />
-              ))}
-              {guides.filter(guide => guide.value.trim()).length === 0 && (
-                <EmptyState
-                  title="No tone of voice elements defined yet"
-                  fullSpace={true}
-                />
-              )}
-            </div>
-
-            <Input
-              placeholder="Enter a tone of voice element (e.g., Professional, Friendly, Authoritative)..."
-              value={newGuide}
-              onChange={(e) => setNewGuide(e.target.value)}
-              onKeyPress={handleGuideKeyPress}
-              style="tail-action"
-              tailAction={{
-                icon: <Plus size={14} />,
-                onClick: addGuideChip,
-                disabled: !newGuide.trim()
-              }}
-            />
-
-            {/* Divider */}
-            <div style={{
-              width: '100%',
-              height: '1px',
-              backgroundColor: colors.border.default
-            }} />
-
-            {/* Give me some ideas button */}
-            <Button
-              label="Give me some ideas"
-              style="dashed"
-              size="md"
-              leadIcon={<Sparkles size={16} />}
-              tailIcon={<Info size={16} />}
-              onClick={() => console.log('Generate tone of voice ideas')}
-            />
-
-            <div style={{ alignSelf: 'flex-start' }}>
-              <Button
-                label={savedStates.guides ? "Saved!" : "Save"}
-                style="primary"
-                size="sm"
-                leadIcon={savedStates.guides ? <Check size={16} /> : undefined}
-                onClick={() => handleSave('guides')}
-                disabled={savedStates.guides}
-              />
-            </div>
-          </div>
-        );
-
-      case 'pillars':
-        return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[16] }}>
-            <div>
-              <h3 style={{ ...textStyles.sm.semibold, color: colors.text.default, margin: 0 }}>
-                Editorial Topics
-              </h3>
-              <p style={{ ...textStyles.xs.normal, color: colors.text.subtle, margin: 0 }}>
-                What are the main topics and themes you want to cover in your content?
-              </p>
-            </div>
-
-            <div style={{ 
-              display: 'flex', 
-              flexWrap: 'wrap', 
-              gap: spacing.spacing[8],
-              minHeight: '44px',
-              alignItems: 'flex-start'
-            }}>
-              {pillars.filter(pillar => pillar.value.trim()).map((pillar) => (
-                <Chips
-                  key={pillar.id}
-                  label={pillar.value}
-                  style="default"
-                  size="lg"
-                  selected={true}
-                  leadingIcon={<X size={16} />}
-                  onClick={() => removePillarChip(pillar.id)}
-                />
-              ))}
-              {pillars.filter(pillar => pillar.value.trim()).length === 0 && (
-                <EmptyState
-                  title="No editorial topics defined yet"
-                  fullSpace={true}
-                />
-              )}
-            </div>
-
-            <Input
-              placeholder="Enter a content topic (e.g., Technology Trends, Industry Insights, Leadership)..."
-              value={newPillar}
-              onChange={(e) => setNewPillar(e.target.value)}
-              onKeyPress={handlePillarKeyPress}
-              style="tail-action"
-              tailAction={{
-                icon: <Plus size={14} />,
-                onClick: addPillarChip,
-                disabled: !newPillar.trim()
-              }}
-            />
-
-            {/* Divider */}
-            <div style={{
-              width: '100%',
-              height: '1px',
-              backgroundColor: colors.border.default
-            }} />
-
-            {/* Give me some ideas button */}
-            <Button
-              label="Give me some ideas"
-              style="dashed"
-              size="md"
-              leadIcon={<Sparkles size={16} />}
-              tailIcon={<Info size={16} />}
-              onClick={() => console.log('Generate editorial topic ideas')}
-            />
-
-            <div style={{ alignSelf: 'flex-start' }}>
-              <Button
-                label={savedStates.pillars ? "Saved!" : "Save"}
-                style="primary"
-                size="sm"
-                leadIcon={savedStates.pillars ? <Check size={16} /> : undefined}
-                onClick={() => handleSave('pillars')}
-                disabled={savedStates.pillars}
-              />
-            </div>
-          </div>
-        );
-
-      default:
-        return null;
-    }
-  };
+  // Render different section content - REMOVED per PCL-265, PCL-266
+  // const renderSectionContent = () => { ... }
 
   return (
     <div style={containerStyles}>
@@ -660,369 +337,125 @@ const Profile = () => {
             </div>
           </div>
 
-          {/* Main Content Layout */}
+          {/* Main Content - Simplified Layout (Sidebar removed per PCL-264) */}
           <div style={{ 
             display: 'flex', 
-            flexDirection: isMobile ? 'column' : 'row',
-            gap: spacing.spacing[32], 
-            width: '100%' 
+            flexDirection: 'column',
+            gap: spacing.spacing[20], 
+            width: '100%',
+            maxWidth: isMobile ? 'none' : '480px', // Maintain previous content width
+            margin: 0 // Left-aligned content
           }}>
-            {/* Left Side Menu */}
+            {/* Profile Card */}
             <div style={{
-              width: isMobile ? '100%' : '280px',
-              display: 'flex',
-              flexDirection: isMobile ? 'row' : 'column',
-              gap: spacing.spacing[8],
-              flex: 'none',
-              overflowX: isMobile ? 'auto' : 'visible',
-              paddingBottom: isMobile ? spacing.spacing[8] : 0,
-            }}>
-              {menuItems.map((item) => (
-                <SidebarMenuItem
-                  key={item.id}
-                  variant="default"
-                  state={activeSection === item.id ? 'active' : 'default'}
-                  label={item.label}
-                  onClick={() => setActiveSection(item.id)}
-                />
-              ))}
-                    </div>
-                    
-            {/* Right Content Area */}
-            <div style={{
-              flex: 1,
-              maxWidth: isMobile ? 'none' : '480px',
+              backgroundColor: colors.bg.card.default,
+              border: `1px solid ${colors.border.default}`,
+              borderRadius: cornerRadius.borderRadius.lg,
+              boxShadow: getShadow('regular.card', colors, { withBorder: true }),
+              padding: spacing.spacing[20],
               display: 'flex',
               flexDirection: 'column',
-              gap: spacing.spacing[20],
+              gap: spacing.spacing[12],
             }}>
-              {/* Personal Information Cards */}
-              {activeSection === 'personal' && (
-                <>
-                  {/* Profile Card */}
-                  <div style={{
-                    backgroundColor: colors.bg.card.default,
-                    border: `1px solid ${colors.border.default}`,
-                    borderRadius: cornerRadius.borderRadius.lg,
-                    boxShadow: getShadow('regular.card', colors, { withBorder: true }),
-                    padding: spacing.spacing[20],
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: spacing.spacing[12],
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: spacing.spacing[16] }}>
-                      <UserAvatar
-                        src={personalInfo.avatar}
-                        alt={personalInfo.name}
-                        size="64px"
-                        profile={profile}
-                        user={user}
-                      />
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: spacing.spacing[12] }}>
-                        <div>
-                          <h2 style={{
-                            fontFamily: typography.fontFamily['awesome-serif'],
-                            fontSize: typography.desktop.size['2xl'],
-                            fontWeight: typography.desktop.weight.semibold,
-                            color: colors.text.default,
-                            margin: 0,
-                          }}>
-                            {personalInfo.name || 'Your Name'}
-                          </h2>
-                          <p style={{
-                            ...textStyles.sm.normal,
-                            color: colors.text.subtle,
-                            margin: 0,
-                            marginTop: spacing.spacing[4],
-                          }}>
-                            {personalInfo.profession || 'Your Profession'}
-                          </p>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[8] }}>
-                          <Input
-                            placeholder="Full Name"
-                            value={personalInfo.name}
-                            onChange={(e) => handlePersonalInfoChange('name', e.target.value)}
-                            style="default"
-                          />
-                          <Input 
-                            placeholder="Professional Title"
-                            value={personalInfo.profession}
-                            onChange={(e) => handlePersonalInfoChange('profession', e.target.value)}
-                            style="default"
-                          />
-                          <Input 
-                            placeholder="LinkedIn URL"
-                            value={personalInfo.linkedinUrl}
-                            onChange={(e) => handlePersonalInfoChange('linkedinUrl', e.target.value)}
-                            style="default"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    <div style={{ alignSelf: 'flex-start' }}>
-                      <Button
-                        label={savedStates.profile ? "Saved!" : "Save"}
-                        style="primary"
-                        size="sm"
-                        leadIcon={savedStates.profile ? <Check size={16} /> : undefined}
-                        onClick={() => handleSave('profile')}
-                        disabled={savedStates.profile || saving}
-                      />
-                    </div>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: spacing.spacing[16] }}>
+                <UserAvatar
+                  src={personalInfo.avatar}
+                  alt={personalInfo.name}
+                  size="64px"
+                  profile={profile}
+                  user={user}
+                />
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: spacing.spacing[12] }}>
+                  <div>
+                    <h2 style={{
+                      fontFamily: typography.fontFamily['awesome-serif'],
+                      fontSize: typography.desktop.size['2xl'],
+                      fontWeight: typography.desktop.weight.semibold,
+                      color: colors.text.default,
+                      margin: 0,
+                    }}>
+                      {personalInfo.name || 'Your Name'}
+                    </h2>
+                    {/* Professional title removed per PCL-267 */}
                   </div>
-
-
-
-                  {/* Bio Card */}
-                  <div style={{
-                    backgroundColor: colors.bg.card.default,
-                    border: `1px solid ${colors.border.default}`,
-                    borderRadius: cornerRadius.borderRadius.lg,
-                    boxShadow: getShadow('regular.card', colors, { withBorder: true }),
-                    padding: spacing.spacing[20],
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: spacing.spacing[12],
-                  }}>
-                    <h4 style={{ ...textStyles.sm.semibold, color: colors.text.default, margin: 0 }}>
-                      Bio
-                    </h4>
-                    <TextArea
-                      placeholder="Tell us about yourself..."
-                      value={personalInfo.bio}
-                      onChange={(e) => handlePersonalInfoChange('bio', e.target.value)}
-                      rows={3}
-                      autoResize={true}
-                      minRows={3}
-                      maxRows={6}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[8] }}>
+                    <Input
+                      placeholder="Full Name"
+                      value={personalInfo.name}
+                      onChange={(e) => handlePersonalInfoChange('name', e.target.value)}
+                      style="default"
                     />
-                    <div style={{ alignSelf: 'flex-start' }}>
-                      <Button
-                        label={savedStates.bio ? "Saved!" : "Save"}
-                        style="primary"
-                        size="sm"
-                        leadIcon={savedStates.bio ? <Check size={16} /> : undefined}
-                        onClick={() => handleSave('bio')}
-                        disabled={savedStates.bio}
-                      />
-                    </div>
+                    {/* Professional Title input removed per PCL-267 */}
+                    <Input 
+                      placeholder="LinkedIn URL"
+                      value={personalInfo.linkedinUrl}
+                      onChange={(e) => handlePersonalInfoChange('linkedinUrl', e.target.value)}
+                      style="default"
+                    />
                   </div>
-
-
-                </>
-              )}
-
-
-
-              {/* Dynamic Sections (Guides, Pillars) */}
-              {(activeSection === 'guides' || activeSection === 'pillars') && (
-                <div style={{
-                  backgroundColor: colors.bg.card.default,
-                  border: `1px solid ${colors.border.default}`,
-                  borderRadius: cornerRadius.borderRadius.lg,
-                  boxShadow: getShadow('regular.card', colors, { withBorder: true }),
-                  padding: spacing.spacing[24],
-                }}>
-                  {renderSectionContent()}
                 </div>
-              )}
+              </div>
+              <div style={{ alignSelf: 'flex-start' }}>
+                <Button
+                  label={savedStates.profile ? "Saved!" : "Save"}
+                  style="primary"
+                  size="sm"
+                  leadIcon={savedStates.profile ? <Check size={16} /> : undefined}
+                  onClick={() => handleSave('profile')}
+                  disabled={savedStates.profile || saving}
+                />
+              </div>
+            </div>
 
-              {/* Inspirations Section - Commented out per PCL-106 */}
-              {/* {activeSection === 'inspirations' && (
-                <>
-                  {/* Inspirations List Card *//*}
-                  <div style={{ 
-                    backgroundColor: colors.bg.card.default,
-                    border: `1px solid ${colors.border.default}`,
-                    borderRadius: cornerRadius.borderRadius.lg,
-                    boxShadow: getShadow('regular.card', colors, { withBorder: true }),
-                    padding: spacing.spacing[24],
-                  }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[20] }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[4] }}>
-                        <h3 style={{ ...textStyles.sm.semibold, color: colors.text.default, margin: 0 }}>
-                          Inspirations
-                        </h3>
-                        <p style={{ ...textStyles.xs.normal, color: colors.text.subtle, margin: 0 }}>
-                          Who are the people that inspire your work and thinking?
-                        </p>
-                      </div>
-                      
-                      {/* Show inputs or empty state *//*}
-                      {inspirations.length === 0 ? (
-                        <EmptyState
-                          title="No inspirations added yet"
-                          fullSpace={true}
-                        />
-                      ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[12] }}>
-                          {inspirations.map((item) => (
-                            <div key={item.id} style={{ 
-                              display: 'flex', 
-                              gap: spacing.spacing[8], 
-                              alignItems: 'flex-end' 
-                            }}>
-                              <div style={{ flex: 1 }}>
-                                <Input
-                                  placeholder="Enter someone who inspires you..."
-                                  value={item.value}
-                                  onChange={(e) => updateListItem('inspirations', setInspirations, item.id, e.target.value)}
-                                  style="default"
-                                  size="lg"
-                                />
-                              </div>
-                              <Button
-                                label=""
-                                style="ghost"
-                                size="lg"
-                                leadIcon={<Trash2 size={16} />}
-                                onClick={() => removeListItem('inspirations', setInspirations, item.id)}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      
-                      <div style={{ width: '100%' }}>
-                        <Button
-                          label="Add Another Inspiration"
-                          style="secondary"
-                          size="sm"
-                          leadIcon={<Plus size={16} />}
-                          onClick={() => addListItem('inspirations', setInspirations)}
-                          className="w-full"
-                        />
-                      </div>
-
-                      <div style={{ alignSelf: 'flex-start' }}>
-                        <Button
-                          label={savedStates.inspirations ? "Saved!" : "Save"}
-                          style="primary"
-                          size="sm"
-                          leadIcon={savedStates.inspirations ? <Check size={16} /> : undefined}
-                          onClick={() => handleSave('inspirations')}
-                          disabled={savedStates.inspirations}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Target Persona Card *//*}
-                  <div style={{ 
-                    backgroundColor: colors.bg.card.default,
-                    border: `1px solid ${colors.border.default}`,
-                    borderRadius: cornerRadius.borderRadius.lg,
-                    boxShadow: getShadow('regular.card', colors, { withBorder: true }),
-                    padding: spacing.spacing[24],
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: spacing.spacing[16],
-                  }}>
-                    {/* Header *//*}
-                    <div>
-                      <h3 style={{ 
-                        ...textStyles.sm.semibold, 
-                        color: colors.text.default, 
-                        margin: 0 
-                      }}>
-                        Target Persona
-                      </h3>
-                      <p style={{ ...textStyles.xs.normal, color: colors.text.subtle, margin: 0 }}>
-                        Describe your ideal audience and who you're creating content for
-                      </p>
-                    </div>
-
-                    {/* TextArea *//*}
-                    <TextArea
-                      placeholder="Describe your target persona..."
-                      value={targetPersona}
-                      onChange={(e) => setTargetPersona(e.target.value)}
-                      rows={4}
-                      autoResize={true}
-                      minRows={4}
-                      maxRows={8}
-                    />
-
-                    {/* Save Button *//*}
-                    <div style={{ alignSelf: 'flex-start' }}>
-                      <Button
-                        label={savedStates.targetPersona ? "Saved!" : "Save"}
-                        style="primary"
-                        size="sm"
-                        leadIcon={savedStates.targetPersona ? <Check size={16} /> : undefined}
-                        onClick={() => handleSave('targetPersona')}
-                        disabled={savedStates.targetPersona}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Competitors Card *//*}
-                  <div style={{ 
-                    backgroundColor: colors.bg.card.default,
-                    border: `1px solid ${colors.border.default}`,
-                    borderRadius: cornerRadius.borderRadius.lg,
-                    boxShadow: getShadow('regular.card', colors, { withBorder: true }),
-                    padding: spacing.spacing[24],
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: spacing.spacing[16]
-                  }}>
-                    {/* Header *//*}
-                    <div>
-                      <h3 style={{ 
-                        ...textStyles.sm.semibold, 
-                        color: colors.text.default, 
-                        margin: 0 
-                      }}>
-                        Competitors
-                      </h3>
-                      <p style={{ ...textStyles.xs.normal, color: colors.text.subtle, margin: 0 }}>
-                        Keep track of competitor websites and industry leaders
-                      </p>
-                    </div>
-
-                    {/* Competitors List *//*}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[8] }}>
-                      {competitors.map((competitor) => (
-                        <Input
-                          key={competitor.id}
-                          placeholder="Enter competitor website URL..."
-                          value={competitor.url}
-                          onChange={(e) => updateCompetitor(competitor.id, e.target.value)}
-                          style="tail-action"
-                          tailAction={{
-                            icon: <Trash2 size={14} />,
-                            onClick: () => removeCompetitor(competitor.id)
-                          }}
-                        />
-                      ))}
-                      
-                      <div style={{ marginTop: spacing.spacing[8] }}>
-                        <Button
-                          label="Add Competitors"
-                          style="secondary"
-                          size="sm"
-                          leadIcon={<Plus size={14} />}
-                          onClick={addCompetitor}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Save Button *//*}
-                    <div style={{ alignSelf: 'flex-start' }}>
-                      <Button
-                        label={savedStates.competitors ? "Saved!" : "Save"}
-                        style="primary"
-                        size="sm"
-                        leadIcon={savedStates.competitors ? <Check size={16} /> : undefined}
-                        onClick={() => handleSave('competitors')}
-                        disabled={savedStates.competitors}
-                      />
-                    </div>
-                  </div>
-                </>
-              )} */}
+            {/* Bio Card */}
+            <div style={{
+              backgroundColor: colors.bg.card.default,
+              border: `1px solid ${colors.border.default}`,
+              borderRadius: cornerRadius.borderRadius.lg,
+              boxShadow: getShadow('regular.card', colors, { withBorder: true }),
+              padding: spacing.spacing[20],
+              display: 'flex',
+              flexDirection: 'column',
+              gap: spacing.spacing[12],
+            }}>
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'space-between',
+                gap: spacing.spacing[12]
+              }}>
+                <h4 style={{ ...textStyles.sm.semibold, color: colors.text.default, margin: 0 }}>
+                  Bio
+                </h4>
+                {hasLinkedInBio() && (
+                  <Button
+                    label="Import from LinkedIn"
+                    style="secondary"
+                    size="2xs"
+                    leadIcon={<RefreshCw size={12} />}
+                    onClick={handleAutoPopulateBio}
+                  />
+                )}
+              </div>
+              <TextArea
+                placeholder="Tell us about yourself..."
+                value={personalInfo.bio}
+                onChange={(e) => handlePersonalInfoChange('bio', e.target.value)}
+                rows={3}
+                autoResize={true}
+                minRows={3}
+                maxRows={6}
+              />
+              <div style={{ alignSelf: 'flex-start' }}>
+                <Button
+                  label={savedStates.bio ? "Saved!" : "Save"}
+                  style="primary"
+                  size="sm"
+                  leadIcon={savedStates.bio ? <Check size={16} /> : undefined}
+                  onClick={() => handleSave('bio')}
+                  disabled={savedStates.bio}
+                />
+              </div>
             </div>
           </div>
     </div>
