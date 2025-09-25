@@ -33,6 +33,7 @@ const ContentCard = ({
   title = 'Content Title',
   subtitle = 'Last edited',
   content = mockContent,
+  status = 'draft',              // Status of the content
   image,                         // Image URL for image variant
   
   // Interaction handlers
@@ -55,6 +56,19 @@ const ContentCard = ({
 
   // Dropdown menu items
   const dropdownItems = [
+    {
+      label: 'Draft',
+      onClick: () => onMenuAction?.('mark-draft')
+    },
+    {
+      label: 'Published',
+      onClick: () => onMenuAction?.('mark-published')
+    },
+    {
+      label: 'Archived',
+      onClick: () => onMenuAction?.('mark-archived')
+    },
+    { type: 'divider' },
     {
       label: 'Delete',
       type: 'destructive',
