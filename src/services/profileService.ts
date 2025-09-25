@@ -390,7 +390,7 @@ export class ProfileService {
       
       const { data: updatedProfile, error } = await supabase
         .from('profiles')
-        .update({ onboarding_completed: true })
+        .update({ is_onboarded: true })
         .eq('user_id', userId)
         .select()
         .single();

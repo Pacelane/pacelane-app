@@ -12,7 +12,7 @@ export interface Profile {
   display_name?: string;
   linkedin_profile?: string;
   company_linkedin?: string;
-  onboarding_completed?: boolean;
+  is_onboarded?: boolean;
   created_at?: string;
   updated_at?: string;
   // LinkedIn fields from actual schema

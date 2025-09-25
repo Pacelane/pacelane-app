@@ -27,7 +27,7 @@ export interface LinkedInProfileUpdate {
 
 // Onboarding-related updates
 export interface OnboardingUpdate {
-  onboarding_completed?: boolean;
+  is_onboarded?: boolean;
   content_pillars?: string[];
   pacing_preferences?: PacingPreferences;
 }

@@ -38,7 +38,7 @@ if (!profile) {
 }
 
 // Added onboarding completion check
-if (!profile.onboarding_completed) {
+if (!profile.is_onboarded) {
   return <Navigate to="/onboarding/welcome" replace />;
 }
 ```
@@ -61,7 +61,7 @@ const { user, profile, signIn, signUp, signInWithGoogle } = useAuth();
 // Updated redirect logic
 useEffect(() => {
   if (user && profile) {
-    if (profile.onboarding_completed) {
+    if (profile.is_onboarded) {
       navigate('/product-home');
     } else {
       navigate('/onboarding/welcome');
@@ -103,13 +103,13 @@ All protected routes now automatically:
 
 ## Database Schema
 
-The fix relies on the `onboarding_completed` field in the `profiles` table:
+The fix relies on the `is_onboarded` field in the `profiles` table:
 
 ```sql
 -- profiles table structure
 CREATE TABLE profiles (
   user_id UUID REFERENCES auth.users(id) PRIMARY KEY,
-  onboarding_completed BOOLEAN DEFAULT FALSE,
+  is_onboarded BOOLEAN DEFAULT FALSE,
   -- ... other fields
 );
 ```
@@ -159,7 +159,7 @@ CREATE TABLE profiles (
 ## Dependencies
 
 - `useAuth` hook must provide `profile` data
-- `profile.onboarding_completed` field must be properly set in database
+- `profile.is_onboarded` field must be properly set in database
 - Profile loading must complete before redirect decisions
 
 ## Future Considerations
