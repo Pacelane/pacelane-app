@@ -434,15 +434,15 @@ class GCSKnowledgeBaseStorage {
       console.log(`🔄 Triggering content extraction for ${file.name}`);
       const extractionSuccess = await this.extractContentFromFileData(insertedFile.id, file);
 
-      // Trigger RAG processing for the uploaded file
-      console.log(`🚀 Triggering RAG processing for ${file.name}`);
-      try {
-        await this.triggerRAGProcessing(userId, bucketName, fileName, filePath, file.type, file.size, metadata);
-        console.log(`✅ RAG processing triggered successfully for ${file.name}`);
-      } catch (ragError) {
-        console.error(`⚠️ RAG processing failed for ${file.name}:`, ragError);
-        // Don't fail the upload if RAG processing fails
-      }
+      // Trigger RAG processing asynchronously (don't wait for completion)
+      console.log(`🚀 Triggering RAG processing for ${file.name} (async)`);
+      this.triggerRAGProcessing(userId, bucketName, fileName, filePath, file.type, file.size, metadata)
+        .then(() => {
+          console.log(`✅ RAG processing completed successfully for ${file.name}`);
+        })
+        .catch((ragError) => {
+          console.error(`⚠️ RAG processing failed for ${file.name}:`, ragError);
+        });
 
       return { 
         success: true, 
@@ -570,6 +570,182 @@ class GCSKnowledgeBaseStorage {
     } catch (error) {
       console.error('Error deleting file:', error);
       return false;
+    }
+  }
+
+  /**
+   * Generate signed URL for file preview/download
+   */
+  async getFilePreviewUrl(userId: string, fileId: string, expirationMinutes: number = 60): Promise<{ success: boolean; url?: string; error?: string }> {
+    try {
+      // Get file info from database
+      const { data: file, error: fetchError } = await this.supabase
+        .from('knowledge_files')
+        .select('*')
+        .eq('id', fileId)
+        .eq('user_id', userId)
+        .single();
+
+      if (fetchError || !file) {
+        return { success: false, error: 'File not found' };
+      }
+
+      if (!file.gcs_path || !file.gcs_bucket) {
+        return { success: false, error: 'File not stored in GCS' };
+      }
+
+      // Get access token
+      const accessToken = await this.getGCSAccessToken();
+      if (!accessToken) {
+        return { success: false, error: 'Failed to get GCS access token' };
+      }
+
+      // Generate signed URL
+      const bucketName = file.gcs_bucket;
+      const objectName = file.gcs_path.replace(`gs://${bucketName}/`, '');
+      const expirationTime = new Date(Date.now() + expirationMinutes * 60 * 1000);
+      
+      // For simplicity, we'll use the direct download URL with authentication
+      // In production, you might want to implement proper signed URLs
+      const downloadUrl = `https://storage.googleapis.com/storage/v1/b/${bucketName}/o/${encodeURIComponent(objectName)}?alt=media`;
+
+      return {
+        success: true,
+        url: downloadUrl,
+      };
+
+    } catch (error) {
+      console.error('Error generating preview URL:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Stream file directly from GCS for preview (bypasses base64 encoding issues)
+   */
+  async streamFile(userId: string, fileId: string): Promise<{ success: boolean; response?: Response; error?: string }> {
+    try {
+      // Get file info from database
+      const { data: file, error: fetchError } = await this.supabase
+        .from('knowledge_files')
+        .select('*')
+        .eq('id', fileId)
+        .eq('user_id', userId)
+        .single();
+
+      if (fetchError || !file) {
+        return { success: false, error: 'File not found' };
+      }
+
+      if (!file.gcs_path || !file.gcs_bucket) {
+        return { success: false, error: 'File not stored in GCS' };
+      }
+
+      // Get access token
+      const accessToken = await this.getGCSAccessToken();
+      if (!accessToken) {
+        return { success: false, error: 'Failed to get GCS access token' };
+      }
+
+      // Stream file directly from GCS
+      const bucketName = file.gcs_bucket;
+      const objectName = file.gcs_path.replace(`gs://${bucketName}/`, '');
+      const downloadUrl = `https://storage.googleapis.com/storage/v1/b/${bucketName}/o/${encodeURIComponent(objectName)}?alt=media`;
+
+      const response = await fetch(downloadUrl, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        return { success: false, error: `Failed to fetch file: ${response.statusText}` };
+      }
+
+      // Create a new response with proper headers for browser consumption
+      const mimeType = this.getMimeTypeFromName(file.name);
+      const headers = new Headers({
+        'Content-Type': mimeType,
+        'Content-Disposition': `inline; filename="${file.name}"`,
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      });
+
+      return {
+        success: true,
+        response: new Response(response.body, {
+          status: 200,
+          headers: headers
+        })
+      };
+
+    } catch (error) {
+      console.error('Error streaming file:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Download file content for preview (for text files only - binary files use streaming)
+   */
+  async getFileContent(userId: string, fileId: string): Promise<{ success: boolean; content?: string; contentType?: string; error?: string }> {
+    try {
+      // Get file info from database
+      const { data: file, error: fetchError } = await this.supabase
+        .from('knowledge_files')
+        .select('*')
+        .eq('id', fileId)
+        .eq('user_id', userId)
+        .single();
+
+      if (fetchError || !file) {
+        return { success: false, error: 'File not found' };
+      }
+
+      // For text-based files, return extracted content if available
+      if (file.extracted_content && file.content_extracted) {
+        const mimeType = this.getMimeTypeFromName(file.name);
+        return {
+          success: true,
+          content: file.extracted_content,
+          contentType: mimeType,
+        };
+      }
+
+      // For text files not yet extracted, download and extract from GCS
+      const mimeType = this.getMimeTypeFromName(file.name);
+      if (mimeType.startsWith('text/') || ['application/json'].includes(mimeType)) {
+        if (!file.gcs_path || !file.gcs_bucket) {
+          return { success: false, error: 'File not stored in GCS' };
+        }
+
+        const bucketName = file.gcs_bucket;
+        const objectName = file.gcs_path.replace(`gs://${bucketName}/`, '');
+        
+        const fileBuffer = await this.downloadFileFromGCS(bucketName, objectName);
+        if (!fileBuffer) {
+          return { success: false, error: 'Failed to download file from GCS' };
+        }
+
+        const decoder = new TextDecoder('utf-8');
+        const content = decoder.decode(fileBuffer);
+        return {
+          success: true,
+          content,
+          contentType: mimeType,
+        };
+      }
+
+      // For binary files, redirect to use streaming instead
+      return { 
+        success: false, 
+        error: 'Binary files should use streaming endpoint instead of content endpoint' 
+      };
+
+    } catch (error) {
+      console.error('Error getting file content:', error);
+      return { success: false, error: error.message };
     }
   }
 
@@ -806,64 +982,32 @@ class GCSKnowledgeBaseStorage {
    * Extract text content from PDF files - simplified approach for MVP
    */
   private async extractPDFContent(fileBuffer: Uint8Array): Promise<string> {
-    try {
-      // For MVP: Use filename-based semantic matching instead of complex PDF parsing
-      // This is much more reliable than trying to extract garbled binary content
-      
-      return '[PDF content extraction not available in MVP - using filename for semantic matching. For better text extraction, please upload files in these formats: .txt, .md, .docx, .csv, or .json. Alternatively, copy text content from the PDF and save as a .txt file.]';
-      
-    } catch (error) {
-      console.error('Error handling PDF:', error);
-      return '[PDF processing not available - please use text-based formats for content extraction]';
-    }
+    // For MVP: Use filename-based semantic matching instead of complex PDF parsing
+    return '[PDF content extraction not available in MVP - using filename for semantic matching. For better text extraction, please upload files in these formats: .txt, .md, .docx, .csv, or .json. Alternatively, copy text content from the PDF and save as a .txt file.]';
   }
 
   /**
    * Extract text content from DOCX files - simplified approach for MVP
    */
   private async extractDocxContent(fileBuffer: Uint8Array): Promise<string> {
-    try {
-      // DOCX files are complex ZIP archives with XML content
-      // For MVP: Use filename-based semantic matching instead of complex parsing
-      
-      return '[DOCX content extraction not available in MVP - using filename for semantic matching. For better text extraction, please save the document as .txt, .md, or copy the text content to a plain text file.]';
-      
-    } catch (error) {
-      console.error('Error handling DOCX:', error);
-      return '[DOCX processing not available - please use text-based formats for content extraction]';
-    }
+    // For MVP: Use filename-based semantic matching instead of complex parsing
+    return '[DOCX content extraction not available in MVP - using filename for semantic matching. For better text extraction, please save the document as .txt, .md, or copy the text content to a plain text file.]';
   }
 
   /**
    * Extract text content from PPTX files - simplified approach for MVP
    */
   private async extractPptxContent(fileBuffer: Uint8Array): Promise<string> {
-    try {
-      // PPTX files are complex ZIP archives with XML content
-      // For MVP: Use filename-based semantic matching instead of complex parsing
-      
-      return '[PPTX content extraction not available in MVP - using filename for semantic matching. For better text extraction, please export slides as .txt or copy the text content to a plain text file.]';
-      
-    } catch (error) {
-      console.error('Error handling PPTX:', error);
-      return '[PPTX processing not available - please use text-based formats for content extraction]';
-    }
+    // For MVP: Use filename-based semantic matching instead of complex parsing
+    return '[PPTX content extraction not available in MVP - using filename for semantic matching. For better text extraction, please export slides as .txt or copy the text content to a plain text file.]';
   }
 
   /**
    * Extract text content from XLSX files - simplified approach for MVP
    */
   private async extractXlsxContent(fileBuffer: Uint8Array): Promise<string> {
-    try {
-      // XLSX files are complex ZIP archives with XML content
-      // For MVP: Use filename-based semantic matching instead of complex parsing
-      
-      return '[XLSX content extraction not available in MVP - using filename for semantic matching. For better text extraction, please export the spreadsheet as .csv or copy relevant data to a .txt file.]';
-      
-    } catch (error) {
-      console.error('Error handling XLSX:', error);
-      return '[XLSX processing not available - please use text-based formats for content extraction]';
-    }
+    // For MVP: Use filename-based semantic matching instead of complex parsing
+    return '[XLSX content extraction not available in MVP - using filename for semantic matching. For better text extraction, please export the spreadsheet as .csv or copy relevant data to a .txt file.]';
   }
 
   /**
@@ -1231,6 +1375,55 @@ serve(async (req) => {
           status: success ? 200 : 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
+      } else if (action === 'preview') {
+        // Handle file preview URL generation
+        const { fileId } = body;
+        if (!fileId) {
+          return new Response(JSON.stringify({ error: 'File ID required for preview' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        const previewResult = await storage.getFilePreviewUrl(userId, fileId);
+        return new Response(JSON.stringify(previewResult), {
+          status: previewResult.success ? 200 : 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      } else if (action === 'content') {
+        // Handle file content retrieval for text-based previews
+        const { fileId } = body;
+        if (!fileId) {
+          return new Response(JSON.stringify({ error: 'File ID required for content' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        const contentResult = await storage.getFileContent(userId, fileId);
+        return new Response(JSON.stringify(contentResult), {
+          status: contentResult.success ? 200 : 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      } else if (action === 'stream') {
+        // Handle direct file streaming for preview (bypasses base64 issues)
+        const { fileId } = body;
+        if (!fileId) {
+          return new Response(JSON.stringify({ error: 'File ID required for streaming' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        const streamResult = await storage.streamFile(userId, fileId);
+        if (streamResult.success && streamResult.response) {
+          return streamResult.response;
+        } else {
+          return new Response(JSON.stringify({ error: streamResult.error }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
       } else if (action === 'whatsapp_content') {
         // ✅ NEW: Handle WhatsApp content (notes and audio transcripts)
         const { file_name, file_type, content, gcs_path, metadata } = body;
@@ -1290,7 +1483,8 @@ serve(async (req) => {
             const actualFileName = filePath.split('/').pop() || file_name;
             console.log(`🔧 Using actual filename for RAG processing: ${actualFileName} (from path: ${filePath})`);
             
-            await storage.triggerRAGProcessing(
+            // Trigger RAG processing asynchronously (don't wait for completion)
+            storage.triggerRAGProcessing(
               userId,
               bucketName,
               actualFileName, // Use actual filename instead of friendly display name
@@ -1298,7 +1492,11 @@ serve(async (req) => {
               'audio',
               content.length,
               metadata
-            );
+            ).then(() => {
+              console.log(`✅ RAG processing completed for WhatsApp audio: ${actualFileName}`);
+            }).catch((ragError) => {
+              console.error(`⚠️ RAG processing failed for WhatsApp audio: ${actualFileName}`, ragError);
+            });
 
             return new Response(JSON.stringify({ 
               success: true,
@@ -1377,7 +1575,8 @@ serve(async (req) => {
             const actualFileName = filePath.split('/').pop() || file_name;
             console.log(`🔧 Using actual filename for RAG processing: ${actualFileName} (from path: ${filePath})`);
             
-            await storage.triggerRAGProcessing(
+            // Trigger RAG processing asynchronously (don't wait for completion)
+            storage.triggerRAGProcessing(
               userId,
               bucketName,
               actualFileName, // Use actual filename instead of friendly display name
@@ -1385,7 +1584,11 @@ serve(async (req) => {
               file_type || 'audio',
               content.length,
               metadata
-            );
+            ).then(() => {
+              console.log(`✅ RAG processing completed for WhatsApp content: ${actualFileName}`);
+            }).catch((ragError) => {
+              console.error(`⚠️ RAG processing failed for WhatsApp content: ${actualFileName}`, ragError);
+            });
           } else {
             // For text notes without GCS path, create a temporary file for RAG processing
             console.log(`📝 Text note detected, creating temporary file for RAG processing`);
@@ -1407,7 +1610,8 @@ serve(async (req) => {
                 // Add a longer delay to ensure file is fully written to GCS and indexed
                 await new Promise(resolve => setTimeout(resolve, 3000));
                 
-                await storage.triggerRAGProcessing(
+                // Trigger RAG processing asynchronously (don't wait for completion)
+                storage.triggerRAGProcessing(
                   userId,
                   bucketName,
                   tempFileName,
@@ -1415,7 +1619,11 @@ serve(async (req) => {
                   'file', // ✅ FIXED: Use 'file' instead of 'text' for RAG processing
                   content.length,
                   metadata
-                );
+                ).then(() => {
+                  console.log(`✅ RAG processing completed for WhatsApp text note: ${tempFileName}`);
+                }).catch((ragError) => {
+                  console.error(`⚠️ RAG processing failed for WhatsApp text note: ${tempFileName}`, ragError);
+                });
               } else {
                 console.error(`❌ Invalid temporary file GCS path format: ${tempGcsPath}`);
               }

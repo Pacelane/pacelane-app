@@ -20,6 +20,7 @@ import SubtleLoadingSpinner from '@/design-system/components/SubtleLoadingSpinne
 import Button from '@/design-system/components/Button';
 import Pagination from '@/design-system/components/Pagination';
 import TranscriptPasteModal from '@/design-system/components/TranscriptPasteModal';
+import FilePreviewModal from '@/design-system/components/FilePreviewModal';
 
 // Design System Tokens
 import { spacing } from '@/design-system/tokens/spacing';
@@ -75,6 +76,8 @@ const KnowledgeBase = () => {
   const [urlInput, setUrlInput] = useState('');
   const [showTranscriptModal, setShowTranscriptModal] = useState(false);
   const [processingTranscript, setProcessingTranscript] = useState(false);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [previewFile, setPreviewFile] = useState(null);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -221,6 +224,7 @@ const KnowledgeBase = () => {
         fileSize: item.size || 0,
         onClick: () => handleFileClick({
           id: item.id || 'unknown',
+          name: item.name || 'Unknown File', // Add name property for preview modal
           title: item.name || 'Unknown File',
           subtitle: subtitle,
           fileType: cardFileType,
@@ -379,7 +383,7 @@ const KnowledgeBase = () => {
       
       // Show success message with file count
       const successMessage = validFiles.length === 1 
-        ? `${validFiles[0].name} uploaded successfully`
+        ? 'File uploaded successfully'
         : `${validFiles.length} files uploaded successfully`;
         
       toast.success(successMessage, {
@@ -496,9 +500,14 @@ const KnowledgeBase = () => {
   };
 
   const handleFileClick = (file) => {
+    // For audio files with transcription, show the existing audio modal
     if (file.fileType === 'audio' && file.metadata?.transcription) {
       setSelectedAudioFile(file);
       setShowAudioModal(true);
+    } else {
+      // For all other files, show the new preview modal
+      setPreviewFile(file);
+      setShowPreviewModal(true);
     }
   };
 
@@ -1038,6 +1047,17 @@ const KnowledgeBase = () => {
             onClose={() => setShowTranscriptModal(false)}
             onTranscriptSubmit={handleTranscriptSubmit}
             loading={processingTranscript}
+          />
+
+          {/* File Preview Modal */}
+          <FilePreviewModal
+            isOpen={showPreviewModal}
+            onClose={() => {
+              setShowPreviewModal(false);
+              setPreviewFile(null);
+            }}
+            file={previewFile}
+            userId={user?.id}
           />
     </div>
   );
