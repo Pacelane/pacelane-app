@@ -120,7 +120,7 @@ const WhatsAppSetup = () => {
             maxWidth: isMobile ? '320px' : '400px'
           }}>
             <OnboardingProgressIndicator 
-              currentStep={8}
+              currentStep={6}
               compact={true}
             />
           </div>

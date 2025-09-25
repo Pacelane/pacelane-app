@@ -142,7 +142,7 @@ const Contact = () => {
             maxWidth: isMobile ? '320px' : '400px'
           }}>
             <OnboardingProgressIndicator 
-              currentStep={7}
+              currentStep={5}
               compact={true}
             />
           </div>

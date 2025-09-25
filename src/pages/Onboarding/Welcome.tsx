@@ -25,19 +25,19 @@ const Welcome = () => {
   const navigate = useNavigate();
   const { colors } = useTheme();
   const isMobile = useIsMobile();
-  const { user, profile, loading } = useAuth();
+  const { user, profile, loading, isOnboardingComplete } = useAuth();
 
   // Check onboarding status and redirect accordingly
   useEffect(() => {
     if (user && profile && !loading) {
       console.log('Welcome: Checking onboarding status', {
         userId: user.id,
-        isOnboarded: (profile as any).is_onboarded,
+        isOnboarded: profile.is_onboarded,
         profile: profile
       });
 
       // If user has completed onboarding, redirect to product home
-      if ((profile as any).is_onboarded === true) {
+      if (isOnboardingComplete()) {
         console.log('Welcome: User has completed onboarding, redirecting to product-home');
         navigate('/product-home');
         return;
