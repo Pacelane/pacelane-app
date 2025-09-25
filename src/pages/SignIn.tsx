@@ -51,10 +51,21 @@ const SignIn = () => {
   // Redirect if already authenticated
   useEffect(() => {
     if (user && profile) {
+      console.log('SignIn: User and profile loaded', { 
+        userId: user.id, 
+        isOnboarded: (profile as any).is_onboarded,
+        profile: profile 
+      });
+      
       // Check if user has completed onboarding
-      if ((profile as any).is_onboarded) {
+      // Handle case where is_onboarded might be null, undefined, or false
+      const isOnboarded = (profile as any).is_onboarded === true;
+      
+      if (isOnboarded) {
+        console.log('SignIn: User has completed onboarding, redirecting to product-home');
         navigate('/product-home');
       } else {
+        console.log('SignIn: User has not completed onboarding, redirecting to onboarding');
         navigate('/onboarding/welcome');
       }
     }
@@ -131,6 +142,7 @@ const SignIn = () => {
         toast.success('Account created successfully!');
         
         // Navigate to onboarding flow
+        console.log('SignIn: New user created, redirecting to onboarding');
         navigate('/onboarding/welcome');
         
       } else {

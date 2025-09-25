@@ -52,6 +52,11 @@ export const useAuth = () => {
       
       // Check if onboarding is complete (for logging purposes only)
       const isOnboardingComplete = result.data.is_onboarded;
+      console.log('useAuth: Profile loaded successfully', {
+        userId: userId,
+        isOnboarded: isOnboardingComplete,
+        profile: result.data
+      });
       console.log('useAuth: Onboarding status:', isOnboardingComplete ? 'Complete' : 'Incomplete');
       
       // Note: We don't redirect here anymore - let ProtectedRoute handle it
