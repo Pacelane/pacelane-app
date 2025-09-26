@@ -144,34 +144,84 @@ export class ProfileService {
 
           if (!scrapeError && scrapeData?.success && scrapeData?.profileData) {
             profileData = scrapeData.profileData;
-
-            // Merge with existing linkedin_data to avoid clobbering previously stored keys (e.g., content_pillars)
-            const existingProfileResp = await this.fetchProfile(userId);
-            const existingLinkedinData = existingProfileResp.data?.linkedin_data || {};
-
-            const mergedLinkedinData = {
-              ...existingLinkedinData,
-              last_scrape_raw: profileData,
-              summary: {
-                name: profileData.fullName || null,
-                headline: profileData.headline || null,
-                company: profileData.company || null,
-                location: profileData.location || null,
-                about: profileData.about || null,
-                url: setupData.profileUrl?.trim() || null,
-              },
-            };
-
-            scrapedFields = {
-              linkedin_data: mergedLinkedinData,
-              linkedin_name: profileData.fullName || null,
-              linkedin_company: profileData.company || null,
-              linkedin_about: profileData.about || null,
-              linkedin_location: profileData.location || null,
-              linkedin_headline: profileData.headline || null,
-              linkedin_scraped_at: new Date().toISOString()
-            } as any;
             console.log('ProfileService: LinkedIn profile scraped successfully');
+            
+            // Call the extract-linkedin-bio function to process and store the data
+            try {
+              console.log('ProfileService: Calling extract-linkedin-bio function');
+              const { data: extractData, error: extractError } = await supabase.functions.invoke(
+                'extract-linkedin-bio',
+                { 
+                  body: { 
+                    userId: userId,
+                    linkedinData: profileData,
+                    linkedinUrl: setupData.profileUrl?.trim()
+                  } 
+                }
+              );
+
+              if (!extractError && extractData?.success) {
+                console.log('ProfileService: LinkedIn bio extracted and stored successfully');
+                // The extract function has already updated the profile, so we don't need to set scrapedFields
+                scrapedFields = {};
+              } else {
+                console.warn('ProfileService: LinkedIn bio extraction failed, falling back to manual processing');
+                // Fallback to the original manual processing
+                const existingProfileResp = await this.fetchProfile(userId);
+                const existingLinkedinData = existingProfileResp.data?.linkedin_data || {};
+
+                const mergedLinkedinData = {
+                  ...existingLinkedinData,
+                  last_scrape_raw: profileData,
+                  summary: {
+                    name: profileData.fullName || null,
+                    headline: profileData.headline || null,
+                    company: profileData.company || null,
+                    location: profileData.location || null,
+                    about: profileData.about || null,
+                    url: setupData.profileUrl?.trim() || null,
+                  },
+                };
+
+                scrapedFields = {
+                  linkedin_data: mergedLinkedinData,
+                  linkedin_name: profileData.fullName || null,
+                  linkedin_company: profileData.company || null,
+                  linkedin_about: profileData.about || null,
+                  linkedin_location: profileData.location || null,
+                  linkedin_headline: profileData.headline || null,
+                  linkedin_scraped_at: new Date().toISOString()
+                } as any;
+              }
+            } catch (extractError) {
+              console.warn('ProfileService: LinkedIn bio extraction error:', extractError);
+              // Fallback to the original manual processing
+              const existingProfileResp = await this.fetchProfile(userId);
+              const existingLinkedinData = existingProfileResp.data?.linkedin_data || {};
+
+              const mergedLinkedinData = {
+                ...existingLinkedinData,
+                last_scrape_raw: profileData,
+                summary: {
+                  name: profileData.fullName || null,
+                  headline: profileData.headline || null,
+                  company: profileData.company || null,
+                  location: profileData.location || null,
+                  about: profileData.about || null,
+                  url: setupData.profileUrl?.trim() || null,
+                },
+              };
+
+              scrapedFields = {
+                linkedin_data: mergedLinkedinData,
+                linkedin_name: profileData.fullName || null,
+                linkedin_company: profileData.company || null,
+                linkedin_about: profileData.about || null,
+                linkedin_location: profileData.location || null,
+                linkedin_headline: profileData.headline || null,
+                linkedin_scraped_at: new Date().toISOString()
+              } as any;
+            }
           } else {
             console.warn('ProfileService: LinkedIn scraping failed, saving URL only');
           }
@@ -180,26 +230,45 @@ export class ProfileService {
         }
       }
 
-      // Update profile with LinkedIn data
+      // Update profile with LinkedIn data (only if scrapedFields is not empty)
       const updateData = {
         linkedin_profile: setupData.profileUrl.trim(),
         ...scrapedFields
       };
 
-      const { data, error } = await supabase
-        .from('profiles')
-        .update(updateData)
-        .eq('user_id', userId)
-        .select()
-        .single();
+      // Only update if we have fields to update (extract function might have already updated the profile)
+      if (Object.keys(scrapedFields).length > 0) {
+        const { data, error } = await supabase
+          .from('profiles')
+          .update(updateData)
+          .eq('user_id', userId)
+          .select()
+          .single();
 
-      if (error) {
-        console.error('ProfileService: LinkedIn profile update error:', error);
-        throw error;
+        if (error) {
+          console.error('ProfileService: LinkedIn profile update error:', error);
+          throw error;
+        }
+
+        console.log('ProfileService: LinkedIn profile setup completed');
+        return { data };
+      } else {
+        // If extract function handled the update, just update the LinkedIn URL
+        const { data, error } = await supabase
+          .from('profiles')
+          .update({ linkedin_profile: setupData.profileUrl.trim() })
+          .eq('user_id', userId)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('ProfileService: LinkedIn profile URL update error:', error);
+          throw error;
+        }
+
+        console.log('ProfileService: LinkedIn profile setup completed (via extract function)');
+        return { data };
       }
-
-      console.log('ProfileService: LinkedIn profile setup completed');
-      return { data };
     } catch (error: any) {
       console.error('ProfileService: setupLinkedInProfile failed:', error);
       return { error: error.message || 'Failed to setup LinkedIn profile' };
