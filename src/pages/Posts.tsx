@@ -42,6 +42,7 @@ const Posts = () => {
     contentSuggestions,
     loadingDrafts: isLoading,
     deleteDraft,
+    updateDraft,
     error,
     clearError
   } = useContent();
@@ -200,6 +201,32 @@ const Posts = () => {
     });
   };
 
+  const handleUpdateDraftStatus = async (draftId: string, newStatus: 'draft' | 'published' | 'archived') => {
+    try {
+      const result = await updateDraft(draftId, { status: newStatus });
+      if (result.error) {
+        toast({
+          title: 'Error',
+          description: result.error,
+          variant: 'destructive'
+        });
+      } else {
+        toast({
+          title: 'Status Updated',
+          description: `Post status changed to ${newStatus}`,
+          variant: 'success'
+        });
+      }
+    } catch (error) {
+      console.error('Error updating draft status:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update post status',
+        variant: 'destructive'
+      });
+    }
+  };
+
   const handleDeleteDraft = async (draftId: string) => {
     try {
       const result = await deleteDraft(draftId);
@@ -235,6 +262,15 @@ const Posts = () => {
           break;
         case 'delete':
           handleDeleteDraft(itemId);
+          break;
+        case 'mark-draft':
+          handleUpdateDraftStatus(itemId, 'draft');
+          break;
+        case 'mark-published':
+          handleUpdateDraftStatus(itemId, 'published');
+          break;
+        case 'mark-archived':
+          handleUpdateDraftStatus(itemId, 'archived');
           break;
       }
     } else if (item.type === 'suggestion') {
@@ -447,6 +483,7 @@ const Posts = () => {
                         title={item.title}
                         subtitle={item.subtitle}
                         content={item.content}
+                        status={item.status}
                         onClick={() => {
                           if (item.type === 'draft') {
                             handleEditDraft(item.originalData);

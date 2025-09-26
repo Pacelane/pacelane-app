@@ -138,6 +138,20 @@ const DropdownMenu = ({
           {...rest}
         >
           {items.map((item, index) => {
+            // Handle divider items
+            if (item.type === 'divider') {
+              return (
+                <div
+                  key={index}
+                  style={{
+                    height: '1px',
+                    backgroundColor: colors.border.default,
+                    margin: `${spacing.spacing[4]}px 0`,
+                  }}
+                />
+              );
+            }
+
             const isDestructive = item.type === 'destructive';
             
             return (
