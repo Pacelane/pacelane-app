@@ -145,9 +145,9 @@ export const useContent = (): ContentState & ContentActions => {
       async () => {
         const result = await contentApi.uploadFile(fileData.userId, fileData.file);
         
-        if (result.data) {
-          // Add the new file to the knowledge files list
-          setKnowledgeFiles(prev => [result.data!, ...prev]);
+        // Reload knowledge files after successful upload to ensure UI is in sync
+        if (!result.error) {
+          await loadKnowledgeFiles();
         }
         
         return result;
@@ -170,16 +170,12 @@ export const useContent = (): ContentState & ContentActions => {
         
         console.log('useContent: Upload result:', result);
         
-        if (result.data) {
-          console.log('useContent: Adding files to state:', result.data);
-          // Add all new files to the knowledge files list
-          setKnowledgeFiles(prev => {
-            const newState = [...result.data!, ...prev];
-            console.log('useContent: New knowledge files state:', newState);
-            return newState;
-          });
+        // Reload knowledge files after successful upload to ensure UI is in sync
+        if (!result.error) {
+          console.log('useContent: Upload successful, refreshing knowledge files');
+          await loadKnowledgeFiles();
         } else {
-          console.error('useContent: No data in upload result');
+          console.error('useContent: Upload failed:', result.error);
         }
         
         return result;
