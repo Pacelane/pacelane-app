@@ -52,41 +52,27 @@ const OnboardingProgressIndicator = ({
     },
     {
       id: 4,
-      title: 'Tone of Voice',
-      description: 'Set your content style preferences',
-      icon: BookOpen,
-      route: '/onboarding/guides'
-    },
-    {
-      id: 5,
-      title: 'Editorial Topics',
-      description: 'Choose your topic focus areas',
-      icon: Layers,
-      route: '/onboarding/content-pillars'
-    },
-    {
-      id: 6,
       title: 'Pacing',
       description: 'Set posting schedule and frequency',
       icon: Clock,
       route: '/onboarding/pacing'
     },
     {
-      id: 7,
+      id: 5,
       title: 'Contact Info',
       description: 'Add your contact information',
       icon: Phone,
       route: '/onboarding/contact'
     },
     {
-      id: 8,
+      id: 6,
       title: 'WhatsApp Setup',
       description: 'Connect WhatsApp notifications',
       icon: MessageSquare,
       route: '/onboarding/whatsapp-setup'
     },
     {
-      id: 9,
+      id: 7,
       title: 'Ready',
       description: 'Complete your setup',
       icon: Check,

@@ -25,8 +25,6 @@ import NotificationsPage from "./pages/NotificationsPage";
 import Welcome from "./pages/Onboarding/Welcome";
 import FirstThingsFirst from "./pages/Onboarding/FirstThingsFirst";
 import LinkedInSummary from "./pages/Onboarding/LinkedInSummary";
-import Guides from "./pages/Onboarding/Guides";
-import ContentPillars from "./pages/Onboarding/ContentPillars";
 import Pacing from "./pages/Onboarding/Pacing";
 import Contact from "./pages/Onboarding/Contact";
 import WhatsAppSetup from "./pages/Onboarding/WhatsAppSetup";
@@ -55,8 +53,6 @@ const App = () => {
           <Route path="/onboarding/welcome" element={<Welcome />} />
           <Route path="/onboarding/first-things-first" element={<FirstThingsFirst />} />
           <Route path="/onboarding/linkedin-summary" element={<LinkedInSummary />} />
-          <Route path="/onboarding/guides" element={<Guides />} />
-          <Route path="/onboarding/content-pillars" element={<ContentPillars />} />
           <Route path="/onboarding/pacing" element={<Pacing />} />
           <Route path="/onboarding/contact" element={<Contact />} />
           <Route path="/onboarding/whatsapp-setup" element={<WhatsAppSetup />} />

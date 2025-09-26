@@ -173,7 +173,7 @@ const LinkedInSummary = () => {
   };
 
   const handleContinue = () => {
-    navigate('/onboarding/guides');
+    navigate('/onboarding/pacing');
   };
 
   if (isLoading) {

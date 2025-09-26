@@ -324,7 +324,7 @@ const Ready = () => {
             maxWidth: isMobile ? '320px' : '400px'
           }}>
             <OnboardingProgressIndicator 
-              currentStep={9}
+              currentStep={7}
               compact={true}
             />
           </div>

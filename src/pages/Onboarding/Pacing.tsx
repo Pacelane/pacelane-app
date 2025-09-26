@@ -73,7 +73,7 @@ const Pacing = () => {
   ];
 
   const handleGoBack = () => {
-    navigate('/onboarding/content-pillars');
+    navigate('/onboarding/linkedin-summary');
   };
 
   const toggleDay = (dayId: string) => {
@@ -242,7 +242,7 @@ const Pacing = () => {
             maxWidth: isMobile ? '320px' : '400px'
           }}>
             <OnboardingProgressIndicator 
-              currentStep={6}
+              currentStep={4}
               compact={true}
             />
           </div>

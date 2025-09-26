@@ -10,7 +10,7 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, loading, isOnboardingComplete } = useAuth();
   const location = useLocation();
   const { colors } = useTheme();
 
@@ -56,14 +56,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   // The welcome page will handle the onboarding status check and redirect accordingly
   console.log('ProtectedRoute: Checking onboarding status', { 
     userId: user?.id, 
-    isOnboarded: (profile as any).is_onboarded,
+    isOnboarded: profile.is_onboarded,
     profile: profile 
   });
   
-  // Handle case where is_onboarded might be null, undefined, or false
-  const isOnboarded = (profile as any).is_onboarded === true;
-  
-  if (!isOnboarded) {
+  if (!isOnboardingComplete()) {
     console.log('ProtectedRoute: User has not completed onboarding, redirecting to onboarding welcome page');
     return <Navigate to="/onboarding/welcome" replace />;
   }

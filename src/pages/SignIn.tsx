@@ -33,7 +33,7 @@ const SignIn = () => {
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [isProcessingAuth, setIsProcessingAuth] = useState(false);
   const navigate = useNavigate();
-  const { user, profile, signIn, signUp, signInWithGoogle } = useAuth();
+  const { user, profile, signIn, signUp, signInWithGoogle, isOnboardingComplete } = useAuth();
   const { colors } = useTheme();
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -55,16 +55,21 @@ const SignIn = () => {
     if (user && profile) {
       console.log('SignIn: User and profile loaded', { 
         userId: user.id, 
-        isOnboarded: (profile as any).is_onboarded,
+        isOnboarded: profile.is_onboarded,
         profile: profile 
       });
       
       // Reset processing state
       setIsProcessingAuth(false);
       
-      // Always redirect to onboarding welcome page - it will handle the onboarding check
-      console.log('SignIn: Redirecting to onboarding welcome page for onboarding status check');
-      navigate('/onboarding/welcome');
+      // Check onboarding status and redirect accordingly
+      if (isOnboardingComplete()) {
+        console.log('SignIn: User has completed onboarding, redirecting to product-home');
+        navigate('/product-home');
+      } else {
+        console.log('SignIn: User has not completed onboarding, redirecting to onboarding welcome');
+        navigate('/onboarding/welcome');
+      }
     }
   }, [user, profile, navigate]);
 
