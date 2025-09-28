@@ -8,6 +8,7 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
 };
 
+
 interface RecallCalendar {
   id: string;
   platform: 'google_calendar' | 'microsoft_outlook';
@@ -217,7 +218,7 @@ async function handleCallback(req: Request, supabase: any, requestBody?: any) {
     platform: 'google_calendar'
   };
 
-  const recallResponse = await fetch('https://us-east-1.recall.ai/api/v2/calendars/', {
+  const recallResponse = await fetch('https://us-west-2.recall.ai/api/v2/calendars/', {
     method: 'POST',
     headers: {
       'Authorization': `Token ${recallApiKey}`,
@@ -304,7 +305,7 @@ async function handleSyncEvents(req: Request, supabase: any) {
   for (const userCalendar of calendars) {
     try {
       // Get events from Recall.ai
-      const eventsResponse = await fetch(`https://us-east-1.recall.ai/api/v2/calendars/${userCalendar.recall_calendar_id}/events/`, {
+      const eventsResponse = await fetch(`https://us-west-2.recall.ai/api/v2/calendars/${userCalendar.recall_calendar_id}/events/`, {
         headers: {
           'Authorization': `Token ${recallApiKey}`,
           'Content-Type': 'application/json',
@@ -548,7 +549,7 @@ async function handleCreateCalendar(req: Request, supabase: any, requestBody?: a
     platform
   };
 
-  const recallResponse = await fetch('https://us-east-1.recall.ai/api/v2/calendars/', {
+  const recallResponse = await fetch('https://us-west-2.recall.ai/api/v2/calendars/', {
     method: 'POST',
     headers: {
       'Authorization': `Token ${recallApiKey}`,
