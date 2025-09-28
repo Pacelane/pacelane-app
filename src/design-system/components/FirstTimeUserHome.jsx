@@ -355,8 +355,8 @@ const FirstTimeUserHome = () => {
           
           {missingIntegrations.calendar && (
             <SetupCard
-              title="Google Calendar"
-              subtitle="Sync your schedule to optimize content posting times"
+              title="Calendar Integration"
+              subtitle="Sync your schedule via Recall.ai to optimize content posting times"
               status="optional"
               bichaurinhoVariant={24}
               buttonLabel="Connect Calendar"

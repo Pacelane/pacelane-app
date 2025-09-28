@@ -257,11 +257,11 @@ const InitialHome = () => {
           />
           
           <IntegrationCard
-            name="Google Calendar"
-            description="Sync your calendar to understand your routines and create more relevant content"
-            icon={<img src={googleCalendarLogo} alt="Google Calendar" style={{ width: 24, height: 24 }} />}
+            name="Calendar Integration"
+            description="Sync your calendar via Recall.ai to understand your routines and create more relevant content"
+            icon={<img src={googleCalendarLogo} alt="Calendar Integration" style={{ width: 24, height: 24 }} />}
             iconColor="#4285F4"
-            features={['Calendar sync', 'Routine analysis', 'Context-aware content']}
+            features={['Calendar sync', 'Meeting recording', 'Context-aware content']}
             connected={integrations.calendar.connected}
             enabled={integrations.calendar.enabled}
             onToggle={(newValue) => {
