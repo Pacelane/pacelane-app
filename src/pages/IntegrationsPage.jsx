@@ -223,10 +223,10 @@ const IntegrationsPage = () => {
           if (user?.id) authUrl.searchParams.set('state', user.id);
           window.location.href = authUrl.toString();
         } else {
-          toast.error(result.error || 'Failed to start Google Calendar connection');
+          toast.error(result.error || 'Failed to start Calendar connection');
         }
       } catch (e) {
-        toast.error('Failed to start Google Calendar connection');
+        toast.error('Failed to start Calendar connection');
       }
       return;
     }

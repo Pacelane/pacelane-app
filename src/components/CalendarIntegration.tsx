@@ -161,10 +161,10 @@ export const CalendarIntegration: React.FC<CalendarIntegrationProps> = ({ onMeet
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
-            Google Calendar Integration
+            Calendar Integration
           </CardTitle>
           <CardDescription>
-            Connect your Google Calendar to generate content based on your meetings and schedule.
+            Connect your Google Calendar via Recall.ai to generate content based on your meetings and schedule.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -181,7 +181,7 @@ export const CalendarIntegration: React.FC<CalendarIntegrationProps> = ({ onMeet
             ) : (
               <>
                 <Link className="h-4 w-4 mr-2" />
-                Connect Google Calendar
+                Connect Calendar
               </>
             )}
           </Button>
