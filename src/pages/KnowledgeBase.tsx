@@ -57,6 +57,12 @@ const KnowledgeBase = () => {
     knowledgeFiles,
     loadingFiles: loading,
     uploading,
+    totalFilesCount,
+    loadingCount,
+    currentPage: hookCurrentPage,
+    itemsPerPage: hookItemsPerPage,
+    loadKnowledgeFiles,
+    loadKnowledgeFilesCount,
     uploadFiles,
     deleteKnowledgeFile,
     addLink,
@@ -78,10 +84,6 @@ const KnowledgeBase = () => {
   const [processingTranscript, setProcessingTranscript] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [previewFile, setPreviewFile] = useState(null);
-  
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(12); // Fixed items per page
   
   // Ref for FileUpload component to trigger file selection
   const fileUploadRef = useRef(null);
@@ -295,7 +297,7 @@ const KnowledgeBase = () => {
     }
   }, [sortBy]);
 
-  // Get final filtered, sorted, and paginated files - memoized
+  // Get final filtered and sorted files - memoized (server-side pagination)
   const getDisplayFiles = useMemo(() => {
     const filteredFiles = getFilteredFiles;
     const searchedFiles = filteredFiles.filter(file => 
@@ -304,22 +306,24 @@ const KnowledgeBase = () => {
     );
     const sortedFiles = getSortedFiles(searchedFiles);
     
-    // Calculate pagination
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const paginatedFiles = sortedFiles.slice(startIndex, endIndex);
-    
+    // For server-side pagination, we return the current page data
+    // The total count comes from the server
     return {
-      files: paginatedFiles,
-      totalFiles: sortedFiles.length,
-      totalPages: Math.ceil(sortedFiles.length / itemsPerPage)
+      files: sortedFiles, // These are already the files for the current page
+      totalFiles: totalFilesCount, // Total count from server
+      totalPages: Math.ceil(totalFilesCount / hookItemsPerPage)
     };
-  }, [getFilteredFiles, searchQuery, getSortedFiles, currentPage, itemsPerPage]);
+  }, [getFilteredFiles, searchQuery, getSortedFiles, totalFilesCount, hookItemsPerPage]);
+
+  // Handle page changes
+  const handlePageChange = useCallback((page: number) => {
+    loadKnowledgeFiles(page);
+  }, [loadKnowledgeFiles]);
 
   // Reset page when search query or filter changes
   React.useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, activeTab, sortBy]);
+    loadKnowledgeFiles(1);
+  }, [searchQuery, activeTab, sortBy, loadKnowledgeFiles]);
 
   // File upload handlers - memoized to prevent unnecessary re-renders
   const handleFileSelect = useCallback(async (files) => {
@@ -847,21 +851,25 @@ const KnowledgeBase = () => {
           </div>
 
           {/* Loading State */}
-          {(loading || uploading) && (
+          {(loading || uploading || loadingCount) && (
             <div style={{
               display: 'flex',
               justifyContent: 'center',
               padding: spacing.spacing[48],
             }}>
               <SubtleLoadingSpinner 
-                title={loading ? "Loading your files..." : "Uploading files..."}
+                title={
+                  loadingCount ? "Loading file count..." :
+                  loading ? "Loading your files..." : 
+                  "Uploading files..."
+                }
                 size={16}
               />
             </div>
           )}
 
           {/* File Listing */}
-          {!loading && !uploading && (() => {
+          {!loading && !uploading && !loadingCount && (() => {
             const { files, totalFiles, totalPages } = getDisplayFiles;
             
             if (totalFiles === 0) {
@@ -912,9 +920,9 @@ const KnowledgeBase = () => {
                     marginTop: spacing.spacing[32],
                   }}>
                     <Pagination
-                      currentPage={currentPage}
+                      currentPage={hookCurrentPage}
                       totalPages={totalPages}
-                      onPageChange={setCurrentPage}
+                      onPageChange={handlePageChange}
                       showLabels={!isMobile}
                       size={isMobile ? 'sm' : 'md'}
                     />
@@ -931,7 +939,7 @@ const KnowledgeBase = () => {
                     ...textStyles.sm.normal,
                     color: colors.text.muted,
                   }}>
-                    Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalFiles)} of {totalFiles} files
+                    Showing {((hookCurrentPage - 1) * hookItemsPerPage) + 1} to {Math.min(hookCurrentPage * hookItemsPerPage, totalFiles)} of {totalFiles} files
                   </span>
                 </div>
               </>

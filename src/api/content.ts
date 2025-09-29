@@ -20,13 +20,23 @@ export const contentApi = {
   // ========== KNOWLEDGE BASE OPERATIONS ==========
 
   /**
-   * Load all knowledge files for the current user
+   * Load knowledge files for the current user with pagination
    * @param userId - User ID from auth
-   * @param limit - Maximum number of files to load (default: 100)
+   * @param limit - Number of files to load (default: 12)
+   * @param offset - Number of files to skip (default: 0)
    * @returns Promise with knowledge files list
    */
-  async loadKnowledgeFiles(userId: string, limit: number = 100) {
-    return ContentService.loadUserKnowledgeFiles(userId, limit);
+  async loadKnowledgeFiles(userId: string, limit: number = 12, offset: number = 0) {
+    return ContentService.loadUserKnowledgeFiles(userId, limit, offset);
+  },
+
+  /**
+   * Get total count of knowledge files for the current user
+   * @param userId - User ID from auth
+   * @returns Promise with total count
+   */
+  async getKnowledgeFilesCount(userId: string) {
+    return ContentService.getUserKnowledgeFilesCount(userId);
   },
 
   /**

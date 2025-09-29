@@ -22,16 +22,17 @@ export class ContentService {
   // ========== KNOWLEDGE BASE OPERATIONS ==========
 
   /**
-   * Load all knowledge files for a user directly from Supabase database (fast)
+   * Load knowledge files for a user with server-side pagination
    * @param userId - The user's ID
-   * @param limit - Maximum number of files to load (default: 100)
+   * @param limit - Number of files to load (default: 12)
+   * @param offset - Number of files to skip (default: 0)
    * @returns Promise with knowledge files list or error
    */
-  static async loadUserKnowledgeFiles(userId: string, limit: number = 100): Promise<ApiResponse<KnowledgeFile[]>> {
+  static async loadUserKnowledgeFiles(userId: string, limit: number = 12, offset: number = 0): Promise<ApiResponse<KnowledgeFile[]>> {
     try {
-      console.log('🚀 ContentService: Loading knowledge files from DATABASE (FAST) for user:', userId, 'limit:', limit);
+      console.log('🚀 ContentService: Loading knowledge files page for user:', userId, 'limit:', limit, 'offset:', offset);
       
-      // Query directly from Supabase database with limit to prevent timeout
+      // Query directly from Supabase database with pagination
       const { data, error } = await supabase
         .from('knowledge_files')
         .select(`
@@ -48,18 +49,45 @@ export class ContentService {
         `)
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
-        .limit(limit);
+        .range(offset, offset + limit - 1);
 
       if (error) {
         console.error('❌ ContentService: Database query error:', error);
         return { error: error.message || 'Failed to load knowledge files' };
       }
 
-      console.log('✅ ContentService: Loaded', data?.length || 0, 'knowledge files from DATABASE (FAST)');
+      console.log('✅ ContentService: Loaded', data?.length || 0, 'knowledge files page');
       return { data: data || [] };
     } catch (error: any) {
       console.error('❌ ContentService: loadUserKnowledgeFiles failed:', error);
       return { error: error.message || 'Failed to load knowledge files' };
+    }
+  }
+
+  /**
+   * Get total count of knowledge files for a user
+   * @param userId - The user's ID
+   * @returns Promise with total count or error
+   */
+  static async getUserKnowledgeFilesCount(userId: string): Promise<ApiResponse<number>> {
+    try {
+      console.log('🔢 ContentService: Getting knowledge files count for user:', userId);
+      
+      const { count, error } = await supabase
+        .from('knowledge_files')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId);
+
+      if (error) {
+        console.error('❌ ContentService: Count query error:', error);
+        return { error: error.message || 'Failed to get knowledge files count' };
+      }
+
+      console.log('✅ ContentService: Total knowledge files count:', count || 0);
+      return { data: count || 0 };
+    } catch (error: any) {
+      console.error('❌ ContentService: getUserKnowledgeFilesCount failed:', error);
+      return { error: error.message || 'Failed to get knowledge files count' };
     }
   }
 

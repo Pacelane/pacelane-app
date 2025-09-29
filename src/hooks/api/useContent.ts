@@ -37,6 +37,12 @@ export const useContent = (): ContentState & ContentActions => {
   const [loadingFiles, setLoadingFiles] = useState(false);
   const [uploading, setUploading] = useState(false);
   
+  // Pagination State
+  const [totalFilesCount, setTotalFilesCount] = useState(0);
+  const [loadingCount, setLoadingCount] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(12);
+  
   // Drafts State
   const [savedDrafts, setSavedDrafts] = useState<SavedDraft[]>([]);
   const [loadingDrafts, setLoadingDrafts] = useState(false);
@@ -137,23 +143,63 @@ export const useContent = (): ContentState & ContentActions => {
   // ========== KNOWLEDGE BASE ACTIONS ==========
 
   /**
-   * Load all knowledge files for the current user
+   * Load knowledge files for the current page
+   * @param page - Page number (1-based)
    * @returns Promise with operation result
    */
-  const loadKnowledgeFiles = useCallback(async () => {
+  const loadKnowledgeFiles = useCallback(async (page: number = 1) => {
+    if (!user) return { error: 'User must be logged in' };
+    
+    const offset = (page - 1) * itemsPerPage;
+    
     return executeContentOperation(
       async () => {
-        const result = await contentApi.loadKnowledgeFiles(user!.id);
+        const result = await contentApi.loadKnowledgeFiles(user.id, itemsPerPage, offset);
         
         if (result.data) {
           setKnowledgeFiles(result.data);
+          setCurrentPage(page);
         }
         
         return result;
       },
       'loadingFiles',
-      'Knowledge files loaded successfully'
+      'Knowledge files page loaded successfully'
     );
+  }, [user, itemsPerPage]);
+
+  /**
+   * Load total count of knowledge files
+   * @returns Promise with operation result
+   */
+  const loadKnowledgeFilesCount = useCallback(async () => {
+    if (!user) return { error: 'User must be logged in' };
+    
+    setLoadingCount(true);
+    setError(undefined);
+
+    try {
+      const result = await contentApi.getKnowledgeFilesCount(user.id);
+      
+      if (result.error) {
+        console.error('useContent: Count operation error:', result.error);
+        setError(result.error);
+        return result;
+      }
+
+      if (result.data !== undefined) {
+        setTotalFilesCount(result.data);
+      }
+      
+      return result;
+    } catch (error: any) {
+      const errorMessage = error.message || 'Failed to get knowledge files count';
+      console.error('useContent: Count operation failed:', error);
+      setError(errorMessage);
+      return { error: errorMessage };
+    } finally {
+      setLoadingCount(false);
+    }
   }, [user]);
 
   /**
@@ -590,17 +636,11 @@ export const useContent = (): ContentState & ContentActions => {
       currentUserIdRef.current = user.id;
       dataLoadedRef.current = false;
       
-      // Load knowledge files first (fast database query) - this is critical for Knowledge Base page
-      executeContentOperation(
-        async () => {
-          const result = await contentApi.loadKnowledgeFiles(user.id, 100); // Limit to 100 files to prevent timeout
-          if (result.data) {
-            setKnowledgeFiles(result.data);
-          }
-          return result;
-        },
-        'loadingFiles'
-      );
+      // Load total count first (fast query) - this is needed for pagination
+      loadKnowledgeFilesCount();
+      
+      // Load first page of knowledge files
+      loadKnowledgeFiles(1);
 
       // Load other content in parallel (these are less critical and can load separately)
       Promise.all([
@@ -650,6 +690,12 @@ export const useContent = (): ContentState & ContentActions => {
     loadingFiles,
     uploading,
     
+    // Pagination State
+    totalFilesCount,
+    loadingCount,
+    currentPage,
+    itemsPerPage,
+    
     // Drafts State
     savedDrafts,
     loadingDrafts,
@@ -669,6 +715,7 @@ export const useContent = (): ContentState & ContentActions => {
 
     // Knowledge Base Actions
     loadKnowledgeFiles,
+    loadKnowledgeFilesCount,
     uploadFile,
     uploadFiles,
     deleteKnowledgeFile,
