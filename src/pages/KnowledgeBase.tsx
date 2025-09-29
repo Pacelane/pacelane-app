@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/api/useAuth';
 import { useContent } from '@/hooks/api/useContent';
@@ -145,8 +145,8 @@ const KnowledgeBase = () => {
     return option?.label || 'Last Added';
   };
 
-  // Transform knowledge files to FileCard format
-  const getFileCards = () => {
+  // Transform knowledge files to FileCard format - memoized to prevent unnecessary recalculations
+  const getFileCards = useMemo(() => {
     if (!Array.isArray(knowledgeFiles)) {
       console.error('KnowledgeBase: knowledgeFiles is not an array:', knowledgeFiles);
       return [];
@@ -254,11 +254,11 @@ const KnowledgeBase = () => {
         } : undefined
       };
     });
-  };
+  }, [knowledgeFiles, getFileTypeFromName]);
 
-  // Filter files based on active tab
-  const getFilteredFiles = () => {
-    const allFiles = getFileCards();
+  // Filter files based on active tab - memoized
+  const getFilteredFiles = useMemo(() => {
+    const allFiles = getFileCards;
     
     if (activeTab === 'all') return allFiles;
     
@@ -276,10 +276,10 @@ const KnowledgeBase = () => {
           return true;
       }
     });
-  };
+  }, [getFileCards, activeTab]);
 
-  // Sort files based on sortBy
-  const getSortedFiles = (files) => {
+  // Sort files based on sortBy - memoized
+  const getSortedFiles = useCallback((files) => {
     switch (sortBy) {
       case 'nameAsc':
         return [...files].sort((a, b) => a.title.localeCompare(b.title));
@@ -293,11 +293,11 @@ const KnowledgeBase = () => {
       default:
         return files; // Already sorted by creation date from backend
     }
-  };
+  }, [sortBy]);
 
-  // Get final filtered, sorted, and paginated files
-  const getDisplayFiles = () => {
-    const filteredFiles = getFilteredFiles();
+  // Get final filtered, sorted, and paginated files - memoized
+  const getDisplayFiles = useMemo(() => {
+    const filteredFiles = getFilteredFiles;
     const searchedFiles = filteredFiles.filter(file => 
       searchQuery === '' || 
       file.title.toLowerCase().includes(searchQuery.toLowerCase())
@@ -314,15 +314,15 @@ const KnowledgeBase = () => {
       totalFiles: sortedFiles.length,
       totalPages: Math.ceil(sortedFiles.length / itemsPerPage)
     };
-  };
+  }, [getFilteredFiles, searchQuery, getSortedFiles, currentPage, itemsPerPage]);
 
   // Reset page when search query or filter changes
   React.useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, activeTab, sortBy]);
 
-  // File upload handlers
-  const handleFileSelect = async (files) => {
+  // File upload handlers - memoized to prevent unnecessary re-renders
+  const handleFileSelect = useCallback(async (files) => {
     if (!files || files.length === 0) return;
 
     console.log('KnowledgeBase: Starting file upload for', files.length, 'files');
@@ -412,9 +412,9 @@ const KnowledgeBase = () => {
         duration: 6000
       });
     }
-  };
+  }, [uploadFiles, validateFileType, toast, removeToast]);
 
-  const handleUrlSubmit = async (url) => {
+  const handleUrlSubmit = useCallback(async (url) => {
     if (!url.trim()) return;
 
     // Basic URL validation
@@ -462,9 +462,9 @@ const KnowledgeBase = () => {
         duration: 6000
       });
     }
-  };
+  }, [addLink, toast, removeToast, setUrlInput]);
 
-  const handleFileAction = async (action, fileId) => {
+  const handleFileAction = useCallback(async (action, fileId) => {
     if (action === 'delete') {
       // Find the file name for better user feedback
       const file = knowledgeFiles.find(f => f.id === fileId);
@@ -505,9 +505,9 @@ const KnowledgeBase = () => {
         });
       }
     }
-  };
+  }, [knowledgeFiles, deleteKnowledgeFile, toast, removeToast]);
 
-  const handleFileClick = (file) => {
+  const handleFileClick = useCallback((file) => {
     // For audio files with transcription, show the existing audio modal
     if (file.fileType === 'audio' && file.metadata?.transcription) {
       setSelectedAudioFile(file);
@@ -517,12 +517,12 @@ const KnowledgeBase = () => {
       setPreviewFile(file);
       setShowPreviewModal(true);
     }
-  };
+  }, []);
 
   // Transcript handling functions
-  const handleTranscriptPaste = () => {
+  const handleTranscriptPaste = useCallback(() => {
     setShowTranscriptModal(true);
-  };
+  }, []);
 
   const handleTranscriptSubmit = async (transcriptData: { title: string; transcript: string; source: string }) => {
     try {
@@ -862,7 +862,7 @@ const KnowledgeBase = () => {
 
           {/* File Listing */}
           {!loading && !uploading && (() => {
-            const { files, totalFiles, totalPages } = getDisplayFiles();
+            const { files, totalFiles, totalPages } = getDisplayFiles;
             
             if (totalFiles === 0) {
               return (

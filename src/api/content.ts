@@ -22,10 +22,11 @@ export const contentApi = {
   /**
    * Load all knowledge files for the current user
    * @param userId - User ID from auth
+   * @param limit - Maximum number of files to load (default: 100)
    * @returns Promise with knowledge files list
    */
-  async loadKnowledgeFiles(userId: string) {
-    return ContentService.loadUserKnowledgeFiles(userId);
+  async loadKnowledgeFiles(userId: string, limit: number = 100) {
+    return ContentService.loadUserKnowledgeFiles(userId, limit);
   },
 
   /**

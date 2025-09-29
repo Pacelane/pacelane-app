@@ -24,13 +24,14 @@ export class ContentService {
   /**
    * Load all knowledge files for a user directly from Supabase database (fast)
    * @param userId - The user's ID
+   * @param limit - Maximum number of files to load (default: 100)
    * @returns Promise with knowledge files list or error
    */
-  static async loadUserKnowledgeFiles(userId: string): Promise<ApiResponse<KnowledgeFile[]>> {
+  static async loadUserKnowledgeFiles(userId: string, limit: number = 100): Promise<ApiResponse<KnowledgeFile[]>> {
     try {
-      console.log('🚀 ContentService: Loading knowledge files from DATABASE (FAST) for user:', userId);
+      console.log('🚀 ContentService: Loading knowledge files from DATABASE (FAST) for user:', userId, 'limit:', limit);
       
-      // Query directly from Supabase database for fast loading
+      // Query directly from Supabase database with limit to prevent timeout
       const { data, error } = await supabase
         .from('knowledge_files')
         .select(`
@@ -46,7 +47,8 @@ export class ContentService {
           metadata
         `)
         .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(limit);
 
       if (error) {
         console.error('❌ ContentService: Database query error:', error);

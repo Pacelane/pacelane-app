@@ -2,7 +2,7 @@
 // This hook provides comprehensive content-related state and operations
 // Frontend developers can use this for all content functionality
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { contentApi } from '@/api/content';
 import { useAuth } from '@/hooks/api/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -27,6 +27,10 @@ export const useContent = (): ContentState & ContentActions => {
   // ========== STATE MANAGEMENT ==========
   
   const { user } = useAuth();
+  
+  // Ref to track if data has been loaded to prevent duplicate calls
+  const dataLoadedRef = useRef(false);
+  const currentUserIdRef = useRef<string | null>(null);
   
   // Knowledge Base State
   const [knowledgeFiles, setKnowledgeFiles] = useState<KnowledgeFile[]>([]);
@@ -86,7 +90,16 @@ export const useContent = (): ContentState & ContentActions => {
       
       if (result.error) {
         console.error('Content operation error:', result.error);
-        setError(result.error);
+        
+        // Handle specific error types
+        let userFriendlyError = result.error;
+        if (result.error.includes('timeout') || result.error.includes('canceling statement')) {
+          userFriendlyError = 'Database query timed out. Please try again or contact support if the issue persists.';
+        } else if (result.error.includes('network') || result.error.includes('connection')) {
+          userFriendlyError = 'Network error. Please check your connection and try again.';
+        }
+        
+        setError(userFriendlyError);
         return result;
       }
 
@@ -96,7 +109,15 @@ export const useContent = (): ContentState & ContentActions => {
       
       return result;
     } catch (error: any) {
-      const errorMessage = error.message || 'Content operation failed';
+      let errorMessage = error.message || 'Content operation failed';
+      
+      // Handle specific error types
+      if (error.message?.includes('timeout') || error.message?.includes('canceling statement')) {
+        errorMessage = 'Database query timed out. Please try again or contact support if the issue persists.';
+      } else if (error.message?.includes('network') || error.message?.includes('connection')) {
+        errorMessage = 'Network error. Please check your connection and try again.';
+      }
+      
       console.error('useContent: Operation failed:', error);
       setError(errorMessage);
       return { error: errorMessage };
@@ -561,11 +582,18 @@ export const useContent = (): ContentState & ContentActions => {
 
   // Load all content data when user changes or component mounts
   useEffect(() => {
-    if (user) {
+    // Only load data if we have a user and haven't loaded data for this user yet
+    if (user && user.id !== currentUserIdRef.current) {
+      console.log('useContent: Loading data for new user:', user.id);
+      
+      // Update refs to track current user and loading state
+      currentUserIdRef.current = user.id;
+      dataLoadedRef.current = false;
+      
       // Load knowledge files first (fast database query) - this is critical for Knowledge Base page
       executeContentOperation(
         async () => {
-          const result = await contentApi.loadKnowledgeFiles(user.id);
+          const result = await contentApi.loadKnowledgeFiles(user.id, 100); // Limit to 100 files to prevent timeout
           if (result.data) {
             setKnowledgeFiles(result.data);
           }
@@ -596,9 +624,15 @@ export const useContent = (): ContentState & ContentActions => {
           },
           'loadingSuggestions'
         )
-      ]);
-    } else {
+      ]).finally(() => {
+        // Mark data as loaded for this user
+        dataLoadedRef.current = true;
+      });
+    } else if (!user) {
       // Clear all content when user logs out
+      console.log('useContent: Clearing data - user logged out');
+      currentUserIdRef.current = null;
+      dataLoadedRef.current = false;
       setKnowledgeFiles([]);
       setSavedDrafts([]);
       setContentSuggestions([]);
@@ -606,7 +640,7 @@ export const useContent = (): ContentState & ContentActions => {
       setCurrentConversationId(undefined);
       setError(undefined);
     }
-  }, [user]);
+  }, [user?.id]); // Only depend on user.id, not the entire user object
 
   // ========== RETURN STATE & ACTIONS ==========
   
