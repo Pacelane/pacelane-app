@@ -28,7 +28,7 @@ export class ContentService {
    */
   static async loadUserKnowledgeFiles(userId: string): Promise<ApiResponse<KnowledgeFile[]>> {
     try {
-      console.log('ContentService: Loading knowledge files from database for user:', userId);
+      console.log('🚀 ContentService: Loading knowledge files from DATABASE (FAST) for user:', userId);
       
       // Query directly from Supabase database for fast loading
       const { data, error } = await supabase
@@ -49,14 +49,14 @@ export class ContentService {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('ContentService: Database query error:', error);
+        console.error('❌ ContentService: Database query error:', error);
         return { error: error.message || 'Failed to load knowledge files' };
       }
 
-      console.log('ContentService: Loaded', data?.length || 0, 'knowledge files from database');
+      console.log('✅ ContentService: Loaded', data?.length || 0, 'knowledge files from DATABASE (FAST)');
       return { data: data || [] };
     } catch (error: any) {
-      console.error('ContentService: loadUserKnowledgeFiles failed:', error);
+      console.error('❌ ContentService: loadUserKnowledgeFiles failed:', error);
       return { error: error.message || 'Failed to load knowledge files' };
     }
   }
@@ -68,7 +68,7 @@ export class ContentService {
    */
   static async loadUserKnowledgeFilesFromGCS(userId: string): Promise<ApiResponse<KnowledgeFile[]>> {
     try {
-      console.log('ContentService: Loading knowledge files from GCS for user:', userId);
+      console.log('🐌 ContentService: Loading knowledge files from GCS (SLOW) for user:', userId);
       
       // Get user's JWT token for authentication
       const { data: { session } } = await supabase.auth.getSession();

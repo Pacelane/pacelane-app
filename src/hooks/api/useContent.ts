@@ -562,18 +562,20 @@ export const useContent = (): ContentState & ContentActions => {
   // Load all content data when user changes or component mounts
   useEffect(() => {
     if (user) {
-      // Load all content data in parallel - create inline functions to avoid dependency issues
+      // Load knowledge files first (fast database query) - this is critical for Knowledge Base page
+      executeContentOperation(
+        async () => {
+          const result = await contentApi.loadKnowledgeFiles(user.id);
+          if (result.data) {
+            setKnowledgeFiles(result.data);
+          }
+          return result;
+        },
+        'loadingFiles'
+      );
+
+      // Load other content in parallel (these are less critical and can load separately)
       Promise.all([
-        executeContentOperation(
-          async () => {
-            const result = await contentApi.loadKnowledgeFiles(user.id);
-            if (result.data) {
-              setKnowledgeFiles(result.data);
-            }
-            return result;
-          },
-          'loadingFiles'
-        ),
         executeContentOperation(
           async () => {
             const result = await contentApi.loadSavedDrafts(user.id);

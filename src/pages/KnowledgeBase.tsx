@@ -158,33 +158,42 @@ const KnowledgeBase = () => {
       console.log('KnowledgeBase: Processing item:', item);
       return item && item.type;
     }).map(item => {
-      // Map file type to FileCard expected types
+      // Use the same file type detection logic as the service layer
+      const detectedFileType = getFileTypeFromName(item.name || '');
+      
+      // Map detected file type to FileCard expected types
       let cardFileType = 'default';
-      switch (item.type) {
-        case 'image':
-          cardFileType = 'image';
-          break;
-        case 'video':
-          cardFileType = 'video';
-          break;
-        case 'audio':
-          cardFileType = 'audio';
-          break;
-        case 'link':
-          cardFileType = 'link';
-          break;
-        default:
-          // Check file extension for more specific types
-          if (item.name?.toLowerCase().endsWith('.pdf')) {
-            cardFileType = 'pdf';
-          } else if (item.name?.toLowerCase().endsWith('.zip')) {
-            cardFileType = 'zip';
-          } else if (['.txt', '.md', '.csv', '.json', '.docx', '.doc', '.pptx', '.ppt', '.xlsx', '.xls'].some(ext => 
-            item.name?.toLowerCase().endsWith(ext))) {
-            cardFileType = 'code'; // Use code icon for text-based files
-          } else {
+      
+      if (item.type === 'link') {
+        cardFileType = 'link';
+      } else {
+        // Use filename-based detection for more accurate icons
+        switch (detectedFileType) {
+          case 'image':
+            cardFileType = 'image';
+            break;
+          case 'video':
+            cardFileType = 'video';
+            break;
+          case 'audio':
+            cardFileType = 'audio';
+            break;
+          case 'document':
+            // Check for specific document types for better icons
+            if (item.name?.toLowerCase().endsWith('.pdf')) {
+              cardFileType = 'pdf';
+            } else if (item.name?.toLowerCase().endsWith('.zip')) {
+              cardFileType = 'zip';
+            } else if (['.txt', '.md', '.csv', '.json', '.docx', '.doc', '.pptx', '.ppt', '.xlsx', '.xls'].some(ext => 
+              item.name?.toLowerCase().endsWith(ext))) {
+              cardFileType = 'code'; // Use code icon for text-based files
+            } else {
+              cardFileType = 'default';
+            }
+            break;
+          default:
             cardFileType = 'default';
-          }
+        }
       }
 
       // Create enhanced subtitle with file-specific information
