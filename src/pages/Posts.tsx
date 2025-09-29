@@ -42,9 +42,19 @@ const Posts = () => {
     contentSuggestions,
     loadingDrafts: isLoading,
     deleteDraft,
+    loadSavedDrafts,
+    loadContentSuggestions,
     error,
     clearError
   } = useContent();
+
+  // We need to manage content suggestions locally for filtering logic
+  const [localContentSuggestions, setLocalContentSuggestions] = React.useState(contentSuggestions);
+  
+  // Sync local state with hook state
+  React.useEffect(() => {
+    setLocalContentSuggestions(contentSuggestions);
+  }, [contentSuggestions]);
 
   // ========== LOCAL COMPONENT STATE ==========
   // Sidebar handled by layout
@@ -113,7 +123,24 @@ const Posts = () => {
     return option?.label || 'Last Edited';
   };
 
-  // Get all content items (drafts + suggestions)
+  // Load content with server-side filtering when filters change
+  React.useEffect(() => {
+    // Determine the appropriate filter values for each content type
+    const draftStatusFilter = selectedFilter === 'all' ? undefined : selectedFilter;
+    
+    // Load drafts with current search and filters
+    loadSavedDrafts(searchQuery, draftStatusFilter, sortBy);
+    
+    // Load suggestions with current search and sort (suggestions don't have status filters)
+    if (selectedFilter === 'all') {
+      loadContentSuggestions(searchQuery, sortBy);
+    } else {
+      // If filtering by draft status, clear local suggestions
+      setLocalContentSuggestions([]);
+    }
+  }, [searchQuery, selectedFilter, sortBy, loadSavedDrafts, loadContentSuggestions]);
+
+  // Get all content items (drafts + suggestions) - now server-side filtered
   const getAllContentItems = () => {
     const draftItems = savedDrafts.map(draft => ({
       id: draft.id,
@@ -127,7 +154,7 @@ const Posts = () => {
       updatedAt: new Date(draft.updated_at),
     }));
 
-    const suggestionItems = contentSuggestions.map(suggestion => ({
+    const suggestionItems = localContentSuggestions.map(suggestion => ({
       id: suggestion.id,
       title: suggestion.title,
       subtitle: 'Content suggestion',
@@ -139,54 +166,8 @@ const Posts = () => {
       updatedAt: new Date(suggestion.created_at || Date.now()),
     }));
 
+    // Server-side filtering means we just combine the already-filtered results
     return [...draftItems, ...suggestionItems];
-  };
-
-  // Filter content based on search and filter
-  const getFilteredContent = () => {
-    const allItems = getAllContentItems();
-    
-    return allItems.filter(item => {
-      const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                           item.content.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      let matchesFilter = false;
-      switch (selectedFilter) {
-        case 'all':
-          matchesFilter = true;
-          break;
-        case 'draft':
-          matchesFilter = item.type === 'draft' && item.status === 'draft';
-          break;
-        case 'published':
-          matchesFilter = item.type === 'draft' && item.status === 'published';
-          break;
-        case 'archived':
-          matchesFilter = item.type === 'draft' && item.status === 'archived';
-          break;
-        default:
-          matchesFilter = true;
-      }
-      
-      return matchesSearch && matchesFilter;
-    });
-  };
-
-  // Sort content based on sortBy
-  const getSortedContent = (items) => {
-    switch (sortBy) {
-      case 'nameAsc':
-        return [...items].sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-      case 'nameDesc':
-        return [...items].sort((a, b) => (b.title || '').localeCompare(a.title || ''));
-      case 'newest':
-        return [...items].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
-      case 'oldest':
-        return [...items].sort((a, b) => a.updatedAt.getTime() - b.updatedAt.getTime());
-      case 'lastEdited':
-      default:
-        return [...items].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
-    }
   };
 
   // Event handlers
@@ -331,7 +312,7 @@ const Posts = () => {
     margin: 0,
   };
 
-  const contentItems = getSortedContent(getFilteredContent());
+  const contentItems = getAllContentItems(); // Server-side filtering and sorting
 
   return (
     <div style={containerStyles}>

@@ -22,18 +22,34 @@ export class ContentService {
   // ========== KNOWLEDGE BASE OPERATIONS ==========
 
   /**
-   * Load knowledge files for a user with server-side pagination
+   * Load knowledge files for a user with server-side pagination, search, and filtering
    * @param userId - The user's ID
    * @param limit - Number of files to load (default: 12)
    * @param offset - Number of files to skip (default: 0)
+   * @param searchQuery - Optional search query to filter by name or content
+   * @param typeFilter - Optional type filter ('all', 'files', 'images', 'audio', 'links')
+   * @param sortBy - Optional sort order ('lastAdded', 'nameAsc', 'nameDesc', 'sizeLarge', 'sizeSmall')
    * @returns Promise with knowledge files list or error
    */
-  static async loadUserKnowledgeFiles(userId: string, limit: number = 12, offset: number = 0): Promise<ApiResponse<KnowledgeFile[]>> {
+  static async loadUserKnowledgeFiles(
+    userId: string, 
+    limit: number = 12, 
+    offset: number = 0,
+    searchQuery?: string,
+    typeFilter?: string,
+    sortBy?: string
+  ): Promise<ApiResponse<KnowledgeFile[]>> {
     try {
-      console.log('🚀 ContentService: Loading knowledge files page for user:', userId, 'limit:', limit, 'offset:', offset);
+      console.log('🚀 ContentService: Loading knowledge files page for user:', userId, {
+        limit,
+        offset,
+        searchQuery,
+        typeFilter,
+        sortBy
+      });
       
-      // Query directly from Supabase database with pagination
-      const { data, error } = await supabase
+      // Start building the query
+      let query = supabase
         .from('knowledge_files')
         .select(`
           id,
@@ -47,16 +63,66 @@ export class ContentService {
           extraction_metadata,
           metadata
         `)
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .range(offset, offset + limit - 1);
+        .eq('user_id', userId);
+
+      // Apply search filter if provided
+      if (searchQuery && searchQuery.trim()) {
+        const trimmedQuery = searchQuery.trim();
+        // Search in both name and extracted content
+        query = query.or(`name.ilike.%${trimmedQuery}%,extracted_content.ilike.%${trimmedQuery}%`);
+      }
+
+      // Apply type filter if provided and not 'all'
+      if (typeFilter && typeFilter !== 'all') {
+        switch (typeFilter) {
+          case 'files':
+            // Files include documents, PDFs, text files, etc.
+            query = query.in('type', ['file', 'document', 'pdf', 'text']);
+            break;
+          case 'images':
+            query = query.eq('type', 'image');
+            break;
+          case 'audio':
+            query = query.eq('type', 'audio');
+            break;
+          case 'links':
+            query = query.eq('type', 'link');
+            break;
+          default:
+            // For unknown filters, don't apply any type filter
+            break;
+        }
+      }
+
+      // Apply sorting
+      switch (sortBy) {
+        case 'nameAsc':
+          query = query.order('name', { ascending: true });
+          break;
+        case 'nameDesc':
+          query = query.order('name', { ascending: false });
+          break;
+        case 'sizeLarge':
+          query = query.order('size', { ascending: false, nullsLast: true });
+          break;
+        case 'sizeSmall':
+          query = query.order('size', { ascending: true, nullsLast: true });
+          break;
+        case 'lastAdded':
+        default:
+          query = query.order('created_at', { ascending: false });
+          break;
+      }
+
+      // Apply pagination
+      const { data, error } = await query.range(offset, offset + limit - 1);
 
       if (error) {
         console.error('❌ ContentService: Database query error:', error);
         return { error: error.message || 'Failed to load knowledge files' };
       }
 
-      console.log('✅ ContentService: Loaded', data?.length || 0, 'knowledge files page');
+      console.log('✅ ContentService: Loaded', data?.length || 0, 'knowledge files page with filters');
       return { data: data || [] };
     } catch (error: any) {
       console.error('❌ ContentService: loadUserKnowledgeFiles failed:', error);
@@ -65,25 +131,66 @@ export class ContentService {
   }
 
   /**
-   * Get total count of knowledge files for a user
+   * Get total count of knowledge files for a user with filtering support
    * @param userId - The user's ID
+   * @param searchQuery - Optional search query to filter by name or content
+   * @param typeFilter - Optional type filter ('all', 'files', 'images', 'audio', 'links')
    * @returns Promise with total count or error
    */
-  static async getUserKnowledgeFilesCount(userId: string): Promise<ApiResponse<number>> {
+  static async getUserKnowledgeFilesCount(
+    userId: string,
+    searchQuery?: string,
+    typeFilter?: string
+  ): Promise<ApiResponse<number>> {
     try {
-      console.log('🔢 ContentService: Getting knowledge files count for user:', userId);
+      console.log('🔢 ContentService: Getting knowledge files count for user:', userId, {
+        searchQuery,
+        typeFilter
+      });
       
-      const { count, error } = await supabase
+      // Start building the query
+      let query = supabase
         .from('knowledge_files')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', userId);
+
+      // Apply search filter if provided
+      if (searchQuery && searchQuery.trim()) {
+        const trimmedQuery = searchQuery.trim();
+        // Search in both name and extracted content
+        query = query.or(`name.ilike.%${trimmedQuery}%,extracted_content.ilike.%${trimmedQuery}%`);
+      }
+
+      // Apply type filter if provided and not 'all'
+      if (typeFilter && typeFilter !== 'all') {
+        switch (typeFilter) {
+          case 'files':
+            // Files include documents, PDFs, text files, etc.
+            query = query.in('type', ['file', 'document', 'pdf', 'text']);
+            break;
+          case 'images':
+            query = query.eq('type', 'image');
+            break;
+          case 'audio':
+            query = query.eq('type', 'audio');
+            break;
+          case 'links':
+            query = query.eq('type', 'link');
+            break;
+          default:
+            // For unknown filters, don't apply any type filter
+            break;
+        }
+      }
+
+      const { count, error } = await query;
 
       if (error) {
         console.error('❌ ContentService: Count query error:', error);
         return { error: error.message || 'Failed to get knowledge files count' };
       }
 
-      console.log('✅ ContentService: Total knowledge files count:', count || 0);
+      console.log('✅ ContentService: Total knowledge files count with filters:', count || 0);
       return { data: count || 0 };
     } catch (error: any) {
       console.error('❌ ContentService: getUserKnowledgeFilesCount failed:', error);
@@ -402,26 +509,72 @@ export class ContentService {
   // ========== DRAFTS OPERATIONS ==========
 
   /**
-   * Load all saved drafts for a user
+   * Load saved drafts for a user with search and filtering support
    * @param userId - The user's ID
+   * @param searchQuery - Optional search query to filter by title or content
+   * @param statusFilter - Optional status filter ('all', 'draft', 'published', 'archived')
+   * @param sortBy - Optional sort order ('lastEdited', 'newest', 'oldest', 'nameAsc', 'nameDesc')
    * @returns Promise with drafts list or error
    */
-  static async loadUserDrafts(userId: string): Promise<ApiResponse<SavedDraft[]>> {
+  static async loadUserDrafts(
+    userId: string,
+    searchQuery?: string,
+    statusFilter?: string,
+    sortBy?: string
+  ): Promise<ApiResponse<SavedDraft[]>> {
     try {
-      console.log('ContentService: Loading drafts for user:', userId);
+      console.log('ContentService: Loading drafts for user:', userId, {
+        searchQuery,
+        statusFilter,
+        sortBy
+      });
 
-      const { data: drafts, error } = await supabase
+      // Start building the query
+      let query = supabase
         .from('saved_drafts' as any)
         .select('*')
-        .eq('user_id', userId)
-        .order('updated_at', { ascending: false });
+        .eq('user_id', userId);
+
+      // Apply search filter if provided
+      if (searchQuery && searchQuery.trim()) {
+        const trimmedQuery = searchQuery.trim();
+        // Search in both title and content
+        query = query.or(`title.ilike.%${trimmedQuery}%,content.ilike.%${trimmedQuery}%`);
+      }
+
+      // Apply status filter if provided and not 'all'
+      if (statusFilter && statusFilter !== 'all') {
+        query = query.eq('status', statusFilter);
+      }
+
+      // Apply sorting
+      switch (sortBy) {
+        case 'nameAsc':
+          query = query.order('title', { ascending: true, nullsLast: true });
+          break;
+        case 'nameDesc':
+          query = query.order('title', { ascending: false, nullsLast: true });
+          break;
+        case 'newest':
+          query = query.order('created_at', { ascending: false });
+          break;
+        case 'oldest':
+          query = query.order('created_at', { ascending: true });
+          break;
+        case 'lastEdited':
+        default:
+          query = query.order('updated_at', { ascending: false });
+          break;
+      }
+
+      const { data: drafts, error } = await query;
 
       if (error) {
         console.error('ContentService: Load drafts error:', error);
         throw error;
       }
 
-      console.log('ContentService: Loaded', drafts?.length || 0, 'drafts');
+      console.log('ContentService: Loaded', drafts?.length || 0, 'drafts with filters');
       return { data: drafts || [] };
     } catch (error: any) {
       console.error('ContentService: loadUserDrafts failed:', error);
@@ -532,21 +685,55 @@ export class ContentService {
   // ========== CONTENT SUGGESTIONS OPERATIONS ==========
 
   /**
-   * Load active content suggestions for a user
+   * Load active content suggestions for a user with search support
    * @param userId - The user's ID
+   * @param searchQuery - Optional search query to filter by title or description
+   * @param sortBy - Optional sort order ('newest', 'oldest', 'nameAsc', 'nameDesc')
    * @returns Promise with content suggestions or error
    */
-  static async loadContentSuggestions(userId: string): Promise<ApiResponse<ContentSuggestion[]>> {
+  static async loadContentSuggestions(
+    userId: string,
+    searchQuery?: string,
+    sortBy?: string
+  ): Promise<ApiResponse<ContentSuggestion[]>> {
     try {
-      console.log('ContentService: Loading enhanced content suggestions for user:', userId);
+      console.log('ContentService: Loading enhanced content suggestions for user:', userId, {
+        searchQuery,
+        sortBy
+      });
 
-      // First try to load from enhanced_content_suggestions table
-      const { data: enhancedSuggestions, error: enhancedError } = await supabase
+      // Start building the query for enhanced suggestions
+      let enhancedQuery = supabase
         .from('enhanced_content_suggestions')
         .select('*')
         .eq('user_id', userId)
-        .eq('is_active', true)
-        .order('created_at', { ascending: false });
+        .eq('is_active', true);
+
+      // Apply search filter if provided
+      if (searchQuery && searchQuery.trim()) {
+        const trimmedQuery = searchQuery.trim();
+        // Search in title, description, and full content
+        enhancedQuery = enhancedQuery.or(`title.ilike.%${trimmedQuery}%,description.ilike.%${trimmedQuery}%,full_content.ilike.%${trimmedQuery}%`);
+      }
+
+      // Apply sorting
+      switch (sortBy) {
+        case 'nameAsc':
+          enhancedQuery = enhancedQuery.order('title', { ascending: true, nullsLast: true });
+          break;
+        case 'nameDesc':
+          enhancedQuery = enhancedQuery.order('title', { ascending: false, nullsLast: true });
+          break;
+        case 'oldest':
+          enhancedQuery = enhancedQuery.order('created_at', { ascending: true });
+          break;
+        case 'newest':
+        default:
+          enhancedQuery = enhancedQuery.order('created_at', { ascending: false });
+          break;
+      }
+
+      const { data: enhancedSuggestions, error: enhancedError } = await enhancedQuery;
 
       if (enhancedError) {
         console.error('ContentService: Load enhanced content suggestions error:', enhancedError);
@@ -554,7 +741,7 @@ export class ContentService {
       }
 
       if (enhancedSuggestions && enhancedSuggestions.length > 0) {
-        console.log('ContentService: Loaded', enhancedSuggestions.length, 'enhanced content suggestions');
+        console.log('ContentService: Loaded', enhancedSuggestions.length, 'enhanced content suggestions with filters');
         
         // Transform enhanced suggestions to match ContentSuggestion interface
         const transformedSuggestions = enhancedSuggestions.map(suggestion => ({
@@ -580,13 +767,40 @@ export class ContentService {
 
       // Fallback to old content_suggestions table if no enhanced suggestions found
       console.log('ContentService: No enhanced suggestions found, falling back to old table');
-      const { data: oldSuggestions, error: oldError } = await supabase
+      
+      // Start building the query for old suggestions
+      let oldQuery = supabase
         .from('content_suggestions')
         .select('*')
         .eq('user_id', userId)
         .eq('is_active', true)
-        .is('used_at', null)
-        .order('created_at', { ascending: false });
+        .is('used_at', null);
+
+      // Apply search filter if provided
+      if (searchQuery && searchQuery.trim()) {
+        const trimmedQuery = searchQuery.trim();
+        // Search in title, description, and suggested outline
+        oldQuery = oldQuery.or(`title.ilike.%${trimmedQuery}%,description.ilike.%${trimmedQuery}%,suggested_outline.ilike.%${trimmedQuery}%`);
+      }
+
+      // Apply sorting
+      switch (sortBy) {
+        case 'nameAsc':
+          oldQuery = oldQuery.order('title', { ascending: true, nullsLast: true });
+          break;
+        case 'nameDesc':
+          oldQuery = oldQuery.order('title', { ascending: false, nullsLast: true });
+          break;
+        case 'oldest':
+          oldQuery = oldQuery.order('created_at', { ascending: true });
+          break;
+        case 'newest':
+        default:
+          oldQuery = oldQuery.order('created_at', { ascending: false });
+          break;
+      }
+
+      const { data: oldSuggestions, error: oldError } = await oldQuery;
 
       if (oldError) {
         console.error('ContentService: Load old content suggestions error:', oldError);
