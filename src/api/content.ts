@@ -20,23 +20,35 @@ export const contentApi = {
   // ========== KNOWLEDGE BASE OPERATIONS ==========
 
   /**
-   * Load knowledge files for the current user with pagination
+   * Load knowledge files for the current user with pagination, search, and filtering
    * @param userId - User ID from auth
    * @param limit - Number of files to load (default: 12)
    * @param offset - Number of files to skip (default: 0)
+   * @param searchQuery - Optional search query to filter by name or content
+   * @param typeFilter - Optional type filter ('all', 'files', 'images', 'audio', 'links')
+   * @param sortBy - Optional sort order ('lastAdded', 'nameAsc', 'nameDesc', 'sizeLarge', 'sizeSmall')
    * @returns Promise with knowledge files list
    */
-  async loadKnowledgeFiles(userId: string, limit: number = 12, offset: number = 0) {
-    return ContentService.loadUserKnowledgeFiles(userId, limit, offset);
+  async loadKnowledgeFiles(
+    userId: string, 
+    limit: number = 12, 
+    offset: number = 0,
+    searchQuery?: string,
+    typeFilter?: string,
+    sortBy?: string
+  ) {
+    return ContentService.loadUserKnowledgeFiles(userId, limit, offset, searchQuery, typeFilter, sortBy);
   },
 
   /**
-   * Get total count of knowledge files for the current user
+   * Get total count of knowledge files for the current user with filtering support
    * @param userId - User ID from auth
+   * @param searchQuery - Optional search query to filter by name or content
+   * @param typeFilter - Optional type filter ('all', 'files', 'images', 'audio', 'links')
    * @returns Promise with total count
    */
-  async getKnowledgeFilesCount(userId: string) {
-    return ContentService.getUserKnowledgeFilesCount(userId);
+  async getKnowledgeFilesCount(userId: string, searchQuery?: string, typeFilter?: string) {
+    return ContentService.getUserKnowledgeFilesCount(userId, searchQuery, typeFilter);
   },
 
   /**
@@ -181,12 +193,20 @@ export const contentApi = {
   // ========== DRAFTS OPERATIONS ==========
 
   /**
-   * Load all saved drafts for the current user
+   * Load saved drafts for the current user with search and filtering support
    * @param userId - User ID from auth
+   * @param searchQuery - Optional search query to filter by title or content
+   * @param statusFilter - Optional status filter ('all', 'draft', 'published', 'archived')
+   * @param sortBy - Optional sort order ('lastEdited', 'newest', 'oldest', 'nameAsc', 'nameDesc')
    * @returns Promise with drafts list
    */
-  async loadSavedDrafts(userId: string) {
-    return ContentService.loadUserDrafts(userId);
+  async loadSavedDrafts(
+    userId: string,
+    searchQuery?: string,
+    statusFilter?: string,
+    sortBy?: string
+  ) {
+    return ContentService.loadUserDrafts(userId, searchQuery, statusFilter, sortBy);
   },
 
   /**
@@ -263,12 +283,18 @@ export const contentApi = {
   // ========== CONTENT SUGGESTIONS OPERATIONS ==========
 
   /**
-   * Load active content suggestions for the current user
+   * Load active content suggestions for the current user with search support
    * @param userId - User ID from auth
+   * @param searchQuery - Optional search query to filter by title or description
+   * @param sortBy - Optional sort order ('newest', 'oldest', 'nameAsc', 'nameDesc')
    * @returns Promise with content suggestions
    */
-  async loadContentSuggestions(userId: string) {
-    return ContentService.loadContentSuggestions(userId);
+  async loadContentSuggestions(
+    userId: string,
+    searchQuery?: string,
+    sortBy?: string
+  ) {
+    return ContentService.loadContentSuggestions(userId, searchQuery, sortBy);
   },
 
   /**

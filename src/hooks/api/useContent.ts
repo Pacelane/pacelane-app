@@ -143,18 +143,33 @@ export const useContent = (): ContentState & ContentActions => {
   // ========== KNOWLEDGE BASE ACTIONS ==========
 
   /**
-   * Load knowledge files for the current page
+   * Load knowledge files for the current page with search and filtering
    * @param page - Page number (1-based)
+   * @param searchQuery - Optional search query
+   * @param typeFilter - Optional type filter
+   * @param sortBy - Optional sort order
    * @returns Promise with operation result
    */
-  const loadKnowledgeFiles = useCallback(async (page: number = 1) => {
+  const loadKnowledgeFiles = useCallback(async (
+    page: number = 1,
+    searchQuery?: string,
+    typeFilter?: string,
+    sortBy?: string
+  ) => {
     if (!user) return { error: 'User must be logged in' };
     
     const offset = (page - 1) * itemsPerPage;
     
     return executeContentOperation(
       async () => {
-        const result = await contentApi.loadKnowledgeFiles(user.id, itemsPerPage, offset);
+        const result = await contentApi.loadKnowledgeFiles(
+          user.id, 
+          itemsPerPage, 
+          offset,
+          searchQuery,
+          typeFilter,
+          sortBy
+        );
         
         if (result.data) {
           setKnowledgeFiles(result.data);
@@ -169,17 +184,22 @@ export const useContent = (): ContentState & ContentActions => {
   }, [user, itemsPerPage]);
 
   /**
-   * Load total count of knowledge files
+   * Load total count of knowledge files with filtering support
+   * @param searchQuery - Optional search query
+   * @param typeFilter - Optional type filter
    * @returns Promise with operation result
    */
-  const loadKnowledgeFilesCount = useCallback(async () => {
+  const loadKnowledgeFilesCount = useCallback(async (
+    searchQuery?: string,
+    typeFilter?: string
+  ) => {
     if (!user) return { error: 'User must be logged in' };
     
     setLoadingCount(true);
     setError(undefined);
 
     try {
-      const result = await contentApi.getKnowledgeFilesCount(user.id);
+      const result = await contentApi.getKnowledgeFilesCount(user.id, searchQuery, typeFilter);
       
       if (result.error) {
         console.error('useContent: Count operation error:', result.error);
@@ -305,13 +325,20 @@ export const useContent = (): ContentState & ContentActions => {
   // ========== DRAFTS ACTIONS ==========
 
   /**
-   * Load all saved drafts for the current user
+   * Load saved drafts for the current user with search and filtering support
+   * @param searchQuery - Optional search query
+   * @param statusFilter - Optional status filter
+   * @param sortBy - Optional sort order
    * @returns Promise with operation result
    */
-  const loadSavedDrafts = useCallback(async () => {
+  const loadSavedDrafts = useCallback(async (
+    searchQuery?: string,
+    statusFilter?: string,
+    sortBy?: string
+  ) => {
     return executeContentOperation(
       async () => {
-        const result = await contentApi.loadSavedDrafts(user!.id);
+        const result = await contentApi.loadSavedDrafts(user!.id, searchQuery, statusFilter, sortBy);
         
         if (result.data) {
           setSavedDrafts(result.data);
@@ -403,13 +430,18 @@ export const useContent = (): ContentState & ContentActions => {
   // ========== CONTENT SUGGESTIONS ACTIONS ==========
 
   /**
-   * Load active content suggestions for the current user
+   * Load active content suggestions for the current user with search support
+   * @param searchQuery - Optional search query
+   * @param sortBy - Optional sort order
    * @returns Promise with operation result
    */
-  const loadContentSuggestions = useCallback(async () => {
+  const loadContentSuggestions = useCallback(async (
+    searchQuery?: string,
+    sortBy?: string
+  ) => {
     return executeContentOperation(
       async () => {
-        const result = await contentApi.loadContentSuggestions(user!.id);
+        const result = await contentApi.loadContentSuggestions(user!.id, searchQuery, sortBy);
         
         if (result.data) {
           setContentSuggestions(result.data);
@@ -644,26 +676,8 @@ export const useContent = (): ContentState & ContentActions => {
 
       // Load other content in parallel (these are less critical and can load separately)
       Promise.all([
-        executeContentOperation(
-          async () => {
-            const result = await contentApi.loadSavedDrafts(user.id);
-            if (result.data) {
-              setSavedDrafts(result.data);
-            }
-            return result;
-          },
-          'loadingDrafts'
-        ),
-        executeContentOperation(
-          async () => {
-            const result = await contentApi.loadContentSuggestions(user.id);
-            if (result.data) {
-              setContentSuggestions(result.data);
-            }
-            return result;
-          },
-          'loadingSuggestions'
-        )
+        loadSavedDrafts(),
+        loadContentSuggestions()
       ]).finally(() => {
         // Mark data as loaded for this user
         dataLoadedRef.current = true;

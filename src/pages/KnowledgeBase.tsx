@@ -258,72 +258,29 @@ const KnowledgeBase = () => {
     });
   }, [knowledgeFiles, getFileTypeFromName]);
 
-  // Filter files based on active tab - memoized
-  const getFilteredFiles = useMemo(() => {
-    const allFiles = getFileCards;
-    
-    if (activeTab === 'all') return allFiles;
-    
-    return allFiles.filter(file => {
-      switch (activeTab) {
-        case 'files':
-          return ['default', 'pdf', 'zip'].includes(file.fileType);
-        case 'images':
-          return file.fileType === 'image';
-        case 'audio':
-          return file.fileType === 'audio';
-        case 'links':
-          return file.fileType === 'link';
-        default:
-          return true;
-      }
-    });
-  }, [getFileCards, activeTab]);
-
-  // Sort files based on sortBy - memoized
-  const getSortedFiles = useCallback((files) => {
-    switch (sortBy) {
-      case 'nameAsc':
-        return [...files].sort((a, b) => a.title.localeCompare(b.title));
-      case 'nameDesc':
-        return [...files].sort((a, b) => b.title.localeCompare(a.title));
-      case 'sizeLarge':
-        return [...files].sort((a, b) => (b.fileSize || 0) - (a.fileSize || 0));
-      case 'sizeSmall':
-        return [...files].sort((a, b) => (a.fileSize || 0) - (b.fileSize || 0));
-      case 'lastAdded':
-      default:
-        return files; // Already sorted by creation date from backend
-    }
-  }, [sortBy]);
-
-  // Get final filtered and sorted files - memoized (server-side pagination)
+  // Get display files - server-side filtering and pagination
   const getDisplayFiles = useMemo(() => {
-    const filteredFiles = getFilteredFiles;
-    const searchedFiles = filteredFiles.filter(file => 
-      searchQuery === '' || 
-      file.title.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-    const sortedFiles = getSortedFiles(searchedFiles);
+    // Files are already filtered, sorted, and paginated from the server
+    const files = getFileCards;
     
-    // For server-side pagination, we return the current page data
-    // The total count comes from the server
     return {
-      files: sortedFiles, // These are already the files for the current page
-      totalFiles: totalFilesCount, // Total count from server
+      files: files, // These are already the files for the current page with server-side filtering
+      totalFiles: totalFilesCount, // Total count from server with filters applied
       totalPages: Math.ceil(totalFilesCount / hookItemsPerPage)
     };
-  }, [getFilteredFiles, searchQuery, getSortedFiles, totalFilesCount, hookItemsPerPage]);
+  }, [getFileCards, totalFilesCount, hookItemsPerPage]);
 
-  // Handle page changes
+  // Handle page changes with current filters
   const handlePageChange = useCallback((page: number) => {
-    loadKnowledgeFiles(page);
-  }, [loadKnowledgeFiles]);
+    loadKnowledgeFiles(page, searchQuery, activeTab, sortBy);
+  }, [loadKnowledgeFiles, searchQuery, activeTab, sortBy]);
 
-  // Reset page when search query or filter changes
+  // Reset page when search query or filter changes - now with server-side filtering
   React.useEffect(() => {
-    loadKnowledgeFiles(1);
-  }, [searchQuery, activeTab, sortBy, loadKnowledgeFiles]);
+    // Load both count and files with current filters
+    loadKnowledgeFilesCount(searchQuery, activeTab);
+    loadKnowledgeFiles(1, searchQuery, activeTab, sortBy);
+  }, [searchQuery, activeTab, sortBy, loadKnowledgeFiles, loadKnowledgeFilesCount]);
 
   // File upload handlers - memoized to prevent unnecessary re-renders
   const handleFileSelect = useCallback(async (files) => {

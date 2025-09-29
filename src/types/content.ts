@@ -3,7 +3,7 @@
 
 // ========== KNOWLEDGE BASE TYPES ==========
 
-export type FileType = 'file' | 'image' | 'audio' | 'video' | 'link';
+export type FileType = 'file' | 'image' | 'audio' | 'video' | 'link' | 'document' | 'pdf' | 'text';
 
 export interface KnowledgeFile {
   id: string;
@@ -15,6 +15,18 @@ export interface KnowledgeFile {
   created_at: string;
   updated_at?: string;
   selected?: boolean; // For UI selection state
+  // Additional database fields for content extraction
+  content_extracted?: boolean;
+  extracted_content?: string;
+  extraction_metadata?: {
+    transcription_status?: string;
+    [key: string]: any;
+  };
+  metadata?: {
+    source?: string;
+    contact_identifier?: string;
+    [key: string]: any;
+  };
 }
 
 export interface FileUploadData {
@@ -104,6 +116,12 @@ export interface ContentState {
   loadingFiles: boolean;
   uploading: boolean;
   
+  // Pagination State
+  totalFilesCount: number;
+  loadingCount: boolean;
+  currentPage: number;
+  itemsPerPage: number;
+  
   // Drafts State
   savedDrafts: SavedDraft[];
   loadingDrafts: boolean;
@@ -124,20 +142,21 @@ export interface ContentState {
 
 export interface ContentActions {
   // Knowledge Base Actions
-  loadKnowledgeFiles: () => Promise<any>;
+  loadKnowledgeFiles: (page?: number, searchQuery?: string, typeFilter?: string, sortBy?: string) => Promise<any>;
+  loadKnowledgeFilesCount: (searchQuery?: string, typeFilter?: string) => Promise<any>;
   uploadFile: (fileData: FileUploadData) => Promise<any>;
   uploadFiles: (files: File[]) => Promise<any>;
   deleteKnowledgeFile: (fileId: string) => Promise<any>;
   addLink: (linkData: LinkData) => Promise<any>;
   
   // Drafts Actions
-  loadSavedDrafts: () => Promise<any>;
+  loadSavedDrafts: (searchQuery?: string, statusFilter?: string, sortBy?: string) => Promise<any>;
   saveDraft: (draftData: DraftCreateData) => Promise<any>;
   updateDraft: (draftId: string, updates: DraftUpdateData) => Promise<any>;
   deleteDraft: (draftId: string) => Promise<any>;
   
   // Content Suggestions Actions
-  loadContentSuggestions: () => Promise<any>;
+  loadContentSuggestions: (searchQuery?: string, sortBy?: string) => Promise<any>;
   markSuggestionAsUsed: (suggestionId: string) => Promise<any>;
   
   // AI Assistant Actions
@@ -160,7 +179,7 @@ export interface ContentActions {
   // Utility Actions
   clearError: () => void;
   getFileTypeFromName: (filename: string) => FileType;
-  validateFileType: (file: File) => boolean;
+  validateFileType: (file: File) => FileValidationResult;
   selectKnowledgeFile: (fileId: string, selected: boolean) => void;
   getSelectedFiles: () => KnowledgeFile[];
 }
