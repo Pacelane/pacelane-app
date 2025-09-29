@@ -191,9 +191,8 @@ const KnowledgeBase = () => {
       let subtitle = '';
       
       if (item.type === 'audio') {
-        const extendedItem = item as any; // Type assertion for extended fields
-        const transcriptionStatus = extendedItem.extraction_metadata?.transcription_status || 'unknown';
-        const hasTranscription = extendedItem.extracted_content && extendedItem.extracted_content.length > 0;
+        const transcriptionStatus = item.extraction_metadata?.transcription_status || 'unknown';
+        const hasTranscription = item.extracted_content && item.extracted_content.length > 0;
         
         subtitle = `${item.size ? `${(item.size / 1024).toFixed(1)} KB` : ''} • ${item.created_at ? new Date(item.created_at).toLocaleDateString() : 'Unknown Date'}`;
         
@@ -208,7 +207,7 @@ const KnowledgeBase = () => {
         }
         
         // Add source info if available
-        if (extendedItem.metadata?.source === 'whatsapp') {
+        if (item.metadata?.source === 'whatsapp') {
           subtitle += ` • WhatsApp`;
         }
       } else {
@@ -231,18 +230,18 @@ const KnowledgeBase = () => {
           status: 'ready',
           fileSize: item.size || 0,
           metadata: item.type === 'audio' ? {
-            transcription: (item as any).extracted_content,
-            transcriptionStatus: (item as any).extraction_metadata?.transcription_status,
-            source: (item as any).metadata?.source,
-            contactId: (item as any).metadata?.contact_identifier
+            transcription: item.extracted_content,
+            transcriptionStatus: item.extraction_metadata?.transcription_status,
+            source: item.metadata?.source,
+            contactId: item.metadata?.contact_identifier
           } : undefined
         }),
         // Add additional metadata for audio files
         metadata: item.type === 'audio' ? {
-          transcription: (item as any).extracted_content,
-          transcriptionStatus: (item as any).extraction_metadata?.transcription_status,
-          source: (item as any).metadata?.source,
-          contactId: (item as any).metadata?.contact_identifier
+          transcription: item.extracted_content,
+          transcriptionStatus: item.extraction_metadata?.transcription_status,
+          source: item.metadata?.source,
+          contactId: item.metadata?.contact_identifier
         } : undefined
       };
     });
