@@ -638,6 +638,7 @@ export const useContent = (): ContentState & ContentActions => {
     deleteKnowledgeFile,
     addLink,
     getFilePreviewUrl: contentApi.getFilePreviewUrl,
+    streamFile: contentApi.streamFile,
     getFileContent: contentApi.getFileContent,
     
     // Drafts Actions

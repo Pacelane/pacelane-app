@@ -22,11 +22,51 @@ export class ContentService {
   // ========== KNOWLEDGE BASE OPERATIONS ==========
 
   /**
-   * Load all knowledge files for a user from GCS via edge function
+   * Load all knowledge files for a user directly from Supabase database (fast)
    * @param userId - The user's ID
    * @returns Promise with knowledge files list or error
    */
   static async loadUserKnowledgeFiles(userId: string): Promise<ApiResponse<KnowledgeFile[]>> {
+    try {
+      console.log('ContentService: Loading knowledge files from database for user:', userId);
+      
+      // Query directly from Supabase database for fast loading
+      const { data, error } = await supabase
+        .from('knowledge_files')
+        .select(`
+          id,
+          name,
+          type,
+          size,
+          created_at,
+          updated_at,
+          content_extracted,
+          extracted_content,
+          extraction_metadata,
+          metadata
+        `)
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('ContentService: Database query error:', error);
+        return { error: error.message || 'Failed to load knowledge files' };
+      }
+
+      console.log('ContentService: Loaded', data?.length || 0, 'knowledge files from database');
+      return { data: data || [] };
+    } catch (error: any) {
+      console.error('ContentService: loadUserKnowledgeFiles failed:', error);
+      return { error: error.message || 'Failed to load knowledge files' };
+    }
+  }
+
+  /**
+   * Load all knowledge files for a user from GCS via edge function (legacy - for reference)
+   * @param userId - The user's ID
+   * @returns Promise with knowledge files list or error
+   */
+  static async loadUserKnowledgeFilesFromGCS(userId: string): Promise<ApiResponse<KnowledgeFile[]>> {
     try {
       console.log('ContentService: Loading knowledge files from GCS for user:', userId);
       
@@ -60,7 +100,7 @@ export class ContentService {
       console.log('ContentService: Loaded', data.data?.length || 0, 'knowledge files from GCS');
       return { data: data.data || [] };
     } catch (error: any) {
-      console.error('ContentService: loadUserKnowledgeFiles failed:', error);
+      console.error('ContentService: loadUserKnowledgeFilesFromGCS failed:', error);
       return { error: error.message || 'Failed to load knowledge files' };
     }
   }
@@ -219,6 +259,57 @@ export class ContentService {
     } catch (error: any) {
       console.error('ContentService: getFilePreviewUrl failed:', error);
       return { error: error.message || 'Failed to get file preview URL' };
+    }
+  }
+
+  /**
+   * Stream file directly from GCS for preview/download
+   * @param fileId - The file ID to stream
+   * @returns Promise with file stream URL or error
+   */
+  static async streamFile(fileId: string): Promise<ApiResponse<Response>> {
+    try {
+      console.log('ContentService: Streaming file:', fileId);
+      
+      // Get user's JWT token for authentication
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        return { error: 'User not authenticated' };
+      }
+
+      // Get user ID from session
+      const userId = session.user?.id;
+      if (!userId) {
+        return { error: 'User ID not found' };
+      }
+
+      // Call the GCS edge function to stream file
+      const { data, error } = await supabase.functions.invoke('knowledge-base-storage', {
+        body: {
+          userId: userId,
+          action: 'stream',
+          fileId: fileId
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
+
+      if (error) {
+        console.error('ContentService: GCS file stream error:', error);
+        return { error: error.message || 'Failed to stream file' };
+      }
+
+      if (!data || !data.success) {
+        console.error('ContentService: GCS file stream failed:', data?.error);
+        return { error: data?.error || 'Failed to stream file' };
+      }
+
+      console.log('ContentService: File stream initiated successfully');
+      return { data: data.response };
+    } catch (error: any) {
+      console.error('ContentService: streamFile failed:', error);
+      return { error: error.message || 'Failed to stream file' };
     }
   }
 

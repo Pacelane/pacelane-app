@@ -140,6 +140,20 @@ export const contentApi = {
   },
 
   /**
+   * Stream file directly for preview/download
+   * @param fileId - File ID to stream
+   * @returns Promise with file stream
+   */
+  async streamFile(fileId: string) {
+    // Frontend validation
+    if (!fileId) {
+      return { error: 'File ID is required' };
+    }
+
+    return ContentService.streamFile(fileId);
+  },
+
+  /**
    * Get file content for text-based previews
    * @param fileId - File ID to get content for
    * @returns Promise with file content
@@ -438,6 +452,7 @@ export const {
   getFileTypeFromName,
   validateFileType,
   getFilePreviewUrl,
+  streamFile,
   getFileContent,
   generateFileUrl,
   fileMatchesFilter,

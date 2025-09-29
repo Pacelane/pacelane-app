@@ -664,9 +664,14 @@ class GCSKnowledgeBaseStorage {
 
       // Create a new response with proper headers for browser consumption
       const mimeType = this.getMimeTypeFromName(file.name);
+      
+      // Safely encode filename for Content-Disposition header
+      const safeFilename = file.name.replace(/[^\x20-\x7E]/g, '_'); // Replace non-ASCII chars with underscore
+      const encodedFilename = encodeURIComponent(file.name);
+      
       const headers = new Headers({
         'Content-Type': mimeType,
-        'Content-Disposition': `inline; filename="${file.name}"`,
+        'Content-Disposition': `inline; filename="${safeFilename}"; filename*=UTF-8''${encodedFilename}`,
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET',
         'Access-Control-Allow-Headers': 'Content-Type',
