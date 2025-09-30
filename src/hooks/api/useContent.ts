@@ -612,6 +612,7 @@ export const useContent = (): ContentState & ContentActions => {
    * @param selected - Whether to select or deselect
    */
   const selectKnowledgeFile = (fileId: string, selected: boolean) => {
+    console.log('useContent: selectKnowledgeFile called', fileId, 'selected:', selected);
     setKnowledgeFiles(prev => 
       prev.map(file => 
         file.id === fileId ? { ...file, selected } : file
@@ -624,7 +625,9 @@ export const useContent = (): ContentState & ContentActions => {
    * @returns Array of selected files
    */
   const getSelectedFiles = (): KnowledgeFile[] => {
-    return knowledgeFiles.filter(file => file.selected);
+    const selected = knowledgeFiles.filter(file => file.selected);
+    console.log('useContent: getSelectedFiles called, total files:', knowledgeFiles.length, 'selected:', selected.length);
+    return selected;
   };
 
   // ========== UI CONTENT ORDER ACTIONS ==========

@@ -708,7 +708,7 @@ export class ContentService {
    */
   static async sendAIMessage(messageData: AIMessageData): Promise<ApiResponse<AIResponseData>> {
     try {
-      console.log('ContentService: Sending AI message');
+      console.log('ContentService: Sending AI message with', messageData.fileContexts?.length || 0, 'file contexts');
 
       const { data, error } = await supabase.functions.invoke('ai-assistant', {
         body: {

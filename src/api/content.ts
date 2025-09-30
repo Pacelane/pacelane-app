@@ -322,6 +322,9 @@ export const contentApi = {
       url: file.url
     }));
 
+    console.log('contentApi: sendAIMessage called with', selectedFiles.length, 'selected files');
+    console.log('contentApi: Converted to', fileContexts.length, 'file contexts');
+
     const messageData: AIMessageData = {
       message: message.trim(),
       conversationId,

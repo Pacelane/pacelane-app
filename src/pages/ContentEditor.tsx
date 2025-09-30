@@ -386,6 +386,7 @@ const ContentEditor = () => {
   };
 
   const handleFileSelection = (fileId: string, selected: boolean) => {
+    console.log('ContentEditor: Selecting file', fileId, 'selected:', selected);
     selectKnowledgeFile(fileId, selected);
   };
 
@@ -492,9 +493,10 @@ const ContentEditor = () => {
     try {
       // Send message using clean API with selected files and current content
       const selectedFiles = getSelectedFiles();
+      console.log('ContentEditor: Sending message with selected files:', selectedFiles.length);
       const result = await sendMessage({
         message: messageText,
-        fileContexts: selectedFiles, // Include selected knowledge base files
+        selectedFiles: selectedFiles, // Include selected knowledge base files
         currentContent: editorContent // Pass current editor content for context
       });
 
