@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/api/useAuth';
 import { useContent } from '@/hooks/api/useContent';
@@ -26,6 +26,8 @@ import EmptyState from '@/design-system/components/EmptyState';
 import FileUpload from '@/design-system/components/FileUpload';
 
 import Tabs from '@/design-system/components/Tabs';
+import SelectionToolbar from '@/design-system/components/SelectionToolbar';
+import InlineDiffView from '@/design-system/components/InlineDiffView';
 
 // Design System Tokens
 import { spacing } from '@/design-system/tokens/spacing';
@@ -130,10 +132,27 @@ const ContentEditor = () => {
     suggestedContent: string;
     explanation: string;
   } | null>(null);
-  const [showEditModal, setShowEditModal] = useState(false);
   const [showFileUploadModal, setShowFileUploadModal] = useState(false);
   const [urlInput, setUrlInput] = useState('');
+  
+  // ========== INLINE EDITING STATE ==========
+  const [textSelection, setTextSelection] = useState<{
+    text: string;
+    range: Range | null;
+    startOffset: number;
+    endOffset: number;
+  } | null>(null);
+  const [inlineEditLoading, setInlineEditLoading] = useState(false);
+  const [inlineDiff, setInlineDiff] = useState<{
+    originalText: string;
+    suggestedText: string;
+    startOffset: number;
+    endOffset: number;
+  } | null>(null);
 
+  // Refs
+  const chatMessagesEndRef = useRef<HTMLDivElement>(null);
+  const editorContainerRef = useRef<HTMLDivElement>(null);
   
   // Mobile-specific state
   const [activeMobileTab, setActiveMobileTab] = useState<'editor' | 'knowledge' | 'chat'>('editor');
@@ -342,6 +361,13 @@ const ContentEditor = () => {
     return () => clearTimeout(autoSaveTimer);
   }, [editorContent, user]);
 
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (chatMessagesEndRef.current) {
+      chatMessagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [chatMessages, aiLoading, aiEditSuggestion]);
+
   // ========== HELPER FUNCTIONS ==========
   const handleNewConversation = () => {
     clearConversation();
@@ -456,7 +482,7 @@ const ContentEditor = () => {
       const selectedFiles = getSelectedFiles();
       const result = await sendMessage({
         message: messageText,
-        selectedFiles, // Include selected knowledge base files
+        fileContexts: selectedFiles, // Include selected knowledge base files
         currentContent: editorContent // Pass current editor content for context
       });
 
@@ -469,7 +495,6 @@ const ContentEditor = () => {
         const editSuggestion = parseAIResponseForEdits(result.data.message);
         if (editSuggestion) {
           setAiEditSuggestion(editSuggestion);
-          setShowEditModal(true);
         }
       }
     } catch (error: any) {
@@ -498,14 +523,12 @@ const ContentEditor = () => {
     if (aiEditSuggestion) {
       setEditorContent(aiEditSuggestion.suggestedContent);
       setAiEditSuggestion(null);
-      setShowEditModal(false);
       toast.success('AI edit applied successfully!');
     }
   };
 
   const handleRejectAIEdit = () => {
     setAiEditSuggestion(null);
-    setShowEditModal(false);
     toast.info('AI edit rejected');
   };
 
@@ -537,6 +560,187 @@ const ContentEditor = () => {
     }
   };
 
+  // ========== INLINE EDITING HANDLERS ==========
+  
+  // Handle text selection in editor
+  const handleTextSelection = () => {
+    const selection = window.getSelection();
+    
+    if (!selection || selection.isCollapsed || !selection.rangeCount) {
+      setTextSelection(null);
+      setInlineDiff(null);
+      return;
+    }
+    
+    const selectedText = selection.toString().trim();
+    
+    if (selectedText.length === 0) {
+      setTextSelection(null);
+      setInlineDiff(null);
+      return;
+    }
+    
+    // Get selection range and calculate offsets in the editor content
+    const range = selection.getRangeAt(0);
+    
+    // Find the start and end offsets in the full content
+    // This is a simplified version - you might need more robust offset calculation
+    const startOffset = editorContent.indexOf(selectedText);
+    const endOffset = startOffset + selectedText.length;
+    
+    setTextSelection({
+      text: selectedText,
+      range: range,
+      startOffset: startOffset,
+      endOffset: endOffset
+    });
+    
+    // Clear any existing diff
+    setInlineDiff(null);
+  };
+
+  // Handle quick action click
+  const handleInlineQuickAction = async (actionId: string) => {
+    if (!textSelection) return;
+    
+    const actionInstructions: Record<string, string> = {
+      'expand': 'Expand this text with more details and examples while maintaining the same tone',
+      'shorten': 'Make this text more concise and to the point while keeping the key message',
+      'insert_paragraph': 'Add a new paragraph after this text that continues the thought naturally',
+      'continue_writing': 'Continue writing from where this text ends, maintaining the same style and tone',
+      'improve_writing': 'Improve the writing quality, clarity, and impact of this text'
+    };
+    
+    const instruction = actionInstructions[actionId];
+    if (instruction) {
+      await handleInlineEditSubmit(instruction);
+    }
+  };
+
+  // Handle inline edit instruction submit
+  const handleInlineEditSubmit = async (instruction: string) => {
+    if (!textSelection || !user) return;
+    
+    try {
+      setInlineEditLoading(true);
+      
+      // Get context around the selection (2 lines before and after)
+      const lines = editorContent.split('\n');
+      const selectionStartLine = editorContent.substring(0, textSelection.startOffset).split('\n').length - 1;
+      const selectionEndLine = editorContent.substring(0, textSelection.endOffset).split('\n').length - 1;
+      
+      const beforeContext = lines.slice(Math.max(0, selectionStartLine - 2), selectionStartLine).join('\n');
+      const afterContext = lines.slice(selectionEndLine + 1, Math.min(lines.length, selectionEndLine + 3)).join('\n');
+      
+      // Call AI assistant with inline edit mode
+      const { data: sessionData } = await supabase.auth.getSession();
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${sessionData.session?.access_token}`,
+          },
+          body: JSON.stringify({
+            message: instruction,
+            mode: 'inline-edit',
+            selection: {
+              text: textSelection.text,
+              startOffset: textSelection.startOffset,
+              endOffset: textSelection.endOffset,
+              beforeContext: beforeContext,
+              afterContext: afterContext
+            },
+            currentContent: editorContent
+          })
+        }
+      );
+      
+      if (!response.ok) {
+        throw new Error('Failed to get AI suggestion');
+      }
+      
+      const result = await response.json();
+      
+      console.log('AI Response:', result);
+      console.log('AI Message:', result.message);
+      
+      // Extract suggested text from AI response
+      // Look for the edited content in the response
+      let suggestedText = result.message;
+      
+      // Try to extract from markdown code block (more flexible regex)
+      const codeBlockMatch = suggestedText.match(/```[\w]*\n?([\s\S]*?)\n?```/);
+      if (codeBlockMatch) {
+        suggestedText = codeBlockMatch[1].trim();
+        console.log('Extracted from code block:', suggestedText);
+      } else {
+        // If no code block, use the whole response (fallback)
+        suggestedText = suggestedText.trim();
+        console.log('Using full response (no code block):', suggestedText);
+      }
+      
+      console.log('Setting inline diff:', {
+        originalText: textSelection.text,
+        suggestedText: suggestedText,
+        startOffset: textSelection.startOffset,
+        endOffset: textSelection.endOffset
+      });
+      
+      // Show diff view
+      setInlineDiff({
+        originalText: textSelection.text,
+        suggestedText: suggestedText,
+        startOffset: textSelection.startOffset,
+        endOffset: textSelection.endOffset
+      });
+      
+      // Clear text selection so toolbar doesn't interfere
+      window.getSelection()?.removeAllRanges();
+      setTextSelection(null);
+      
+      // Scroll to make diff visible after a brief delay
+      setTimeout(() => {
+        const diffElement = document.querySelector('[data-inline-diff]');
+        if (diffElement) {
+          diffElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }, 100);
+      
+    } catch (error: any) {
+      console.error('Inline edit error:', error);
+      toast.error(error.message || 'Failed to get AI suggestion');
+    } finally {
+      setInlineEditLoading(false);
+    }
+  };
+
+  // Handle accepting inline diff
+  const handleAcceptInlineDiff = () => {
+    if (!inlineDiff) return;
+    
+    // Replace the selected text with suggested text
+    const before = editorContent.substring(0, inlineDiff.startOffset);
+    const after = editorContent.substring(inlineDiff.endOffset);
+    const newContent = before + inlineDiff.suggestedText + after;
+    
+    setEditorContent(newContent);
+    
+    // Clear selection and diff
+    setTextSelection(null);
+    setInlineDiff(null);
+    
+    toast.success('Changes applied successfully!');
+  };
+
+  // Handle rejecting inline diff
+  const handleRejectInlineDiff = () => {
+    setInlineDiff(null);
+    setTextSelection(null);
+    toast.info('Changes rejected');
+  };
+
   const toggleFolder = (folderId: string) => {
     setFileStructure(prev => prev.map(item => 
       item.id === folderId ? { ...item, isOpen: !item.isOpen } : item
@@ -564,9 +768,9 @@ const ContentEditor = () => {
   };
 
   // Main content area styles (below nav) - responsive
-  const mainContentStyles = {
+  const mainContentStyles: React.CSSProperties = {
     display: 'flex',
-    flexDirection: isMobile ? 'column' : 'row',
+    flexDirection: (isMobile ? 'column' : 'row') as 'column' | 'row',
     flex: 1,
     overflow: 'hidden',
   };
@@ -683,41 +887,52 @@ const ContentEditor = () => {
     backgroundColor: colors.bg.sidebar?.subtle || colors.bg.card.default,
   };
 
+  // Message container styles
+  const messageContainerStyles: React.CSSProperties = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacing.spacing[8],
+    width: '100%',
+  };
+
+  // Message label styles
+  const messageLabelStyles = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacing.spacing[6],
+    marginBottom: spacing.spacing[4],
+  };
+
   // User message bubble styles
   const userMessageStyles = {
-    alignSelf: 'flex-end',
-    maxWidth: '80%',
-    backgroundColor: colors.bg.subtle,
+    width: '100%',
+    backgroundColor: colors.bg.card.default,
     border: `${stroke.default} solid ${colors.border.default}`,
     borderRadius: cornerRadius.borderRadius.lg,
     padding: spacing.spacing[12],
-    display: 'flex',
-    gap: spacing.spacing[8],
-    alignItems: 'flex-start',
+    boxShadow: getShadow('regular.card', colors, { withBorder: false }),
   };
 
   // Bot message bubble styles
   const botMessageStyles = {
-    alignSelf: 'flex-start',
-    maxWidth: '80%',
-    backgroundColor: 'transparent',
+    width: '100%',
+    backgroundColor: colors.bg.subtle,
+    border: `${stroke.default} solid ${colors.border.default}`,
     borderRadius: cornerRadius.borderRadius.lg,
     padding: spacing.spacing[12],
-    display: 'flex',
-    gap: spacing.spacing[8],
-    alignItems: 'flex-start',
   };
 
   // Avatar styles
   const avatarStyles = {
-    width: '24px',
-    height: '24px',
-    borderRadius: cornerRadius.borderRadius.sm,
+    width: '20px',
+    height: '20px',
+    borderRadius: cornerRadius.borderRadius.full,
     backgroundColor: colors.bg.state?.secondary || colors.bg.subtle,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
+    overflow: 'hidden',
   };
 
   // Theme selector items
@@ -1029,7 +1244,11 @@ const ContentEditor = () => {
 
         {/* Center Content Editor */}
         <div style={centerEditorStyles}>
-          <div style={editorContentStyles}>
+          <div 
+            ref={editorContainerRef}
+            style={editorContentStyles}
+            onMouseUp={handleTextSelection}
+          >
             {/* LinkedIn-style Post Editor */}
             <LinkedInPostEditor
               value={editorContent}
@@ -1038,7 +1257,34 @@ const ContentEditor = () => {
               user={user}
               profile={profile}
             />
-        </div>
+            
+            {/* Selection Toolbar - shows when text is selected */}
+            {textSelection && !inlineDiff && (
+              <SelectionToolbar
+                selection={textSelection}
+                onQuickAction={handleInlineQuickAction}
+                disabled={inlineEditLoading}
+              />
+            )}
+          </div>
+          
+          {/* Inline Diff View - positioned outside editor for better visibility */}
+          {inlineDiff && (
+            <div style={{
+              padding: `0 ${isMobile ? spacing.spacing[16] : spacing.spacing[80]}`,
+              maxWidth: isMobile ? 'none' : '1200px',
+              margin: '0 auto',
+              width: '100%',
+            }}>
+              <InlineDiffView
+                originalText={inlineDiff.originalText}
+                suggestedText={inlineDiff.suggestedText}
+                onAccept={handleAcceptInlineDiff}
+                onReject={handleRejectInlineDiff}
+                loading={inlineEditLoading}
+              />
+            </div>
+          )}
       </div>
 
         {/* Right Sidebar - Chat Bot */}
@@ -1195,64 +1441,209 @@ const ContentEditor = () => {
                 </p>
             </div>
           ) : (
-            chatMessages.map(message => (
-                <div
-                  key={message.id}
-                  style={message.role === 'user' ? userMessageStyles : botMessageStyles}
-                >
-                  <div style={avatarStyles}>
-                {message.role === 'user' ? (
-                      <User size={12} style={{ color: colors.icon.muted }} />
-                    ) : (
-                      <Bichaurinho variant={12} size={24} />
-                    )}
+            chatMessages.map((message, index) => (
+                <div key={message.id} style={messageContainerStyles}>
+                  {/* Message Label */}
+                  <div style={messageLabelStyles}>
+                    <div style={avatarStyles}>
+                      {message.role === 'user' ? (
+                        <User size={12} style={{ color: colors.icon.muted }} />
+                      ) : (
+                        <Bichaurinho variant={12} size={20} />
+                      )}
+                    </div>
+                    <span style={{ 
+                      ...textStyles.xs.semibold, 
+                      color: colors.text.default 
+                    }}>
+                      {message.role === 'user' ? 'You' : 'Assistant'}
+                    </span>
                   </div>
-                  <div style={{
-                    ...textStyles.sm.normal,
-                    color: colors.text.default,
-                    flex: 1,
-                  }}>
-                      {message.content}
+
+                  {/* Message Content */}
+                  <div style={message.role === 'user' ? userMessageStyles : botMessageStyles}>
+                    <div style={{
+                      ...textStyles.sm.normal,
+                      color: colors.text.default,
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word',
+                    }}>
+                      {message.role === 'assistant' && message.id === chatMessages[chatMessages.length - 1]?.id && aiEditSuggestion
+                        ? message.content.replace(/```(?:markdown|md)?\n[\s\S]*?\n```/g, '').trim()
+                        : message.content
+                      }
+                    </div>
                   </div>
+
+                  {/* Show edit suggestion if this is the latest assistant message with a suggestion */}
+                  {message.role === 'assistant' && 
+                   index === chatMessages.length - 1 && 
+                   aiEditSuggestion && (
+                    <div style={{
+                      backgroundColor: colors.bg.card.default,
+                      border: `${stroke.default} solid ${colors.border.default}`,
+                      borderRadius: cornerRadius.borderRadius.lg,
+                      overflow: 'hidden',
+                      marginTop: spacing.spacing[8],
+                      boxShadow: getShadow('regular.card', colors, { withBorder: false }),
+                    }}>
+                      {/* Suggestion Header */}
+                      <div style={{
+                        padding: spacing.spacing[12],
+                        borderBottom: `${stroke.default} solid ${colors.border.default}`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: spacing.spacing[8],
+                      }}>
+                        <div style={{
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: cornerRadius.borderRadius.full,
+                          backgroundColor: colors.bg.state?.secondary || colors.bg.subtle,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}>
+                          <User size={16} style={{ color: colors.icon.muted }} />
+                        </div>
+                        <div>
+                          <div style={{ 
+                            ...textStyles.sm.semibold, 
+                            color: colors.text.default 
+                          }}>
+                            {profile?.display_name || profile?.linkedin_name || 'You'}
+                          </div>
+                          {profile?.linkedin_headline && (
+                            <div style={{ 
+                              ...textStyles.xs.normal, 
+                              color: colors.text.subtle 
+                            }}>
+                              {profile.linkedin_headline}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Suggestion Content Sections */}
+                      <div style={{ padding: spacing.spacing[16] }}>
+                        {/* Hook Section */}
+                        <div style={{ marginBottom: spacing.spacing[16] }}>
+                          <div style={{
+                            ...textStyles.xs.semibold,
+                            color: colors.text.muted,
+                            marginBottom: spacing.spacing[6],
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
+                          }}>
+                            Hook
+                          </div>
+                          <div style={{
+                            ...textStyles.sm.normal,
+                            color: colors.text.default,
+                            lineHeight: '1.6',
+                          }}>
+                            {aiEditSuggestion.suggestedContent.split('\n\n')[0]}
+                          </div>
+                        </div>
+
+                        {/* Body Text Section */}
+                        {aiEditSuggestion.suggestedContent.split('\n\n').length > 1 && (
+                          <div>
+                            <div style={{
+                              ...textStyles.xs.semibold,
+                              color: colors.text.muted,
+                              marginBottom: spacing.spacing[6],
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px',
+                            }}>
+                              Body Text
+                            </div>
+                            <div style={{
+                              ...textStyles.sm.normal,
+                              color: colors.text.default,
+                              lineHeight: '1.6',
+                              whiteSpace: 'pre-wrap',
+                            }}>
+                              {aiEditSuggestion.suggestedContent.split('\n\n').slice(1).join('\n\n')}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div style={{
+                        padding: spacing.spacing[12],
+                        borderTop: `${stroke.default} solid ${colors.border.default}`,
+                        display: 'flex',
+                        gap: spacing.spacing[8],
+                        justifyContent: 'flex-end',
+                      }}>
+                        <Button
+                          label="Reject"
+                          style="secondary"
+                          size="xs"
+                          onClick={handleRejectAIEdit}
+                        />
+                        <Button
+                          label="Apply"
+                          style="primary"
+                          size="xs"
+                          onClick={handleApplyAIEdit}
+                        />
+                      </div>
+                    </div>
+                  )}
               </div>
             ))
           )}
           {aiLoading && (
-              <div style={botMessageStyles}>
-                <div style={avatarStyles}>
-                  <Bichaurinho variant={12} size={24} />
+              <div style={messageContainerStyles}>
+                <div style={messageLabelStyles}>
+                  <div style={avatarStyles}>
+                    <Bichaurinho variant={12} size={20} />
+                  </div>
+                  <span style={{ 
+                    ...textStyles.xs.semibold, 
+                    color: colors.text.default 
+                  }}>
+                    Assistant
+                  </span>
                 </div>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: spacing.spacing[4],
-                }}>
+                <div style={botMessageStyles}>
                   <div style={{
-                    width: '8px',
-                    height: '8px',
-                    backgroundColor: colors.icon.muted,
-                    borderRadius: '50%',
-                    animation: 'bounce 1s infinite',
-                  }} />
-                  <div style={{
-                    width: '8px',
-                    height: '8px',
-                    backgroundColor: colors.icon.muted,
-                    borderRadius: '50%',
-                    animation: 'bounce 1s infinite',
-                    animationDelay: '0.1s',
-                  }} />
-                  <div style={{
-                    width: '8px',
-                    height: '8px',
-                    backgroundColor: colors.icon.muted,
-                    borderRadius: '50%',
-                    animation: 'bounce 1s infinite',
-                    animationDelay: '0.2s',
-                  }} />
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: spacing.spacing[4],
+                  }}>
+                    <div style={{
+                      width: '8px',
+                      height: '8px',
+                      backgroundColor: colors.icon.muted,
+                      borderRadius: '50%',
+                      animation: 'bounce 1s infinite',
+                    }} />
+                    <div style={{
+                      width: '8px',
+                      height: '8px',
+                      backgroundColor: colors.icon.muted,
+                      borderRadius: '50%',
+                      animation: 'bounce 1s infinite',
+                      animationDelay: '0.1s',
+                    }} />
+                    <div style={{
+                      width: '8px',
+                      height: '8px',
+                      backgroundColor: colors.icon.muted,
+                      borderRadius: '50%',
+                      animation: 'bounce 1s infinite',
+                      animationDelay: '0.2s',
+                    }} />
+                  </div>
+                </div>
               </div>
-            </div>
           )}
+          {/* Scroll anchor - keeps chat scrolled to bottom */}
+          <div ref={chatMessagesEndRef} />
         </div>
 
 
@@ -1370,105 +1761,6 @@ const ContentEditor = () => {
           </div>
         </div>
       </div>
-
-              {/* AI Edit Modal */}
-        {showEditModal && aiEditSuggestion && (
-         <Modal
-           isOpen={showEditModal}
-           onClose={() => setShowEditModal(false)}
-         >
-           <div style={{
-             padding: spacing.spacing[24],
-             display: 'flex',
-             flexDirection: 'column',
-             height: '100%',
-           }}>
-             <div style={{
-               display: 'flex',
-               alignItems: 'center',
-               justifyContent: 'space-between',
-               marginBottom: spacing.spacing[16],
-             }}>
-               <h3 style={{ ...textStyles.lg.semibold, color: colors.text.default, margin: 0 }}>
-                 AI Edit Suggestion
-               </h3>
-             </div>
-
-             <div style={{ marginBottom: spacing.spacing[16] }}>
-               <p style={{ ...textStyles.sm.normal, color: colors.text.default, margin: 0 }}>
-                 {aiEditSuggestion.explanation}
-               </p>
-             </div>
-
-             <div style={{
-               display: 'grid',
-               gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
-               gap: spacing.spacing[16],
-               marginBottom: spacing.spacing[24],
-               flex: 1,
-             }}>
-               <div>
-                 <h4 style={{ ...textStyles.sm.semibold, color: colors.text.default, marginBottom: spacing.spacing[8] }}>
-                   Current Content
-                 </h4>
-                 <div style={{
-                   backgroundColor: colors.bg.subtle,
-                   border: `1px solid ${colors.border.default}`,
-                   borderRadius: cornerRadius.borderRadius.md,
-                   padding: spacing.spacing[12],
-                   height: '300px',
-                   overflow: 'auto',
-                   fontFamily: 'monospace',
-                   fontSize: '14px',
-                   lineHeight: '1.5',
-                 }}>
-                   {aiEditSuggestion.originalContent}
-                 </div>
-               </div>
-
-               <div>
-                 <h4 style={{ ...textStyles.sm.semibold, color: colors.text.default, marginBottom: spacing.spacing[8] }}>
-                   Suggested Edit
-                 </h4>
-                 <div style={{
-                   backgroundColor: colors.bg.subtle,
-                   border: `1px solid ${colors.border.default}`,
-                   borderRadius: cornerRadius.borderRadius.md,
-                   padding: spacing.spacing[12],
-                   height: '300px',
-                   overflow: 'auto',
-                   fontFamily: 'monospace',
-                   fontSize: '14px',
-                   lineHeight: '1.5',
-                 }}>
-                   {aiEditSuggestion.suggestedContent}
-                 </div>
-               </div>
-             </div>
-
-             <div style={{
-               display: 'flex',
-               flexDirection: isMobile ? 'column' : 'row',
-               gap: spacing.spacing[12],
-               justifyContent: 'flex-end',
-               marginTop: 'auto',
-             }}>
-               <Button
-                 label="Reject"
-                 style="secondary"
-                 size="md"
-                 onClick={handleRejectAIEdit}
-               />
-               <Button
-                 label="Apply Edit"
-                 style="primary"
-                 size="md"
-                 onClick={handleApplyAIEdit}
-               />
-             </div>
-           </div>
-         </Modal>
-        )}
 
         {/* File Upload Modal */}
         {showFileUploadModal && (
