@@ -22,18 +22,26 @@ export class ContentService {
   // ========== KNOWLEDGE BASE OPERATIONS ==========
 
   /**
-   * Load knowledge files for a user with server-side pagination
+   * Load knowledge files for a user with server-side pagination, filtering, and search
    * @param userId - The user's ID
    * @param limit - Number of files to load (default: 12)
    * @param offset - Number of files to skip (default: 0)
+   * @param filter - File type filter (optional: 'all', 'files', 'images', 'audio', 'links')
+   * @param search - Search query for file names (optional)
    * @returns Promise with knowledge files list or error
    */
-  static async loadUserKnowledgeFiles(userId: string, limit: number = 12, offset: number = 0): Promise<ApiResponse<KnowledgeFile[]>> {
+  static async loadUserKnowledgeFiles(
+    userId: string, 
+    limit: number = 12, 
+    offset: number = 0,
+    filter?: string,
+    search?: string
+  ): Promise<ApiResponse<KnowledgeFile[]>> {
     try {
-      console.log('🚀 ContentService: Loading knowledge files page for user:', userId, 'limit:', limit, 'offset:', offset);
+      console.log('🚀 ContentService: Loading knowledge files page for user:', userId, 'limit:', limit, 'offset:', offset, 'filter:', filter, 'search:', search);
       
-      // Query directly from Supabase database with pagination
-      const { data, error } = await supabase
+      // Build query with pagination
+      let query = supabase
         .from('knowledge_files')
         .select(`
           id,
@@ -51,7 +59,31 @@ export class ContentService {
           extraction_metadata,
           metadata
         `)
-        .eq('user_id', userId)
+        .eq('user_id', userId);
+      
+      // Apply type filter if provided
+      if (filter && filter !== 'all') {
+        const typeMap: Record<string, string> = {
+          'files': 'document',
+          'images': 'image',
+          'audio': 'audio',
+          'links': 'link'
+        };
+        
+        if (typeMap[filter]) {
+          query = query.eq('type', typeMap[filter]);
+          console.log('🔍 ContentService: Applying filter - type:', typeMap[filter]);
+        }
+      }
+      
+      // Apply search filter if provided
+      if (search && search.trim()) {
+        query = query.ilike('name', `%${search.trim()}%`);
+        console.log('🔍 ContentService: Applying search - query:', search);
+      }
+      
+      // Apply ordering and pagination
+      const { data, error } = await query
         .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1);
 
@@ -69,18 +101,46 @@ export class ContentService {
   }
 
   /**
-   * Get total count of knowledge files for a user
+   * Get total count of knowledge files for a user with filtering and search
    * @param userId - The user's ID
+   * @param filter - File type filter (optional: 'all', 'files', 'images', 'audio', 'links')
+   * @param search - Search query for file names (optional)
    * @returns Promise with total count or error
    */
-  static async getUserKnowledgeFilesCount(userId: string): Promise<ApiResponse<number>> {
+  static async getUserKnowledgeFilesCount(
+    userId: string,
+    filter?: string,
+    search?: string
+  ): Promise<ApiResponse<number>> {
     try {
-      console.log('🔢 ContentService: Getting knowledge files count for user:', userId);
+      console.log('🔢 ContentService: Getting knowledge files count for user:', userId, 'filter:', filter, 'search:', search);
       
-      const { count, error } = await supabase
+      // Build count query
+      let query = supabase
         .from('knowledge_files')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', userId);
+      
+      // Apply type filter if provided
+      if (filter && filter !== 'all') {
+        const typeMap: Record<string, string> = {
+          'files': 'document',
+          'images': 'image',
+          'audio': 'audio',
+          'links': 'link'
+        };
+        
+        if (typeMap[filter]) {
+          query = query.eq('type', typeMap[filter]);
+        }
+      }
+      
+      // Apply search filter if provided
+      if (search && search.trim()) {
+        query = query.ilike('name', `%${search.trim()}%`);
+      }
+      
+      const { count, error } = await query;
 
       if (error) {
         console.error('❌ ContentService: Count query error:', error);

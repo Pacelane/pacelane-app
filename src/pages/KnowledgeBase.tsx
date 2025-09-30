@@ -12,7 +12,8 @@ import { supabase } from '@/integrations/supabase/client';
 // Sidebar is provided by MainAppChrome layout
 import FileUpload from '@/design-system/components/FileUpload';
 import FileCard from '@/design-system/components/FileCard';
-import Tabs from '@/design-system/components/Tabs';
+// COMMENTED OUT: Tabs temporarily disabled
+// import Tabs from '@/design-system/components/Tabs';
 import DropdownButton from '@/design-system/components/DropdownButton';
 import Input from '@/design-system/components/Input';
 import EmptyState from '@/design-system/components/EmptyState';
@@ -74,7 +75,8 @@ const KnowledgeBase = () => {
 
   // ========== LOCAL COMPONENT STATE ==========
   // Sidebar handled by layout
-  const [activeTab, setActiveTab] = useState('all');
+  // COMMENTED OUT: Filter tabs temporarily disabled
+  // const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('lastAdded');
   const [selectedAudioFile, setSelectedAudioFile] = useState(null);
@@ -117,14 +119,14 @@ const KnowledgeBase = () => {
     marginTop: spacing.spacing[8],
   };
 
-  // Filter tabs configuration
-  const filterTabs = [
-    { id: 'all', label: 'All' },
-    { id: 'files', label: 'Files' },
-    { id: 'images', label: 'Images' },
-    { id: 'audio', label: 'Audio' },
-    { id: 'links', label: 'Links' },
-  ];
+  // COMMENTED OUT: Filter tabs configuration (temporarily disabled)
+  // const filterTabs = [
+  //   { id: 'all', label: 'All' },
+  //   { id: 'files', label: 'Files' },
+  //   { id: 'images', label: 'Images' },
+  //   { id: 'audio', label: 'Audio' },
+  //   { id: 'links', label: 'Links' },
+  // ];
 
   // Sort dropdown options
   const sortOptions = [
@@ -258,27 +260,8 @@ const KnowledgeBase = () => {
     });
   }, [knowledgeFiles, getFileTypeFromName]);
 
-  // Filter files based on active tab - memoized
-  const getFilteredFiles = useMemo(() => {
-    const allFiles = getFileCards;
-    
-    if (activeTab === 'all') return allFiles;
-    
-    return allFiles.filter(file => {
-      switch (activeTab) {
-        case 'files':
-          return ['default', 'pdf', 'zip'].includes(file.fileType);
-        case 'images':
-          return file.fileType === 'image';
-        case 'audio':
-          return file.fileType === 'audio';
-        case 'links':
-          return file.fileType === 'link';
-        default:
-          return true;
-      }
-    });
-  }, [getFileCards, activeTab]);
+  // Server-side filtering is now handled by the backend
+  // No need for client-side filtering anymore
 
   // Sort files based on sortBy - memoized
   const getSortedFiles = useCallback((files) => {
@@ -297,33 +280,35 @@ const KnowledgeBase = () => {
     }
   }, [sortBy]);
 
-  // Get final filtered and sorted files - memoized (server-side pagination)
+  // Get final sorted files - server handles filtering and search
   const getDisplayFiles = useMemo(() => {
-    const filteredFiles = getFilteredFiles;
-    const searchedFiles = filteredFiles.filter(file => 
-      searchQuery === '' || 
-      file.title.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-    const sortedFiles = getSortedFiles(searchedFiles);
+    const allFiles = getFileCards;
+    const sortedFiles = getSortedFiles(allFiles);
     
-    // For server-side pagination, we return the current page data
-    // The total count comes from the server
+    // Server-side pagination - files are already filtered and searched
     return {
       files: sortedFiles, // These are already the files for the current page
-      totalFiles: totalFilesCount, // Total count from server
+      totalFiles: totalFilesCount, // Total count from server (with filters applied)
       totalPages: Math.ceil(totalFilesCount / hookItemsPerPage)
     };
-  }, [getFilteredFiles, searchQuery, getSortedFiles, totalFilesCount, hookItemsPerPage]);
+  }, [getFileCards, getSortedFiles, totalFilesCount, hookItemsPerPage]);
 
   // Handle page changes
   const handlePageChange = useCallback((page: number) => {
-    loadKnowledgeFiles(page);
-  }, [loadKnowledgeFiles]);
+    // TEMPORARY: Not using filter tabs, so we pass 'all' or undefined for filter
+    loadKnowledgeFiles(page, undefined, searchQuery);
+  }, [loadKnowledgeFiles, searchQuery]);
 
-  // Reset page when search query or filter changes
+  // Reset to page 1 and reload when search query changes (filter temporarily disabled)
   React.useEffect(() => {
-    loadKnowledgeFiles(1);
-  }, [searchQuery, activeTab, sortBy, loadKnowledgeFiles]);
+    // Load files with search only (no filter for now)
+    loadKnowledgeFiles(1, undefined, searchQuery);
+    // Load count with search only (no filter for now)
+    loadKnowledgeFilesCount(undefined, searchQuery);
+  }, [searchQuery, loadKnowledgeFiles, loadKnowledgeFilesCount]);
+  
+  // Keep activeTab in state for when we re-enable filters later
+  // (commented out the effect that was watching activeTab changes)
 
   // File upload handlers - memoized to prevent unnecessary re-renders
   const handleFileSelect = useCallback(async (files) => {
@@ -812,19 +797,19 @@ const KnowledgeBase = () => {
             </div>
           </div>
 
-          {/* Controls Row - Tabs and Search */}
+          {/* Controls Row - Search and Sort */}
           <div style={controlRowStyles}>
-            {/* Left: Tab Bar */}
-            <Tabs
+            {/* COMMENTED OUT: Filter Tabs - Can be re-enabled later */}
+            {/* <Tabs
               style="segmented"
               type="default"
               tabs={filterTabs}
               activeTab={activeTab}
               onTabChange={setActiveTab}
-            />
+            /> */}
 
             {/* Right: Search and Sort */}
-            <div style={rightSectionStyles}>
+            <div style={{ ...rightSectionStyles, width: '100%', justifyContent: 'flex-end' }}>
               {/* Search Input */}
               <div style={{ flex: isMobile ? 1 : 'none', width: isMobile ? 'auto' : '280px' }}>
                 <Input
@@ -876,7 +861,7 @@ const KnowledgeBase = () => {
               return (
                 <EmptyState
                   title="No files found"
-                  subtitle={searchQuery ? 'Try adjusting your search or filter' : 'Upload some files to get started'}
+                  subtitle={searchQuery ? 'Try adjusting your search query' : 'Upload some files to get started'}
                   buttonLabel={!searchQuery ? 'Upload Files' : undefined}
                   onButtonClick={!searchQuery ? () => {
                     // Trigger file selection dialog

@@ -20,23 +20,33 @@ export const contentApi = {
   // ========== KNOWLEDGE BASE OPERATIONS ==========
 
   /**
-   * Load knowledge files for the current user with pagination
+   * Load knowledge files for the current user with pagination, filtering, and search
    * @param userId - User ID from auth
    * @param limit - Number of files to load (default: 12)
    * @param offset - Number of files to skip (default: 0)
+   * @param filter - File type filter (optional: 'all', 'files', 'images', 'audio', 'links')
+   * @param search - Search query for file names (optional)
    * @returns Promise with knowledge files list
    */
-  async loadKnowledgeFiles(userId: string, limit: number = 12, offset: number = 0) {
-    return ContentService.loadUserKnowledgeFiles(userId, limit, offset);
+  async loadKnowledgeFiles(
+    userId: string, 
+    limit: number = 12, 
+    offset: number = 0,
+    filter?: string,
+    search?: string
+  ) {
+    return ContentService.loadUserKnowledgeFiles(userId, limit, offset, filter, search);
   },
 
   /**
-   * Get total count of knowledge files for the current user
+   * Get total count of knowledge files for the current user with filtering and search
    * @param userId - User ID from auth
+   * @param filter - File type filter (optional: 'all', 'files', 'images', 'audio', 'links')
+   * @param search - Search query for file names (optional)
    * @returns Promise with total count
    */
-  async getKnowledgeFilesCount(userId: string) {
-    return ContentService.getUserKnowledgeFilesCount(userId);
+  async getKnowledgeFilesCount(userId: string, filter?: string, search?: string) {
+    return ContentService.getUserKnowledgeFilesCount(userId, filter, search);
   },
 
   /**

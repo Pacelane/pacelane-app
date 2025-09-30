@@ -92,6 +92,7 @@ const ContentEditor = () => {
     knowledgeFiles,
     loadingFiles,
     uploading,
+    loadManyKnowledgeFiles,
     selectKnowledgeFile,
     getSelectedFiles,
     uploadFiles,
@@ -176,6 +177,15 @@ const ContentEditor = () => {
       loadConversations();
     }
   }, [user]);
+
+  // Load more files for ContentEditor sidebar (100 most recent files for selection)
+  useEffect(() => {
+    if (user) {
+      // Load up to 100 files for better file selection experience in ContentEditor
+      // This gives users access to more recent files without pagination
+      loadManyKnowledgeFiles(100);
+    }
+  }, [user, loadManyKnowledgeFiles]);
 
   const loadConversations = async () => {
     if (!user) return;

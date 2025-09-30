@@ -143,18 +143,24 @@ export const useContent = (): ContentState & ContentActions => {
   // ========== KNOWLEDGE BASE ACTIONS ==========
 
   /**
-   * Load knowledge files for the current page
+   * Load knowledge files for the current page with filtering and search
    * @param page - Page number (1-based)
+   * @param filter - File type filter (optional: 'all', 'files', 'images', 'audio', 'links')
+   * @param search - Search query for file names (optional)
    * @returns Promise with operation result
    */
-  const loadKnowledgeFiles = useCallback(async (page: number = 1) => {
+  const loadKnowledgeFiles = useCallback(async (
+    page: number = 1,
+    filter?: string,
+    search?: string
+  ) => {
     if (!user) return { error: 'User must be logged in' };
     
     const offset = (page - 1) * itemsPerPage;
     
     return executeContentOperation(
       async () => {
-        const result = await contentApi.loadKnowledgeFiles(user.id, itemsPerPage, offset);
+        const result = await contentApi.loadKnowledgeFiles(user.id, itemsPerPage, offset, filter, search);
         
         if (result.data) {
           setKnowledgeFiles(result.data);
@@ -169,17 +175,48 @@ export const useContent = (): ContentState & ContentActions => {
   }, [user, itemsPerPage]);
 
   /**
-   * Load total count of knowledge files
+   * Load many knowledge files (for contexts where pagination isn't needed, like ContentEditor)
+   * @param limit - Number of files to load (default: 100)
+   * @param filter - File type filter (optional)
+   * @param search - Search query for file names (optional)
    * @returns Promise with operation result
    */
-  const loadKnowledgeFilesCount = useCallback(async () => {
+  const loadManyKnowledgeFiles = useCallback(async (
+    limit: number = 100,
+    filter?: string,
+    search?: string
+  ) => {
+    if (!user) return { error: 'User must be logged in' };
+    
+    return executeContentOperation(
+      async () => {
+        const result = await contentApi.loadKnowledgeFiles(user.id, limit, 0, filter, search);
+        
+        if (result.data) {
+          setKnowledgeFiles(result.data);
+        }
+        
+        return result;
+      },
+      'loadingFiles',
+      `Loaded ${limit} knowledge files successfully`
+    );
+  }, [user]);
+
+  /**
+   * Load total count of knowledge files with filtering and search
+   * @param filter - File type filter (optional: 'all', 'files', 'images', 'audio', 'links')
+   * @param search - Search query for file names (optional)
+   * @returns Promise with operation result
+   */
+  const loadKnowledgeFilesCount = useCallback(async (filter?: string, search?: string) => {
     if (!user) return { error: 'User must be logged in' };
     
     setLoadingCount(true);
     setError(undefined);
 
     try {
-      const result = await contentApi.getKnowledgeFilesCount(user.id);
+      const result = await contentApi.getKnowledgeFilesCount(user.id, filter, search);
       
       if (result.error) {
         console.error('useContent: Count operation error:', result.error);
@@ -715,6 +752,7 @@ export const useContent = (): ContentState & ContentActions => {
 
     // Knowledge Base Actions
     loadKnowledgeFiles,
+    loadManyKnowledgeFiles,
     loadKnowledgeFilesCount,
     uploadFile,
     uploadFiles,
