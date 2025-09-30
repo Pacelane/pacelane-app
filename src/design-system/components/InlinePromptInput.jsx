@@ -32,6 +32,25 @@ const InlinePromptInput = ({
     }
   }, []);
 
+  // Handle click outside to close (only if clicking outside the container)
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (containerRef.current && !containerRef.current.contains(event.target)) {
+        onCancel();
+      }
+    };
+
+    // Add listener with a small delay to avoid immediate close
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+    }, 100);
+
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [onCancel]);
+
   // Calculate position based on selection
   useEffect(() => {
     if (!selection || !selection.range) return;
@@ -102,7 +121,7 @@ const InlinePromptInput = ({
   };
 
   return (
-    <div ref={containerRef} style={containerStyles}>
+    <div ref={containerRef} style={containerStyles} data-inline-prompt>
       <div style={headerStyles}>
         <span style={{ ...textStyles.xs.semibold, color: colors.text.muted }}>
           What would you like to change?
@@ -135,6 +154,7 @@ const InlinePromptInput = ({
           />
         </div>
         <Button
+          variant="iconOnly"
           style="primary"
           size="md"
           leadIcon={<Send size={16} />}

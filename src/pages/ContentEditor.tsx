@@ -27,6 +27,7 @@ import FileUpload from '@/design-system/components/FileUpload';
 
 import Tabs from '@/design-system/components/Tabs';
 import SelectionToolbar from '@/design-system/components/SelectionToolbar';
+import InlinePromptInput from '@/design-system/components/InlinePromptInput';
 import InlineDiffView from '@/design-system/components/InlineDiffView';
 
 // Design System Tokens
@@ -142,6 +143,7 @@ const ContentEditor = () => {
     startOffset: number;
     endOffset: number;
   } | null>(null);
+  const [showInlinePrompt, setShowInlinePrompt] = useState(false);
   const [inlineEditLoading, setInlineEditLoading] = useState(false);
   const [inlineDiff, setInlineDiff] = useState<{
     originalText: string;
@@ -568,6 +570,7 @@ const ContentEditor = () => {
     
     if (!selection || selection.isCollapsed || !selection.rangeCount) {
       setTextSelection(null);
+      setShowInlinePrompt(false);
       setInlineDiff(null);
       return;
     }
@@ -576,6 +579,7 @@ const ContentEditor = () => {
     
     if (selectedText.length === 0) {
       setTextSelection(null);
+      setShowInlinePrompt(false);
       setInlineDiff(null);
       return;
     }
@@ -595,8 +599,15 @@ const ContentEditor = () => {
       endOffset: endOffset
     });
     
-    // Clear any existing diff
+    // Clear any existing prompt or diff
+    setShowInlinePrompt(false);
     setInlineDiff(null);
+  };
+
+  // Handle "Ask AI" button click
+  const handleAskAI = () => {
+    if (!textSelection) return;
+    setShowInlinePrompt(true);
   };
 
   // Handle quick action click
@@ -606,7 +617,6 @@ const ContentEditor = () => {
     const actionInstructions: Record<string, string> = {
       'expand': 'Expand this text with more details and examples while maintaining the same tone',
       'shorten': 'Make this text more concise and to the point while keeping the key message',
-      'insert_paragraph': 'Add a new paragraph after this text that continues the thought naturally',
       'continue_writing': 'Continue writing from where this text ends, maintaining the same style and tone',
       'improve_writing': 'Improve the writing quality, clarity, and impact of this text'
     };
@@ -617,12 +627,18 @@ const ContentEditor = () => {
     }
   };
 
+  // Handle canceling inline prompt
+  const handleCancelInlinePrompt = () => {
+    setShowInlinePrompt(false);
+  };
+
   // Handle inline edit instruction submit
   const handleInlineEditSubmit = async (instruction: string) => {
     if (!textSelection || !user) return;
     
     try {
       setInlineEditLoading(true);
+      setShowInlinePrompt(false);
       
       // Get context around the selection (2 lines before and after)
       const lines = editorContent.split('\n');
@@ -1106,10 +1122,12 @@ const ContentEditor = () => {
                         }}
                         onClick={() => handleFileSelection(file.id, !file.selected)}
                         >
-                          <Checkbox
-                            checked={file.selected || false}
-                            onChange={(e) => handleFileSelection(file.id, e.target.checked)}
-                          />
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <Checkbox
+                              checked={file.selected || false}
+                              onChange={(e) => handleFileSelection(file.id, e.target.checked)}
+                            />
+                          </div>
                           <Icon style={{ 
                             width: '12px', 
                             height: '12px', 
@@ -1247,7 +1265,14 @@ const ContentEditor = () => {
           <div 
             ref={editorContainerRef}
             style={editorContentStyles}
-            onMouseUp={handleTextSelection}
+            onMouseUp={(e) => {
+              // Don't handle selection if clicking inside the inline prompt
+              const target = e.target as HTMLElement;
+              if (target.closest('[data-inline-prompt]')) {
+                return;
+              }
+              handleTextSelection();
+            }}
           >
             {/* LinkedIn-style Post Editor */}
             <LinkedInPostEditor
@@ -1259,11 +1284,22 @@ const ContentEditor = () => {
             />
             
             {/* Selection Toolbar - shows when text is selected */}
-            {textSelection && !inlineDiff && (
+            {textSelection && !showInlinePrompt && !inlineDiff && (
               <SelectionToolbar
                 selection={textSelection}
                 onQuickAction={handleInlineQuickAction}
+                onAskAI={handleAskAI}
                 disabled={inlineEditLoading}
+              />
+            )}
+            
+            {/* Inline Prompt Input - shows when "Ask AI" is clicked */}
+            {showInlinePrompt && textSelection && (
+              <InlinePromptInput
+                selection={textSelection}
+                onSubmit={handleInlineEditSubmit}
+                onCancel={handleCancelInlinePrompt}
+                loading={inlineEditLoading}
               />
             )}
           </div>

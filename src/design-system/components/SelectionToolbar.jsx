@@ -21,6 +21,7 @@ import {
 const SelectionToolbar = ({ 
   selection, 
   onQuickAction,
+  onAskAI,
   disabled = false 
 }) => {
   const { colors } = useTheme();
@@ -31,7 +32,6 @@ const SelectionToolbar = ({
   const quickActions = [
     { id: 'expand', label: 'Expand', icon: <Maximize2 size={14} /> },
     { id: 'shorten', label: 'Shorten', icon: <Minimize2 size={14} /> },
-    { id: 'insert_paragraph', label: 'Insert Paragraph', icon: <FileText size={14} /> },
     { id: 'continue_writing', label: 'Continue Writing', icon: <PenLine size={14} /> },
     { id: 'improve_writing', label: 'Improve Writing', icon: <Sparkles size={14} /> },
   ];
@@ -102,6 +102,16 @@ const SelectionToolbar = ({
           disabled={disabled}
         />
       ))}
+      
+      {/* Ask AI button - blue primary button at the end */}
+      <Button
+        label="Ask AI"
+        style="primary"
+        size="xs"
+        leadIcon={<Sparkles size={14} />}
+        onClick={onAskAI}
+        disabled={disabled}
+      />
     </div>
   );
 };
