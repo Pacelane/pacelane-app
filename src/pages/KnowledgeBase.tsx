@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/api/useAuth';
 import { useContent } from '@/hooks/api/useContent';
@@ -12,7 +12,8 @@ import { supabase } from '@/integrations/supabase/client';
 // Sidebar is provided by MainAppChrome layout
 import FileUpload from '@/design-system/components/FileUpload';
 import FileCard from '@/design-system/components/FileCard';
-import Tabs from '@/design-system/components/Tabs';
+// COMMENTED OUT: Tabs temporarily disabled
+// import Tabs from '@/design-system/components/Tabs';
 import DropdownButton from '@/design-system/components/DropdownButton';
 import Input from '@/design-system/components/Input';
 import EmptyState from '@/design-system/components/EmptyState';
@@ -57,6 +58,12 @@ const KnowledgeBase = () => {
     knowledgeFiles,
     loadingFiles: loading,
     uploading,
+    totalFilesCount,
+    loadingCount,
+    currentPage: hookCurrentPage,
+    itemsPerPage: hookItemsPerPage,
+    loadKnowledgeFiles,
+    loadKnowledgeFilesCount,
     uploadFiles,
     deleteKnowledgeFile,
     addLink,
@@ -68,7 +75,8 @@ const KnowledgeBase = () => {
 
   // ========== LOCAL COMPONENT STATE ==========
   // Sidebar handled by layout
-  const [activeTab, setActiveTab] = useState('all');
+  // COMMENTED OUT: Filter tabs temporarily disabled
+  // const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('lastAdded');
   const [selectedAudioFile, setSelectedAudioFile] = useState(null);
@@ -78,10 +86,6 @@ const KnowledgeBase = () => {
   const [processingTranscript, setProcessingTranscript] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [previewFile, setPreviewFile] = useState(null);
-  
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(12); // Fixed items per page
   
   // Ref for FileUpload component to trigger file selection
   const fileUploadRef = useRef(null);
@@ -115,14 +119,14 @@ const KnowledgeBase = () => {
     marginTop: spacing.spacing[8],
   };
 
-  // Filter tabs configuration
-  const filterTabs = [
-    { id: 'all', label: 'All' },
-    { id: 'files', label: 'Files' },
-    { id: 'images', label: 'Images' },
-    { id: 'audio', label: 'Audio' },
-    { id: 'links', label: 'Links' },
-  ];
+  // COMMENTED OUT: Filter tabs configuration (temporarily disabled)
+  // const filterTabs = [
+  //   { id: 'all', label: 'All' },
+  //   { id: 'files', label: 'Files' },
+  //   { id: 'images', label: 'Images' },
+  //   { id: 'audio', label: 'Audio' },
+  //   { id: 'links', label: 'Links' },
+  // ];
 
   // Sort dropdown options
   const sortOptions = [
@@ -145,8 +149,8 @@ const KnowledgeBase = () => {
     return option?.label || 'Last Added';
   };
 
-  // Transform knowledge files to FileCard format
-  const getFileCards = () => {
+  // Transform knowledge files to FileCard format - memoized to prevent unnecessary recalculations
+  const getFileCards = useMemo(() => {
     if (!Array.isArray(knowledgeFiles)) {
       console.error('KnowledgeBase: knowledgeFiles is not an array:', knowledgeFiles);
       return [];
@@ -158,33 +162,42 @@ const KnowledgeBase = () => {
       console.log('KnowledgeBase: Processing item:', item);
       return item && item.type;
     }).map(item => {
-      // Map file type to FileCard expected types
+      // Use the same file type detection logic as the service layer
+      const detectedFileType = getFileTypeFromName(item.name || '');
+      
+      // Map detected file type to FileCard expected types
       let cardFileType = 'default';
-      switch (item.type) {
-        case 'image':
-          cardFileType = 'image';
-          break;
-        case 'video':
-          cardFileType = 'video';
-          break;
-        case 'audio':
-          cardFileType = 'audio';
-          break;
-        case 'link':
-          cardFileType = 'link';
-          break;
-        default:
-          // Check file extension for more specific types
-          if (item.name?.toLowerCase().endsWith('.pdf')) {
-            cardFileType = 'pdf';
-          } else if (item.name?.toLowerCase().endsWith('.zip')) {
-            cardFileType = 'zip';
-          } else if (['.txt', '.md', '.csv', '.json', '.docx', '.doc', '.pptx', '.ppt', '.xlsx', '.xls'].some(ext => 
-            item.name?.toLowerCase().endsWith(ext))) {
-            cardFileType = 'code'; // Use code icon for text-based files
-          } else {
+      
+      if (item.type === 'link') {
+        cardFileType = 'link';
+      } else {
+        // Use filename-based detection for more accurate icons
+        switch (detectedFileType) {
+          case 'image':
+            cardFileType = 'image';
+            break;
+          case 'video':
+            cardFileType = 'video';
+            break;
+          case 'audio':
+            cardFileType = 'audio';
+            break;
+          case 'document':
+            // Check for specific document types for better icons
+            if (item.name?.toLowerCase().endsWith('.pdf')) {
+              cardFileType = 'pdf';
+            } else if (item.name?.toLowerCase().endsWith('.zip')) {
+              cardFileType = 'zip';
+            } else if (['.txt', '.md', '.csv', '.json', '.docx', '.doc', '.pptx', '.ppt', '.xlsx', '.xls'].some(ext => 
+              item.name?.toLowerCase().endsWith(ext))) {
+              cardFileType = 'code'; // Use code icon for text-based files
+            } else {
+              cardFileType = 'default';
+            }
+            break;
+          default:
             cardFileType = 'default';
-          }
+        }
       }
 
       // Create enhanced subtitle with file-specific information
@@ -245,32 +258,13 @@ const KnowledgeBase = () => {
         } : undefined
       };
     });
-  };
+  }, [knowledgeFiles, getFileTypeFromName]);
 
-  // Filter files based on active tab
-  const getFilteredFiles = () => {
-    const allFiles = getFileCards();
-    
-    if (activeTab === 'all') return allFiles;
-    
-    return allFiles.filter(file => {
-      switch (activeTab) {
-        case 'files':
-          return ['default', 'pdf', 'zip'].includes(file.fileType);
-        case 'images':
-          return file.fileType === 'image';
-        case 'audio':
-          return file.fileType === 'audio';
-        case 'links':
-          return file.fileType === 'link';
-        default:
-          return true;
-      }
-    });
-  };
+  // Server-side filtering is now handled by the backend
+  // No need for client-side filtering anymore
 
-  // Sort files based on sortBy
-  const getSortedFiles = (files) => {
+  // Sort files based on sortBy - memoized
+  const getSortedFiles = useCallback((files) => {
     switch (sortBy) {
       case 'nameAsc':
         return [...files].sort((a, b) => a.title.localeCompare(b.title));
@@ -284,36 +278,40 @@ const KnowledgeBase = () => {
       default:
         return files; // Already sorted by creation date from backend
     }
-  };
+  }, [sortBy]);
 
-  // Get final filtered, sorted, and paginated files
-  const getDisplayFiles = () => {
-    const filteredFiles = getFilteredFiles();
-    const searchedFiles = filteredFiles.filter(file => 
-      searchQuery === '' || 
-      file.title.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-    const sortedFiles = getSortedFiles(searchedFiles);
+  // Get final sorted files - server handles filtering and search
+  const getDisplayFiles = useMemo(() => {
+    const allFiles = getFileCards;
+    const sortedFiles = getSortedFiles(allFiles);
     
-    // Calculate pagination
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const paginatedFiles = sortedFiles.slice(startIndex, endIndex);
-    
+    // Server-side pagination - files are already filtered and searched
     return {
-      files: paginatedFiles,
-      totalFiles: sortedFiles.length,
-      totalPages: Math.ceil(sortedFiles.length / itemsPerPage)
+      files: sortedFiles, // These are already the files for the current page
+      totalFiles: totalFilesCount, // Total count from server (with filters applied)
+      totalPages: Math.ceil(totalFilesCount / hookItemsPerPage)
     };
-  };
+  }, [getFileCards, getSortedFiles, totalFilesCount, hookItemsPerPage]);
 
-  // Reset page when search query or filter changes
+  // Handle page changes
+  const handlePageChange = useCallback((page: number) => {
+    // TEMPORARY: Not using filter tabs, so we pass 'all' or undefined for filter
+    loadKnowledgeFiles(page, undefined, searchQuery);
+  }, [loadKnowledgeFiles, searchQuery]);
+
+  // Reset to page 1 and reload when search query changes (filter temporarily disabled)
   React.useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, activeTab, sortBy]);
+    // Load files with search only (no filter for now)
+    loadKnowledgeFiles(1, undefined, searchQuery);
+    // Load count with search only (no filter for now)
+    loadKnowledgeFilesCount(undefined, searchQuery);
+  }, [searchQuery, loadKnowledgeFiles, loadKnowledgeFilesCount]);
+  
+  // Keep activeTab in state for when we re-enable filters later
+  // (commented out the effect that was watching activeTab changes)
 
-  // File upload handlers
-  const handleFileSelect = async (files) => {
+  // File upload handlers - memoized to prevent unnecessary re-renders
+  const handleFileSelect = useCallback(async (files) => {
     if (!files || files.length === 0) return;
 
     console.log('KnowledgeBase: Starting file upload for', files.length, 'files');
@@ -403,9 +401,9 @@ const KnowledgeBase = () => {
         duration: 6000
       });
     }
-  };
+  }, [uploadFiles, validateFileType, toast, removeToast]);
 
-  const handleUrlSubmit = async (url) => {
+  const handleUrlSubmit = useCallback(async (url) => {
     if (!url.trim()) return;
 
     // Basic URL validation
@@ -453,9 +451,9 @@ const KnowledgeBase = () => {
         duration: 6000
       });
     }
-  };
+  }, [addLink, toast, removeToast, setUrlInput]);
 
-  const handleFileAction = async (action, fileId) => {
+  const handleFileAction = useCallback(async (action, fileId) => {
     if (action === 'delete') {
       // Find the file name for better user feedback
       const file = knowledgeFiles.find(f => f.id === fileId);
@@ -496,9 +494,9 @@ const KnowledgeBase = () => {
         });
       }
     }
-  };
+  }, [knowledgeFiles, deleteKnowledgeFile, toast, removeToast]);
 
-  const handleFileClick = (file) => {
+  const handleFileClick = useCallback((file) => {
     // For audio files with transcription, show the existing audio modal
     if (file.fileType === 'audio' && file.metadata?.transcription) {
       setSelectedAudioFile(file);
@@ -508,12 +506,12 @@ const KnowledgeBase = () => {
       setPreviewFile(file);
       setShowPreviewModal(true);
     }
-  };
+  }, []);
 
   // Transcript handling functions
-  const handleTranscriptPaste = () => {
+  const handleTranscriptPaste = useCallback(() => {
     setShowTranscriptModal(true);
-  };
+  }, []);
 
   const handleTranscriptSubmit = async (transcriptData: { title: string; transcript: string; source: string }) => {
     try {
@@ -799,19 +797,19 @@ const KnowledgeBase = () => {
             </div>
           </div>
 
-          {/* Controls Row - Tabs and Search */}
+          {/* Controls Row - Search and Sort */}
           <div style={controlRowStyles}>
-            {/* Left: Tab Bar */}
-            <Tabs
+            {/* COMMENTED OUT: Filter Tabs - Can be re-enabled later */}
+            {/* <Tabs
               style="segmented"
               type="default"
               tabs={filterTabs}
               activeTab={activeTab}
               onTabChange={setActiveTab}
-            />
+            /> */}
 
             {/* Right: Search and Sort */}
-            <div style={rightSectionStyles}>
+            <div style={{ ...rightSectionStyles, width: '100%', justifyContent: 'flex-end' }}>
               {/* Search Input */}
               <div style={{ flex: isMobile ? 1 : 'none', width: isMobile ? 'auto' : '280px' }}>
                 <Input
@@ -838,28 +836,32 @@ const KnowledgeBase = () => {
           </div>
 
           {/* Loading State */}
-          {(loading || uploading) && (
+          {(loading || uploading || loadingCount) && (
             <div style={{
               display: 'flex',
               justifyContent: 'center',
               padding: spacing.spacing[48],
             }}>
               <SubtleLoadingSpinner 
-                title={loading ? "Loading your files..." : "Uploading files..."}
+                title={
+                  loadingCount ? "Loading file count..." :
+                  loading ? "Loading your files..." : 
+                  "Uploading files..."
+                }
                 size={16}
               />
             </div>
           )}
 
           {/* File Listing */}
-          {!loading && !uploading && (() => {
-            const { files, totalFiles, totalPages } = getDisplayFiles();
+          {!loading && !uploading && !loadingCount && (() => {
+            const { files, totalFiles, totalPages } = getDisplayFiles;
             
             if (totalFiles === 0) {
               return (
                 <EmptyState
                   title="No files found"
-                  subtitle={searchQuery ? 'Try adjusting your search or filter' : 'Upload some files to get started'}
+                  subtitle={searchQuery ? 'Try adjusting your search query' : 'Upload some files to get started'}
                   buttonLabel={!searchQuery ? 'Upload Files' : undefined}
                   onButtonClick={!searchQuery ? () => {
                     // Trigger file selection dialog
@@ -903,9 +905,9 @@ const KnowledgeBase = () => {
                     marginTop: spacing.spacing[32],
                   }}>
                     <Pagination
-                      currentPage={currentPage}
+                      currentPage={hookCurrentPage}
                       totalPages={totalPages}
-                      onPageChange={setCurrentPage}
+                      onPageChange={handlePageChange}
                       showLabels={!isMobile}
                       size={isMobile ? 'sm' : 'md'}
                     />
@@ -922,7 +924,7 @@ const KnowledgeBase = () => {
                     ...textStyles.sm.normal,
                     color: colors.text.muted,
                   }}>
-                    Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalFiles)} of {totalFiles} files
+                    Showing {((hookCurrentPage - 1) * hookItemsPerPage) + 1} to {Math.min(hookCurrentPage * hookItemsPerPage, totalFiles)} of {totalFiles} files
                   </span>
                 </div>
               </>

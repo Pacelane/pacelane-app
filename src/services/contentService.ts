@@ -22,22 +22,36 @@ export class ContentService {
   // ========== KNOWLEDGE BASE OPERATIONS ==========
 
   /**
-   * Load all knowledge files for a user directly from Supabase database (fast)
+   * Load knowledge files for a user with server-side pagination, filtering, and search
    * @param userId - The user's ID
+   * @param limit - Number of files to load (default: 12)
+   * @param offset - Number of files to skip (default: 0)
+   * @param filter - File type filter (optional: 'all', 'files', 'images', 'audio', 'links')
+   * @param search - Search query for file names (optional)
    * @returns Promise with knowledge files list or error
    */
-  static async loadUserKnowledgeFiles(userId: string): Promise<ApiResponse<KnowledgeFile[]>> {
+  static async loadUserKnowledgeFiles(
+    userId: string, 
+    limit: number = 12, 
+    offset: number = 0,
+    filter?: string,
+    search?: string
+  ): Promise<ApiResponse<KnowledgeFile[]>> {
     try {
-      console.log('ContentService: Loading knowledge files from database for user:', userId);
+      console.log('🚀 ContentService: Loading knowledge files page for user:', userId, 'limit:', limit, 'offset:', offset, 'filter:', filter, 'search:', search);
       
-      // Query directly from Supabase database for fast loading
-      const { data, error } = await supabase
+      // Build query with pagination
+      let query = supabase
         .from('knowledge_files')
         .select(`
           id,
           name,
           type,
           size,
+          url,
+          storage_path,
+          gcs_bucket,
+          gcs_path,
           created_at,
           updated_at,
           content_extracted,
@@ -45,19 +59,99 @@ export class ContentService {
           extraction_metadata,
           metadata
         `)
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+        .eq('user_id', userId);
+      
+      // Apply type filter if provided
+      if (filter && filter !== 'all') {
+        const typeMap: Record<string, string> = {
+          'files': 'document',
+          'images': 'image',
+          'audio': 'audio',
+          'links': 'link'
+        };
+        
+        if (typeMap[filter]) {
+          query = query.eq('type', typeMap[filter]);
+          console.log('🔍 ContentService: Applying filter - type:', typeMap[filter]);
+        }
+      }
+      
+      // Apply search filter if provided
+      if (search && search.trim()) {
+        query = query.ilike('name', `%${search.trim()}%`);
+        console.log('🔍 ContentService: Applying search - query:', search);
+      }
+      
+      // Apply ordering and pagination
+      const { data, error } = await query
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
 
       if (error) {
-        console.error('ContentService: Database query error:', error);
+        console.error('❌ ContentService: Database query error:', error);
         return { error: error.message || 'Failed to load knowledge files' };
       }
 
-      console.log('ContentService: Loaded', data?.length || 0, 'knowledge files from database');
+      console.log('✅ ContentService: Loaded', data?.length || 0, 'knowledge files page');
       return { data: data || [] };
     } catch (error: any) {
-      console.error('ContentService: loadUserKnowledgeFiles failed:', error);
+      console.error('❌ ContentService: loadUserKnowledgeFiles failed:', error);
       return { error: error.message || 'Failed to load knowledge files' };
+    }
+  }
+
+  /**
+   * Get total count of knowledge files for a user with filtering and search
+   * @param userId - The user's ID
+   * @param filter - File type filter (optional: 'all', 'files', 'images', 'audio', 'links')
+   * @param search - Search query for file names (optional)
+   * @returns Promise with total count or error
+   */
+  static async getUserKnowledgeFilesCount(
+    userId: string,
+    filter?: string,
+    search?: string
+  ): Promise<ApiResponse<number>> {
+    try {
+      console.log('🔢 ContentService: Getting knowledge files count for user:', userId, 'filter:', filter, 'search:', search);
+      
+      // Build count query
+      let query = supabase
+        .from('knowledge_files')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId);
+      
+      // Apply type filter if provided
+      if (filter && filter !== 'all') {
+        const typeMap: Record<string, string> = {
+          'files': 'document',
+          'images': 'image',
+          'audio': 'audio',
+          'links': 'link'
+        };
+        
+        if (typeMap[filter]) {
+          query = query.eq('type', typeMap[filter]);
+        }
+      }
+      
+      // Apply search filter if provided
+      if (search && search.trim()) {
+        query = query.ilike('name', `%${search.trim()}%`);
+      }
+      
+      const { count, error } = await query;
+
+      if (error) {
+        console.error('❌ ContentService: Count query error:', error);
+        return { error: error.message || 'Failed to get knowledge files count' };
+      }
+
+      console.log('✅ ContentService: Total knowledge files count:', count || 0);
+      return { data: count || 0 };
+    } catch (error: any) {
+      console.error('❌ ContentService: getUserKnowledgeFilesCount failed:', error);
+      return { error: error.message || 'Failed to get knowledge files count' };
     }
   }
 
@@ -68,7 +162,7 @@ export class ContentService {
    */
   static async loadUserKnowledgeFilesFromGCS(userId: string): Promise<ApiResponse<KnowledgeFile[]>> {
     try {
-      console.log('ContentService: Loading knowledge files from GCS for user:', userId);
+      console.log('🐌 ContentService: Loading knowledge files from GCS (SLOW) for user:', userId);
       
       // Get user's JWT token for authentication
       const { data: { session } } = await supabase.auth.getSession();
@@ -614,7 +708,7 @@ export class ContentService {
    */
   static async sendAIMessage(messageData: AIMessageData): Promise<ApiResponse<AIResponseData>> {
     try {
-      console.log('ContentService: Sending AI message');
+      console.log('ContentService: Sending AI message with', messageData.fileContexts?.length || 0, 'file contexts');
 
       const { data, error } = await supabase.functions.invoke('ai-assistant', {
         body: {

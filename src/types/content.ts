@@ -3,7 +3,7 @@
 
 // ========== KNOWLEDGE BASE TYPES ==========
 
-export type FileType = 'file' | 'image' | 'audio' | 'video' | 'link';
+export type FileType = 'file' | 'document' | 'image' | 'audio' | 'video' | 'link';
 
 export interface KnowledgeFile {
   id: string;
@@ -15,6 +15,13 @@ export interface KnowledgeFile {
   created_at: string;
   updated_at?: string;
   selected?: boolean; // For UI selection state
+  content_extracted?: boolean;
+  extracted_content?: string;
+  extraction_metadata?: any;
+  metadata?: any;
+  storage_path?: string;
+  gcs_bucket?: string;
+  gcs_path?: string;
 }
 
 export interface FileUploadData {
@@ -104,6 +111,12 @@ export interface ContentState {
   loadingFiles: boolean;
   uploading: boolean;
   
+  // Pagination State
+  totalFilesCount: number;
+  loadingCount: boolean;
+  currentPage: number;
+  itemsPerPage: number;
+  
   // Drafts State
   savedDrafts: SavedDraft[];
   loadingDrafts: boolean;
@@ -124,11 +137,16 @@ export interface ContentState {
 
 export interface ContentActions {
   // Knowledge Base Actions
-  loadKnowledgeFiles: () => Promise<any>;
+  loadKnowledgeFiles: (page?: number, filter?: string, search?: string) => Promise<any>;
+  loadManyKnowledgeFiles: (limit?: number, filter?: string, search?: string) => Promise<any>;
+  loadKnowledgeFilesCount: (filter?: string, search?: string) => Promise<any>;
   uploadFile: (fileData: FileUploadData) => Promise<any>;
   uploadFiles: (files: File[]) => Promise<any>;
   deleteKnowledgeFile: (fileId: string) => Promise<any>;
   addLink: (linkData: LinkData) => Promise<any>;
+  getFilePreviewUrl: (fileId: string) => Promise<any>;
+  streamFile: (fileId: string) => Promise<any>;
+  getFileContent: (fileId: string) => Promise<any>;
   
   // Drafts Actions
   loadSavedDrafts: () => Promise<any>;
@@ -160,7 +178,7 @@ export interface ContentActions {
   // Utility Actions
   clearError: () => void;
   getFileTypeFromName: (filename: string) => FileType;
-  validateFileType: (file: File) => boolean;
+  validateFileType: (file: File) => FileValidationResult;
   selectKnowledgeFile: (fileId: string, selected: boolean) => void;
   getSelectedFiles: () => KnowledgeFile[];
 }

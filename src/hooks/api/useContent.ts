@@ -2,7 +2,7 @@
 // This hook provides comprehensive content-related state and operations
 // Frontend developers can use this for all content functionality
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { contentApi } from '@/api/content';
 import { useAuth } from '@/hooks/api/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,10 +28,20 @@ export const useContent = (): ContentState & ContentActions => {
   
   const { user } = useAuth();
   
+  // Ref to track if data has been loaded to prevent duplicate calls
+  const dataLoadedRef = useRef(false);
+  const currentUserIdRef = useRef<string | null>(null);
+  
   // Knowledge Base State
   const [knowledgeFiles, setKnowledgeFiles] = useState<KnowledgeFile[]>([]);
   const [loadingFiles, setLoadingFiles] = useState(false);
   const [uploading, setUploading] = useState(false);
+  
+  // Pagination State
+  const [totalFilesCount, setTotalFilesCount] = useState(0);
+  const [loadingCount, setLoadingCount] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(12);
   
   // Drafts State
   const [savedDrafts, setSavedDrafts] = useState<SavedDraft[]>([]);
@@ -86,7 +96,16 @@ export const useContent = (): ContentState & ContentActions => {
       
       if (result.error) {
         console.error('Content operation error:', result.error);
-        setError(result.error);
+        
+        // Handle specific error types
+        let userFriendlyError = result.error;
+        if (result.error.includes('timeout') || result.error.includes('canceling statement')) {
+          userFriendlyError = 'Database query timed out. Please try again or contact support if the issue persists.';
+        } else if (result.error.includes('network') || result.error.includes('connection')) {
+          userFriendlyError = 'Network error. Please check your connection and try again.';
+        }
+        
+        setError(userFriendlyError);
         return result;
       }
 
@@ -96,7 +115,15 @@ export const useContent = (): ContentState & ContentActions => {
       
       return result;
     } catch (error: any) {
-      const errorMessage = error.message || 'Content operation failed';
+      let errorMessage = error.message || 'Content operation failed';
+      
+      // Handle specific error types
+      if (error.message?.includes('timeout') || error.message?.includes('canceling statement')) {
+        errorMessage = 'Database query timed out. Please try again or contact support if the issue persists.';
+      } else if (error.message?.includes('network') || error.message?.includes('connection')) {
+        errorMessage = 'Network error. Please check your connection and try again.';
+      }
+      
       console.error('useContent: Operation failed:', error);
       setError(errorMessage);
       return { error: errorMessage };
@@ -116,13 +143,54 @@ export const useContent = (): ContentState & ContentActions => {
   // ========== KNOWLEDGE BASE ACTIONS ==========
 
   /**
-   * Load all knowledge files for the current user
+   * Load knowledge files for the current page with filtering and search
+   * @param page - Page number (1-based)
+   * @param filter - File type filter (optional: 'all', 'files', 'images', 'audio', 'links')
+   * @param search - Search query for file names (optional)
    * @returns Promise with operation result
    */
-  const loadKnowledgeFiles = useCallback(async () => {
+  const loadKnowledgeFiles = useCallback(async (
+    page: number = 1,
+    filter?: string,
+    search?: string
+  ) => {
+    if (!user) return { error: 'User must be logged in' };
+    
+    const offset = (page - 1) * itemsPerPage;
+    
     return executeContentOperation(
       async () => {
-        const result = await contentApi.loadKnowledgeFiles(user!.id);
+        const result = await contentApi.loadKnowledgeFiles(user.id, itemsPerPage, offset, filter, search);
+        
+        if (result.data) {
+          setKnowledgeFiles(result.data);
+          setCurrentPage(page);
+        }
+        
+        return result;
+      },
+      'loadingFiles',
+      'Knowledge files page loaded successfully'
+    );
+  }, [user, itemsPerPage]);
+
+  /**
+   * Load many knowledge files (for contexts where pagination isn't needed, like ContentEditor)
+   * @param limit - Number of files to load (default: 100)
+   * @param filter - File type filter (optional)
+   * @param search - Search query for file names (optional)
+   * @returns Promise with operation result
+   */
+  const loadManyKnowledgeFiles = useCallback(async (
+    limit: number = 100,
+    filter?: string,
+    search?: string
+  ) => {
+    if (!user) return { error: 'User must be logged in' };
+    
+    return executeContentOperation(
+      async () => {
+        const result = await contentApi.loadKnowledgeFiles(user.id, limit, 0, filter, search);
         
         if (result.data) {
           setKnowledgeFiles(result.data);
@@ -131,8 +199,44 @@ export const useContent = (): ContentState & ContentActions => {
         return result;
       },
       'loadingFiles',
-      'Knowledge files loaded successfully'
+      `Loaded ${limit} knowledge files successfully`
     );
+  }, [user]);
+
+  /**
+   * Load total count of knowledge files with filtering and search
+   * @param filter - File type filter (optional: 'all', 'files', 'images', 'audio', 'links')
+   * @param search - Search query for file names (optional)
+   * @returns Promise with operation result
+   */
+  const loadKnowledgeFilesCount = useCallback(async (filter?: string, search?: string) => {
+    if (!user) return { error: 'User must be logged in' };
+    
+    setLoadingCount(true);
+    setError(undefined);
+
+    try {
+      const result = await contentApi.getKnowledgeFilesCount(user.id, filter, search);
+      
+      if (result.error) {
+        console.error('useContent: Count operation error:', result.error);
+        setError(result.error);
+        return result;
+      }
+
+      if (result.data !== undefined) {
+        setTotalFilesCount(result.data);
+      }
+      
+      return result;
+    } catch (error: any) {
+      const errorMessage = error.message || 'Failed to get knowledge files count';
+      console.error('useContent: Count operation failed:', error);
+      setError(errorMessage);
+      return { error: errorMessage };
+    } finally {
+      setLoadingCount(false);
+    }
   }, [user]);
 
   /**
@@ -508,6 +612,7 @@ export const useContent = (): ContentState & ContentActions => {
    * @param selected - Whether to select or deselect
    */
   const selectKnowledgeFile = (fileId: string, selected: boolean) => {
+    console.log('useContent: selectKnowledgeFile called', fileId, 'selected:', selected);
     setKnowledgeFiles(prev => 
       prev.map(file => 
         file.id === fileId ? { ...file, selected } : file
@@ -520,7 +625,9 @@ export const useContent = (): ContentState & ContentActions => {
    * @returns Array of selected files
    */
   const getSelectedFiles = (): KnowledgeFile[] => {
-    return knowledgeFiles.filter(file => file.selected);
+    const selected = knowledgeFiles.filter(file => file.selected);
+    console.log('useContent: getSelectedFiles called, total files:', knowledgeFiles.length, 'selected:', selected.length);
+    return selected;
   };
 
   // ========== UI CONTENT ORDER ACTIONS ==========
@@ -561,19 +668,22 @@ export const useContent = (): ContentState & ContentActions => {
 
   // Load all content data when user changes or component mounts
   useEffect(() => {
-    if (user) {
-      // Load all content data in parallel - create inline functions to avoid dependency issues
+    // Only load data if we have a user and haven't loaded data for this user yet
+    if (user && user.id !== currentUserIdRef.current) {
+      console.log('useContent: Loading data for new user:', user.id);
+      
+      // Update refs to track current user and loading state
+      currentUserIdRef.current = user.id;
+      dataLoadedRef.current = false;
+      
+      // Load total count first (fast query) - this is needed for pagination
+      loadKnowledgeFilesCount();
+      
+      // Load first page of knowledge files
+      loadKnowledgeFiles(1);
+
+      // Load other content in parallel (these are less critical and can load separately)
       Promise.all([
-        executeContentOperation(
-          async () => {
-            const result = await contentApi.loadKnowledgeFiles(user.id);
-            if (result.data) {
-              setKnowledgeFiles(result.data);
-            }
-            return result;
-          },
-          'loadingFiles'
-        ),
         executeContentOperation(
           async () => {
             const result = await contentApi.loadSavedDrafts(user.id);
@@ -594,9 +704,15 @@ export const useContent = (): ContentState & ContentActions => {
           },
           'loadingSuggestions'
         )
-      ]);
-    } else {
+      ]).finally(() => {
+        // Mark data as loaded for this user
+        dataLoadedRef.current = true;
+      });
+    } else if (!user) {
       // Clear all content when user logs out
+      console.log('useContent: Clearing data - user logged out');
+      currentUserIdRef.current = null;
+      dataLoadedRef.current = false;
       setKnowledgeFiles([]);
       setSavedDrafts([]);
       setContentSuggestions([]);
@@ -604,7 +720,7 @@ export const useContent = (): ContentState & ContentActions => {
       setCurrentConversationId(undefined);
       setError(undefined);
     }
-  }, [user]);
+  }, [user?.id]); // Only depend on user.id, not the entire user object
 
   // ========== RETURN STATE & ACTIONS ==========
   
@@ -613,6 +729,12 @@ export const useContent = (): ContentState & ContentActions => {
     knowledgeFiles,
     loadingFiles,
     uploading,
+    
+    // Pagination State
+    totalFilesCount,
+    loadingCount,
+    currentPage,
+    itemsPerPage,
     
     // Drafts State
     savedDrafts,
@@ -633,6 +755,8 @@ export const useContent = (): ContentState & ContentActions => {
 
     // Knowledge Base Actions
     loadKnowledgeFiles,
+    loadManyKnowledgeFiles,
+    loadKnowledgeFilesCount,
     uploadFile,
     uploadFiles,
     deleteKnowledgeFile,

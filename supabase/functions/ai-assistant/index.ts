@@ -59,7 +59,7 @@ serve(async (req) => {
     }
 
     // Get user ID based on context
-    let message, conversationId, fileContexts = [], currentContent;
+    let message, conversationId, fileContexts = [], currentContent, mode, selection;
     
     if (isServiceRole) {
       // For service role calls, get userId from request body
@@ -69,6 +69,8 @@ serve(async (req) => {
       conversationId = body.conversationId;
       fileContexts = body.fileContexts || [];
       currentContent = body.currentContent;
+      mode = body.mode || 'chat'; // 'chat' or 'inline-edit'
+      selection = body.selection;
       
       if (!userId) {
         throw new Error('userId is required for service role calls');
@@ -97,6 +99,8 @@ serve(async (req) => {
       conversationId = body.conversationId;
       fileContexts = body.fileContexts || [];
       currentContent = body.currentContent;
+      mode = body.mode || 'chat'; // 'chat' or 'inline-edit'
+      selection = body.selection;
     }
 
     console.log('Processing request:', { 
@@ -104,7 +108,9 @@ serve(async (req) => {
       conversationId, 
       messageLength: message?.length,
       fileContextsCount: fileContexts.length,
-      hasCurrentContent: !!currentContent
+      hasCurrentContent: !!currentContent,
+      mode: mode,
+      hasSelection: !!selection
     });
 
     if (!message) {
@@ -113,8 +119,11 @@ serve(async (req) => {
 
     let currentConversationId = conversationId;
 
-    // If no conversation ID provided, create a new conversation
-    if (!currentConversationId) {
+    // For inline edits, skip conversation/message storage (faster response)
+    const skipConversationStorage = mode === 'inline-edit';
+
+    // If no conversation ID provided and not inline edit, create a new conversation
+    if (!currentConversationId && !skipConversationStorage) {
       const { data: newConversation, error: convError } = await supabase
         .from('conversations')
         .insert({
@@ -133,38 +142,93 @@ serve(async (req) => {
       console.log('Created new conversation:', currentConversationId);
     }
 
-    // Save user message to database
-    const { error: userMessageError } = await supabase
-      .from('messages')
-      .insert({
-        conversation_id: currentConversationId,
-        role: 'user',
-        content: message
-      });
+    // Save user message to database (skip for inline edits)
+    if (!skipConversationStorage) {
+      const { error: userMessageError } = await supabase
+        .from('messages')
+        .insert({
+          conversation_id: currentConversationId,
+          role: 'user',
+          content: message
+        });
 
-    if (userMessageError) {
-      console.error('Error saving user message:', userMessageError);
-      throw new Error('Failed to save user message');
+      if (userMessageError) {
+        console.error('Error saving user message:', userMessageError);
+        throw new Error('Failed to save user message');
+      }
     }
 
-    // Get conversation history for context
-    const { data: conversationHistory, error: historyError } = await supabase
-      .from('messages')
-      .select('role, content')
-      .eq('conversation_id', currentConversationId)
-      .order('created_at', { ascending: true });
+    // Get conversation history for context (skip for inline edits)
+    let conversationHistory: any[] = [];
+    if (!skipConversationStorage && currentConversationId) {
+      const { data, error: historyError } = await supabase
+        .from('messages')
+        .select('role, content')
+        .eq('conversation_id', currentConversationId)
+        .order('created_at', { ascending: true });
 
-    if (historyError) {
-      console.error('Error fetching conversation history:', historyError);
-      throw new Error('Failed to fetch conversation history');
+      if (historyError) {
+        console.error('Error fetching conversation history:', historyError);
+        throw new Error('Failed to fetch conversation history');
+      }
+      
+      conversationHistory = data || [];
     }
 
-    // Process knowledge base files using Claude Files API (like writer-agent)
-    const { contextText, fileAttachments } = await prepareCitationsWithFiles(fileContexts, anthropicApiKey);
+    // Process knowledge base files using Claude Files API (skip for inline edits to keep it fast)
+    const { contextText, fileAttachments } = mode === 'inline-edit' 
+      ? { contextText: '', fileAttachments: [] }
+      : await prepareCitationsWithFiles(fileContexts, anthropicApiKey);
 
-    // Prepare current content context
+    // Prepare current content context based on mode
     let contentContextInfo = '';
-    if (currentContent) {
+    
+    if (mode === 'inline-edit' && selection) {
+      // For inline editing, provide focused context
+      contentContextInfo = `\n\nInline Edit Mode: The user has selected a specific portion of their content and wants to edit it.
+
+Selected Text:
+"""
+${selection.text}
+"""
+
+Context Before:
+"""
+${selection.beforeContext || '(beginning of content)'}
+"""
+
+Context After:
+"""
+${selection.afterContext || '(end of content)'}
+"""
+
+User's Instruction: "${message}"
+
+CRITICAL INSTRUCTIONS:
+1. Return ONLY the edited version of the selected text
+2. Do NOT include explanations, commentary, or the surrounding context
+3. MANDATORY: Wrap your ENTIRE response in a code block like this example:
+
+\`\`\`
+[put the edited text here]
+\`\`\`
+
+4. Your response should be ONLY the code block with the edited text inside
+5. Keep the same tone and style as the surrounding content
+6. Make sure the edit flows naturally with the before and after context
+7. The edited text should be in Portuguese (pt-BR) just like the original
+
+EXAMPLE FORMAT:
+If the user selects "Hello world" and asks to make it more friendly, your ENTIRE response should be:
+
+\`\`\`
+Olá, mundo!
+\`\`\`
+
+Nothing else. No explanations before or after the code block.`;
+      
+    } else if (currentContent) {
+      // For full content editing (chat mode)
       contentContextInfo = `\n\nCurrent Content: The user is currently working on this content:
 """
 ${currentContent}
@@ -183,6 +247,8 @@ This allows the user to easily apply your suggestions. Always provide the full e
 
     // Prepare system prompt
     const systemPrompt = `You are a helpful AI assistant specializing in LinkedIn content creation and editing. You help users write, edit, and improve their professional content. 
+
+IMPORTANT: Always respond in Portuguese (pt-BR). All your responses, explanations, and suggestions must be in Brazilian Portuguese.
 
 Your expertise includes:
 - LinkedIn post optimization and best practices
@@ -258,28 +324,30 @@ ${contextText ? `\n\nKnowledge Base Context:\n${contextText}` : ''}${contentCont
 
     console.log('Received response from Claude, length:', assistantMessage.length);
 
-    // Save assistant message to database
-    const { error: assistantMessageError } = await supabase
-      .from('messages')
-      .insert({
-        conversation_id: currentConversationId,
-        role: 'assistant',
-        content: assistantMessage
-      });
+    // Save assistant message to database (skip for inline edits)
+    if (!skipConversationStorage) {
+      const { error: assistantMessageError } = await supabase
+        .from('messages')
+        .insert({
+          conversation_id: currentConversationId,
+          role: 'assistant',
+          content: assistantMessage
+        });
 
-    if (assistantMessageError) {
-      console.error('Error saving assistant message:', assistantMessageError);
-      throw new Error('Failed to save assistant message');
-    }
+      if (assistantMessageError) {
+        console.error('Error saving assistant message:', assistantMessageError);
+        throw new Error('Failed to save assistant message');
+      }
 
-    // Update conversation updated_at timestamp
-    const { error: updateError } = await supabase
-      .from('conversations')
-      .update({ updated_at: new Date().toISOString() })
-      .eq('id', currentConversationId);
+      // Update conversation updated_at timestamp
+      const { error: updateError } = await supabase
+        .from('conversations')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', currentConversationId);
 
-    if (updateError) {
-      console.error('Error updating conversation timestamp:', updateError);
+      if (updateError) {
+        console.error('Error updating conversation timestamp:', updateError);
+      }
     }
 
     console.log('Successfully processed request for conversation:', currentConversationId);
