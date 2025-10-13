@@ -86,6 +86,7 @@ export interface ChatMessage {
 }
 
 export interface FileContext {
+  id?: string;
   name: string;
   type: FileType;
   url?: string;
