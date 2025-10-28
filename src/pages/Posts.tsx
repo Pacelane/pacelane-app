@@ -201,32 +201,6 @@ const Posts = () => {
     });
   };
 
-  const handleUpdateDraftStatus = async (draftId: string, newStatus: 'draft' | 'published' | 'archived') => {
-    try {
-      const result = await updateDraft(draftId, { status: newStatus });
-      if (result.error) {
-        toast({
-          title: 'Error',
-          description: result.error,
-          variant: 'destructive'
-        });
-      } else {
-        toast({
-          title: 'Status Updated',
-          description: `Post status changed to ${newStatus}`,
-          variant: 'success'
-        });
-      }
-    } catch (error) {
-      console.error('Error updating draft status:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update post status',
-        variant: 'destructive'
-      });
-    }
-  };
-
   const handleDeleteDraft = async (draftId: string) => {
     try {
       const result = await deleteDraft(draftId);
@@ -250,6 +224,22 @@ const Posts = () => {
     });
   };
 
+  const handleStatusChange = async (draftId: string, newStatus: 'draft' | 'published' | 'archived') => {
+    try {
+      const result = await updateDraft(draftId, { status: newStatus });
+      
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+      
+      const statusLabel = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
+      toast.success(`Post marked as ${statusLabel}`);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update post status');
+    }
+  };
+
   const handleContentAction = (action, itemId) => {
     const allItems = getAllContentItems();
     const item = allItems.find(i => i.id === itemId);
@@ -264,13 +254,13 @@ const Posts = () => {
           handleDeleteDraft(itemId);
           break;
         case 'mark-draft':
-          handleUpdateDraftStatus(itemId, 'draft');
+          handleStatusChange(itemId, 'draft');
           break;
         case 'mark-published':
-          handleUpdateDraftStatus(itemId, 'published');
+          handleStatusChange(itemId, 'published');
           break;
         case 'mark-archived':
-          handleUpdateDraftStatus(itemId, 'archived');
+          handleStatusChange(itemId, 'archived');
           break;
       }
     } else if (item.type === 'suggestion') {

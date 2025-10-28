@@ -317,6 +317,7 @@ export const contentApi = {
 
     // Convert selected files to file contexts
     const fileContexts: FileContext[] = selectedFiles.map(file => ({
+      id: file.id,
       name: file.name,
       type: file.type,
       url: file.url

@@ -33,11 +33,11 @@ const ContentCard = ({
   title = 'Content Title',
   subtitle = 'Last edited',
   content = mockContent,
-  status = 'draft',              // Status of the content
   image,                         // Image URL for image variant
+  status = 'draft',              // Current status of the content
   
   // Interaction handlers
-  onMenuAction,                  // Function called with action type ('delete')
+  onMenuAction,                  // Function called with action type ('delete', 'markAsDraft', 'markAsPublished', 'markAsArchived')
   onClick,                       // Card click handler
   
   // Standard props
@@ -54,27 +54,42 @@ const ContentCard = ({
   // Get first 5 lines of content
   const displayContent = content.split('\n').slice(0, 5).join('\n');
 
-  // Dropdown menu items
-  const dropdownItems = [
-    {
-      label: 'Draft',
+  // Dropdown menu items based on current status
+  const dropdownItems = [];
+  
+  // Add status change options (only show options that differ from current status)
+  if (status !== 'draft') {
+    dropdownItems.push({
+      label: 'Mark as Draft',
       onClick: () => onMenuAction?.('mark-draft')
-    },
-    {
-      label: 'Published',
+    });
+  }
+  
+  if (status !== 'published') {
+    dropdownItems.push({
+      label: 'Mark as Published',
       onClick: () => onMenuAction?.('mark-published')
-    },
-    {
-      label: 'Archived',
+    });
+  }
+  
+  if (status !== 'archived') {
+    dropdownItems.push({
+      label: 'Mark as Archived',
       onClick: () => onMenuAction?.('mark-archived')
-    },
-    { type: 'divider' },
-    {
-      label: 'Delete',
-      type: 'destructive',
-      onClick: () => onMenuAction?.('delete')
-    }
-  ];
+    });
+  }
+  
+  // Add divider if there are status options
+  if (dropdownItems.length > 0) {
+    dropdownItems.push({ type: 'divider' });
+  }
+  
+  // Add delete option
+  dropdownItems.push({
+    label: 'Delete',
+    type: 'destructive',
+    onClick: () => onMenuAction?.('delete')
+  });
 
   // Handle mouse events
   const handleMouseEnter = () => setIsHovered(true);

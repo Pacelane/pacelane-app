@@ -23,6 +23,12 @@ serve(async (req) => {
       throw new Error('ANTHROPIC_API_KEY is not set');
     }
     
+    // Check OpenAI API key for transcriptions
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!openaiApiKey) {
+      console.warn('OPENAI_API_KEY is not set - audio transcription will be disabled');
+    }
+    
     // Check if this is a service role call (from job-runner or other edge functions)
     const authHeader = req.headers.get('Authorization');
     if (authHeader && authHeader.startsWith('Bearer ')) {
@@ -178,7 +184,7 @@ serve(async (req) => {
     // Process knowledge base files using Claude Files API (skip for inline edits to keep it fast)
     const { contextText, fileAttachments } = mode === 'inline-edit' 
       ? { contextText: '', fileAttachments: [] }
-      : await prepareCitationsWithFiles(fileContexts, anthropicApiKey);
+      : await prepareCitationsWithFiles(fileContexts, anthropicApiKey, supabase, openaiApiKey, userId);
 
     // Prepare current content context based on mode
     let contentContextInfo = '';
@@ -487,7 +493,13 @@ function pemToArrayBuffer(pem: string): ArrayBuffer {
 /**
  * Prepare file contexts and upload knowledge base files to Anthropic
  */
-async function prepareCitationsWithFiles(fileContexts: any[], anthropicApiKey: string): Promise<{ contextText: string, fileAttachments: any[] }> {
+async function prepareCitationsWithFiles(
+  fileContexts: any[], 
+  anthropicApiKey: string, 
+  supabase: any, 
+  openaiApiKey: string | undefined,
+  userId: string | null
+): Promise<{ contextText: string, fileAttachments: any[] }> {
   const fileAttachments: any[] = []
   const contextParts: string[] = []
 
@@ -503,8 +515,104 @@ async function prepareCitationsWithFiles(fileContexts: any[], anthropicApiKey: s
         // Check if file type is supported by Anthropic Files API
         const isTextFile = fileContext.name.match(/\.(txt|md|csv|json)$/i)
         const isSupportedPDF = fileContext.name.match(/\.pdf$/i)
+        const isAudioFile = fileContext.name.match(/\.(mp3|wav|m4a|webm|ogg|flac|aac)$/i)
         
-        if (isTextFile) {
+        if (isAudioFile) {
+          // Handle audio files with transcription
+          console.log(`Detected audio file: ${fileContext.name}`);
+          
+          if (!openaiApiKey) {
+            console.warn(`OpenAI API key not available - cannot transcribe ${fileContext.name}`);
+            contextParts.push(`[AUDIO_FILE] ${fileContext.name} (transcription unavailable - API key not configured)`);
+          } else {
+            // Check if we have the file ID to look up transcription
+            const fileId = fileContext.id;
+            
+            if (fileId) {
+              // Check if transcription already exists in database
+              const { data: existingFile, error: fetchError } = await supabase
+                .from('knowledge_files')
+                .select('transcription, transcription_status, transcription_error, transcription_attempts, last_transcription_attempt_at')
+                .eq('id', fileId)
+                .single();
+              
+              if (fetchError) {
+                console.error(`Error fetching file data for ${fileContext.name}:`, fetchError);
+                contextParts.push(`[AUDIO_FILE] ${fileContext.name}`);
+              } else if (existingFile?.transcription_status === 'completed' && existingFile?.transcription) {
+                // Use existing transcription
+                console.log(`Using existing transcription for ${fileContext.name}`);
+                contextParts.push(`[AUDIO_FILE] ${fileContext.name}\n\nTranscription:\n${existingFile.transcription}`);
+              } else if (existingFile?.transcription_status === 'processing') {
+                // Transcription is being processed
+                console.log(`Transcription is being processed for ${fileContext.name}`);
+                contextParts.push(`[AUDIO_FILE] ${fileContext.name} (transcription in progress)`);
+              } else if (existingFile?.transcription_status === 'failed') {
+                // Previous transcription failed - check if we should retry
+                const MAX_ATTEMPTS = 3;
+                const attempts = existingFile.transcription_attempts || 0;
+                const lastAttempt = existingFile.last_transcription_attempt_at;
+                
+                // Calculate backoff time (exponential: 1min, 5min, 15min)
+                const backoffMinutes = [1, 5, 15][Math.min(attempts, 2)];
+                const backoffMs = backoffMinutes * 60 * 1000;
+                const canRetry = !lastAttempt || (Date.now() - new Date(lastAttempt).getTime() > backoffMs);
+                
+                if (attempts < MAX_ATTEMPTS && canRetry) {
+                  console.log(`Retrying transcription for ${fileContext.name} (attempt ${attempts + 1}/${MAX_ATTEMPTS})`);
+                  
+                  // Retry transcription
+                  const shouldRetry = true;
+                  const transcription = await attemptTranscription(
+                    supabase,
+                    fileId,
+                    fileContext.url,
+                    fileContext.name,
+                    openaiApiKey,
+                    attempts + 1
+                  );
+                  
+                  if (transcription) {
+                    contextParts.push(`[AUDIO_FILE] ${fileContext.name}\n\nTranscription:\n${transcription}`);
+                  } else {
+                    contextParts.push(`[AUDIO_FILE] ${fileContext.name} (transcription failed: ${existingFile.transcription_error || 'unknown error'})`);
+                  }
+                } else if (attempts >= MAX_ATTEMPTS) {
+                  // Max attempts reached
+                  console.log(`Max transcription attempts reached for ${fileContext.name} (${attempts}/${MAX_ATTEMPTS})`);
+                  contextParts.push(`[AUDIO_FILE] ${fileContext.name} (transcription failed after ${attempts} attempts: ${existingFile.transcription_error || 'unknown error'})`);
+                } else {
+                  // Waiting for backoff period
+                  const waitMinutes = Math.ceil((backoffMs - (Date.now() - new Date(lastAttempt).getTime())) / 60000);
+                  console.log(`Waiting ${waitMinutes}min before retrying ${fileContext.name}`);
+                  contextParts.push(`[AUDIO_FILE] ${fileContext.name} (transcription failed, will retry in ${waitMinutes} minutes)`);
+                }
+              } else {
+                // No transcription yet - create one
+                console.log(`Creating transcription for ${fileContext.name}`);
+                
+                const transcription = await attemptTranscription(
+                  supabase,
+                  fileId,
+                  fileContext.url,
+                  fileContext.name,
+                  openaiApiKey,
+                  1
+                );
+                
+                if (transcription) {
+                  contextParts.push(`[AUDIO_FILE] ${fileContext.name}\n\nTranscription:\n${transcription}`);
+                } else {
+                  contextParts.push(`[AUDIO_FILE] ${fileContext.name} (transcription failed)`);
+                }
+              }
+            } else {
+              // No file ID available
+              console.warn(`No file ID available for ${fileContext.name}`);
+              contextParts.push(`[AUDIO_FILE] ${fileContext.name}`);
+            }
+          }
+        } else if (isTextFile) {
           // Text files can be uploaded to Anthropic
           console.log(`Attempting to upload text file: ${fileContext.name}`);
           const fileId = await uploadFileToAnthropic(fileContext.url, fileContext.name, anthropicApiKey);
@@ -677,6 +785,200 @@ async function uploadFileToAnthropic(fileUrl: string, filename: string, anthropi
 
   } catch (error) {
     console.error(`Error uploading file ${filename} to Anthropic:`, error);
+    return null;
+  }
+}
+
+/**
+ * Attempt to transcribe an audio file with proper status tracking
+ */
+async function attemptTranscription(
+  supabase: any,
+  fileId: string,
+  fileUrl: string,
+  filename: string,
+  openaiApiKey: string,
+  attemptNumber: number
+): Promise<string | null> {
+  try {
+    // Mark as processing
+    await supabase
+      .from('knowledge_files')
+      .update({ 
+        transcription_status: 'processing',
+        last_transcription_attempt_at: new Date().toISOString()
+      })
+      .eq('id', fileId);
+    
+    // Transcribe the audio file
+    const transcription = await transcribeAudioFile(fileUrl, filename, openaiApiKey);
+    
+    if (transcription) {
+      // Save successful transcription to database
+      const { error: updateError } = await supabase
+        .from('knowledge_files')
+        .update({
+          transcription: transcription,
+          transcription_status: 'completed',
+          transcribed_at: new Date().toISOString(),
+          transcription_error: null,
+          transcription_attempts: attemptNumber
+        })
+        .eq('id', fileId);
+      
+      if (updateError) {
+        console.error(`Error saving transcription for ${filename}:`, updateError);
+      } else {
+        console.log(`Successfully saved transcription for ${filename} on attempt ${attemptNumber}`);
+      }
+      
+      return transcription;
+    } else {
+      // Transcription failed
+      const errorMsg = `Failed to transcribe audio (attempt ${attemptNumber})`;
+      await supabase
+        .from('knowledge_files')
+        .update({
+          transcription_status: 'failed',
+          transcription_error: errorMsg,
+          transcription_attempts: attemptNumber
+        })
+        .eq('id', fileId);
+      
+      console.error(`Transcription failed for ${filename} on attempt ${attemptNumber}`);
+      return null;
+    }
+  } catch (error) {
+    // Handle unexpected errors
+    const errorMsg = `Unexpected error during transcription (attempt ${attemptNumber}): ${error.message || 'unknown error'}`;
+    await supabase
+      .from('knowledge_files')
+      .update({
+        transcription_status: 'failed',
+        transcription_error: errorMsg,
+        transcription_attempts: attemptNumber
+      })
+      .eq('id', fileId);
+    
+    console.error(`Unexpected error transcribing ${filename}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Transcribe an audio file using OpenAI Whisper API
+ */
+async function transcribeAudioFile(fileUrl: string, filename: string, openaiApiKey: string): Promise<string | null> {
+  try {
+    console.log(`Transcribing audio file: ${filename} from ${fileUrl}`);
+    
+    let fileBuffer: ArrayBuffer;
+    
+    // Handle different URL types (similar to file upload logic)
+    if (fileUrl.startsWith('gs://')) {
+      // GCS URL - extract bucket and path, then download via GCS API
+      const gcsMatch = fileUrl.match(/gs:\/\/([^\/]+)\/(.+)/);
+      if (!gcsMatch) {
+        throw new Error(`Invalid GCS URL format: ${fileUrl}`);
+      }
+      
+      const bucketName = gcsMatch[1];
+      const filePath = gcsMatch[2];
+      console.log(`Extracted bucket: ${bucketName}, path: ${filePath}`);
+      
+      // Get GCS access token
+      console.log('Getting GCS access token for audio file...');
+      const accessToken = await getGCSAccessToken();
+      if (!accessToken) {
+        throw new Error('Failed to get GCS access token');
+      }
+      console.log('GCS access token obtained successfully');
+      
+      // Download file from GCS using authenticated API
+      const downloadUrl = `https://storage.googleapis.com/storage/v1/b/${bucketName}/o/${encodeURIComponent(filePath)}?alt=media`;
+      console.log(`Downloading audio from GCS API: ${downloadUrl}`);
+      
+      const fileResponse = await fetch(downloadUrl, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!fileResponse.ok) {
+        throw new Error(`Failed to download audio from GCS: ${fileResponse.status} ${fileResponse.statusText}`);
+      }
+      
+      fileBuffer = await fileResponse.arrayBuffer();
+      console.log(`Successfully downloaded audio from GCS: ${fileBuffer.byteLength} bytes`);
+      
+    } else if (fileUrl.startsWith('https://storage.googleapis.com/')) {
+      // Already a public HTTP URL
+      const fileResponse = await fetch(fileUrl);
+      if (!fileResponse.ok) {
+        throw new Error(`Failed to fetch audio file: ${fileResponse.status}`);
+      }
+      fileBuffer = await fileResponse.arrayBuffer();
+    } else {
+      // Other URL types
+      const fileResponse = await fetch(fileUrl);
+      if (!fileResponse.ok) {
+        throw new Error(`Failed to fetch audio file: ${fileResponse.status}`);
+      }
+      fileBuffer = await fileResponse.arrayBuffer();
+    }
+
+    // Determine MIME type based on file extension
+    let mimeType = 'audio/mpeg'; // Default for mp3
+    if (filename.endsWith('.wav')) {
+      mimeType = 'audio/wav';
+    } else if (filename.endsWith('.m4a')) {
+      mimeType = 'audio/mp4';
+    } else if (filename.endsWith('.webm')) {
+      mimeType = 'audio/webm';
+    } else if (filename.endsWith('.ogg')) {
+      mimeType = 'audio/ogg';
+    } else if (filename.endsWith('.flac')) {
+      mimeType = 'audio/flac';
+    } else if (filename.endsWith('.aac')) {
+      mimeType = 'audio/aac';
+    }
+    
+    console.log(`Setting MIME type for ${filename}: ${mimeType}`);
+    
+    const fileBlob = new Blob([fileBuffer], { type: mimeType });
+
+    // Create FormData for Whisper API
+    const formData = new FormData();
+    formData.append('file', fileBlob, filename);
+    formData.append('model', 'whisper-1');
+    formData.append('language', 'pt'); // Portuguese language for better accuracy
+    formData.append('response_format', 'text'); // Get plain text response
+
+    // Call OpenAI Whisper API
+    console.log(`Sending audio to OpenAI Whisper API: ${filename}, size: ${fileBlob.size} bytes, type: ${fileBlob.type}`);
+    
+    const transcriptionResponse = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openaiApiKey}`,
+      },
+      body: formData
+    });
+
+    if (!transcriptionResponse.ok) {
+      const errorText = await transcriptionResponse.text();
+      console.error('OpenAI Whisper API error:', errorText);
+      console.error('Response status:', transcriptionResponse.status);
+      console.error('Response headers:', Object.fromEntries(transcriptionResponse.headers.entries()));
+      return null;
+    }
+
+    const transcription = await transcriptionResponse.text();
+    console.log(`Successfully transcribed ${filename}: ${transcription.length} characters`);
+    return transcription;
+
+  } catch (error) {
+    console.error(`Error transcribing audio file ${filename}:`, error);
     return null;
   }
 }
