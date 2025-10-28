@@ -18,9 +18,10 @@ const ContentListItem = ({
   subtitle = 'Last edited',
   content = '',
   image,                         // Image URL for image variant
+  status = 'draft',              // Current status of the content
   
   // Interaction handlers
-  onMenuAction,                  // Function called with action type ('delete')
+  onMenuAction,                  // Function called with action type ('delete', 'markAsDraft', 'markAsPublished', 'markAsArchived')
   onClick,                       // Card click handler
   
   // Standard props
@@ -35,14 +36,37 @@ const ContentListItem = ({
   // Get first 3 lines of content for preview
   const displayContent = content.split('\n').slice(0, 3).join('\n');
 
-  // Dropdown menu items
-  const dropdownItems = [
-    {
-      label: 'Delete',
-      type: 'destructive',
-      onClick: () => onMenuAction?.('delete')
-    }
-  ];
+  // Dropdown menu items based on current status
+  const dropdownItems = [];
+  
+  // Add status change options
+  if (status !== 'draft') {
+    dropdownItems.push({
+      label: 'Mark as Draft',
+      onClick: () => onMenuAction?.('markAsDraft')
+    });
+  }
+  
+  if (status !== 'published') {
+    dropdownItems.push({
+      label: 'Mark as Published',
+      onClick: () => onMenuAction?.('markAsPublished')
+    });
+  }
+  
+  if (status !== 'archived') {
+    dropdownItems.push({
+      label: 'Mark as Archived',
+      onClick: () => onMenuAction?.('markAsArchived')
+    });
+  }
+  
+  // Add delete option
+  dropdownItems.push({
+    label: 'Delete',
+    type: 'destructive',
+    onClick: () => onMenuAction?.('delete')
+  });
 
   // Handle mouse events
   const handleMouseEnter = () => setIsHovered(true);

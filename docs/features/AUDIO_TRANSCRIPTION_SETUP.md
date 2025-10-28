@@ -8,17 +8,19 @@
 
 ## Step-by-Step Setup (5 minutes)
 
-### Step 1: Apply Database Migration
+### Step 1: Apply Database Migrations
 
 ```bash
 # Navigate to project root
 cd /Users/joaoangelobaccarin/Documents/pacelane/pacelane-app
 
-# Apply the migration to add transcription columns
+# Apply the migrations to add transcription columns and retry logic
 supabase db push
 ```
 
-**Expected output**: Migration `20251014000000_add_transcription_to_knowledge_files.sql` applied successfully
+**Expected output**: 
+- Migration `20251014000000_add_transcription_to_knowledge_files.sql` applied successfully
+- Migration `20251014000001_add_transcription_retry_logic.sql` applied successfully
 
 ### Step 2: Get OpenAI API Key
 

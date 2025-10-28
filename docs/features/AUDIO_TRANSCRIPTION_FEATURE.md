@@ -17,8 +17,9 @@ The AI Assistant now automatically transcribes audio files from the Knowledge Ba
 
 ### Database Changes
 
-A new migration adds transcription fields to the `knowledge_files` table:
+Two migrations add transcription fields to the `knowledge_files` table:
 
+#### Migration 1: Basic Transcription Fields
 ```sql
 -- File: supabase/migrations/20251014000000_add_transcription_to_knowledge_files.sql
 
@@ -35,6 +36,19 @@ ADD COLUMN IF NOT EXISTS transcribed_at TIMESTAMP WITH TIME ZONE;
 - `transcription_error`: Error message if transcription failed
 - `transcribed_at`: Timestamp when transcription was completed
 
+#### Migration 2: Retry Logic
+```sql
+-- File: supabase/migrations/20251014000001_add_transcription_retry_logic.sql
+
+ALTER TABLE public.knowledge_files
+ADD COLUMN IF NOT EXISTS transcription_attempts INTEGER DEFAULT 0,
+ADD COLUMN IF NOT EXISTS last_transcription_attempt_at TIMESTAMP WITH TIME ZONE;
+```
+
+**Additional Columns:**
+- `transcription_attempts`: Number of times transcription has been attempted
+- `last_transcription_attempt_at`: Timestamp of the last transcription attempt
+
 ### Edge Function Changes
 
 The `ai-assistant` Edge Function now includes:
@@ -47,7 +61,35 @@ The `ai-assistant` Edge Function now includes:
    - Calls OpenAI Whisper API
    - Stores transcription in database
    - Uses transcription as context for AI
-4. **Error Handling**: Properly handles and logs transcription failures
+4. **Intelligent Retry Logic**: Automatically retries failed transcriptions with exponential backoff
+5. **Error Handling**: Properly handles and logs transcription failures
+
+### Retry Logic Details
+
+The system implements smart retry logic for failed transcriptions:
+
+**Retry Strategy:**
+- **Maximum Attempts**: 3 attempts per file
+- **Exponential Backoff**: Waits longer between each retry
+  - Attempt 1: Immediate
+  - Attempt 2: Wait 1 minute after first failure
+  - Attempt 3: Wait 5 minutes after second failure
+  - After 3 failures: Wait 15 minutes before giving up
+
+**How it works:**
+1. **First Failure**: Mark as `failed`, set `transcription_attempts = 1`
+2. **User Tries Again**: If >1 minute passed, retry automatically (attempt 2)
+3. **Second Failure**: Mark as `failed`, set `transcription_attempts = 2`
+4. **User Tries Again**: If >5 minutes passed, retry automatically (attempt 3)
+5. **Third Failure**: Mark as permanently failed after 3 attempts
+6. **Max Attempts Reached**: Show "transcription failed after 3 attempts"
+
+**Benefits:**
+- Handles temporary API failures (timeouts, rate limits)
+- Prevents infinite retry loops
+- Doesn't spam OpenAI API
+- User doesn't need to manually retry
+- Transparent feedback on retry status
 
 ### Frontend Changes
 
@@ -193,9 +235,19 @@ The system handles various error scenarios gracefully:
 [AUDIO_FILE] audio_file.mp3 (transcription unavailable - API key not configured)
 ```
 
-### Transcription Failed
+### Transcription Failed - First Attempt
 ```
-[AUDIO_FILE] audio_file.mp3 (transcription failed: [error message])
+[AUDIO_FILE] audio_file.mp3 (transcription failed, will retry in 1 minutes)
+```
+
+### Transcription Failed - Retry Available
+```
+[AUDIO_FILE] audio_file.mp3 (transcription failed, will retry in 5 minutes)
+```
+
+### Transcription Failed - Max Attempts Reached
+```
+[AUDIO_FILE] audio_file.mp3 (transcription failed after 3 attempts: [error message])
 ```
 
 ### File Not Accessible
@@ -206,6 +258,14 @@ The system handles various error scenarios gracefully:
 ### Processing in Progress
 ```
 [AUDIO_FILE] audio_file.mp3 (transcription in progress)
+```
+
+### Successful Transcription
+```
+[AUDIO_FILE] audio_file.mp3
+
+Transcription:
+[full transcription text here]
 ```
 
 ## Monitoring
@@ -219,21 +279,50 @@ You can query the database to check transcription status:
 SELECT 
   name,
   transcription_status,
+  transcription_attempts,
   transcription_error,
   transcribed_at,
+  last_transcription_attempt_at,
   CHAR_LENGTH(transcription) as transcription_length
 FROM knowledge_files
 WHERE type = 'audio'
 ORDER BY created_at DESC;
+
+-- Find files that need retry
+SELECT 
+  name,
+  transcription_attempts,
+  transcription_error,
+  last_transcription_attempt_at,
+  EXTRACT(EPOCH FROM (NOW() - last_transcription_attempt_at))/60 as minutes_since_last_attempt
+FROM knowledge_files
+WHERE type = 'audio' 
+  AND transcription_status = 'failed'
+  AND transcription_attempts < 3
+ORDER BY last_transcription_attempt_at DESC;
+
+-- View retry statistics
+SELECT 
+  transcription_status,
+  transcription_attempts,
+  COUNT(*) as count
+FROM knowledge_files
+WHERE type = 'audio'
+GROUP BY transcription_status, transcription_attempts
+ORDER BY transcription_status, transcription_attempts;
 ```
 
 ### Edge Function Logs
 
 Check logs in Supabase Dashboard → Edge Functions → ai-assistant:
 - `"Detected audio file: [filename]"` - Audio file detected
-- `"Creating transcription for [filename]"` - Starting transcription
-- `"Successfully saved transcription for [filename]"` - Transcription complete
-- `"Error transcribing audio file [filename]"` - Transcription failed
+- `"Creating transcription for [filename]"` - Starting first transcription attempt
+- `"Retrying transcription for [filename] (attempt 2/3)"` - Retrying after first failure
+- `"Retrying transcription for [filename] (attempt 3/3)"` - Final retry attempt
+- `"Successfully saved transcription for [filename] on attempt X"` - Transcription complete
+- `"Max transcription attempts reached for [filename] (3/3)"` - All retries exhausted
+- `"Waiting Xmin before retrying [filename]"` - Backoff period active
+- `"Error transcribing audio file [filename]"` - Transcription error
 
 ## Troubleshooting
 

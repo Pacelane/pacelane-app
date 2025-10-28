@@ -532,7 +532,7 @@ async function prepareCitationsWithFiles(
               // Check if transcription already exists in database
               const { data: existingFile, error: fetchError } = await supabase
                 .from('knowledge_files')
-                .select('transcription, transcription_status, transcription_error')
+                .select('transcription, transcription_status, transcription_error, transcription_attempts, last_transcription_attempt_at')
                 .eq('id', fileId)
                 .single();
               
@@ -548,53 +548,61 @@ async function prepareCitationsWithFiles(
                 console.log(`Transcription is being processed for ${fileContext.name}`);
                 contextParts.push(`[AUDIO_FILE] ${fileContext.name} (transcription in progress)`);
               } else if (existingFile?.transcription_status === 'failed') {
-                // Previous transcription failed
-                console.log(`Previous transcription failed for ${fileContext.name}: ${existingFile.transcription_error}`);
-                contextParts.push(`[AUDIO_FILE] ${fileContext.name} (transcription failed: ${existingFile.transcription_error || 'unknown error'})`);
+                // Previous transcription failed - check if we should retry
+                const MAX_ATTEMPTS = 3;
+                const attempts = existingFile.transcription_attempts || 0;
+                const lastAttempt = existingFile.last_transcription_attempt_at;
+                
+                // Calculate backoff time (exponential: 1min, 5min, 15min)
+                const backoffMinutes = [1, 5, 15][Math.min(attempts, 2)];
+                const backoffMs = backoffMinutes * 60 * 1000;
+                const canRetry = !lastAttempt || (Date.now() - new Date(lastAttempt).getTime() > backoffMs);
+                
+                if (attempts < MAX_ATTEMPTS && canRetry) {
+                  console.log(`Retrying transcription for ${fileContext.name} (attempt ${attempts + 1}/${MAX_ATTEMPTS})`);
+                  
+                  // Retry transcription
+                  const shouldRetry = true;
+                  const transcription = await attemptTranscription(
+                    supabase,
+                    fileId,
+                    fileContext.url,
+                    fileContext.name,
+                    openaiApiKey,
+                    attempts + 1
+                  );
+                  
+                  if (transcription) {
+                    contextParts.push(`[AUDIO_FILE] ${fileContext.name}\n\nTranscription:\n${transcription}`);
+                  } else {
+                    contextParts.push(`[AUDIO_FILE] ${fileContext.name} (transcription failed: ${existingFile.transcription_error || 'unknown error'})`);
+                  }
+                } else if (attempts >= MAX_ATTEMPTS) {
+                  // Max attempts reached
+                  console.log(`Max transcription attempts reached for ${fileContext.name} (${attempts}/${MAX_ATTEMPTS})`);
+                  contextParts.push(`[AUDIO_FILE] ${fileContext.name} (transcription failed after ${attempts} attempts: ${existingFile.transcription_error || 'unknown error'})`);
+                } else {
+                  // Waiting for backoff period
+                  const waitMinutes = Math.ceil((backoffMs - (Date.now() - new Date(lastAttempt).getTime())) / 60000);
+                  console.log(`Waiting ${waitMinutes}min before retrying ${fileContext.name}`);
+                  contextParts.push(`[AUDIO_FILE] ${fileContext.name} (transcription failed, will retry in ${waitMinutes} minutes)`);
+                }
               } else {
                 // No transcription yet - create one
                 console.log(`Creating transcription for ${fileContext.name}`);
                 
-                // Mark as processing
-                await supabase
-                  .from('knowledge_files')
-                  .update({ transcription_status: 'processing' })
-                  .eq('id', fileId);
-                
-                // Transcribe the audio file
-                const transcription = await transcribeAudioFile(fileContext.url, fileContext.name, openaiApiKey);
+                const transcription = await attemptTranscription(
+                  supabase,
+                  fileId,
+                  fileContext.url,
+                  fileContext.name,
+                  openaiApiKey,
+                  1
+                );
                 
                 if (transcription) {
-                  // Save transcription to database
-                  const { error: updateError } = await supabase
-                    .from('knowledge_files')
-                    .update({
-                      transcription: transcription,
-                      transcription_status: 'completed',
-                      transcribed_at: new Date().toISOString(),
-                      transcription_error: null
-                    })
-                    .eq('id', fileId);
-                  
-                  if (updateError) {
-                    console.error(`Error saving transcription for ${fileContext.name}:`, updateError);
-                  } else {
-                    console.log(`Successfully saved transcription for ${fileContext.name}`);
-                  }
-                  
-                  // Use the new transcription
                   contextParts.push(`[AUDIO_FILE] ${fileContext.name}\n\nTranscription:\n${transcription}`);
                 } else {
-                  // Transcription failed
-                  const errorMsg = 'Failed to transcribe audio';
-                  await supabase
-                    .from('knowledge_files')
-                    .update({
-                      transcription_status: 'failed',
-                      transcription_error: errorMsg
-                    })
-                    .eq('id', fileId);
-                  
                   contextParts.push(`[AUDIO_FILE] ${fileContext.name} (transcription failed)`);
                 }
               }
@@ -777,6 +785,82 @@ async function uploadFileToAnthropic(fileUrl: string, filename: string, anthropi
 
   } catch (error) {
     console.error(`Error uploading file ${filename} to Anthropic:`, error);
+    return null;
+  }
+}
+
+/**
+ * Attempt to transcribe an audio file with proper status tracking
+ */
+async function attemptTranscription(
+  supabase: any,
+  fileId: string,
+  fileUrl: string,
+  filename: string,
+  openaiApiKey: string,
+  attemptNumber: number
+): Promise<string | null> {
+  try {
+    // Mark as processing
+    await supabase
+      .from('knowledge_files')
+      .update({ 
+        transcription_status: 'processing',
+        last_transcription_attempt_at: new Date().toISOString()
+      })
+      .eq('id', fileId);
+    
+    // Transcribe the audio file
+    const transcription = await transcribeAudioFile(fileUrl, filename, openaiApiKey);
+    
+    if (transcription) {
+      // Save successful transcription to database
+      const { error: updateError } = await supabase
+        .from('knowledge_files')
+        .update({
+          transcription: transcription,
+          transcription_status: 'completed',
+          transcribed_at: new Date().toISOString(),
+          transcription_error: null,
+          transcription_attempts: attemptNumber
+        })
+        .eq('id', fileId);
+      
+      if (updateError) {
+        console.error(`Error saving transcription for ${filename}:`, updateError);
+      } else {
+        console.log(`Successfully saved transcription for ${filename} on attempt ${attemptNumber}`);
+      }
+      
+      return transcription;
+    } else {
+      // Transcription failed
+      const errorMsg = `Failed to transcribe audio (attempt ${attemptNumber})`;
+      await supabase
+        .from('knowledge_files')
+        .update({
+          transcription_status: 'failed',
+          transcription_error: errorMsg,
+          transcription_attempts: attemptNumber
+        })
+        .eq('id', fileId);
+      
+      console.error(`Transcription failed for ${filename} on attempt ${attemptNumber}`);
+      return null;
+    }
+  } catch (error) {
+    // Handle unexpected errors
+    const errorMsg = `Unexpected error during transcription (attempt ${attemptNumber}): ${error.message || 'unknown error'}`;
+    await supabase
+      .from('knowledge_files')
+      .update({
+        transcription_status: 'failed',
+        transcription_error: errorMsg,
+        transcription_attempts: attemptNumber
+      })
+      .eq('id', fileId);
+    
+    console.error(`Unexpected error transcribing ${filename}:`, error);
     return null;
   }
 }
