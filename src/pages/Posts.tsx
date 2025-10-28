@@ -253,13 +253,13 @@ const Posts = () => {
         case 'delete':
           handleDeleteDraft(itemId);
           break;
-        case 'markAsDraft':
+        case 'mark-draft':
           handleStatusChange(itemId, 'draft');
           break;
-        case 'markAsPublished':
+        case 'mark-published':
           handleStatusChange(itemId, 'published');
           break;
-        case 'markAsArchived':
+        case 'mark-archived':
           handleStatusChange(itemId, 'archived');
           break;
       }

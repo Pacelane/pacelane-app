@@ -11,7 +11,7 @@ const Badge = ({
   // Core variants
   variant = 'default',         // 'default' | 'dot' | 'icon'
   size = 'lg',                 // 'sm' | 'lg'
-  color = 'green',             // 'green' | 'orange' | 'red'
+  color = 'green',             // 'green' | 'orange' | 'red' | 'neutral'
   
   // Visual options
   border = false,              // Add border
@@ -76,6 +76,12 @@ const Badge = ({
         textColor: colors.bg.basic.red.strong,
         borderColor: colors.border.red,
         semanticBorderColor: colors.border.destructive
+      },
+      neutral: {
+        backgroundColor: colors.bg.subtle,
+        textColor: colors.text.default,
+        borderColor: colors.border.default,
+        semanticBorderColor: colors.border.default
       }
     };
     

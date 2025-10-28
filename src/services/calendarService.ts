@@ -20,6 +20,7 @@ export interface CalendarEvent {
   attendees: any[];
   meeting_notes?: string;
   location?: string;
+  meeting_url?: string;
   is_all_day: boolean;
   created_at: string;
 }
@@ -50,9 +51,9 @@ export class CalendarService {
   // Get OAuth URL for Google Calendar connection
   static async getAuthUrl(): Promise<{ success: boolean; authUrl?: string; error?: string }> {
     try {
-      console.log('CalendarService: Calling google-calendar-sync with action: auth-url');
+      console.log('CalendarService: Calling recall-calendar-integration with action: auth-url');
       
-      const { data, error } = await supabase.functions.invoke('google-calendar-sync', {
+      const { data, error } = await supabase.functions.invoke('recall-calendar-integration', {
         body: { action: 'auth-url' }
       });
 
@@ -77,7 +78,7 @@ export class CalendarService {
   // Handle OAuth callback (this would typically be called from a callback page)
   static async handleCallback(code: string, state: string): Promise<{ success: boolean; message?: string; error?: string }> {
     try {
-      const { data, error } = await supabase.functions.invoke('google-calendar-sync', {
+      const { data, error } = await supabase.functions.invoke('recall-calendar-integration', {
         body: { 
           action: 'callback',
           code,
@@ -100,8 +101,8 @@ export class CalendarService {
   // Sync calendar events
   static async syncCalendar(): Promise<CalendarSyncResult> {
     try {
-      const { data, error } = await supabase.functions.invoke('google-calendar-sync', {
-        body: { action: 'sync' }
+      const { data, error } = await supabase.functions.invoke('recall-calendar-integration', {
+        body: { action: 'sync-events' }
       });
 
       if (error) {
@@ -138,7 +139,7 @@ export class CalendarService {
       if (options?.end) body.end = options.end;
       if (options?.limit) body.limit = options.limit;
 
-      const { data, error } = await supabase.functions.invoke('google-calendar-sync', {
+      const { data, error } = await supabase.functions.invoke('recall-calendar-integration', {
         body
       });
 
@@ -192,7 +193,7 @@ export class CalendarService {
       const body: any = { action: 'disconnect' };
       if (calendarId) body.calendar_id = calendarId;
 
-      const { data, error } = await supabase.functions.invoke('google-calendar-sync', {
+      const { data, error } = await supabase.functions.invoke('recall-calendar-integration', {
         body
       });
 

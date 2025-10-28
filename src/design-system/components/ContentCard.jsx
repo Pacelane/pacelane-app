@@ -57,26 +57,31 @@ const ContentCard = ({
   // Dropdown menu items based on current status
   const dropdownItems = [];
   
-  // Add status change options
+  // Add status change options (only show options that differ from current status)
   if (status !== 'draft') {
     dropdownItems.push({
       label: 'Mark as Draft',
-      onClick: () => onMenuAction?.('markAsDraft')
+      onClick: () => onMenuAction?.('mark-draft')
     });
   }
   
   if (status !== 'published') {
     dropdownItems.push({
       label: 'Mark as Published',
-      onClick: () => onMenuAction?.('markAsPublished')
+      onClick: () => onMenuAction?.('mark-published')
     });
   }
   
   if (status !== 'archived') {
     dropdownItems.push({
       label: 'Mark as Archived',
-      onClick: () => onMenuAction?.('markAsArchived')
+      onClick: () => onMenuAction?.('mark-archived')
     });
+  }
+  
+  // Add divider if there are status options
+  if (dropdownItems.length > 0) {
+    dropdownItems.push({ type: 'divider' });
   }
   
   // Add delete option

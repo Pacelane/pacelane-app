@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MoreHorizontal, FileText } from 'lucide-react';
 import { useTheme } from '../../services/theme-context.jsx';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { spacing } from '../tokens/spacing.js';
 import { cornerRadius } from '../tokens/corner-radius.js';
 import { textStyles } from '../styles/typography/typography-styles.js';
 import { shadows, getShadow } from '../tokens/shadows.js';
 import Button from './Button.jsx';
+import Badge from './Badge.jsx';
 import DropdownMenu from './DropdownMenu.jsx';
 
 const ContentListItem = ({
@@ -30,35 +32,66 @@ const ContentListItem = ({
   ...rest
 }) => {
   const { colors } = useTheme();
+  const isMobile = useIsMobile();
   const [isHovered, setIsHovered] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
 
   // Get first 3 lines of content for preview
   const displayContent = content.split('\n').slice(0, 3).join('\n');
 
-  // Dropdown menu items based on current status
+  // Status dropdown items (for the Badge dropdown)
+  const statusDropdownItems = [
+    {
+      label: 'Draft',
+      onClick: () => {
+        onMenuAction?.('mark-draft');
+        setShowStatusDropdown(false);
+      }
+    },
+    {
+      label: 'Published',
+      onClick: () => {
+        onMenuAction?.('mark-published');
+        setShowStatusDropdown(false);
+      }
+    },
+    {
+      label: 'Archived',
+      onClick: () => {
+        onMenuAction?.('mark-archived');
+        setShowStatusDropdown(false);
+      }
+    }
+  ];
+
+  // Main dropdown menu items (three dots menu) - only show different status options
   const dropdownItems = [];
   
-  // Add status change options
   if (status !== 'draft') {
     dropdownItems.push({
       label: 'Mark as Draft',
-      onClick: () => onMenuAction?.('markAsDraft')
+      onClick: () => onMenuAction?.('mark-draft')
     });
   }
   
   if (status !== 'published') {
     dropdownItems.push({
       label: 'Mark as Published',
-      onClick: () => onMenuAction?.('markAsPublished')
+      onClick: () => onMenuAction?.('mark-published')
     });
   }
   
   if (status !== 'archived') {
     dropdownItems.push({
       label: 'Mark as Archived',
-      onClick: () => onMenuAction?.('markAsArchived')
+      onClick: () => onMenuAction?.('mark-archived')
     });
+  }
+  
+  // Add divider if there are status options
+  if (dropdownItems.length > 0) {
+    dropdownItems.push({ type: 'divider' });
   }
   
   // Add delete option
@@ -68,125 +101,137 @@ const ContentListItem = ({
     onClick: () => onMenuAction?.('delete')
   });
 
+  // Get status display info - now all neutral colored
+  const getStatusLabel = (status) => {
+    switch (status) {
+      case 'published':
+        return 'Published';
+      case 'archived':
+        return 'Archived';
+      case 'draft':
+      default:
+        return 'Draft';
+    }
+  };
+
   // Handle mouse events
   const handleMouseEnter = () => setIsHovered(true);
   const handleMouseLeave = () => setIsHovered(false);
 
-  // Shadow styles - matching ContentCard behavior
-  const cardShadow = isHovered 
-    ? getShadow('regular.modalMd', colors, { withBorder: false })
-    : getShadow('regular.card', colors, { withBorder: false });
+  // Table row styles - responsive padding, no hover effects
+  const rowStyles = {
+    display: 'flex',
+    alignItems: 'center',
+    padding: isMobile 
+      ? `${spacing.spacing[12]}px ${spacing.spacing[16]}px`
+      : `${spacing.spacing[12]}px ${spacing.spacing[24]}px`,
+    backgroundColor: 'transparent',
+    borderBottom: `1px solid ${colors.border.default}`,
+    cursor: 'pointer',
+    minHeight: isMobile ? spacing.spacing[64] : spacing.spacing[56] // Slightly taller on mobile
+  };
 
-  // Cover background styles - matching ContentCard
-  const coverBackground = variant === 'image' && image 
-    ? {
-        backgroundImage: `url(${image})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat'
-      }
-    : {
-        background: `linear-gradient(to bottom, ${colors.bg.default}, ${colors.bg.subtle})`
-      };
 
   return (
     <motion.div
       className={className}
       style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: spacing.spacing[16],
-        padding: spacing.spacing[16],
-        borderRadius: cornerRadius.borderRadius.md,
-        backgroundColor: colors.bg.card.default,
-        border: `1px solid ${colors.border.default}`,
-        boxShadow: cardShadow,
-        transition: 'all 0.2s ease-in-out',
-        cursor: onClick ? 'pointer' : 'default',
-        ...style
+        ...style,
+        ...rowStyles,
+        ...rest
       }}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onClick={onClick}
-      {...rest}
     >
-                    {/* File Icon */}
-       <FileText
-         size={24}
-         color={colors.icon.muted}
-         style={{
-           flexShrink: 0
-         }}
-       />
+      {/* Title and Date - Responsive layout */}
+      <div style={{ 
+        flex: 1, 
+        display: 'flex', 
+        flexDirection: isMobile ? 'column' : 'row',
+        alignItems: isMobile ? 'flex-start' : 'center',
+        gap: isMobile ? spacing.spacing[4] : spacing.spacing[24],
+        minWidth: 0,
+        marginRight: spacing.spacing[16] // Add space before status tag
+      }}>
+        {/* Title */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h3 
+            style={{ 
+              ...textStyles.sm.semibold,
+              color: colors.text.default,
+              margin: 0,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            {title}
+          </h3>
+        </div>
+        
+        {/* Date */}
+        <div style={{ flexShrink: 0 }}>
+          <p 
+            style={{ 
+              ...textStyles.xs.normal,
+              color: colors.text.subtle,
+              margin: 0,
+              whiteSpace: 'nowrap'
+            }}
+          >
+            {subtitle}
+          </p>
+        </div>
+      </div>
 
-       {/* Content */}
-       <div style={{ 
-         flex: 1, 
-         minWidth: 0, // Allow text to truncate
-         display: 'flex',
-         flexDirection: 'column',
-         gap: spacing.spacing[4]
-       }}>
-         {/* Title */}
-         <h3
-           style={{
-             ...textStyles.md.medium,
-             color: colors.text.default,
-             margin: 0,
-             overflow: 'hidden',
-             textOverflow: 'ellipsis',
-             whiteSpace: 'nowrap'
-           }}
-         >
-           {title}
-         </h3>
-         
-         {/* Subtitle */}
-         <p
-           style={{
-             ...textStyles.sm.normal,
-             color: colors.text.muted,
-             margin: 0,
-             overflow: 'hidden',
-             textOverflow: 'ellipsis',
-             whiteSpace: 'nowrap'
-           }}
-         >
-           {subtitle}
-         </p>
-       </div>
+      {/* Status Badge with Dropdown */}
+      <div style={{ 
+        position: 'relative', 
+        flexShrink: 0, 
+        marginRight: spacing.spacing[12] // Consistent spacing before more options
+      }}>
+        <Badge
+          variant="default"
+          size={isMobile ? 'sm' : 'lg'}
+          color="neutral"
+          label={getStatusLabel(status)}
+          border={true}
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowStatusDropdown(!showStatusDropdown);
+          }}
+        />
+        
+        {/* Status Dropdown */}
+        <DropdownMenu
+          isOpen={showStatusDropdown}
+          onClose={() => setShowStatusDropdown(false)}
+          items={statusDropdownItems}
+          position="bottom-right"
+        />
+      </div>
 
-      {/* More Options Button */}
+      {/* Always Visible More Options Button */}
       <div style={{ position: 'relative', flexShrink: 0 }}>
-        <AnimatePresence>
-          {isHovered && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              transition={{ duration: 0.15 }}
-            >
-              <Button
-                variant="iconOnly"
-                style="ghost"
-                size="xs"
-                leadIcon={<MoreHorizontal size={12} />}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowDropdown(!showDropdown);
-                }}
-              />
-              
-              {/* Dropdown Menu */}
-              <DropdownMenu
-                isOpen={showDropdown}
-                onClose={() => setShowDropdown(false)}
-                items={dropdownItems}
-                position="bottom-right"
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <Button
+          variant="iconOnly"
+          style="ghost"
+          size="xs"
+          leadIcon={<MoreHorizontal size={12} />}
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowDropdown(!showDropdown);
+          }}
+        />
+        
+        {/* Dropdown Menu */}
+        <DropdownMenu
+          isOpen={showDropdown}
+          onClose={() => setShowDropdown(false)}
+          items={dropdownItems}
+          position="bottom-right"
+        />
       </div>
     </motion.div>
   );
