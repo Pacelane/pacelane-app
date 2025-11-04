@@ -87,6 +87,7 @@ const PrivacyPolicy: React.FC = () => {
                 'Informações de contato',
                 'Tipos de dados coletados',
                 'Modo e local de processamento dos dados pessoais',
+                'Compartilhamento, Transferência e Divulgação de Dados Pessoais',
                 'Informações detalhadas sobre o processamento de dados pessoais',
                 'Informações adicionais',
                 'Seus direitos com base no Regulamento Geral de Proteção de Dados (GDPR)',
@@ -150,6 +151,22 @@ const PrivacyPolicy: React.FC = () => {
 
             <p style={paragraph}><strong>Período de conservação</strong></p>
             <p style={paragraph}>Salvo especificação em contrário neste documento, os dados pessoais serão tratados e armazenados pelo tempo necessário para as finalidades para as quais foram coletados, e poderão ser retidos por mais tempo em razão de qualquer obrigação legal aplicável ou com base no seu consentimento.</p>
+
+            <h3 style={sectionTitle}>Compartilhamento, Transferência e Divulgação de Dados Pessoais</h3>
+            <p style={paragraph}>O Pacelane pode compartilhar ou transferir dados pessoais de usuários com terceiros apenas quando necessário para prestar os serviços oferecidos, cumprir obrigações legais ou melhorar a experiência do usuário. Esses terceiros atuam como processadores ou controladores de dados independentes, conforme o caso.</p>
+            <p style={paragraph}>Em particular, o Pacelane compartilha dados com as seguintes categorias de destinatários:</p>
+            <ul style={{ margin: 0, paddingLeft: spacing.spacing[24] }}>
+              {[
+                'Google LLC (incluindo Google Ads, Google Tag Manager e Google Analytics): para medição de desempenho, personalização de anúncios e gerenciamento de tags. Para mais informações sobre como o Google utiliza dados de parceiros, consulte: https://policies.google.com/technologies/partner-sites.',
+                'Meta Platforms, Inc. (Facebook e Instagram): para mensuração e otimização de campanhas de marketing digital.',
+                'PostHog Inc.: para análise de uso e comportamento dentro da aplicação.',
+                'Stripe, Inc.: para processamento de pagamentos e prevenção de fraudes.',
+                'Outros prestadores de serviços técnicos e operacionais, como provedores de hospedagem, armazenamento de dados e suporte técnico, sempre sob obrigações contratuais de confidencialidade e segurança.',
+              ].map((item) => (
+                <li key={item} style={listItem}>{item}</li>
+              ))}
+            </ul>
+            <p style={paragraph}>Em todos os casos, o compartilhamento de dados pessoais é realizado em conformidade com as legislações aplicáveis de proteção de dados (incluindo GDPR e LGPD), garantindo que apenas as informações estritamente necessárias sejam transmitidas, de forma segura e com base em uma das bases legais previstas.</p>
 
             <h3 style={sectionTitle}>Informações detalhadas sobre o processamento de dados pessoais</h3>
             <p style={paragraph}>Seus dados pessoais são coletados para permitir que prestemos nosso serviço, cumpramos nossas obrigações legais, respondamos a solicitações de execução, protejamos os nossos direitos e interesses (ou os seus ou os de terceiros), detectemos qualquer atividade maliciosa ou fraudulenta, bem como as finalidades estabelecidas abaixo:</p>
