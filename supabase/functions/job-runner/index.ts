@@ -310,19 +310,8 @@ async function processContentOrder(supabaseClient: any, job: AgentJob, steps: an
     
     steps.push({ step: 'simplified_brief_created', brief, timestamp: new Date().toISOString() });
     
-    // Use unified RAG + writer agent for simplified flow too
-    const unifiedResult = await callUnifiedRAGWriterAgent(supabaseClient, brief, order.user_id, steps, order.id);
-    
-    // Extract results from unified agent
-    finalDraft = {
-      title: unifiedResult.title,
-      content: unifiedResult.content
-    };
-    
-    // Use citations from unified agent
-    citations = unifiedResult.citations;
-    
-    console.log(`✅ Simplified flow unified agent completed: ${unifiedResult.content.length} chars, ${citations.length} citations`);
+    // Unified RAG writer agent has been removed
+    throw new Error('Content generation via unified RAG writer agent is no longer available. This functionality has been removed.');
     
   } else {
     // COMPLEX FLOW: Use unified RAG + writer agent
@@ -331,20 +320,8 @@ async function processContentOrder(supabaseClient: any, job: AgentJob, steps: an
     // Step 1: Order Builder - Create content brief
     brief = await callOrderBuilder(supabaseClient, order.id, steps)
     
-    // Step 2: Use unified RAG + writer agent (replaces retrieval + writer + editor)
-    const unifiedResult = await callUnifiedRAGWriterAgent(supabaseClient, brief, order.user_id, steps, order.id);
-    
-    // Extract results from unified agent
-    finalDraft = {
-      title: unifiedResult.title,
-      content: unifiedResult.content
-    };
-    
-    // Use citations from unified agent
-    citations = unifiedResult.citations;
-    
-    // Skip separate retrieval, writer, and editor steps since unified agent handles everything
-    console.log(`✅ Unified agent completed: ${unifiedResult.content.length} chars, ${citations.length} citations`);
+    // Unified RAG writer agent has been removed
+    throw new Error('Content generation via unified RAG writer agent is no longer available. This functionality has been removed.');
   }
   
   // Step 5: Save to saved_drafts
@@ -525,19 +502,8 @@ async function processPacingContentGeneration(supabaseClient: any, job: AgentJob
   // Step 1: Order Builder - Create content brief with context
   const brief = await callOrderBuilder(supabaseClient, contentOrder.id, steps)
   
-  // Step 2: Use unified RAG + writer agent (replaces retrieval + writer + editor)
-  const unifiedResult = await callUnifiedRAGWriterAgent(supabaseClient, brief, job.user_id, steps, contentOrder.id);
-  
-  // Extract results from unified agent
-  const finalDraft = {
-    title: unifiedResult.title,
-    content: unifiedResult.content
-  };
-  
-  // Use citations from unified agent
-  const citations = unifiedResult.citations;
-  
-  console.log(`✅ Pacing unified agent completed: ${unifiedResult.content.length} chars, ${citations.length} citations`);
+  // Unified RAG writer agent has been removed
+  throw new Error('Content generation via unified RAG writer agent is no longer available. This functionality has been removed.');
 
   // Step 5: Save to saved_drafts
   const { data: savedDraft, error: saveError } = await supabaseClient
@@ -703,63 +669,6 @@ async function callEditorAgent(supabaseClient: any, draft: any, brief: any, user
   steps.push({ step: 'editor_agent_completed', quality_score: result.draft.quality_score, timestamp: new Date().toISOString() })
   
   return result.draft
-}
-
-/**
- * Call the unified RAG + writer agent for content generation
- */
-async function callUnifiedRAGWriterAgent(supabaseClient: any, brief: any, userId: string, steps: any[], orderId?: string) {
-  steps.push({ step: 'calling_unified_rag_writer_agent', timestamp: new Date().toISOString() })
-  
-  // Create a prompt from the brief
-  const prompt = brief.topic || brief.enhanced_topic || brief.original_topic || 'Create professional content';
-  
-  // Prepare the brief object for the unified agent
-  const briefForAgent = {
-    topic: brief.topic || brief.enhanced_topic || brief.original_topic,
-    platform: brief.platform,
-    length: brief.length,
-    tone: brief.tone,
-    angle: brief.angle,
-    user_message: brief.user_message
-  };
-  
-  const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/unified-rag-writer-agent`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
-    },
-    body: JSON.stringify({ 
-      userId: userId,
-      prompt: prompt,
-      brief: briefForAgent,
-      platform: brief.platform || 'linkedin',
-      maxResults: 5,
-      temperature: 0.7,
-      maxTokens: 2048
-    }),
-  })
-
-  if (!response.ok) {
-    throw new Error(`Unified RAG Writer Agent failed: ${response.status}`)
-  }
-
-  const result = await response.json()
-  
-  if (!result.success) {
-    throw new Error(`Unified RAG Writer Agent error: ${result.error || 'Unknown error'}`)
-  }
-  
-  steps.push({ step: 'unified_rag_writer_agent_completed', content_length: result.content.length, citations_count: result.citations.length, timestamp: new Date().toISOString() })
-  
-  // Return in the format expected by the existing flow
-  return {
-    title: `Generated Content - ${new Date().toLocaleDateString()}`,
-    content: result.content,
-    citations: result.citations,
-    metadata: result.metadata
-  };
 }
 
 async function processDraftReview(supabaseClient: any, job: AgentJob, steps: any[]) {

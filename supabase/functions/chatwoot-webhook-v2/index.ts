@@ -75,16 +75,24 @@ class ChatwootWebhookV2Processor {
       // Check if message buffering is enabled
       const bufferingEnabled = await this.isFeatureEnabled('message_buffering');
       if (!bufferingEnabled) {
-        console.log('Message buffering is disabled, falling back to immediate processing');
-        return await this.fallbackToImmediateProcessing(payload);
+        console.log('Message buffering is disabled, returning error');
+        return this.createResponse({
+          success: false,
+          action: 'error',
+          message: 'Message buffering is disabled. Please enable it to process messages.'
+        }, 503);
       }
 
       // Send message to buffer manager
       const bufferResult = await this.sendToBufferManager(payload);
       
       if (!bufferResult.success) {
-        console.error('Buffer manager failed, attempting fallback processing');
-        return await this.fallbackToImmediateProcessing(payload);
+        console.error('Buffer manager failed');
+        return this.createResponse({
+          success: false,
+          action: 'error',
+          message: 'Buffer manager failed to process message'
+        }, 500);
       }
 
       console.log(`Message ${payload.id} successfully buffered: ${bufferResult.message}`);
@@ -98,18 +106,11 @@ class ChatwootWebhookV2Processor {
 
     } catch (error) {
       console.error('Webhook processing error:', error);
-      
-      // Attempt fallback processing on error
-      try {
-        return await this.fallbackToImmediateProcessing(payload);
-      } catch (fallbackError) {
-        console.error('Fallback processing also failed:', fallbackError);
-        return this.createResponse({
-          success: false,
-          action: 'error',
-          message: `Both buffer and fallback processing failed: ${error.message}`
-        }, 500);
-      }
+      return this.createResponse({
+        success: false,
+        action: 'error',
+        message: `Webhook processing failed: ${error.message}`
+      }, 500);
     }
   }
 
@@ -206,37 +207,6 @@ class ChatwootWebhookV2Processor {
     }
   }
 
-  private async fallbackToImmediateProcessing(payload: ChatwootWebhookPayload): Promise<Response> {
-    console.log('Attempting fallback to immediate processing');
-    
-    try {
-      // Call the original webhook handler as fallback
-      const originalWebhookUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/chatwoot-webhook`;
-      
-      const response = await fetch(originalWebhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
-        },
-        body: JSON.stringify(payload)
-      });
-
-      const result = await response.json();
-      
-      return this.createResponse({
-        success: true,
-        action: 'fallback_processed',
-        message: 'Processed via fallback to original webhook',
-        original_result: result
-      });
-      
-    } catch (error) {
-      console.error('Fallback processing failed:', error);
-      throw error;
-    }
-  }
-
   private async isFeatureEnabled(flagName: string): Promise<boolean> {
     try {
       const { data } = await this.supabase
@@ -313,7 +283,6 @@ async function handleHealthCheck(): Promise<Response> {
         version: '2.0',
         features: {
           message_buffering: true,
-          fallback_processing: true,
           webhook_validation: true
         }
       }),

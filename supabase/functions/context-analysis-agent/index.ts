@@ -184,14 +184,8 @@ async function analyzeUserContext(
       audioSummary
     )
     
-    // 6. Call unified RAG writer for each topic
-    for (const topic of topicSuggestions) {
-      try {
-        await callUnifiedRAGWriter(supabaseClient, userId, topic)
-      } catch (error) {
-        console.error(`Failed to generate content for topic: ${topic}`, error)
-      }
-    }
+    // 6. Unified RAG writer has been removed - content generation is no longer available
+    console.log(`⚠️ Unified RAG writer has been removed. Content generation for ${topicSuggestions.length} topics skipped.`)
     
     console.log(`✅ Context analysis completed for user ${userId}`)
     
@@ -430,57 +424,6 @@ function pemToArrayBuffer(pem: string): ArrayBuffer {
     return bytes.buffer
   } catch (error) {
     console.error(`❌ Error in pemToArrayBuffer: ${error.message}`)
-    throw error
-  }
-}
-
-async function callUnifiedRAGWriter(
-  supabaseClient: any, 
-  userId: string, 
-  topic: string
-): Promise<void> {
-  console.log(`🎯 Calling unified RAG writer for topic: ${topic}`)
-  
-  try {
-    const ragRequest = {
-      userId: userId,
-      prompt: `Create a LinkedIn post about: ${topic}`,
-      brief: {
-        topic: topic,
-        content_type: 'linkedin_post',
-        platform: 'linkedin'
-      },
-      platform: 'linkedin',
-      maxResults: 1,
-      temperature: 0.7,
-      maxTokens: 1000
-    }
-    
-    console.log('📤 RAG request payload:', JSON.stringify(ragRequest, null, 2))
-    
-    // Call the unified RAG writer agent
-    const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/unified-rag-writer-agent`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(ragRequest)
-    })
-    
-    console.log('📥 RAG writer response status:', response.status, response.statusText)
-    
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('❌ RAG writer error response:', errorText)
-      throw new Error(`RAG writer failed: ${response.status} - ${errorText}`)
-    }
-    
-    const result = await response.json()
-    console.log('✅ Content generated for topic:', topic, 'Result:', JSON.stringify(result, null, 2))
-    
-  } catch (error) {
-    console.error(`❌ Failed to call unified RAG writer for topic: ${topic}`, error)
     throw error
   }
 }

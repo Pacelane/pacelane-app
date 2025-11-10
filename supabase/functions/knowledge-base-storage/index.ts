@@ -434,16 +434,6 @@ class GCSKnowledgeBaseStorage {
       console.log(`🔄 Triggering content extraction for ${file.name}`);
       const extractionSuccess = await this.extractContentFromFileData(insertedFile.id, file);
 
-      // Trigger RAG processing asynchronously (don't wait for completion)
-      console.log(`🚀 Triggering RAG processing for ${file.name} (async)`);
-      this.triggerRAGProcessing(userId, bucketName, fileName, filePath, file.type, file.size, metadata)
-        .then(() => {
-          console.log(`✅ RAG processing completed successfully for ${file.name}`);
-        })
-        .catch((ragError) => {
-          console.error(`⚠️ RAG processing failed for ${file.name}:`, ragError);
-        });
-
       return { 
         success: true, 
         data: {
@@ -798,58 +788,6 @@ class GCSKnowledgeBaseStorage {
   }
 
   /**
-   * Trigger RAG processing for uploaded file
-   */
-  private async triggerRAGProcessing(
-    userId: string, 
-    bucketName: string, 
-    fileName: string, 
-    filePath: string, 
-    fileType: string, 
-    fileSize: number, 
-    metadata: any
-  ): Promise<void> {
-    try {
-      console.log(`🚀 Triggering RAG processing for file: ${fileName}`);
-      console.log(`🔧 RAG processing params: bucketName=${bucketName}, filePath=${filePath}`);
-      
-      // Call the vertex-ai-rag-processor edge function
-      const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/vertex-ai-rag-processor`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId,
-          bucketName,
-          fileName,
-          filePath,
-          fileType,
-          fileSize,
-          metadata
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`RAG processor error: ${response.status} ${errorText}`);
-      }
-
-      const result = await response.json();
-      if (!result.success) {
-        throw new Error(`RAG processing failed: ${result.error}`);
-      }
-
-      console.log(`✅ RAG processing completed successfully for ${fileName}`);
-      
-    } catch (error) {
-      console.error(`❌ Error triggering RAG processing for ${fileName}:`, error);
-      throw error;
-    }
-  }
-
-  /**
    * Download file from GCS as buffer
    */
   private async downloadFileFromGCS(bucketName: string, filePath: string): Promise<Uint8Array | null> {
@@ -875,75 +813,6 @@ class GCSKnowledgeBaseStorage {
       return new Uint8Array(arrayBuffer);
     } catch (error) {
       console.error('Error downloading file from GCS:', error);
-      return null;
-    }
-  }
-
-  /**
-   * ✅ NEW: Store temporary text file in GCS for RAG processing
-   */
-  private async storeTemporaryFile(userId: string, fileName: string, content: string): Promise<string | null> {
-    try {
-      console.log(`📁 Storing temporary file for user ${userId}: ${fileName}`);
-      
-      // Try centralized service first
-      let bucketName: string;
-      try {
-        const bucketResult = await this.ensureUserBucketViaService(userId);
-        if (bucketResult.success) {
-          bucketName = bucketResult.data.bucketName;
-          console.log(`✅ Using centralized service bucket: ${bucketName}`);
-        } else {
-          throw new Error(`Centralized service failed: ${bucketResult.error}`);
-        }
-      } catch (error) {
-        console.warn(`⚠️ Centralized service failed, trying direct bucket lookup: ${error.message}`);
-        // Fallback to direct bucket lookup
-        bucketName = await this.getUserBucketName(userId);
-        if (!bucketName) {
-          console.error(`❌ No bucket found for user: ${userId}`);
-          return null;
-        }
-        console.log(`🔧 Using direct bucket lookup: ${bucketName}`);
-      }
-
-      // Create temporary file path
-      const date = new Date().toISOString().split('T')[0];
-      const tempFilePath = `whatsapp-notes/${date}/${userId}_${Date.now()}_${fileName}`;
-      const gcsPath = `gs://${bucketName}/${tempFilePath}`;
-
-      console.log(`📁 Creating temporary file at: ${tempFilePath}`);
-
-      // Convert content to buffer
-      const contentBuffer = new TextEncoder().encode(content);
-
-      // Upload to GCS
-      const accessToken = await this.getGCSAccessToken();
-      if (!accessToken) {
-        throw new Error('Failed to get GCS access token');
-      }
-
-      const uploadUrl = `https://storage.googleapis.com/upload/storage/v1/b/${bucketName}/o?uploadType=media&name=${encodeURIComponent(tempFilePath)}`;
-      
-      const response = await fetch(uploadUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'text/plain',
-        },
-        body: contentBuffer,
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to upload temporary file: ${response.status} - ${errorText}`);
-      }
-
-      console.log(`✅ Temporary file stored in GCS: ${gcsPath}`);
-      return gcsPath;
-
-    } catch (error) {
-      console.error(`❌ Error storing temporary file for user ${userId}:`, error);
       return null;
     }
   }
@@ -1545,101 +1414,9 @@ serve(async (req) => {
 
           console.log(`✅ WhatsApp content stored in knowledge base: ${knowledgeFile.id}`);
 
-          // Trigger RAG processing for the WhatsApp content
-          if (gcs_path) {
-            // For audio files with GCS path
-            // ✅ IMPROVED: More robust bucket resolution with better fallback
-            let bucketName: string;
-            let filePath: string;
-            
-            try {
-              console.log(`🔍 Attempting to get bucket via centralized service for user: ${userId}`);
-              const bucketResult = await storage.ensureUserBucketViaService(userId);
-              if (bucketResult.success) {
-                bucketName = bucketResult.data.bucketName;
-                filePath = gcs_path.replace(`gs://${bucketName}/`, ''); // Extract file path
-                console.log(`✅ Using centralized service bucket: ${bucketName}`);
-              } else {
-                throw new Error(`Centralized service failed: ${bucketResult.error}`);
-              }
-            } catch (error) {
-              console.warn(`⚠️ Centralized service failed, falling back to GCS path extraction: ${error.message}`);
-              // Fallback: Extract bucket name from GCS path
-              const gcsPathParts = gcs_path.split('/');
-              if (gcsPathParts.length >= 3) {
-                bucketName = gcsPathParts[2];
-                filePath = gcsPathParts.slice(3).join('/'); // Get everything after bucket name
-                console.log(`🔧 Fallback: Extracted bucket from GCS path: ${bucketName}, filePath: ${filePath}`);
-              } else {
-                throw new Error(`Invalid GCS path format: ${gcs_path}`);
-              }
-            }
-            
-            // ✅ FIXED: Use the actual filename from the GCS path for RAG processing
-            // This ensures the filename matches what's actually stored in GCS
-            const actualFileName = filePath.split('/').pop() || file_name;
-            console.log(`🔧 Using actual filename for RAG processing: ${actualFileName} (from path: ${filePath})`);
-            
-            // Trigger RAG processing asynchronously (don't wait for completion)
-            storage.triggerRAGProcessing(
-              userId,
-              bucketName,
-              actualFileName, // Use actual filename instead of friendly display name
-              filePath,
-              file_type || 'audio',
-              content.length,
-              metadata
-            ).then(() => {
-              console.log(`✅ RAG processing completed for WhatsApp content: ${actualFileName}`);
-            }).catch((ragError) => {
-              console.error(`⚠️ RAG processing failed for WhatsApp content: ${actualFileName}`, ragError);
-            });
-          } else {
-            // For text notes without GCS path, create a temporary file for RAG processing
-            console.log(`📝 Text note detected, creating temporary file for RAG processing`);
-            const tempFileName = `whatsapp_note_${Date.now()}.txt`;
-            const tempContent = content;
-            
-            // Store temporary file in GCS for RAG processing
-            const tempGcsPath = await storage.storeTemporaryFile(userId, tempFileName, tempContent);
-            
-            if (tempGcsPath) {
-              // ✅ IMPROVED: Extract bucket name and file path correctly from gs:// path
-              const gcsPathParts = tempGcsPath.split('/');
-              if (gcsPathParts.length >= 3) {
-                const bucketName = gcsPathParts[2]; // Extract bucket name
-                const filePath = gcsPathParts.slice(3).join('/'); // Extract file path
-                
-                console.log(`🔧 Temporary file created: bucket=${bucketName}, path=${filePath}`);
-                
-                // Add a longer delay to ensure file is fully written to GCS and indexed
-                await new Promise(resolve => setTimeout(resolve, 3000));
-                
-                // Trigger RAG processing asynchronously (don't wait for completion)
-                storage.triggerRAGProcessing(
-                  userId,
-                  bucketName,
-                  tempFileName,
-                  filePath,
-                  'file', // ✅ FIXED: Use 'file' instead of 'text' for RAG processing
-                  content.length,
-                  metadata
-                ).then(() => {
-                  console.log(`✅ RAG processing completed for WhatsApp text note: ${tempFileName}`);
-                }).catch((ragError) => {
-                  console.error(`⚠️ RAG processing failed for WhatsApp text note: ${tempFileName}`, ragError);
-                });
-              } else {
-                console.error(`❌ Invalid temporary file GCS path format: ${tempGcsPath}`);
-              }
-            } else {
-              console.error(`❌ Failed to create temporary file for text note`);
-            }
-          }
-
           return new Response(JSON.stringify({ 
             success: true,
-            message: 'WhatsApp content processed and RAG processing triggered',
+            message: 'WhatsApp content processed and stored in knowledge base',
             file_id: knowledgeFile.id,
             file_name: file_name
           }), {
