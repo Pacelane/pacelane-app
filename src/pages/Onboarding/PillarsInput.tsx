@@ -10,23 +10,66 @@ import { stroke } from '@/design-system/tokens/stroke';
 import { colors as primitiveColors } from '@/design-system/tokens/primitive-colors';
 import TopNav from '@/design-system/components/TopNav';
 import Button from '@/design-system/components/Button';
-import Input from '@/design-system/components/Input';
 import StatusBadge from '@/design-system/components/StatusBadge';
+import Chips from '@/design-system/components/Chips';
+import Input from '@/design-system/components/Input';
+import { Plus, Trash } from '@phosphor-icons/react';
 
-const LinkedInInput = () => {
+const PillarsInput = () => {
   const { colors } = useTheme();
   const navigate = useNavigate();
-  const [linkedInUrl, setLinkedInUrl] = useState('');
+  const [selectedContentTypes, setSelectedContentTypes] = useState<string[]>([]);
+  const [themes, setThemes] = useState<string[]>(['', '']);
+
+  // Content types options
+  const contentTypesOptions = [
+    'Como Fazer',
+    'Opiniões sobre Notícias',
+    'Histórias Pessoais',
+    'Lições de Carreira',
+    'Bastidores',
+    'Histórias de Clientes',
+    'Educacional',
+    'Memes & Humor',
+  ];
+
+  // Handle content type selection
+  const toggleContentType = (type: string) => {
+    setSelectedContentTypes((prev) =>
+      prev.includes(type)
+        ? prev.filter((t) => t !== type)
+        : [...prev, type]
+    );
+  };
+
+  // Handle theme input change
+  const handleThemeChange = (index: number, value: string) => {
+    const newThemes = [...themes];
+    newThemes[index] = value;
+    setThemes(newThemes);
+  };
+
+  // Handle delete theme
+  const handleDeleteTheme = (index: number) => {
+    const newThemes = themes.filter((_, i) => i !== index);
+    setThemes(newThemes);
+  };
+
+  // Handle add theme
+  const handleAddTheme = () => {
+    setThemes([...themes, '']);
+  };
 
   // Handle button clicks
   const handleGoBack = () => {
-    navigate('/onboarding/welcome');
+    navigate('/onboarding/goals');
   };
 
   const handleContinue = () => {
-    // Navigate to WhatsApp input page
-    console.log('LinkedIn URL:', linkedInUrl);
-    navigate('/onboarding/whatsapp');
+    // Mock: Navigate to the next step (to be defined)
+    console.log('Selected Content Types:', selectedContentTypes);
+    console.log('Themes:', themes);
+    // navigate('/onboarding/next-step');
   };
 
   // Page container styles
@@ -80,15 +123,19 @@ const LinkedInInput = () => {
     display: 'flex',
     flexDirection: 'column' as const,
     gap: spacing.spacing[16],
+    overflowY: 'auto' as const,
+    scrollbarWidth: 'thin' as const,
+    scrollbarColor: `${colors.border.default} transparent`,
   };
 
   // Text container styles
   const textContainerStyles = {
-    flex: 1,
     width: '100%',
+    height: '140px',
+    flexShrink: 0,
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: spacing.spacing[16],
+    gap: spacing.spacing[8],
   };
 
   // Title styles using Instrument Serif
@@ -107,6 +154,28 @@ const LinkedInInput = () => {
     ...textStyles.sm.normal,
     color: colors.text.muted,
     margin: 0,
+  };
+
+  // Section title styles
+  const sectionTitleStyles = {
+    ...textStyles.sm.medium,
+    color: colors.text.default,
+    margin: 0,
+  };
+
+  // Chips container styles
+  const chipsContainerStyles = {
+    display: 'flex',
+    flexWrap: 'wrap' as const,
+    gap: spacing.spacing[8],
+  };
+
+  // Themes section styles
+  const themesSectionStyles = {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: spacing.spacing[12],
+    marginTop: spacing.spacing[16],
   };
 
   // Button container styles (bottom part of main container)
@@ -149,14 +218,19 @@ const LinkedInInput = () => {
     gap: '2px',
   };
 
-  // Individual line bar styles
-  const lineBarStyles = {
+  // Individual line bar styles (with red accent for first 4 lines, orange for next 12)
+  const getLineBarStyles = (index: number) => ({
     flex: '1 1 0',
     minWidth: '2px',
     height: '18px',
-    backgroundColor: primitiveColors.transparentDark[10],
+    backgroundColor: 
+      index < 4 
+        ? primitiveColors.red[500] 
+        : index < 16 
+        ? primitiveColors.orange[500] 
+        : primitiveColors.transparentDark[10],
     borderRadius: cornerRadius.borderRadius['2xs'],
-  };
+  });
 
   // Divider styles
   const dividerStyles = {
@@ -204,17 +278,34 @@ const LinkedInInput = () => {
 
   // Steps list
   const steps = [
-    'URL do LinkedIn',
-    'Número do WhatsApp',
-    'Frequência',
-    'Objetivos',
-    'Pilares',
-    'Formato',
-    'Conhecimento',
+    { label: 'URL do LinkedIn', active: true },
+    { label: 'Número do WhatsApp', active: true },
+    { label: 'Frequência', active: true },
+    { label: 'Objetivos', active: true },
+    { label: 'Pilares', active: false },
+    { label: 'Formato', active: false },
+    { label: 'Conhecimento', active: false },
   ];
 
   return (
     <div style={pageContainerStyles}>
+      {/* Custom scrollbar styles */}
+      <style>{`
+        .pillars-content-container::-webkit-scrollbar {
+          width: 6px;
+        }
+        .pillars-content-container::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .pillars-content-container::-webkit-scrollbar-thumb {
+          background-color: ${colors.border.default};
+          border-radius: 3px;
+        }
+        .pillars-content-container::-webkit-scrollbar-thumb:hover {
+          background-color: ${colors.border.darker};
+        }
+      `}</style>
+
       {/* TopNav Bar - Stuck to the top */}
       <div style={{ position: 'sticky', top: 0, zIndex: 100 }}>
         <TopNav />
@@ -227,26 +318,63 @@ const LinkedInInput = () => {
           {/* Main container (left side) */}
           <div style={mainContainerStyles}>
             {/* Content container */}
-            <div style={contentContainerStyles}>
+            <div className="pillars-content-container" style={contentContainerStyles}>
               {/* Text container */}
               <div style={textContainerStyles}>
-                <h1 style={titleStyles}>Seu LinkedIn</h1>
+                <h1 style={titleStyles}>Seus Pilares</h1>
                 <p style={subtitleStyles}>
-                  Nos diga qual é a sua URL do LinkedIn, para que possamos escrever posts que tenham a sua cara.
+                  Nos diga quais tipos de conteúdo e temas você quer abordar
                 </p>
               </div>
 
-              {/* Input with add-on prefix */}
-              <Input
-                style="add-on"
-                size="lg"
-                label="Seu Perfil do LinkedIn"
-                addOnPrefix="https://"
-                placeholder="linkedin.com/in/seuperfil"
-                value={linkedInUrl}
-                onChange={(e) => setLinkedInUrl(e.target.value)}
-                required
-              />
+              {/* Content types section */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[12] }}>
+                <p style={sectionTitleStyles}>Tipos de conteúdo que você quer fazer</p>
+                <div style={chipsContainerStyles}>
+                  {contentTypesOptions.map((type) => (
+                    <Chips
+                      key={type}
+                      label={type}
+                      size="lg"
+                      style="default"
+                      selected={selectedContentTypes.includes(type)}
+                      onClick={() => toggleContentType(type)}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Themes section */}
+              <div style={themesSectionStyles}>
+                <p style={sectionTitleStyles}>Temas que você quer falar</p>
+                
+                {/* Theme inputs */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[8] }}>
+                  {themes.map((theme, index) => (
+                    <Input
+                      key={index}
+                      style="tail-action"
+                      size="lg"
+                      placeholder={`Tema ${index + 1}`}
+                      value={theme}
+                      onChange={(e) => handleThemeChange(index, e.target.value)}
+                      tailAction={{
+                        icon: <Trash size={16} />,
+                        onClick: () => handleDeleteTheme(index),
+                      }}
+                    />
+                  ))}
+                  
+                  {/* Add Theme button */}
+                  <Button
+                    style="secondary"
+                    size="sm"
+                    label="Adicionar Tema"
+                    leadIcon={<Plus size={16} />}
+                    onClick={handleAddTheme}
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Button container */}
@@ -280,11 +408,11 @@ const LinkedInInput = () => {
               <div style={{ marginTop: spacing.spacing[8] }}>
                 <div style={linesBarContainerStyles}>
                   {[...Array(27)].map((_, index) => (
-                    <div key={index} style={lineBarStyles} />
+                    <div key={index} style={getLineBarStyles(index)} />
                   ))}
                 </div>
               </div>
-              <p style={{ ...infoTextStyles, marginTop: spacing.spacing[4] }}>0% Concluído</p>
+              <p style={{ ...infoTextStyles, marginTop: spacing.spacing[4] }}>35% Concluído</p>
               <div style={{ ...dividerStyles, marginTop: spacing.spacing[8] }} />
               <p style={{ ...infoTextStyles, marginTop: spacing.spacing[8] }}>
                 Quanto mais informações você fornecer sobre si mesmo, melhores serão os resultados.
@@ -295,10 +423,10 @@ const LinkedInInput = () => {
             <div style={stepsContainerStyles}>
               <div style={dividerStyles} />
               {steps.map((step) => (
-                <React.Fragment key={step}>
+                <React.Fragment key={step.label}>
                   <div style={stepItemStyles}>
-                    <StatusBadge active={false} />
-                    <p style={stepTextStyles}>{step}</p>
+                    <StatusBadge active={step.active} />
+                    <p style={stepTextStyles}>{step.label}</p>
                   </div>
                   <div style={dividerStyles} />
                 </React.Fragment>
@@ -311,5 +439,5 @@ const LinkedInInput = () => {
   );
 };
 
-export default LinkedInInput;
+export default PillarsInput;
 

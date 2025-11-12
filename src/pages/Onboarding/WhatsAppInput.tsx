@@ -13,20 +13,20 @@ import Button from '@/design-system/components/Button';
 import Input from '@/design-system/components/Input';
 import StatusBadge from '@/design-system/components/StatusBadge';
 
-const LinkedInInput = () => {
+const WhatsAppInput = () => {
   const { colors } = useTheme();
   const navigate = useNavigate();
-  const [linkedInUrl, setLinkedInUrl] = useState('');
+  const [whatsappNumber, setWhatsappNumber] = useState('');
 
   // Handle button clicks
   const handleGoBack = () => {
-    navigate('/onboarding/welcome');
+    navigate('/onboarding/first-things-first');
   };
 
   const handleContinue = () => {
-    // Navigate to WhatsApp input page
-    console.log('LinkedIn URL:', linkedInUrl);
-    navigate('/onboarding/whatsapp');
+    // Navigate to Pacing input page
+    console.log('WhatsApp Number:', whatsappNumber);
+    navigate('/onboarding/pacing');
   };
 
   // Page container styles
@@ -109,6 +109,20 @@ const LinkedInInput = () => {
     margin: 0,
   };
 
+  // WhatsApp section title styles
+  const whatsappTitleStyles = {
+    ...textStyles.sm.medium,
+    color: colors.text.default,
+    margin: 0,
+  };
+
+  // WhatsApp utility text styles
+  const utilityTextStyles = {
+    ...textStyles.xs.normal,
+    color: colors.text.subtle,
+    margin: 0,
+  };
+
   // Button container styles (bottom part of main container)
   const buttonContainerStyles = {
     paddingTop: spacing.spacing[20],
@@ -149,14 +163,14 @@ const LinkedInInput = () => {
     gap: '2px',
   };
 
-  // Individual line bar styles
-  const lineBarStyles = {
+  // Individual line bar styles (with red accent for first 4 lines)
+  const getLineBarStyles = (index: number) => ({
     flex: '1 1 0',
     minWidth: '2px',
     height: '18px',
-    backgroundColor: primitiveColors.transparentDark[10],
+    backgroundColor: index < 4 ? primitiveColors.red[500] : primitiveColors.transparentDark[10],
     borderRadius: cornerRadius.borderRadius['2xs'],
-  };
+  });
 
   // Divider styles
   const dividerStyles = {
@@ -204,13 +218,13 @@ const LinkedInInput = () => {
 
   // Steps list
   const steps = [
-    'URL do LinkedIn',
-    'Número do WhatsApp',
-    'Frequência',
-    'Objetivos',
-    'Pilares',
-    'Formato',
-    'Conhecimento',
+    { label: 'URL do LinkedIn', active: true },
+    { label: 'Número do WhatsApp', active: false },
+    { label: 'Frequência', active: false },
+    { label: 'Objetivos', active: false },
+    { label: 'Pilares', active: false },
+    { label: 'Formato', active: false },
+    { label: 'Conhecimento', active: false },
   ];
 
   return (
@@ -230,23 +244,27 @@ const LinkedInInput = () => {
             <div style={contentContainerStyles}>
               {/* Text container */}
               <div style={textContainerStyles}>
-                <h1 style={titleStyles}>Seu LinkedIn</h1>
+                <h1 style={titleStyles}>Mantendo Contato</h1>
                 <p style={subtitleStyles}>
-                  Nos diga qual é a sua URL do LinkedIn, para que possamos escrever posts que tenham a sua cara.
+                  Nos diga como podemos manter contato
                 </p>
               </div>
 
-              {/* Input with add-on prefix */}
-              <Input
-                style="add-on"
-                size="lg"
-                label="Seu Perfil do LinkedIn"
-                addOnPrefix="https://"
-                placeholder="linkedin.com/in/seuperfil"
-                value={linkedInUrl}
-                onChange={(e) => setLinkedInUrl(e.target.value)}
-                required
-              />
+              {/* WhatsApp input section */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[8] }}>
+                <p style={whatsappTitleStyles}>WhatsApp</p>
+                <Input
+                  style="default"
+                  size="lg"
+                  placeholder="+55 (11) 99999-9999"
+                  value={whatsappNumber}
+                  onChange={(e) => setWhatsappNumber(e.target.value)}
+                  required
+                />
+                <p style={utilityTextStyles}>
+                  Enviaremos mensagens com rascunhos e sugestões de conteúdo baseadas no seu Plano de Conteúdo
+                </p>
+              </div>
             </div>
 
             {/* Button container */}
@@ -280,11 +298,11 @@ const LinkedInInput = () => {
               <div style={{ marginTop: spacing.spacing[8] }}>
                 <div style={linesBarContainerStyles}>
                   {[...Array(27)].map((_, index) => (
-                    <div key={index} style={lineBarStyles} />
+                    <div key={index} style={getLineBarStyles(index)} />
                   ))}
                 </div>
               </div>
-              <p style={{ ...infoTextStyles, marginTop: spacing.spacing[4] }}>0% Concluído</p>
+              <p style={{ ...infoTextStyles, marginTop: spacing.spacing[4] }}>12% Concluído</p>
               <div style={{ ...dividerStyles, marginTop: spacing.spacing[8] }} />
               <p style={{ ...infoTextStyles, marginTop: spacing.spacing[8] }}>
                 Quanto mais informações você fornecer sobre si mesmo, melhores serão os resultados.
@@ -295,10 +313,10 @@ const LinkedInInput = () => {
             <div style={stepsContainerStyles}>
               <div style={dividerStyles} />
               {steps.map((step) => (
-                <React.Fragment key={step}>
+                <React.Fragment key={step.label}>
                   <div style={stepItemStyles}>
-                    <StatusBadge active={false} />
-                    <p style={stepTextStyles}>{step}</p>
+                    <StatusBadge active={step.active} />
+                    <p style={stepTextStyles}>{step.label}</p>
                   </div>
                   <div style={dividerStyles} />
                 </React.Fragment>
@@ -311,5 +329,5 @@ const LinkedInInput = () => {
   );
 };
 
-export default LinkedInInput;
+export default WhatsAppInput;
 

@@ -21,6 +21,10 @@ import PacingPage from "./pages/PacingPage";
 import IntegrationsPage from "./pages/IntegrationsPage";
 import Welcome from "./pages/Onboarding/Welcome";
 import LinkedInInput from "./pages/Onboarding/LinkedInInput";
+import WhatsAppInput from "./pages/Onboarding/WhatsAppInput";
+import PacingInput from "./pages/Onboarding/PacingInput";
+import GoalsInput from "./pages/Onboarding/GoalsInput";
+import PillarsInput from "./pages/Onboarding/PillarsInput";
 import LoadingPage from "./pages/LoadingPage";
 import NotFound from "./pages/NotFound";
 import GoogleCalendarCallback from "./pages/GoogleCalendarCallback";
@@ -44,6 +48,10 @@ const App = () => {
           <Route path="/signin" element={<SignIn />} />
           <Route path="/onboarding/welcome" element={<Welcome />} />
           <Route path="/onboarding/first-things-first" element={<LinkedInInput />} />
+          <Route path="/onboarding/whatsapp" element={<WhatsAppInput />} />
+          <Route path="/onboarding/pacing" element={<PacingInput />} />
+          <Route path="/onboarding/goals" element={<GoalsInput />} />
+          <Route path="/onboarding/pillars" element={<PillarsInput />} />
           {/* Public legal pages */}
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />

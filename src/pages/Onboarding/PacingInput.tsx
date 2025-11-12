@@ -10,23 +10,43 @@ import { stroke } from '@/design-system/tokens/stroke';
 import { colors as primitiveColors } from '@/design-system/tokens/primitive-colors';
 import TopNav from '@/design-system/components/TopNav';
 import Button from '@/design-system/components/Button';
-import Input from '@/design-system/components/Input';
 import StatusBadge from '@/design-system/components/StatusBadge';
+import Checkbox from '@/design-system/components/Checkbox';
 
-const LinkedInInput = () => {
+const PacingInput = () => {
   const { colors } = useTheme();
   const navigate = useNavigate();
-  const [linkedInUrl, setLinkedInUrl] = useState('');
+  const [selectedDays, setSelectedDays] = useState<string[]>([]);
+
+  // Days of the week
+  const daysOfWeek = [
+    { id: 'mon', label: 'S', fullName: 'Segunda' },
+    { id: 'tue', label: 'T', fullName: 'Terça' },
+    { id: 'wed', label: 'Q', fullName: 'Quarta' },
+    { id: 'thu', label: 'Q', fullName: 'Quinta' },
+    { id: 'fri', label: 'S', fullName: 'Sexta' },
+    { id: 'sat', label: 'S', fullName: 'Sábado' },
+    { id: 'sun', label: 'D', fullName: 'Domingo' },
+  ];
+
+  // Handle day selection
+  const toggleDay = (dayId: string) => {
+    setSelectedDays((prev) =>
+      prev.includes(dayId)
+        ? prev.filter((id) => id !== dayId)
+        : [...prev, dayId]
+    );
+  };
 
   // Handle button clicks
   const handleGoBack = () => {
-    navigate('/onboarding/welcome');
+    navigate('/onboarding/whatsapp');
   };
 
   const handleContinue = () => {
-    // Navigate to WhatsApp input page
-    console.log('LinkedIn URL:', linkedInUrl);
-    navigate('/onboarding/whatsapp');
+    // Navigate to Goals input page
+    console.log('Selected Days:', selectedDays);
+    navigate('/onboarding/goals');
   };
 
   // Page container styles
@@ -88,7 +108,7 @@ const LinkedInInput = () => {
     width: '100%',
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: spacing.spacing[16],
+    gap: spacing.spacing[8],
   };
 
   // Title styles using Instrument Serif
@@ -106,6 +126,53 @@ const LinkedInInput = () => {
   const subtitleStyles = {
     ...textStyles.sm.normal,
     color: colors.text.muted,
+    margin: 0,
+  };
+
+  // Frequency card styles
+  const frequencyCardStyles = {
+    border: `${stroke.DEFAULT} solid ${colors.border.default}`,
+    borderRadius: cornerRadius.borderRadius.lg,
+    padding: spacing.spacing[20],
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: spacing.spacing[16],
+  };
+
+  // Card title styles
+  const cardTitleStyles = {
+    ...textStyles.sm.medium,
+    color: colors.text.default,
+    margin: 0,
+  };
+
+  // Card subtitle styles
+  const cardSubtitleStyles = {
+    ...textStyles.xs.normal,
+    color: colors.text.subtle,
+    margin: 0,
+  };
+
+  // Days row container styles
+  const daysRowStyles = {
+    display: 'flex',
+    flexDirection: 'row' as const,
+    gap: spacing.spacing[8],
+    justifyContent: 'space-between',
+  };
+
+  // Day checkbox container styles
+  const dayCheckboxContainerStyles = {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    alignItems: 'center',
+    gap: spacing.spacing[6],
+  };
+
+  // Day label styles
+  const dayLabelStyles = {
+    ...textStyles.xs.medium,
+    color: colors.text.default,
     margin: 0,
   };
 
@@ -149,14 +216,19 @@ const LinkedInInput = () => {
     gap: '2px',
   };
 
-  // Individual line bar styles
-  const lineBarStyles = {
+  // Individual line bar styles (with red accent for first 4 lines, orange for next 4)
+  const getLineBarStyles = (index: number) => ({
     flex: '1 1 0',
     minWidth: '2px',
     height: '18px',
-    backgroundColor: primitiveColors.transparentDark[10],
+    backgroundColor: 
+      index < 4 
+        ? primitiveColors.red[500] 
+        : index < 8 
+        ? primitiveColors.orange[500] 
+        : primitiveColors.transparentDark[10],
     borderRadius: cornerRadius.borderRadius['2xs'],
-  };
+  });
 
   // Divider styles
   const dividerStyles = {
@@ -204,13 +276,13 @@ const LinkedInInput = () => {
 
   // Steps list
   const steps = [
-    'URL do LinkedIn',
-    'Número do WhatsApp',
-    'Frequência',
-    'Objetivos',
-    'Pilares',
-    'Formato',
-    'Conhecimento',
+    { label: 'URL do LinkedIn', active: true },
+    { label: 'Número do WhatsApp', active: true },
+    { label: 'Frequência', active: false },
+    { label: 'Objetivos', active: false },
+    { label: 'Pilares', active: false },
+    { label: 'Formato', active: false },
+    { label: 'Conhecimento', active: false },
   ];
 
   return (
@@ -230,23 +302,37 @@ const LinkedInInput = () => {
             <div style={contentContainerStyles}>
               {/* Text container */}
               <div style={textContainerStyles}>
-                <h1 style={titleStyles}>Seu LinkedIn</h1>
+                <h1 style={titleStyles}>Seu Ritmo</h1>
                 <p style={subtitleStyles}>
-                  Nos diga qual é a sua URL do LinkedIn, para que possamos escrever posts que tenham a sua cara.
+                  Nos diga com que frequência você quer que mantenhamos seu ritmo
                 </p>
               </div>
 
-              {/* Input with add-on prefix */}
-              <Input
-                style="add-on"
-                size="lg"
-                label="Seu Perfil do LinkedIn"
-                addOnPrefix="https://"
-                placeholder="linkedin.com/in/seuperfil"
-                value={linkedInUrl}
-                onChange={(e) => setLinkedInUrl(e.target.value)}
-                required
-              />
+              {/* Frequency card */}
+              <div style={frequencyCardStyles}>
+                <div>
+                  <p style={cardTitleStyles}>Frequência</p>
+                  <p style={{ ...cardSubtitleStyles, marginTop: spacing.spacing[4] }}>
+                    Defina quando você quer postar
+                  </p>
+                </div>
+
+                {/* Days of the week row */}
+                <div style={daysRowStyles}>
+                  {daysOfWeek.map((day) => (
+                    <div
+                      key={day.id}
+                      style={dayCheckboxContainerStyles}
+                    >
+                      <Checkbox
+                        checked={selectedDays.includes(day.id)}
+                        onChange={() => toggleDay(day.id)}
+                      />
+                      <p style={dayLabelStyles}>{day.label}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
 
             {/* Button container */}
@@ -280,11 +366,11 @@ const LinkedInInput = () => {
               <div style={{ marginTop: spacing.spacing[8] }}>
                 <div style={linesBarContainerStyles}>
                   {[...Array(27)].map((_, index) => (
-                    <div key={index} style={lineBarStyles} />
+                    <div key={index} style={getLineBarStyles(index)} />
                   ))}
                 </div>
               </div>
-              <p style={{ ...infoTextStyles, marginTop: spacing.spacing[4] }}>0% Concluído</p>
+              <p style={{ ...infoTextStyles, marginTop: spacing.spacing[4] }}>20% Concluído</p>
               <div style={{ ...dividerStyles, marginTop: spacing.spacing[8] }} />
               <p style={{ ...infoTextStyles, marginTop: spacing.spacing[8] }}>
                 Quanto mais informações você fornecer sobre si mesmo, melhores serão os resultados.
@@ -295,10 +381,10 @@ const LinkedInInput = () => {
             <div style={stepsContainerStyles}>
               <div style={dividerStyles} />
               {steps.map((step) => (
-                <React.Fragment key={step}>
+                <React.Fragment key={step.label}>
                   <div style={stepItemStyles}>
-                    <StatusBadge active={false} />
-                    <p style={stepTextStyles}>{step}</p>
+                    <StatusBadge active={step.active} />
+                    <p style={stepTextStyles}>{step.label}</p>
                   </div>
                   <div style={dividerStyles} />
                 </React.Fragment>
@@ -311,5 +397,5 @@ const LinkedInInput = () => {
   );
 };
 
-export default LinkedInInput;
+export default PacingInput;
 
