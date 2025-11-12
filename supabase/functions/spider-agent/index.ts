@@ -165,9 +165,9 @@ serve(async (req) => {
       
       // Create SKILL.md content
       // IMPORTANT: The skill name in the frontmatter must match the directory name
-      const skillName = `linkedin-content-creation-${userId.replace(/-/g, '')}`;
+      const baseSkillName = `linkedin-content-creation-${userId.replace(/-/g, '')}`;
       const skillContent = `---
-name: ${skillName}
+name: ${baseSkillName}
 description: Skill personalizada para criação de conteúdo LinkedIn para o usuário
 ---
 
@@ -209,64 +209,112 @@ Use estas informações para criar conteúdo LinkedIn personalizado que:
       // Example from docs: -F "files[]=@excel-skill/SKILL.md;filename=excel-skill/SKILL.md"
       // This means we need a top-level directory name in the filename path
       try {
-        // Use FormData API - Deno supports this natively
-        // The third parameter of append() specifies the filename with path
-        const formData = new FormData();
+        // Generate unique display_title with retry logic for duplicate titles
+        let skillIdCreated = false;
+        let attempt = 0;
+        const maxAttempts = 3;
         
-        // Add display_title field
-        const displayTitle = `LinkedIn Content Creation - ${userId.substring(0, 8)}...`;
-        formData.append('display_title', displayTitle);
-        
-        // Add files[] field - CRITICAL: filename must include a top-level directory
-        // The format must be: "directory-name/SKILL.md"
-        // IMPORTANT: The directory name MUST match the skill name in SKILL.md frontmatter
-        // The directory name is the "top-level folder" and SKILL.md is at the root of that directory
-        const skillBlob = new Blob([skillContent], { type: 'text/markdown' });
-        // Use the skill name as the directory name (must match the name in SKILL.md frontmatter)
-        // Example: skill name is "linkedin-content-creation-72b290cd7363466a9f30d552d335d6c4"
-        // Directory must be: "linkedin-content-creation-72b290cd7363466a9f30d552d335d6c4/SKILL.md"
-        const skillFileName = `${skillName}/SKILL.md`;
-        formData.append('files[]', skillBlob, skillFileName);
+        while (!skillIdCreated && attempt < maxAttempts) {
+          try {
+            // Use FormData API - Deno supports this natively
+            // The third parameter of append() specifies the filename with path
+            const formData = new FormData();
+            
+            // Generate display_title - add timestamp/hash for uniqueness if retrying
+            let displayTitle = `LinkedIn Content Creation - ${userId.substring(0, 8)}`;
+            if (attempt > 0) {
+              // Add timestamp to make it unique on retry
+              const timestamp = Date.now().toString(36).substring(0, 6);
+              displayTitle = `LinkedIn Content Creation - ${userId.substring(0, 8)}-${timestamp}`;
+            }
+            formData.append('display_title', displayTitle);
+            
+            // Add files[] field - CRITICAL: filename must include a top-level directory
+            // The format must be: "directory-name/SKILL.md"
+            // IMPORTANT: The directory name MUST match the skill name in SKILL.md frontmatter
+            // The directory name is the "top-level folder" and SKILL.md is at the root of that directory
+            const skillBlob = new Blob([skillContent], { type: 'text/markdown' });
+            // Use the skill name as the directory name (must match the name in SKILL.md frontmatter)
+            // Example: skill name is "linkedin-content-creation-72b290cd7363466a9f30d552d335d6c4"
+            // Directory must be: "linkedin-content-creation-72b290cd7363466a9f30d552d335d6c4/SKILL.md"
+            const skillFileName = `${baseSkillName}/SKILL.md`;
+            formData.append('files[]', skillBlob, skillFileName);
 
-        console.log('Creating skill with FormData:', {
-          displayTitle: displayTitle,
-          skillName: skillName,
-          fileName: skillFileName,
-          fileSize: skillContent.length,
-        });
+            console.log(`Creating skill with FormData (attempt ${attempt + 1}/${maxAttempts}):`, {
+              displayTitle: displayTitle,
+              skillName: baseSkillName,
+              fileName: skillFileName,
+              fileSize: skillContent.length,
+            });
 
-        const skillResponse = await fetch('https://api.anthropic.com/v1/skills', {
-          method: 'POST',
-          headers: {
-            'x-api-key': anthropicApiKey,
-            'anthropic-version': '2023-06-01',
-            'anthropic-beta': 'skills-2025-10-02',
-            // Don't set Content-Type - let fetch set it automatically with boundary
-          },
-          body: formData,
-        });
+            const skillResponse = await fetch('https://api.anthropic.com/v1/skills', {
+              method: 'POST',
+              headers: {
+                'x-api-key': anthropicApiKey,
+                'anthropic-version': '2023-06-01',
+                'anthropic-beta': 'skills-2025-10-02',
+                // Don't set Content-Type - let fetch set it automatically with boundary
+              },
+              body: formData,
+            });
 
-        if (!skillResponse.ok) {
-          const errorText = await skillResponse.text();
-          console.error('Anthropic Skills API error:', errorText);
-          throw new Error(`Failed to create skill: ${skillResponse.status} - ${errorText}`);
+            if (!skillResponse.ok) {
+              const errorText = await skillResponse.text();
+              console.error('Anthropic Skills API error:', errorText);
+              
+              // Check if it's a duplicate display_title error
+              let isDuplicateTitleError = false;
+              try {
+                const errorJson = JSON.parse(errorText);
+                isDuplicateTitleError = errorJson?.error?.message?.includes('display_title') || 
+                                       errorJson?.error?.message?.includes('reuse') ||
+                                       errorJson?.error?.message?.includes('existing display_title');
+              } catch (parseError) {
+                // If error is not JSON, check if error text contains duplicate title keywords
+                isDuplicateTitleError = errorText.includes('display_title') || 
+                                       errorText.includes('reuse') ||
+                                       errorText.includes('existing display_title');
+              }
+              
+              if (isDuplicateTitleError && attempt < maxAttempts - 1) {
+                console.log(`Duplicate display_title detected, retrying with unique title (attempt ${attempt + 1}/${maxAttempts})...`);
+                attempt++;
+                continue; // Retry with new unique title
+              }
+              
+              throw new Error(`Failed to create skill: ${skillResponse.status} - ${errorText}`);
+            }
+
+            const skillResult = await skillResponse.json();
+            skillId = skillResult.id;
+            usedExistingSkill = false;
+            skillIdCreated = true;
+
+            console.log('Skill created successfully:', skillId);
+
+            // Save skill ID to database
+            const { error: updateError } = await supabase
+              .from('user_content_skills')
+              .update({ anthropic_skill_id: skillId })
+              .eq('user_id', userId);
+
+            if (updateError) {
+              console.error('Error saving skill ID:', updateError);
+              // Continue anyway, we have the skill ID
+            }
+          } catch (error) {
+            // If it's the last attempt, throw the error
+            if (attempt >= maxAttempts - 1) {
+              console.error('Error creating skill (max attempts reached):', error);
+              throw new Error(`Failed to create Anthropic skill: ${error.message}`);
+            }
+            // Otherwise, continue to retry
+            attempt++;
+          }
         }
-
-        const skillResult = await skillResponse.json();
-        skillId = skillResult.id;
-        usedExistingSkill = false;
-
-        console.log('Skill created successfully:', skillId);
-
-        // Save skill ID to database
-        const { error: updateError } = await supabase
-          .from('user_content_skills')
-          .update({ anthropic_skill_id: skillId })
-          .eq('user_id', userId);
-
-        if (updateError) {
-          console.error('Error saving skill ID:', updateError);
-          // Continue anyway, we have the skill ID
+        
+        if (!skillIdCreated) {
+          throw new Error(`Failed to create Anthropic skill after ${maxAttempts} attempts`);
         }
       } catch (error) {
         console.error('Error creating skill:', error);
