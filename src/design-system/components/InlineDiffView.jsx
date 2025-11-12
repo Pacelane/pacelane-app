@@ -7,7 +7,7 @@ import { getShadow } from '@/design-system/tokens/shadows';
 import { textStyles } from '@/design-system/styles/typography/typography-styles';
 import { typography } from '@/design-system/tokens/typography';
 import Button from '@/design-system/components/Button';
-import { Check, X } from 'lucide-react';
+import { Check, X } from '@phosphor-icons/react';
 
 /**
  * InlineDiffView - GitHub-style diff display for inline edits

@@ -9,11 +9,11 @@ import Button from '@/design-system/components/Button';
 // Icons
 import { 
   FileText, 
-  Video, 
+  VideoCamera as Video, 
   Globe, 
   Plus,
   ArrowRight 
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 
 /**
  * KnowledgeBasePromptCard - Card component that prompts users to add more context to their knowledge base
@@ -59,7 +59,7 @@ const KnowledgeBasePromptCard = ({
   // Title styles
   const titleStyle = {
     ...textStyles['2xl'].semibold,
-    fontFamily: 'Awesome Serif VAR',
+    fontFamily: typography.fontFamily['instrument-serif'].join(', '),
     color: colors.text.default,
     margin: 0,
   };

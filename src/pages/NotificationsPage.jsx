@@ -19,12 +19,12 @@ import {
   Bell,
   FileText,
   Users,
-  Settings,
+  Gear as Settings,
   CreditCard,
   CheckCircle,
-  AlertTriangle,
+  Warning as AlertTriangle,
   Info
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 
 // Mock notification data
 const mockNotifications = [

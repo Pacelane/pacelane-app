@@ -6,7 +6,7 @@ import { cornerRadius } from '../tokens/corner-radius.js';
 import { textStyles } from '../styles/typography/typography-styles.js';
 import { shadows, getShadow } from '../tokens/shadows.js';
 import DropdownMenu from './DropdownMenu.jsx';
-import { ChevronDown } from 'lucide-react';
+import { CaretDown as ChevronDown } from '@phosphor-icons/react';
 
 const DropdownButton = ({
   // Core props

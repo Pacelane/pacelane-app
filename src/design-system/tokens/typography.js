@@ -100,30 +100,34 @@ export const typography = {
   },
   
   fontA: {
-    headline: 'Inter',
-    body: 'Inter',
-    quote: 'Fraunces',
-    code: 'JetBrains Mono'
+    headline: 'Geist',
+    body: 'Geist',
+    quote: 'Instrument Serif',
+    code: 'Geist Mono'
   },
   
   fontB: {
-    headline: 'Awesome Serif VAR',
-    body: 'Awesome Serif VAR',
-    quote: 'Fraunces',
-    code: 'JetBrains Mono'
+    headline: 'Instrument Serif',
+    body: 'Instrument Serif',
+    quote: 'Instrument Serif',
+    code: 'Geist Mono'
   },
 
   // Tailwind-compatible font families
   fontFamily: {
-    'inter': ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-    'fraunces': ['Fraunces', 'ui-serif', 'Georgia', 'serif'],
-    'jetbrains': ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'monospace'],
-    'awesome-serif': ['Awesome Serif VAR', 'ui-serif', 'Georgia', 'serif'],
+    'geist': ['Geist', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+    'instrument-serif': ['Instrument Serif', 'ui-serif', 'Georgia', 'serif'],
+    'geist-mono': ['Geist Mono', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+    // Legacy aliases for backwards compatibility
+    'inter': ['Geist', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+    'fraunces': ['Instrument Serif', 'ui-serif', 'Georgia', 'serif'],
+    'jetbrains': ['Geist Mono', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+    'awesome-serif': ['Instrument Serif', 'ui-serif', 'Georgia', 'serif'],
     // Semantic font assignments
-    'headline': ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-    'body': ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-    'quote': ['Fraunces', 'ui-serif', 'Georgia', 'serif'],
-    'code': ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'monospace']
+    'headline': ['Geist', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+    'body': ['Geist', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+    'quote': ['Instrument Serif', 'ui-serif', 'Georgia', 'serif'],
+    'code': ['Geist Mono', 'ui-monospace', 'SFMono-Regular', 'monospace']
   },
 
   // Export individual font sizes and weights for Tailwind

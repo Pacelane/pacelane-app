@@ -13,12 +13,12 @@ import {
   Lightbulb, 
   Target, 
   BookOpen, 
-  Layers, 
+  Stack as Layers, 
   Clock, 
   Phone, 
-  MessageSquare, 
-  Sparkles 
-} from 'lucide-react';
+  ChatSquare as MessageSquare, 
+  Sparkle as Sparkles 
+} from '@phosphor-icons/react';
 
 const OnboardingProgressIndicator = ({ 
   currentStep = 1, 

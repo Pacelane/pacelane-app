@@ -8,8 +8,6 @@ import { useHelp } from '../services/help-context';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/design-system/components/Toast';
 
-import { getTemplateById } from '@/data/templateData';
-
 // Design System Components
 import EditorNav from '@/design-system/components/EditorNav';
 import Button from '@/design-system/components/Button';
@@ -43,26 +41,26 @@ import {
   FileText, 
   Folder, 
   FolderOpen,
-  MoreHorizontal, 
-  Trash2, 
+  DotsThree as MoreHorizontal, 
+  Trash as Trash2, 
   Clock,
   Sun,
   Moon,
   Monitor,
-  HelpCircle,
-  Send,
+  Question as HelpCircle,
+  PaperPlaneTilt as Send,
   User,
-  Save,
+  FloppyDisk as Save,
   ArrowLeft,
-  Book,
-  Search,
+  BookOpen as Book,
+  MagnifyingGlass as Search,
   Image,
   File,
-  ChevronDown,
+  CaretDown as ChevronDown,
   Plus,
   X,
   Copy
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 
 interface FileItem {
   id: string;
@@ -251,7 +249,7 @@ const ContentEditor = () => {
     setShowConversationDropdown(false);
   };
 
-  // Handle content suggestions from ProductHome, draft editing, and template loading
+  // Handle content suggestions from ProductHome and draft editing
   useEffect(() => {
     if (location.state?.suggestion) {
       const suggestion = location.state.suggestion;
@@ -273,94 +271,10 @@ const ContentEditor = () => {
       window.history.replaceState({}, document.title);
       
       // Removed success toast - no need to notify user when loading draft
-    } else if (location.state?.templateId) {
-      // Load template content
-      console.log('ContentEditor: Detected templateId in location.state:', location.state.templateId);
-      loadTemplateContent(location.state.templateId);
-      
-      // Clear the state to prevent re-applying on navigation
-      window.history.replaceState({}, document.title);
     } else {
       console.log('ContentEditor: No special state detected, using default content');
     }
   }, [location.state]);
-
-  // Load template content by ID from local data
-  const loadTemplateContent = (templateId: string) => {
-    console.log('ContentEditor: Loading template with ID:', templateId);
-    console.log('ContentEditor: getTemplateById function:', getTemplateById);
-    
-    // Safety check for getTemplateById function
-    if (typeof getTemplateById !== 'function') {
-      console.error('ContentEditor: getTemplateById is not a function:', typeof getTemplateById);
-      if (toast) {
-        toast.error('Template system not available. Please refresh the page and try again.', {
-          duration: 5000
-        });
-      }
-      return;
-    }
-    
-    try {
-      // Validate templateId
-      if (!templateId || typeof templateId !== 'string') {
-        console.error('ContentEditor: Invalid templateId provided:', templateId);
-        if (toast) {
-          toast.error('Invalid template selected. Please try again.', {
-            duration: 5000
-          });
-        }
-        return;
-      }
-      
-      const template = getTemplateById(templateId);
-      console.log('ContentEditor: Template found:', template);
-      
-      if (template && template.content && template.title) {
-        setDraftTitle(template.title);
-        setEditorContent(template.content);
-        
-        console.log('ContentEditor: Template loaded successfully:', {
-          title: template.title,
-          contentLength: template.content.length
-        });
-        
-        if (toast) {
-          toast.success(`Template "${template.title}" loaded successfully!`, {
-            duration: 3000
-          });
-        }
-      } else {
-        console.error('ContentEditor: Template not found or missing required fields:', {
-          templateId,
-          template,
-          hasContent: template?.content ? true : false,
-          hasTitle: template?.title ? true : false
-        });
-        
-        if (toast) {
-          toast.error('Template not found or incomplete. Please try selecting another template.', {
-            duration: 5000
-          });
-        }
-        
-        // Set default content to prevent empty editor
-        setDraftTitle('New Post');
-        setEditorContent('# New Post\n\nStart writing your content here...');
-      }
-    } catch (error) {
-      console.error('ContentEditor: Error loading template:', error);
-      if (toast) {
-        toast.error('An unexpected error occurred while loading the template. Please try again.', {
-          duration: 5000
-        });
-      }
-      
-      // Set default content to prevent empty editor
-      setDraftTitle('New Post');
-      setEditorContent('# New Post\n\nStart writing your content here...');
-    }
-  };
 
   // Auto-save functionality
   useEffect(() => {

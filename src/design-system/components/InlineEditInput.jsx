@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useTheme } from '@/services/theme-context';
 import { spacing } from '@/design-system/tokens/spacing';
 import { textStyles } from '@/design-system/styles/typography/typography-styles';
-import { Edit2, Check, X } from 'lucide-react';
+import { PencilSimple as Edit2, Check, X } from '@phosphor-icons/react';
 import Button from './Button';
 
 const InlineEditInput = ({

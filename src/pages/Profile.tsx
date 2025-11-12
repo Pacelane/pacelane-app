@@ -26,13 +26,13 @@ import { textStyles } from '@/design-system/styles/typography/typography-styles'
 // Icons
 import { 
   Plus,
-  Trash2,
+  Trash,
   Check,
   X,
-  Sparkles,
+  Sparkle as Sparkles,
   Info,
-  LogOut
-} from 'lucide-react';
+  SignOut as LogOut
+} from '@phosphor-icons/react';
 
 const Profile = () => {
   const navigate = useNavigate();

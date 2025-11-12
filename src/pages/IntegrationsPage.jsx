@@ -20,7 +20,7 @@ import readaiLogo from '@/assets/images/readai-logo.webp';
 import googleCalendarLogo from '@/assets/images/google-calendar-logo.png';
 
 // Icons
-import { Linkedin } from 'lucide-react';
+import { LinkedinLogo as Linkedin } from '@phosphor-icons/react';
 
 /**
  * IntegrationsPage - Manage third-party integrations

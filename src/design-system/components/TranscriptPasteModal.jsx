@@ -13,7 +13,7 @@ import TextArea from '@/design-system/components/TextArea';
 
 
 // Icons
-import { FileText, Copy, CheckCircle, AlertCircle, X } from 'lucide-react';
+import { FileText, Copy, CheckCircle, WarningCircle as AlertCircle, X } from '@phosphor-icons/react';
 
 const TranscriptPasteModal = ({ isOpen, onClose, onTranscriptSubmit, loading = false }) => {
   const { colors } = useTheme();

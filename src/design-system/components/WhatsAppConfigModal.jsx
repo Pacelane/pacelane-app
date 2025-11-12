@@ -11,7 +11,7 @@ import Input from '@/design-system/components/Input';
 import Button from '@/design-system/components/Button';
 
 // Icons
-import { MessageCircle, Check, X } from 'lucide-react';
+import { ChatCircle as MessageCircle, Check, X } from '@phosphor-icons/react';
 
 /**
  * WhatsAppConfigModal - Modal for configuring WhatsApp number

@@ -5,7 +5,7 @@ import { cornerRadius } from '@/design-system/tokens/corner-radius';
 import { textStyles } from '@/design-system/styles/typography/typography-styles';
 import Input from '@/design-system/components/Input';
 import Button from '@/design-system/components/Button';
-import { Search, Plus, FileText } from 'lucide-react';
+import { MagnifyingGlass as Search, Plus, FileText } from '@phosphor-icons/react';
 import type { KnowledgePage } from '@/types/knowledgeGraph';
 
 interface PageListSidebarProps {

@@ -12,14 +12,14 @@ import {
   Target, 
   FileText, 
   Calendar, 
-  MessageSquare, 
+  ChatSquare as MessageSquare, 
   TrendingUp,
   ArrowRight,
-  Sparkles,
+  Sparkle as Sparkles,
   Brain,
-  Share2,
-  BarChart3
-} from 'lucide-react';
+  ShareNetwork as Share2,
+  ChartBar as BarChart3
+} from '@phosphor-icons/react';
 
 const AppWorkflowDiagram = ({ 
   className = '',

@@ -11,7 +11,7 @@ import { cornerRadius } from '@/design-system/tokens/corner-radius';
 import { getShadow } from '@/design-system/tokens/shadows';
 
 // Icons
-import { X, Download, FileText, Image, Music, Video, File } from 'lucide-react';
+import { X, Download, FileText, Image, MusicNotes as Music, VideoCamera as Video, File } from '@phosphor-icons/react';
 
 // Services
 import { supabase } from '@/integrations/supabase/client';

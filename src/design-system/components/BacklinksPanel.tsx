@@ -3,7 +3,7 @@ import { useTheme } from '@/services/theme-context';
 import { spacing } from '@/design-system/tokens/spacing';
 import { cornerRadius } from '@/design-system/tokens/corner-radius';
 import { textStyles } from '@/design-system/styles/typography/typography-styles';
-import { Link as LinkIcon } from 'lucide-react';
+import { Link as LinkIcon } from '@phosphor-icons/react';
 import type { LinkWithPage } from '@/types/knowledgeGraph';
 
 interface BacklinksPanelProps {

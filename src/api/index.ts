@@ -6,7 +6,6 @@ export { authApi } from './auth';
 export { profileApi } from './profile';
 export { contentApi } from './content';
 export { inspirationsApi } from './inspirations';
-export { templatesApi } from './templates';
 
 // Re-export analytics functions (until we create a service layer for it)
 export * from './analytics';
@@ -66,11 +65,3 @@ export const {
   testScraping
 } = inspirationsApi;
 
-// Templates API
-export const {
-  loadTemplates,
-  createTemplate,
-  updateTemplate,
-  deleteTemplate,
-  duplicateTemplate
-} = templatesApi;

@@ -4,7 +4,7 @@ import { useTheme } from '@/services/theme-context';
 import { spacing } from '@/design-system/tokens/spacing';
 import { textStyles } from '@/design-system/styles/typography/typography-styles';
 import Button from '@/design-system/components/Button';
-import { X, Maximize2, Minimize2 } from 'lucide-react';
+import { X, ArrowsOut as Maximize2, ArrowsIn as Minimize2 } from '@phosphor-icons/react';
 import type { GraphNode, GraphEdge } from '@/types/knowledgeGraph';
 
 interface GraphVisualizationProps {

@@ -7,7 +7,7 @@ import { useAuth } from '@/hooks/api/useAuth';
 // Design System Components
 import TopNav from '@/design-system/components/TopNav';
 import Button from '@/design-system/components/Button';
-import Bichaurinho from '@/design-system/components/Bichaurinho';
+import LoadingSpinner from '@/design-system/components/LoadingSpinner';
 import OnboardingProgressIndicator from '@/design-system/components/OnboardingProgressIndicator';
 
 // Design System Tokens
@@ -19,7 +19,7 @@ import { textStyles } from '@/design-system/styles/typography/typography-styles'
 import { getResponsiveContainer, getResponsiveWidth } from '@/design-system/utils/responsive';
 
 // Icons
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight } from '@phosphor-icons/react';
 
 const Welcome = () => {
   const navigate = useNavigate();
@@ -58,12 +58,12 @@ const Welcome = () => {
         justifyContent: 'center',
         backgroundColor: colors.bg.default,
         flexDirection: 'column',
-        gap: spacing.spacing[24]
+        gap: spacing.spacing[16]
       }}>
-        <Bichaurinho variant={1} size={64} />
+        <LoadingSpinner size={48} color={colors.icon.default} />
         <p style={{
-          ...textStyles.md.normal,
-          color: colors.text.muted,
+          ...textStyles.md.medium,
+          color: colors.text.subtle,
           margin: 0
         }}>
           Loading...
@@ -93,35 +93,17 @@ const Welcome = () => {
         style={{
           flex: 1,
           position: 'relative',
-          backgroundColor: colors.bg.default,
+          backgroundColor: colors.bg.muted,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           ...getResponsiveContainer(isMobile, 'page'),
         }}
       >
-        {/* Gradient background with low opacity */}
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundImage: 'url(/src/assets/images/gradient-bg.svg)',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-            opacity: 0.03,
-            zIndex: 0,
-          }}
-        />
-        
         {/* Main Content Container */}
         <div
           style={{
             position: 'relative',
-            zIndex: 1,
             display: 'flex',
             flexDirection: 'column',
             gap: spacing.spacing[32],

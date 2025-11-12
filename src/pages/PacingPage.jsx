@@ -19,7 +19,7 @@ import { profileApi } from '@/api/profile';
 import { PacingService } from '@/services/pacingService';
 
 // Icons
-import { Check } from 'lucide-react';
+import { Check } from '@phosphor-icons/react';
 
 const PacingPage = () => {
   const { colors } = useTheme();

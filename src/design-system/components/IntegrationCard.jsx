@@ -5,7 +5,7 @@ import { cornerRadius } from '@/design-system/tokens/corner-radius';
 import { textStyles } from '@/design-system/styles/typography/typography-styles';
 import { getShadow } from '@/design-system/tokens/shadows';
 import Button from '@/design-system/components/Button';
-import { Settings, ExternalLink } from 'lucide-react';
+import { Gear as Settings, ArrowSquareOut as ExternalLink } from '@phosphor-icons/react';
 
 /**
  * IntegrationCard - A reusable card component for displaying integration services

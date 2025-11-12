@@ -16,7 +16,7 @@ import Input from '@/design-system/components/Input';
 import LoadingSpinner from '@/design-system/components/LoadingSpinner';
 
 // Icons
-import { User, RefreshCw, ExternalLink, CheckCircle, AlertCircle, Trash2, Linkedin } from 'lucide-react';
+import { User, ArrowsClockwise as RefreshCw, ArrowSquareOut as ExternalLink, CheckCircle, WarningCircle as AlertCircle, Trash as Trash2, LinkedinLogo as Linkedin } from '@phosphor-icons/react';
 
 /**
  * LinkedInConfigModal - Configure LinkedIn integration for writing style analysis

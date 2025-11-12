@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Button from '../design-system/components/Button.jsx';
 import Card, { CardHeader, CardTitle, CardDescription, CardContent } from '../design-system/components/Card.jsx';
 import Badge from '../design-system/components/Badge.jsx';
-import { Calendar, RefreshCw, Link, Unlink, Clock, Users, MapPin } from 'lucide-react';
+import { Calendar, ArrowsClockwise as RefreshCw, Link, LinkBreak as Unlink, Clock, Users, MapPin } from '@phosphor-icons/react';
 import { CalendarService, CalendarConnection, CalendarEvent } from '../services/calendarService';
 import { useToast } from '../design-system/components/Toast.jsx';
 import { format } from 'date-fns';

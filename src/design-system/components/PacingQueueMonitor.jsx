@@ -5,7 +5,7 @@ import { cornerRadius } from '@/design-system/tokens/corner-radius';
 import { getShadow } from '@/design-system/tokens/shadows';
 import { textStyles } from '@/design-system/styles/typography/typography-styles';
 import Button from '@/design-system/components/Button';
-import { RefreshCw, Play, Pause, AlertCircle, CheckCircle, Clock, FileText, MessageSquare } from 'lucide-react';
+import { ArrowsClockwise as RefreshCw, Play, Pause, WarningCircle as AlertCircle, CheckCircle, Clock, FileText, ChatSquare as MessageSquare } from '@phosphor-icons/react';
 
 const PacingQueueMonitor = () => {
   const { colors } = useTheme();

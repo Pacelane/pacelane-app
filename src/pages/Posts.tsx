@@ -24,7 +24,7 @@ import { typography } from '@/design-system/tokens/typography';
 import { cornerRadius } from '@/design-system/tokens/corner-radius';
 
 // Icons
-import { Search, Plus, FileText, LayoutGrid, AlignJustify } from 'lucide-react';
+import { MagnifyingGlass as Search, Plus, FileText, SquaresFour as LayoutGrid, List as AlignJustify } from '@phosphor-icons/react';
 
 // Avatar utilities
 import { getUserAvatarUrl } from '@/utils/avatarUtils';

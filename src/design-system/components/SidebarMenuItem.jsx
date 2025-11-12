@@ -35,7 +35,7 @@ const SidebarMenuItem = ({
   const getBackgroundColor = () => {
     switch (effectiveState) {
       case 'active':
-        return colors.bg.state.menuItemActive;
+        return colors.bg.state.ghost;
       case 'hover':
         return colors.bg.state.ghostHover;
       case 'disabled':
@@ -124,7 +124,7 @@ const SidebarMenuItem = ({
     // Appearance
     backgroundColor: getBackgroundColor(),
     borderRadius: cornerRadius.borderRadius.sm,
-    border: effectiveState === 'active' ? `1px solid ${colors.border.menuItem}` : 'none',
+    border: effectiveState === 'active' ? `1px solid ${colors.border.highlight}` : 'none',
     outline: 'none',
     boxShadow: effectiveState === 'active' ? shadows.regular.card : 'none',
     

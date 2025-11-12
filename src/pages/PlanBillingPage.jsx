@@ -13,10 +13,10 @@ import ProgressBar from '../design-system/components/ProgressBar.jsx';
 
 // Icons
 import { 
-  Settings,
+  Gear as Settings,
   CreditCard,
   Check
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 
 /**
  * PlanBillingPage component - Displays current plan, credits, and pricing options

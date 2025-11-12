@@ -7,7 +7,7 @@ import { getShadow } from '@/design-system/tokens/shadows';
 import { textStyles } from '@/design-system/styles/typography/typography-styles';
 import Button from '@/design-system/components/Button';
 import Input from '@/design-system/components/Input';
-import { Send, X } from 'lucide-react';
+import { PaperPlaneTilt as Send, X } from '@phosphor-icons/react';
 
 /**
  * InlinePromptInput - Inline input for AI editing instructions

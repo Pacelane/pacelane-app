@@ -69,8 +69,8 @@ import { useTheme, ThemeProvider } from '@/services/theme-context';
 // Import text styles
 import { textStyles } from '@/design-system/styles/typography/typography-styles';
 
-// Import Lucide icons
-import { IconName } from 'lucide-react';
+// Import Phosphor icons
+import { IconName } from '@phosphor-icons/react';
 ```
 
 ### Color System
@@ -121,16 +121,21 @@ colors.icon.destructive, colors.icon.success, colors.icon.warning
 
 #### Font Families
 ```javascript
-typography.fontFamily.inter        // ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif']
-typography.fontFamily.fraunces     // ['Fraunces', 'ui-serif', 'Georgia', 'serif'] 
-typography.fontFamily.jetbrains    // ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'monospace']
-typography.fontFamily['awesome-serif'] // ['Awesome Serif VAR', 'ui-serif', 'Georgia', 'serif']
+typography.fontFamily.geist               // ['Geist', 'ui-sans-serif', 'system-ui', 'sans-serif']
+typography.fontFamily['instrument-serif'] // ['Instrument Serif', 'ui-serif', 'Georgia', 'serif']
+typography.fontFamily['geist-mono']       // ['Geist Mono', 'ui-monospace', 'SFMono-Regular', 'monospace']
+
+// Legacy aliases (maintained for backwards compatibility)
+typography.fontFamily.inter               // Points to Geist
+typography.fontFamily.fraunces            // Points to Instrument Serif
+typography.fontFamily.jetbrains           // Points to Geist Mono
+typography.fontFamily['awesome-serif']    // Points to Instrument Serif
 
 // Semantic assignments
-typography.fontFamily.headline     // Inter
-typography.fontFamily.body         // Inter  
-typography.fontFamily.quote        // Fraunces
-typography.fontFamily.code         // JetBrains Mono
+typography.fontFamily.headline     // Geist
+typography.fontFamily.body         // Geist  
+typography.fontFamily.quote        // Instrument Serif
+typography.fontFamily.code         // Geist Mono
 ```
 
 #### Text Sizes (Desktop/Mobile)
@@ -311,50 +316,89 @@ stroke['2xl']             // 4px
 
 ## Icons System
 
-### Lucide React Icons
-Always use Lucide React icons for consistent iconography across the design system. **NEVER create custom SVG icons** - use Lucide instead.
+### Phosphor React Icons
+Always use Phosphor React icons for consistent iconography across the design system. **NEVER create custom SVG icons** - use Phosphor instead.
 
 #### Import and Usage
 ```javascript
-// Import specific icons from lucide-react
+// Import specific icons from @phosphor-icons/react
 import { 
-  MoreHorizontal,    // Three dots menu
+  DotsThree,         // Three dots menu (formerly MoreHorizontal)
   Plus,              // Add/create actions
   X,                 // Close/cancel actions
   Check,             // Confirm/success actions
-  ChevronDown,       // Dropdown indicators
-  ChevronUp,         // Collapse indicators  
-  ChevronLeft,       // Navigation back
-  ChevronRight,      // Navigation forward
-  Search,            // Search functionality
-  Settings,          // Settings/options
+  CaretDown,         // Dropdown indicators (formerly ChevronDown)
+  CaretUp,           // Collapse indicators (formerly ChevronUp)
+  CaretLeft,         // Navigation back (formerly ChevronLeft)
+  CaretRight,        // Navigation forward (formerly ChevronRight)
+  MagnifyingGlass,   // Search functionality (formerly Search)
+  Gear,              // Settings/options (formerly Settings)
   User,              // User profile
   Bell,              // Notifications
-  Mail,              // Email/messaging
+  Envelope,          // Email/messaging (formerly Mail)
   Calendar,          // Date/time
   File,              // Documents
   Folder,            // Directories
   Download,          // Download actions
   Upload,            // Upload actions
-  Edit,              // Edit actions
-  Trash2,            // Delete actions (preferred over Trash)
+  PencilSimple,      // Edit actions (formerly Edit2)
+  Trash,             // Delete actions
   Eye,               // View/show actions
-  EyeOff,            // Hide actions
+  EyeSlash,          // Hide actions (formerly EyeOff)
   Copy,              // Copy actions
-  ExternalLink,      // External navigation
+  ArrowSquareOut,    // External navigation (formerly ExternalLink)
   Info,              // Information
-  AlertCircle,       // Warning states
+  WarningCircle,     // Warning states (formerly AlertCircle)
   CheckCircle,       // Success states
   XCircle,           // Error states
   Heart,             // Like/favorite
   Star,              // Rating/bookmark
   Share,             // Share actions
-  Filter,            // Filter functionality
-  SortAsc,           // Sort ascending
-  SortDesc,          // Sort descending
-  Menu,              // Menu toggle
-  Home               // Home navigation
-} from 'lucide-react';
+  Funnel,            // Filter functionality (formerly Filter)
+  SortAscending,     // Sort ascending (formerly SortAsc)
+  SortDescending,    // Sort descending (formerly SortDesc)
+  List,              // Menu toggle (formerly Menu)
+  House,             // Home navigation (formerly Home)
+  LinkedinLogo,      // LinkedIn branding
+  GoogleLogo,        // Google branding
+  Sparkle,           // Highlights (formerly Sparkles)
+  ArrowLeft,         // Back navigation
+  ArrowRight,        // Forward navigation
+  FloppyDisk,        // Save action (formerly Save)
+  Graph,             // Network/graph view (formerly Network)
+  ChatCircle,        // Chat/messaging (formerly MessageCircle)
+  ChatSquare,        // Message boxes (formerly MessageSquare)
+  VideoCamera,       // Video content (formerly Video)
+  CircleNotch,       // Loading spinner (formerly Loader2)
+  ArrowsClockwise,   // Refresh/reload (formerly RefreshCw)
+  Link,              // Link/connection
+  LinkBreak,         // Unlink/disconnect (formerly Unlink)
+  ArrowsOut,         // Maximize (formerly Maximize2)
+  ArrowsIn,          // Minimize (formerly Minimize2)
+  FileText,          // Text documents
+  Image,             // Image files
+  MusicNotes,        // Audio files (formerly Music)
+  Buildings,         // Building/organization (formerly Building)
+  Globe,             // Global/world
+  Medal,             // Awards/achievements (formerly Award)
+  Phone,             // Phone/call
+  MapPin,            // Location marker
+  TrendingUp,        // Upward trend
+  Clock,             // Time
+  Target,            // Goals/targets
+  PaperPlaneTilt,    // Send action (formerly Send)
+  Play,              // Play media
+  Pause,             // Pause media
+  Monitor,           // Display/screen
+  Sun,               // Light mode
+  Moon,              // Dark mode
+  Question,          // Help/info (formerly HelpCircle)
+  Minus,             // Minus/subtract
+  BookOpen,          // Books/documentation
+  Plug,              // Integrations/plugins
+  Gauge,             // Dashboard/metrics
+  CreditCard         // Payment/billing
+} from '@phosphor-icons/react';
 
 // Usage in components
 <Button 
@@ -365,15 +409,22 @@ import {
 // For Button component, icons automatically inherit color
 <Button 
   variant="iconOnly"
-  leadIcon={<MoreHorizontal size={12} />}
+  leadIcon={<DotsThree size={12} />}
   onClick={handleMenuToggle}
 />
 
 // For standalone icons, use theme colors
 const { colors } = useTheme();
-<Search 
+<MagnifyingGlass 
   size={20} 
   color={colors.icon.default}
+/>
+
+// Icons support weight variants (thin, light, regular, bold, fill, duotone)
+<Heart 
+  size={24} 
+  weight="fill"
+  color={colors.icon.destructive}
 />
 ```
 
@@ -384,6 +435,15 @@ const { colors } = useTheme();
   - Medium: 20px (default for most interfaces)  
   - Large: 24px (for headers and emphasis)
   - Extra Large: 32px+ (for empty states and illustrations)
+
+#### Icon Weight Guidelines
+Phosphor icons support multiple weights for different visual emphasis:
+- **thin** - Lightest weight, delicate appearance
+- **light** - Lighter weight, subtle
+- **regular** - Default weight (default if not specified)
+- **bold** - Heavier weight, more emphasis
+- **fill** - Filled/solid version of icon
+- **duotone** - Two-tone version with accent color
 
 #### Icon Color Guidelines
 - **In Button components**: Icons automatically inherit the correct color - use `<IconName size={x} />`
@@ -400,7 +460,7 @@ const { colors } = useTheme();
 ```javascript
 // Dropdown trigger
 <Button 
-  leadIcon={<ChevronDown size={12} />}
+  leadIcon={<CaretDown size={12} />}
   label="Options"
 />
 
@@ -414,7 +474,7 @@ const { colors } = useTheme();
 
 // Search input
 <Input 
-  leadIcon={<Search size={16} />}
+  leadIcon={<MagnifyingGlass size={16} />}
   placeholder="Search..."
 />
 
@@ -422,15 +482,21 @@ const { colors } = useTheme();
 <Button 
   variant="iconOnly" 
   style="secondary"
-  leadIcon={<MoreHorizontal size={12} />}
+  leadIcon={<DotsThree size={12} />}
   onClick={toggleMenu}
 />
 
 // Delete action  
 <Button 
   style="destructive"
-  leadIcon={<Trash2 size={16} />}
+  leadIcon={<Trash size={16} />}
   label="Delete"
+/>
+
+// Icon with custom weight
+<Button 
+  leadIcon={<Heart size={16} weight="fill" />}
+  label="Favorite"
 />
 ```
 
@@ -565,7 +631,7 @@ The Button component provides 7 complete styles for different use cases:
 1. **Use `@/` alias for ALL imports** - never use `src/` prefix or relative paths
 2. **Omit file extensions** in imports - let the bundler resolve .js, .jsx, .ts, .tsx automatically
 3. **Use the Button component** for ALL button needs - never create custom buttons or use HTML `<button>` elements
-4. **Use Lucide React icons** for ALL icon needs - never create custom SVG icons
+4. **Use Phosphor React icons** for ALL icon needs - never create custom SVG icons
 5. **Import and use existing design tokens** instead of hardcoding values
 6. **Use semantic colors** (`colors.text.default`, `colors.bg.card.default`) for theme compatibility
 7. **Use the `useTheme()` hook** for theme-aware components
@@ -582,7 +648,7 @@ The Button component provides 7 complete styles for different use cases:
 2. **Use relative paths** (`../`, `../../`) in imports - always use `@/` alias
 3. **Include file extensions** (.js, .jsx, .ts, .tsx) in imports - omit them
 4. **Create custom buttons or use HTML `<button>` elements** - always use the Button component
-5. **Create custom SVG icons** - always use Lucide React icons instead
+5. **Create custom SVG icons** - always use Phosphor React icons instead
 6. **Hardcode colors, fonts, spacing, or shadow values** - always use tokens
 7. **Create new design tokens** - use existing ones or ask for clarification
 8. **Use CSS color names or hex values directly** - use the color system
@@ -699,13 +765,13 @@ const CustomIcon = () => (
 );
 ```
 
-✅ **DO** (Lucide Icons):
+✅ **DO** (Phosphor Icons):
 ```jsx
-import { MoreHorizontal } from 'lucide-react';
+import { DotsThree } from '@phosphor-icons/react';
 
 <Button 
   variant="iconOnly"
-  leadIcon={<MoreHorizontal size={12} />}
+  leadIcon={<DotsThree size={12} />}
   onClick={handleMenuToggle}
 />
 ```
@@ -714,7 +780,7 @@ import { MoreHorizontal } from 'lucide-react';
 - [ ] Uses `@/` alias for ALL imports (never `src/` prefix or relative paths)
 - [ ] Omits file extensions in imports (.js, .jsx, .ts, .tsx)
 - [ ] Uses the Button component for ANY button needs (never create custom buttons)
-- [ ] Uses Lucide React icons for ANY icon needs (never create custom SVG icons)
+- [ ] Uses Phosphor React icons for ANY icon needs (never create custom SVG icons)
 - [ ] Uses semantic colors for theme compatibility
 - [ ] Imports design tokens from the design system
 - [ ] Uses `useTheme()` hook if theme-aware
@@ -968,9 +1034,9 @@ import { spacing } from '@/design-system/tokens/spacing';
 const MyPage = () => {
   const { colors } = useTheme();
 
-  // Title style - ALWAYS use Awesome Serif font with 4xl size and semibold weight
+  // Title style - ALWAYS use Instrument Serif font with 4xl size and semibold weight
   const titleStyle = {
-    fontFamily: typography.fontFamily['awesome-serif'],
+    fontFamily: typography.fontFamily['instrument-serif'],
     fontSize: typography.desktop.size['4xl'],
     fontWeight: typography.desktop.weight.semibold,
     lineHeight: typography.desktop.lineHeight.leading7,
@@ -1006,7 +1072,7 @@ const MyPage = () => {
 ### Page Title Requirements
 
 #### Title Specifications
-- **Font**: MUST use `typography.fontFamily['awesome-serif']` (Awesome Serif Variable font)
+- **Font**: MUST use `typography.fontFamily['instrument-serif']` (Instrument Serif font)
 - **Size**: MUST use `typography.desktop.size['4xl']` (36px)
 - **Weight**: MUST use `typography.desktop.weight.semibold` (600)
 - **Line Height**: MUST use `typography.desktop.lineHeight.leading7`
@@ -1084,7 +1150,7 @@ const MyPage = () => {
 ### Page Header Checklist
 When creating any new page, ensure:
 
-- [ ] Title uses Awesome Serif font (`typography.fontFamily['awesome-serif']`)
+- [ ] Title uses Instrument Serif font (`typography.fontFamily['instrument-serif']`)
 - [ ] Title uses 4xl size and semibold weight from typography tokens
 - [ ] Title uses `colors.text.default` from theme context
 - [ ] Subtitle uses `textStyles.sm.medium` style

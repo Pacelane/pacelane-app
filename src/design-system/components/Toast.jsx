@@ -5,8 +5,7 @@ import { spacing } from '../tokens/spacing.js';
 import { cornerRadius } from '../tokens/corner-radius.js';
 import { getShadow } from '../tokens/shadows.js';
 import { textStyles } from '../styles/typography/typography-styles.js';
-import { CheckCircle, XCircle, AlertCircle, Info, X } from 'lucide-react';
-import Bichaurinho from './Bichaurinho.jsx';
+import { CheckCircle, XCircle, WarningCircle as AlertCircle, Info, X, CircleNotch as Loader2 } from '@phosphor-icons/react';
 
 // Toast Context
 const ToastContext = createContext();
@@ -189,12 +188,12 @@ const ToastItem = ({ toast }) => {
           <motion.div
             animate={{ rotate: 360 }}
             transition={{
-              duration: 2,
+              duration: 1,
               repeat: Infinity,
               ease: "linear"
             }}
           >
-            <Bichaurinho variant={16} size={20} />
+            <Loader2 {...iconProps} color={colors.icon.default} />
           </motion.div>
         );
       default:

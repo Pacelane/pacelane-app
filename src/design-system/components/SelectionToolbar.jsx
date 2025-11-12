@@ -6,12 +6,12 @@ import { stroke } from '@/design-system/tokens/stroke';
 import { getShadow } from '@/design-system/tokens/shadows';
 import Button from '@/design-system/components/Button';
 import { 
-  Maximize2,      // Expand
-  Minimize2,      // Shorten
+  ArrowsOut as Maximize2,      // Expand
+  ArrowsIn as Minimize2,      // Shorten
   FileText,       // Insert Paragraph
-  PenLine,        // Continue Writing
-  Sparkles        // Improve Writing
-} from 'lucide-react';
+  PenNib as PenLine,        // Continue Writing
+  Sparkle as Sparkles        // Improve Writing
+} from '@phosphor-icons/react';
 
 /**
  * SelectionToolbar - Floating toolbar that appears when text is selected

@@ -6,7 +6,7 @@ import { stroke } from '../tokens/stroke.js';
 import { textStyles } from '../styles/typography/typography-styles.js';
 import Button from './Button.jsx';
 import InlineEditInput from './InlineEditInput.jsx';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, FloppyDisk as Save } from '@phosphor-icons/react';
 
 /**
  * EditorNav component - Navigation bar for editor interfaces

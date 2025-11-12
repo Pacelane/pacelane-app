@@ -5,7 +5,7 @@ import { cornerRadius } from '@/design-system/tokens/corner-radius';
 import { typography } from '@/design-system/tokens/typography';
 import { textStyles } from '@/design-system/styles/typography/typography-styles';
 import Button from '@/design-system/components/Button';
-import { Save, Eye, Network } from 'lucide-react';
+import { FloppyDisk as Save, Eye, Graph as Network } from '@phosphor-icons/react';
 import type { KnowledgePage } from '@/types/knowledgeGraph';
 
 interface PageEditorProps {

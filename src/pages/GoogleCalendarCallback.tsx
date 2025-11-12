@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { CalendarService } from '../services/calendarService';
 import Card, { CardHeader, CardTitle, CardDescription, CardContent } from '../design-system/components/Card.jsx';
-import { CheckCircle, XCircle, RefreshCw } from 'lucide-react';
+import { CheckCircle, XCircle, ArrowsClockwise as RefreshCw } from '@phosphor-icons/react';
 
 export const GoogleCalendarCallback: React.FC = () => {
   const [searchParams] = useSearchParams();

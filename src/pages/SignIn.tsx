@@ -16,17 +16,16 @@ import { colors as primitiveColors } from '@/design-system/tokens/primitive-colo
 import { shadows, getShadow } from '@/design-system/tokens/shadows';
 import { getResponsivePadding, getResponsiveWidth } from '@/design-system/utils/responsive';
 import Logo from '@/design-system/components/Logo';
-import Bichaurinho from '@/design-system/components/Bichaurinho';
-import SpinningBichaurinho from '@/design-system/components/SpinningBichaurinho';
+import LoadingSpinner from '@/design-system/components/LoadingSpinner';
 import Input from '@/design-system/components/Input';
 import Button from '@/design-system/components/Button';
 import Divider from '@/design-system/components/Divider';
 
 // Icons
-import { FcGoogle } from 'react-icons/fc';
+import { GoogleLogo } from '@phosphor-icons/react';
 
 // Assets
-import signinBichaurinho from '@/assets/images/signin-bichaurinho.svg';
+import signinImage from '@/assets/images/signin-image.png';
 
 const SignIn = () => {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -289,7 +288,7 @@ const SignIn = () => {
     display: 'flex',
     flexDirection: isMobile ? 'column' : 'row',
     position: 'relative',
-    backgroundColor: colors.bg.default,
+    backgroundColor: colors.bg.muted,
   };
 
   // Main column styles - responsive width and padding
@@ -364,7 +363,10 @@ const SignIn = () => {
   const rightContainerStyles = {
     width: '100%',
     height: '100%',
-    backgroundColor: primitiveColors.cyan[100], // D5EFF6 equivalent
+    backgroundImage: `url(${signinImage})`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat',
     borderRadius: cornerRadius.borderRadius['3xl'],
     position: 'relative' as const,
     overflow: 'hidden' as const,
@@ -378,17 +380,17 @@ const SignIn = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: colors.bg.default,
+        backgroundColor: colors.bg.muted,
         flexDirection: 'column',
-        gap: spacing.spacing[24]
+        gap: spacing.spacing[16]
       }}>
-        <SpinningBichaurinho title="Signing you in..." />
+        <LoadingSpinner size={48} color={colors.icon.default} />
         <p style={{
-          ...textStyles.md.normal,
-          color: colors.text.muted,
+          ...textStyles.md.medium,
+          color: colors.text.subtle,
           margin: 0
         }}>
-          Please wait while we load your profile...
+          Signing you in...
         </p>
       </div>
     );
@@ -411,7 +413,7 @@ const SignIn = () => {
                 <h1 style={{
                   ...textStyles['2xl'].semibold,
                   color: colors.text.default,
-                  fontFamily: 'Awesome Serif VAR, ui-serif, Georgia, serif',
+                  fontFamily: typography.fontFamily['instrument-serif'].join(', '),
                   margin: 0
                 }}>
                   {showEmailForm ? (isSignUp ? 'Sign Up with Email' : 'Sign In with Email') : (isSignUp ? 'Sign Up' : 'Sign In')}
@@ -441,7 +443,7 @@ const SignIn = () => {
                         label={`${isSignUp ? 'Sign Up' : 'Sign In'} with Google`}
                         style="secondary"
                         size="lg"
-                        leadIcon={<FcGoogle size={18} />}
+                        leadIcon={<GoogleLogo size={18} weight="bold" />}
                         onClick={handleGoogleSignIn}
                         className="w-full"
                       />
@@ -652,21 +654,7 @@ const SignIn = () => {
       {/* Right Column - Only show on desktop */}
       {!isMobile && (
         <div style={rightColumnStyles}>
-          <div style={rightContainerStyles}>
-            {/* Sign In Bichaurinho - positioned bottom right */}
-            <img
-              src={signinBichaurinho}
-              alt="Sign in illustration"
-              style={{
-                position: 'absolute',
-                bottom: '-150px', // Partially outside container
-                right: '-100px', // Partially outside container
-                width: '800px',
-                height: '800px',
-                objectFit: 'contain',
-              }}
-            />
-          </div>
+          <div style={rightContainerStyles} />
         </div>
       )}
     </div>

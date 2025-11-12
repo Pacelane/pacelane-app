@@ -9,7 +9,6 @@ import TopNav from '@/design-system/components/TopNav';
 import Button from '@/design-system/components/Button';
 import ProgressBar from '@/design-system/components/ProgressBar';
 import OnboardingProgressIndicator from '@/design-system/components/OnboardingProgressIndicator';
-import Bichaurinho from '@/design-system/components/Bichaurinho';
 
 // Design System Tokens
 import { spacing } from '@/design-system/tokens/spacing';
@@ -19,7 +18,7 @@ import { typography } from '@/design-system/tokens/typography';
 import { textStyles } from '@/design-system/styles/typography/typography-styles';
 
 // Icons
-import { ArrowLeft, ArrowRight, MessageSquare, CheckCircle, Info } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ChatSquare as MessageSquare, CheckCircle, Info } from '@phosphor-icons/react';
 
 // Configuration
 const PACELANE_WHATSAPP_NUMBER = '551152360591'; // Business WhatsApp number
@@ -65,7 +64,7 @@ const WhatsAppSetup = () => {
         style={{
           flex: 1,
           position: 'relative',
-          backgroundColor: colors.bg.default,
+          backgroundColor: colors.bg.muted,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -73,27 +72,9 @@ const WhatsAppSetup = () => {
           paddingBottom: isMobile ? '140px' : '160px', // Account for button container height
         }}
       >
-        {/* Gradient background with 5% opacity */}
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundImage: 'url(/src/assets/images/gradient-bg.svg)',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-            opacity: 0.05,
-            zIndex: 0,
-          }}
-        />
-
         {/* Content Column */}
         <div style={{
           position: 'relative',
-          zIndex: 1,
           display: 'flex',
           flexDirection: 'column',
           gap: spacing.spacing[24],
@@ -157,11 +138,6 @@ const WhatsAppSetup = () => {
                   marginBottom: spacing.spacing[32],
                 }}
               >
-                {/* Bichaurinho */}
-                <div>
-                  <Bichaurinho variant={4} size={48} />
-                </div>
-
                 {/* Title and Subtitle Container - 12px gap between title and subtitle */}
                 <div
                   style={{

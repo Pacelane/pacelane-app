@@ -8,14 +8,14 @@ import {
   Calendar, 
   CheckCircle, 
   Clock, 
-  MessageSquare, 
+  ChatSquare as MessageSquare, 
   TrendingUp, 
   Users, 
-  VideoIcon,
-  AlertCircle,
+  VideoCamera as VideoIcon,
+  WarningCircle as AlertCircle,
   FileText,
   Target
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import { ReadAIService, ReadAIMeeting, ReadAIActionItem, MeetingInsights } from '../services/readAiService';
 import { useToast } from '../design-system/components/Toast.jsx';
 import { format } from 'date-fns';

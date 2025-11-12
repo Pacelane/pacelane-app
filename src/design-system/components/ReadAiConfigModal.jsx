@@ -10,7 +10,7 @@ import Modal from '@/design-system/components/Modal';
 import Button from '@/design-system/components/Button';
 
 // Icons
-import { Copy, Check, ExternalLink, Video } from 'lucide-react';
+import { Copy, Check, ArrowSquareOut as ExternalLink, VideoCamera as Video } from '@phosphor-icons/react';
 
 // Integration setup images
 import integrationsPageImage from '@/assets/images/integrations-page.png';

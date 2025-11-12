@@ -19,7 +19,6 @@ import SuggestionCard from '@/design-system/components/SuggestionCard';
 import ProgressBar from '@/design-system/components/ProgressBar';
 import WhatsAppConfigModal from '@/design-system/components/WhatsAppConfigModal';
 import ReadAiConfigModal from '@/design-system/components/ReadAiConfigModal';
-import Bichaurinho from '@/design-system/components/Bichaurinho';
 import SubtleLoadingSpinner from '@/design-system/components/SubtleLoadingSpinner';
 
 // Design System Tokens
@@ -30,7 +29,7 @@ import { cornerRadius } from '@/design-system/tokens/corner-radius';
 import { getShadow } from '@/design-system/tokens/shadows';
 
 // Icons
-import { Sparkles, Calendar, MessageCircle, Video, ArrowRight, Target, Settings, Users } from 'lucide-react';
+import { Sparkle as Sparkles, Calendar, ChatCircle as MessageCircle, VideoCamera as Video, ArrowRight, Target, Gear as Settings, Users } from '@phosphor-icons/react';
 
 /**
  * FirstTimeUserHome - Special home page experience for new users
@@ -226,7 +225,6 @@ const FirstTimeUserHome = () => {
       {/* Welcome Section with Progress */}
       <div style={welcomeSectionStyles}>
         <div style={{ display: 'flex', alignItems: 'center', gap: spacing.spacing[20] }}>
-          <Bichaurinho variant={15} size={64} />
           <div style={{ flex: 1 }}>
             <h2 style={{
               ...textStyles.xl.semibold,

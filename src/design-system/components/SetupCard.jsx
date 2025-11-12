@@ -8,10 +8,9 @@ import { getShadow } from '@/design-system/tokens/shadows';
 
 // Design System Components
 import Button from '@/design-system/components/Button';
-import Bichaurinho from '@/design-system/components/Bichaurinho';
 
 // Icons
-import { ArrowRight, Check, ExternalLink } from 'lucide-react';
+import { ArrowRight, Check, ArrowSquareOut as ExternalLink } from '@phosphor-icons/react';
 
 /**
  * SetupCard - Card component for showing setup steps for first-time users
@@ -154,11 +153,6 @@ const SetupCard = ({
 
       {/* Header */}
       <div style={headerStyles}>
-        {/* Bichaurinho */}
-        <div style={{ flexShrink: 0 }}>
-          <Bichaurinho variant={bichaurinhoVariant} size={48} />
-        </div>
-
         {/* Content */}
         <div style={contentStyles}>
           <h3 style={titleStyle}>{title}</h3>

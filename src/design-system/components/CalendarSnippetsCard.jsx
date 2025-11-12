@@ -7,7 +7,7 @@ import { textStyles } from '@/design-system/styles/typography/typography-styles'
 import { typography } from '@/design-system/tokens/typography';
 import Button from '@/design-system/components/Button';
 import InlineTip from '@/design-system/components/InlineTip';
-import { Clock, Users, ChevronRight, ChevronLeft, Sparkles } from 'lucide-react';
+import { Clock, Users, CaretRight as ChevronRight, CaretLeft as ChevronLeft, Sparkle as Sparkles } from '@phosphor-icons/react';
 import googleCalendarLogo from '@/assets/images/google-calendar-logo.png';
 import readaiLogo from '@/assets/images/readai-logo.webp';
 
@@ -63,7 +63,7 @@ const CalendarSnippetsCard = ({
 
   const titleStyle = {
     ...textStyles['2xl'].semibold,
-    fontFamily: 'Awesome Serif VAR',
+    fontFamily: typography.fontFamily['instrument-serif'].join(', '),
     color: colors.text.default,
     margin: 0
   };

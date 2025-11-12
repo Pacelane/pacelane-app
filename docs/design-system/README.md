@@ -112,16 +112,21 @@ import { typography } from '@/design-system/tokens/typography';
 import { textStyles } from '@/design-system/styles/typography/typography-styles';
 
 // Font families
-typography.fontFamily.inter           // ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif']
-typography.fontFamily.fraunces        // ['Fraunces', 'ui-serif', 'Georgia', 'serif']
-typography.fontFamily.jetbrains       // ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'monospace']
-typography.fontFamily['awesome-serif'] // ['Awesome Serif VAR', 'ui-serif', 'Georgia', 'serif']
+typography.fontFamily.geist               // ['Geist', 'ui-sans-serif', 'system-ui', 'sans-serif']
+typography.fontFamily['instrument-serif'] // ['Instrument Serif', 'ui-serif', 'Georgia', 'serif']
+typography.fontFamily['geist-mono']       // ['Geist Mono', 'ui-monospace', 'SFMono-Regular', 'monospace']
+
+// Legacy aliases (maintained for backwards compatibility)
+typography.fontFamily.inter               // Points to Geist
+typography.fontFamily.fraunces            // Points to Instrument Serif
+typography.fontFamily.jetbrains           // Points to Geist Mono
+typography.fontFamily['awesome-serif']    // Points to Instrument Serif
 
 // Semantic assignments
-typography.fontFamily.headline        // Inter (default)
-typography.fontFamily.body            // Inter (default)
-typography.fontFamily.quote           // Fraunces
-typography.fontFamily.code            // JetBrains Mono
+typography.fontFamily.headline        // Geist (default)
+typography.fontFamily.body            // Geist (default)
+typography.fontFamily.quote           // Instrument Serif
+typography.fontFamily.code            // Geist Mono
 
 // Desktop sizes
 typography.desktop.size.xs            // 12px
@@ -151,8 +156,8 @@ typography.desktop.weight.black       // 900
 textStyles.md.semibold               // 16px, 600 weight, proper line height
 textStyles.xl.bold                   // 20px, 700 weight, proper line height
 textStyles['2xl'].normal             // 24px, 400 weight, proper line height
-textStyles.quote.normal              // Fraunces font for quotes
-textStyles.code.normal               // JetBrains Mono for code
+textStyles.quote.normal              // Instrument Serif font for quotes
+textStyles.code.normal               // Geist Mono for code
 ```
 
 #### 4. Spacing

@@ -5,7 +5,7 @@ import { cornerRadius } from '@/design-system/tokens/corner-radius';
 import { textStyles } from '@/design-system/styles/typography/typography-styles';
 import { stroke } from '@/design-system/tokens/stroke';
 import Button from '@/design-system/components/Button';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { CaretLeft as ChevronLeft, CaretRight as ChevronRight } from '@phosphor-icons/react';
 
 const Pagination = ({
   // Core props

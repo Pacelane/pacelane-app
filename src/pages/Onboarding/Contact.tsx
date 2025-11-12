@@ -12,7 +12,6 @@ import Button from '@/design-system/components/Button';
 import PhoneInput from '@/design-system/components/PhoneInput';
 import ProgressBar from '@/design-system/components/ProgressBar';
 import OnboardingProgressIndicator from '@/design-system/components/OnboardingProgressIndicator';
-import Bichaurinho from '@/design-system/components/Bichaurinho';
 
 // Design System Tokens
 import { spacing } from '@/design-system/tokens/spacing';
@@ -22,7 +21,7 @@ import { typography } from '@/design-system/tokens/typography';
 import { textStyles } from '@/design-system/styles/typography/typography-styles';
 
 // Icons
-import { ArrowLeft, ArrowRight, Phone, MessageSquare, Info } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Phone, ChatSquare as MessageSquare, Info } from '@phosphor-icons/react';
 
 
 
@@ -87,7 +86,7 @@ const Contact = () => {
         style={{
           flex: 1,
           position: 'relative',
-          backgroundColor: colors.bg.default,
+          backgroundColor: colors.bg.muted,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -95,27 +94,9 @@ const Contact = () => {
           paddingBottom: isMobile ? '140px' : '160px', // Account for button container height
         }}
       >
-        {/* Gradient background with 5% opacity */}
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundImage: 'url(/src/assets/images/gradient-bg.svg)',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-            opacity: 0.05,
-            zIndex: 0,
-          }}
-        />
-
         {/* Content Column */}
         <div style={{
           position: 'relative',
-          zIndex: 1,
           display: 'flex',
           flexDirection: 'column',
           gap: spacing.spacing[24],
@@ -179,11 +160,6 @@ const Contact = () => {
                   marginBottom: spacing.spacing[32],
                 }}
               >
-                {/* Bichaurinho */}
-                <div>
-                  <Bichaurinho variant={3} size={48} />
-                </div>
-
                 {/* Title and Subtitle Container - 12px gap between title and subtitle */}
                 <div
                   style={{

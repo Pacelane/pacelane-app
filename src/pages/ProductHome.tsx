@@ -5,7 +5,6 @@ import { useContent } from '../hooks/api/useContent';
 import { useAnalytics } from '../hooks/api/useAnalytics';
 import { useTheme } from '../services/theme-context';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { templateData } from '@/data/templateData';
 import { supabase } from '../integrations/supabase/client';
 
 // First-time user utilities
@@ -17,7 +16,6 @@ import StreakCard from '@/design-system/components/StreakCard';
 import StatsSummaryCard from '@/design-system/components/StatsSummaryCard';
 import SuggestionCard from '@/design-system/components/SuggestionCard';
 import CalendarSnippetsCard from '@/design-system/components/CalendarSnippetsCard';
-import TemplateCard from '@/design-system/components/TemplateCard';
 import ContentCard from '@/design-system/components/ContentCard';
 import Input from '@/design-system/components/Input';
 import Button from '@/design-system/components/Button';
@@ -34,7 +32,7 @@ import { cornerRadius } from '../design-system/tokens/corner-radius';
 import { shadows, getShadow } from '../design-system/tokens/shadows';
 
 // Icons
-import { ChevronRight, Search } from 'lucide-react';
+import { CaretRight as ChevronRight, MagnifyingGlass as Search } from '@phosphor-icons/react';
 
 // Additional Components
 import { CalendarService } from '@/services/calendarService';
@@ -53,7 +51,6 @@ const ProductHome = () => {
   // Check if user is a first-time user
   const isNewUser = isFirstTimeUser(profile, savedDrafts, contentSuggestions, knowledgeFiles);
   // Sidebar handled by MainAppChrome layout
-  const [templates] = useState(templateData.slice(0, 2)); // Show first 2 templates
   const [generationProgress, setGenerationProgress] = useState<{
     isGenerating: boolean;
     currentStep: string;
@@ -316,8 +313,6 @@ const ProductHome = () => {
     draft.content.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Templates are not filtered by search - always show all templates
-
   // Navigation handled by MainAppChrome sidebar
 
   const handleCreateNewClick = async () => {
@@ -338,14 +333,6 @@ const ProductHome = () => {
 
   const handleHelpClick = () => {
     console.log('Help clicked');
-  };
-
-  const handleTemplateClick = async (templateId: string) => {
-    // Track activity when user selects a template
-    if (trackActivity) {
-      await trackActivity('content_creation');
-    }
-    navigate('/content-editor', { state: { templateId } });
   };
 
   const handleContentClick = (draftId: string) => {

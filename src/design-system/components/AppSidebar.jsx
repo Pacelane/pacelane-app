@@ -11,7 +11,7 @@ import Button from './Button.jsx';
 import SidebarMenuItem from './SidebarMenuItem.jsx';
 
 // Icons
-import { Plus, HelpCircle } from 'lucide-react';
+import { Plus, Question as HelpCircle } from '@phosphor-icons/react';
 
 const AppSidebar = ({
   userName,

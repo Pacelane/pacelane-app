@@ -31,7 +31,7 @@ import { cornerRadius } from '@/design-system/tokens/corner-radius';
 import { getShadow } from '@/design-system/tokens/shadows';
 
 // Icons
-import { Search, FileText, Calendar, MoreHorizontal } from 'lucide-react';
+import { MagnifyingGlass as Search, FileText, Calendar, DotsThree as MoreHorizontal } from '@phosphor-icons/react';
 
 // Avatar utilities
 import { getUserAvatarUrl } from '@/utils/avatarUtils';

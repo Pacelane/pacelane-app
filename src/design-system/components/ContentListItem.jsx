@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MoreHorizontal, FileText } from 'lucide-react';
+import { DotsThree as MoreHorizontal, FileText } from '@phosphor-icons/react';
 import { useTheme } from '../../services/theme-context.jsx';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { spacing } from '../tokens/spacing.js';

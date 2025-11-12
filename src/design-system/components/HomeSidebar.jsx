@@ -18,11 +18,11 @@ import DropdownMenu from './DropdownMenu.jsx';
 
 // Icons
 import {
-  ChevronRight,
-  ChevronLeft,
-  ChevronDown,
+  CaretRight as ChevronRight,
+  CaretLeft as ChevronLeft,
+  CaretDown as ChevronDown,
   Plus,
-  Home,
+  House as Home,
   User,
   BookOpen,
   FileText,
@@ -33,11 +33,10 @@ import {
   Sun,
   Moon,
   Monitor,
-  HelpCircle,
-  Settings,
-  LogOut,
-  LayoutTemplate
-} from 'lucide-react';
+  Question as HelpCircle,
+  Gear as Settings,
+  SignOut as LogOut
+} from '@phosphor-icons/react';
 
 /**
  * HomeSidebar component for navigation in the design system app

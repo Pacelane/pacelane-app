@@ -9,7 +9,6 @@ import { useToast } from '@/design-system/components/Toast';
 // Design System Components
 import TopNav from '@/design-system/components/TopNav';
 import Button from '@/design-system/components/Button';
-import Bichaurinho from '@/design-system/components/Bichaurinho';
 import OnboardingProgressIndicator from '@/design-system/components/OnboardingProgressIndicator';
 import AppWorkflowDiagram from '@/design-system/components/AppWorkflowDiagram';
 
@@ -22,7 +21,7 @@ import { textStyles } from '@/design-system/styles/typography/typography-styles'
 import { colors as primitiveColors } from '@/design-system/tokens/primitive-colors';
 
 // Icons
-import { ArrowLeft, ArrowRight, Sparkles, CheckCircle, Calendar, MessageSquare, TrendingUp, Target } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Sparkle as Sparkles, CheckCircle, Calendar, ChatSquare as MessageSquare, TrendingUp, Target } from '@phosphor-icons/react';
 
 // Confetti piece component
 const ConfettiPiece = ({ delay, duration, left, color }) => {
@@ -269,7 +268,7 @@ const Ready = () => {
         style={{
           flex: 1,
           position: 'relative',
-          backgroundColor: colors.bg.default,
+          backgroundColor: colors.bg.muted,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -277,27 +276,9 @@ const Ready = () => {
           paddingBottom: isMobile ? '140px' : '160px', // Account for button container height
         }}
       >
-        {/* Gradient background with 5% opacity */}
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundImage: 'url(/src/assets/images/gradient-bg.svg)',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-            opacity: 0.05,
-            zIndex: 0,
-          }}
-        />
-
         {/* Content Column */}
         <div style={{
           position: 'relative',
-          zIndex: 1,
           display: 'flex',
           flexDirection: 'column',
           gap: spacing.spacing[24],
@@ -360,11 +341,6 @@ const Ready = () => {
                    gap: spacing.spacing[16],
                  }}
                >
-                {/* Bichaurinho */}
-                <div>
-                  <Bichaurinho variant={1} size={48} />
-                </div>
-
                 {/* Title and Subtitle Container - 12px gap between title and subtitle */}
                 <div
                   style={{

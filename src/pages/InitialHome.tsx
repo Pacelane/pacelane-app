@@ -3,14 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/api/useAuth';
 import { useTheme } from '@/services/theme-context';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { templateData } from '@/data/templateData';
 import { supabase } from '@/integrations/supabase/client';
 import { CalendarService } from '@/services/calendarService';
 import { useToast } from '@/design-system/components/Toast';
 
 // Design System Components
 import IntegrationCard from '@/design-system/components/IntegrationCard';
-import TemplateCard from '@/design-system/components/TemplateCard';
 import KnowledgeBasePromptCard from '@/design-system/components/KnowledgeBasePromptCard';
 import WhatsAppConfigModal from '@/design-system/components/WhatsAppConfigModal';
 import ReadAiConfigModal from '@/design-system/components/ReadAiConfigModal';
@@ -21,7 +19,7 @@ import { textStyles } from '@/design-system/styles/typography/typography-styles'
 import { typography } from '@/design-system/tokens/typography';
 
 // Icons
-import { ChevronRight } from 'lucide-react';
+import { CaretRight as ChevronRight } from '@phosphor-icons/react';
 
 // Integration logo images
 import whatsappLogo from '@/assets/images/whatsapp-logo.png';
@@ -34,9 +32,6 @@ const InitialHome = () => {
   const { colors } = useTheme();
   const isMobile = useIsMobile();
   const { toast } = useToast();
-  
-  // Templates state - use first 3 templates locally
-  const [templates] = useState(templateData.slice(0, 3));
 
   // Integration modal states
   const [whatsappModalOpen, setWhatsappModalOpen] = useState(false);
@@ -148,11 +143,6 @@ const InitialHome = () => {
     } catch (e) {
       toast.error('Failed to start Google Calendar connection');
     }
-  };
-
-  // Navigation handlers
-  const handleTemplateClick = async (templateId: string) => {
-    navigate('/content-editor', { state: { templateId } });
   };
 
   // Knowledge base handlers
@@ -284,58 +274,6 @@ const InitialHome = () => {
         onAddVideos={handleAddVideos}
         onAddUrls={handleAddUrls}
       />
-
-      {/* Templates Section */}
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.spacing[16] }}>
-          <h2 style={{ 
-            ...textStyles.md.semibold, 
-            color: colors.text.subtle
-          }}>
-            Start from templates
-          </h2>
-          <button
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: spacing.spacing[4],
-              background: 'none',
-              border: 'none',
-              color: colors.text.subtle,
-              cursor: 'pointer',
-              fontSize: '14px',
-            }}
-            onClick={() => navigate('/templates')}
-          >
-            see all templates
-            <ChevronRight size={12} />
-          </button>
-        </div>
-
-        {/* Template Cards Row */}
-        <div style={{ 
-          display: 'flex', 
-          flexDirection: isMobile ? 'column' : 'row',
-          gap: spacing.spacing[12] 
-        }}>
-          <TemplateCard 
-            variant="empty"
-            onClick={() => navigate('/content-editor')}
-            style={{ flex: isMobile ? 'none' : 1, width: isMobile ? '100%' : 'auto' }}
-          />
-          {templates.slice(0, 2).map((template, index) => (
-            <TemplateCard 
-              key={template.id}
-              variant="default"
-              title={template.title}
-              description={template.description || ''}
-              bichaurinhoVariant={index + 3}
-              onClick={() => handleTemplateClick(template.id)}
-              style={{ flex: isMobile ? 'none' : 1, width: isMobile ? '100%' : 'auto' }}
-            />
-          ))}
-        </div>
-      </div>
 
       {/* Integration Modals */}
       <WhatsAppConfigModal

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Send, Loader2 } from 'lucide-react';
+import { PaperPlaneTilt as Send, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import { useTheme } from '@/services/theme-context';
 import { useHelp } from '@/services/help-context';
 import { useToast } from './Toast';

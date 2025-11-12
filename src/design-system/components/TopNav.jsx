@@ -6,7 +6,7 @@ import { stroke } from '../tokens/stroke.js';
 import Logo from './Logo.jsx';
 import Button from './Button.jsx';
 import ButtonGroup from './ButtonGroup.jsx';
-import { Sun, Moon, Monitor, HelpCircle } from 'lucide-react';
+import { Sun, Moon, Monitor, Question as HelpCircle } from '@phosphor-icons/react';
 
 /**
  * TopNav component - Primary navigation bar for the application

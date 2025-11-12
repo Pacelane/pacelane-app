@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Check, Minus } from 'lucide-react';
+import { Check, Minus } from '@phosphor-icons/react';
 import { useTheme } from '../../services/theme-context.jsx';
 import { cornerRadius } from '../tokens/corner-radius.js';
 import { getShadow } from '../tokens/shadows.js';

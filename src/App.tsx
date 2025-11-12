@@ -11,7 +11,6 @@ import HelpModal from "./design-system/components/HelpModal";
  
 
 import ProductHome from "./pages/ProductHome";
-import Templates from "./pages/Templates";
 
 import KnowledgeBase from "./pages/KnowledgeBase";
 import SignIn from "./pages/SignIn";
@@ -83,7 +82,6 @@ const App = () => {
             <Route path="/product-home" element={<ProductHome />} />
             {/* Alias for historical navigation */}
             <Route path="/dashboard" element={<ProductHome />} />
-            <Route path="/templates" element={<Templates />} />
             <Route path="/knowledge" element={<KnowledgeBase />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/content-editor" element={<ContentEditor />} />

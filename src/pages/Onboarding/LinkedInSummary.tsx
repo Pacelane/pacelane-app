@@ -10,7 +10,7 @@ import { useToast } from '@/design-system/components/Toast';
 import TopNav from '@/design-system/components/TopNav';
 import Button from '@/design-system/components/Button';
 import OnboardingProgressIndicator from '@/design-system/components/OnboardingProgressIndicator';
-import Bichaurinho from '@/design-system/components/Bichaurinho';
+import LoadingSpinner from '@/design-system/components/LoadingSpinner';
 
 // Design System Tokens
 import { spacing } from '@/design-system/tokens/spacing';
@@ -20,7 +20,7 @@ import { typography } from '@/design-system/tokens/typography';
 import { textStyles } from '@/design-system/styles/typography/typography-styles';
 
 // Icons
-import { ArrowLeft, ArrowRight, User, MapPin, Building, Globe, Calendar, Award } from 'lucide-react';
+import { ArrowLeft, ArrowRight, User, MapPin, Buildings as Building, Globe, Calendar, Medal as Award } from '@phosphor-icons/react';
 
 interface LinkedInProfile {
   name?: string;
@@ -187,9 +187,9 @@ const LinkedInSummary = () => {
           justifyContent: 'center',
         }}
       >
-        <div style={{ textAlign: 'center' }}>
-          <Bichaurinho variant={12} size={64} />
-          <p style={{ ...textStyles.md.normal, color: colors.text.muted, marginTop: spacing.spacing[16] }}>
+        <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: spacing.spacing[16] }}>
+          <LoadingSpinner size={48} color={colors.icon.default} />
+          <p style={{ ...textStyles.md.medium, color: colors.text.subtle, margin: 0 }}>
             Loading your profile...
           </p>
         </div>
@@ -214,7 +214,7 @@ const LinkedInSummary = () => {
         style={{
           flex: 1,
           position: 'relative',
-          backgroundColor: colors.bg.default,
+          backgroundColor: colors.bg.muted,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -222,27 +222,9 @@ const LinkedInSummary = () => {
           paddingBottom: isMobile ? '140px' : '160px', // Account for button container height
         }}
       >
-        {/* Gradient background with 5% opacity */}
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundImage: 'url(/src/assets/images/gradient-bg.svg)',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-            opacity: 0.05,
-            zIndex: 0,
-          }}
-        />
-
         {/* Content Column */}
         <div style={{ 
-          position: 'relative', 
-          zIndex: 1,
+          position: 'relative',
           display: 'flex',
           flexDirection: 'column',
           gap: spacing.spacing[24],
@@ -306,11 +288,6 @@ const LinkedInSummary = () => {
                   marginBottom: spacing.spacing[32],
                 }}
               >
-                {/* Bichaurinho */}
-                <div>
-                  <Bichaurinho variant={13} size={48} />
-                </div>
-
                 {/* Title and Subtitle Container */}
                 <div
                   style={{

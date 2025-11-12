@@ -8,8 +8,7 @@ import { spacing } from "@/design-system/tokens/spacing";
 import { cornerRadius } from "@/design-system/tokens/corner-radius";
 import { getShadow } from "@/design-system/tokens/shadows";
 import Button from "@/design-system/components/Button";
-import Bichaurinho from "@/design-system/components/Bichaurinho";
-import { Home, ArrowLeft } from "lucide-react";
+import { House as Home, ArrowLeft } from "@phosphor-icons/react";
 
 const NotFound = () => {
   const location = useLocation();
@@ -78,12 +77,6 @@ const NotFound = () => {
     gap: spacing.spacing[32],
   };
 
-  const bichaurinhoContainerStyles: React.CSSProperties = {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: spacing.spacing[16],
-  };
 
   const errorCodeStyles: React.CSSProperties = {
     ...textStyles['2xl'].medium,
@@ -103,11 +96,8 @@ const NotFound = () => {
     <div style={containerStyles}>
       <div style={contentStyles}>
         <div style={cardStyles}>
-          {/* Bichaurinho mascot */}
-          <div style={bichaurinhoContainerStyles}>
-            <Bichaurinho variant={1} size={48} />
-            <div style={errorCodeStyles}>404</div>
-          </div>
+          {/* Error code */}
+          <div style={errorCodeStyles}>404</div>
 
           {/* Title and description */}
           <div>
