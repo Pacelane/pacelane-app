@@ -1,10 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { CalendarService } from '../services/calendarService';
-import Card, { CardHeader, CardTitle, CardDescription, CardContent } from '../design-system/components/Card.jsx';
+import { CalendarService } from '@/services/calendarService';
 import { CheckCircle, XCircle, ArrowsClockwise as RefreshCw } from '@phosphor-icons/react';
+import { useTheme } from '@/services/theme-context';
+import { spacing } from '@/design-system/tokens/spacing';
+import { cornerRadius } from '@/design-system/tokens/corner-radius';
+import { typography } from '@/design-system/tokens/typography';
+import { getShadow } from '@/design-system/tokens/shadows';
 
 export const GoogleCalendarCallback: React.FC = () => {
+  const { colors } = useTheme();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
@@ -72,41 +77,101 @@ export const GoogleCalendarCallback: React.FC = () => {
   const getIcon = () => {
     switch (status) {
       case 'loading':
-        return <RefreshCw className="h-8 w-8 animate-spin text-blue-600" />;
+        return <RefreshCw size={32} weight="regular" style={{ animation: 'spin 1s linear infinite', color: colors.icon.default }} />;
       case 'success':
-        return <CheckCircle className="h-8 w-8 text-green-600" />;
+        return <CheckCircle size={32} weight="fill" color={colors.icon.success} />;
       case 'error':
-        return <XCircle className="h-8 w-8 text-red-600" />;
+        return <XCircle size={32} weight="fill" color={colors.icon.destructive} />;
       default:
         return null;
     }
   };
 
+  const containerStyle = {
+    minHeight: '100vh',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.bg.default,
+    padding: spacing.spacing[24],
+  };
+
+  const cardStyle = {
+    width: '100%',
+    maxWidth: '448px',
+    backgroundColor: colors.bg.card.default,
+    borderRadius: cornerRadius.borderRadius.lg,
+    padding: spacing.spacing[32],
+    boxShadow: getShadow('regular.card', colors, { withBorder: true }),
+  };
+
+  const headerStyle = {
+    textAlign: 'center' as const,
+    marginBottom: spacing.spacing[24],
+  };
+
+  const titleStyle = {
+    fontFamily: typography.fontFamily['instrument-serif'],
+    fontSize: typography.desktop.size['2xl'],
+    fontWeight: typography.desktop.weight.semibold,
+    lineHeight: typography.desktop.lineHeight.leading7,
+    color: colors.text.default,
+    margin: 0,
+    marginBottom: spacing.spacing[8],
+  };
+
+  const descriptionStyle = {
+    fontSize: typography.desktop.size.sm,
+    fontWeight: typography.desktop.weight.medium,
+    lineHeight: typography.desktop.lineHeight.leading5,
+    color: colors.text.subtle,
+    margin: 0,
+  };
+
+  const messageStyle = {
+    fontSize: typography.desktop.size.sm,
+    fontWeight: typography.desktop.weight.normal,
+    lineHeight: typography.desktop.lineHeight.leading5,
+    color: colors.text.muted,
+    textAlign: 'center' as const,
+    margin: 0,
+  };
+
+  const redirectStyle = {
+    fontSize: typography.desktop.size.xs,
+    fontWeight: typography.desktop.weight.normal,
+    lineHeight: typography.desktop.lineHeight.leading4,
+    color: colors.text.muted,
+    textAlign: 'center' as const,
+    margin: 0,
+    marginTop: spacing.spacing[16],
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
+    <div style={containerStyle}>
+      <div style={cardStyle}>
+        <div style={headerStyle}>
+          <div style={{ marginBottom: spacing.spacing[16] }}>
             {getIcon()}
           </div>
-          <CardTitle>Google Calendar Integration</CardTitle>
-          <CardDescription>
+          <h1 style={titleStyle}>Google Calendar Integration</h1>
+          <p style={descriptionStyle}>
             {status === 'loading' && 'Processing your authorization...'}
             {status === 'success' && 'Successfully connected!'}
             {status === 'error' && 'Connection failed'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-center text-sm text-muted-foreground">
+          </p>
+        </div>
+        <div>
+          <p style={messageStyle}>
             {message}
           </p>
           {status !== 'loading' && (
-            <p className="text-center text-xs text-muted-foreground mt-4">
+            <p style={redirectStyle}>
               Redirecting you back to the dashboard...
             </p>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };

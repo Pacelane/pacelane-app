@@ -26,7 +26,7 @@ import whatsappLogo from '@/assets/images/whatsapp-logo.png';
 import readaiLogo from '@/assets/images/readai-logo.webp';
 import googleCalendarLogo from '@/assets/images/google-calendar-logo.png';
 
-const InitialHome = () => {
+const Home = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { colors } = useTheme();
@@ -293,4 +293,4 @@ const InitialHome = () => {
   );
 };
 
-export default InitialHome;
+export default Home;

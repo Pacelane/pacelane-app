@@ -21,20 +21,16 @@ export { default as FilePreviewModal } from './FilePreviewModal.jsx';
 export { default as DropdownButton } from './DropdownButton.jsx';
 export { default as DropdownMenu } from './DropdownMenu.jsx';
 export { default as Badge } from './Badge.jsx';
-export { default as Card, CardHeader, CardTitle, CardDescription, CardContent } from './Card.jsx';
+export { default as StatusBadge } from './StatusBadge.jsx';
 export { default as FileUpload } from './FileUpload.jsx';
 export { default as Divider } from './Divider.jsx';
 export { default as EmptyState } from './EmptyState.jsx';
 export { default as SidebarMenuItem } from './SidebarMenuItem.jsx';
 export { default as HomeSidebar } from './HomeSidebar.jsx';
-export { default as StatsSummaryCard } from './StatsSummaryCard.jsx';
 export { default as TopNav } from './TopNav.jsx';
 export { default as EditorNav } from './EditorNav.jsx';
 export { default as MainAppChrome } from './MainAppChrome.jsx';
-export { default as CalendarSnippetsCard } from './CalendarSnippetsCard.jsx';
-export { default as NotificationItem } from './NotificationItem.jsx';
 export { default as ProtectedRoute } from './ProtectedRoute.tsx';
-export { default as Toggle } from './Toggle.jsx';
 export { default as Pagination } from './Pagination.jsx';
 export { default as IntegrationCard } from './IntegrationCard.jsx';
 export { default as Modal } from './Modal.jsx';
@@ -42,11 +38,6 @@ export { default as HelpModal } from './HelpModal.jsx';
 export { default as ReadAiConfigModal } from './ReadAiConfigModal.jsx';
 export { default as TranscriptPasteModal } from './TranscriptPasteModal.jsx';
 export { default as WhatsAppConfigModal } from './WhatsAppConfigModal.jsx';
-export { default as SetupCard } from './SetupCard.jsx';
-export { default as FirstTimeUserHome } from './FirstTimeUserHome.jsx';
 
 export { default as OnboardingProgressIndicator } from './OnboardingProgressIndicator.jsx';
-export { default as AppWorkflowDiagram } from './AppWorkflowDiagram.jsx';
-
-// Pages
-export { default as HomePage } from './pages/HomePage.jsx'; 
+export { default as AppWorkflowDiagram } from './AppWorkflowDiagram.jsx'; 

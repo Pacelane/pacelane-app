@@ -16,7 +16,7 @@ import {
   Stack as Layers, 
   Clock, 
   Phone, 
-  ChatSquare as MessageSquare, 
+  Chat as MessageSquare, 
   Sparkle as Sparkles 
 } from '@phosphor-icons/react';
 

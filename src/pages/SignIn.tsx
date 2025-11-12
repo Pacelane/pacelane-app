@@ -11,6 +11,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useTheme } from '@/services/theme-context';
 import { spacing } from '@/design-system/tokens/spacing';
 import { cornerRadius } from '@/design-system/tokens/corner-radius';
+import { typography } from '@/design-system/tokens/typography';
 import { textStyles } from '@/design-system/styles/typography/typography-styles';
 import { colors as primitiveColors } from '@/design-system/tokens/primitive-colors';
 import { shadows, getShadow } from '@/design-system/tokens/shadows';
@@ -438,16 +439,14 @@ const SignIn = () => {
                 {!showEmailForm ? (
                   <>
                     {/* Google Sign In Button - Secondary Action */}
-                    <div style={{ width: '100%' }}>
-                      <Button
-                        label={`${isSignUp ? 'Sign Up' : 'Sign In'} with Google`}
-                        style="secondary"
-                        size="lg"
-                        leadIcon={<GoogleLogo size={18} weight="bold" />}
-                        onClick={handleGoogleSignIn}
-                        className="w-full"
-                      />
-                    </div>
+                    <Button
+                      label={`${isSignUp ? 'Sign Up' : 'Sign In'} with Google`}
+                      style="secondary"
+                      size="lg"
+                      leadIcon={<GoogleLogo size={18} weight="bold" />}
+                      onClick={handleGoogleSignIn}
+                      fullWidth={true}
+                    />
                   </>
                 ) : (
                   <>
@@ -510,7 +509,7 @@ const SignIn = () => {
                         onClick={handleFormSubmit}
                         loading={form.formState.isSubmitting}
                         disabled={form.formState.isSubmitting || !isFormValid}
-                        className="w-full"
+                        fullWidth={true}
                       />
                     </form>
 

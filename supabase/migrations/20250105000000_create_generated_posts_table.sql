@@ -1,9 +1,18 @@
+-- Create or replace the update_updated_at_column function if it doesn't exist
+CREATE OR REPLACE FUNCTION public.update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 -- Create generated_posts table for storing generated LinkedIn posts
 CREATE TABLE IF NOT EXISTS public.generated_posts (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   content TEXT NOT NULL,
-  whatsapp_input_id UUID REFERENCES public.whatsapp_input_test(id) ON DELETE SET NULL,
+  whatsapp_input_id UUID, -- Made nullable without FK constraint initially
   status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'pending', 'approved', 'published')),
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()

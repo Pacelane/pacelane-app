@@ -249,7 +249,7 @@ const ContentEditor = () => {
     setShowConversationDropdown(false);
   };
 
-  // Handle content suggestions from ProductHome and draft editing
+  // Handle content suggestions from Home and draft editing
   useEffect(() => {
     if (location.state?.suggestion) {
       const suggestion = location.state.suggestion;

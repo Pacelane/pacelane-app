@@ -6,7 +6,7 @@ import { stroke } from '../tokens/stroke.js';
 import Logo from './Logo.jsx';
 import Button from './Button.jsx';
 import ButtonGroup from './ButtonGroup.jsx';
-import { Sun, Moon, Monitor, Question as HelpCircle } from '@phosphor-icons/react';
+import { Sun, Moon, Question as HelpCircle } from '@phosphor-icons/react';
 
 /**
  * TopNav component - Primary navigation bar for the application
@@ -43,12 +43,6 @@ const TopNav = ({
       label: 'Dark',
       onClick: () => setTheme('dark'),
     },
-    {
-      id: 'system',
-      leadIcon: <Monitor />,
-      label: 'System',
-      onClick: () => setTheme('system'),
-    },
   ];
 
   // Handle help button click
@@ -70,7 +64,7 @@ const TopNav = ({
     borderBottom: `${stroke.DEFAULT} solid ${colors.border.default}`,
     paddingLeft: spacing.spacing[40],
     paddingRight: spacing.spacing[40],
-    height: '80px',
+    height: '64px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -84,7 +78,7 @@ const TopNav = ({
   const actionsContainerStyles = {
     display: 'flex',
     alignItems: 'center',
-    gap: spacing.spacing[16],
+    gap: spacing.spacing[8],
   };
 
   return (
