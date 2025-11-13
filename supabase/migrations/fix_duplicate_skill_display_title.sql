@@ -21,3 +21,4 @@ WHERE user_id = 'USER_ID_AQUI'; -- ⚠️ SUBSTITUA PELO USER_ID CORRETO
 
 
 
+
