@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTheme } from '@/services/theme-context';
+import { useTranslation } from '@/services/i18n-context';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { spacing } from '@/design-system/tokens/spacing';
 import { cornerRadius } from '@/design-system/tokens/corner-radius';
@@ -23,6 +24,7 @@ import { Check } from '@phosphor-icons/react';
 
 const PacingPage = () => {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const { user, profile, refreshProfile } = useAuth();
   const isMobile = useIsMobile();
   
@@ -114,13 +116,13 @@ const PacingPage = () => {
   });
 
   const weekdays = [
-    { id: 'monday', label: 'M', day: 'Monday' },
-    { id: 'tuesday', label: 'T', day: 'Tuesday' },
-    { id: 'wednesday', label: 'W', day: 'Wednesday' },
-    { id: 'thursday', label: 'T', day: 'Thursday' },
-    { id: 'friday', label: 'F', day: 'Friday' },
-    { id: 'saturday', label: 'S', day: 'Saturday' },
-    { id: 'sunday', label: 'S', day: 'Sunday' }
+    { id: 'monday', label: t('pacing.settings.days.mondayShort'), day: t('pacing.settings.days.monday') },
+    { id: 'tuesday', label: t('pacing.settings.days.tuesdayShort'), day: t('pacing.settings.days.tuesday') },
+    { id: 'wednesday', label: t('pacing.settings.days.wednesdayShort'), day: t('pacing.settings.days.wednesday') },
+    { id: 'thursday', label: t('pacing.settings.days.thursdayShort'), day: t('pacing.settings.days.thursday') },
+    { id: 'friday', label: t('pacing.settings.days.fridayShort'), day: t('pacing.settings.days.friday') },
+    { id: 'saturday', label: t('pacing.settings.days.saturdayShort'), day: t('pacing.settings.days.saturday') },
+    { id: 'sunday', label: t('pacing.settings.days.sundayShort'), day: t('pacing.settings.days.sunday') }
   ];
 
   // PCL-110: Commented out unused option arrays
@@ -234,10 +236,10 @@ const PacingPage = () => {
       <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[20] }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[4] }}>
           <h3 style={{ ...textStyles.sm.semibold, color: colors.text.default, margin: 0 }}>
-            Frequency
+            {t('pacing.settings.frequency.title')}
           </h3>
           <p style={{ ...textStyles.xs.normal, color: colors.text.subtle, margin: 0 }}>
-            Define when you want to post
+            {t('pacing.settings.frequency.subtitle')}
           </p>
         </div>
         
@@ -266,7 +268,7 @@ const PacingPage = () => {
 
         <div style={{ alignSelf: 'flex-start' }}>
           <Button
-            label={savedStates.frequency ? "Saved!" : "Save"}
+            label={savedStates.frequency ? t('pacing.settings.buttons.saved') : t('pacing.settings.buttons.save')}
             style="primary"
             size="sm"
             leadIcon={savedStates.frequency ? <Check size={16} /> : undefined}
@@ -418,33 +420,23 @@ const PacingPage = () => {
     backgroundColor: 'transparent',
   };
 
-  // Title style using awesome serif font, 4xl semi bold (following KnowledgeBasePage pattern)
+  // Title style using awesome serif font, 3xl normal (following KnowledgeBasePage pattern)
   const titleStyle = {
     fontFamily: typography.fontFamily['awesome-serif'],
-    fontSize: typography.desktop.size['4xl'],
-    fontWeight: typography.desktop.weight.semibold,
+    fontSize: typography.desktop.size['3xl'],
+    fontWeight: typography.desktop.weight.normal,
     lineHeight: typography.desktop.lineHeight.leading7,
     letterSpacing: typography.desktop.letterSpacing.normal,
     color: colors.text.default,
     margin: 0,
   };
 
-  // Subtitle style - sm medium, text subtle (following KnowledgeBasePage pattern)
-  const subtitleStyle = {
-    ...textStyles.sm.medium,
-    color: colors.text.subtle,
-    margin: 0,
-    marginTop: spacing.spacing[8],
-  };
 
   return (
     <div style={containerStyles}>
       {/* Header Section */}
       <div>
-        <h1 style={titleStyle}>Pacing Settings</h1>
-        <p style={subtitleStyle}>
-          Customize when and how often we engage with you for optimal productivity
-        </p>
+        <h1 style={titleStyle}>{t('pacing.settings.title')}</h1>
       </div>
 
       {/* Frequency Card - aligned with header */}

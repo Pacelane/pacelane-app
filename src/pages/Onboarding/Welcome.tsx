@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/services/theme-context';
+import { useTranslation } from '@/services/i18n-context';
 import { spacing } from '@/design-system/tokens/spacing';
 import { cornerRadius } from '@/design-system/tokens/corner-radius';
 import { typography } from '@/design-system/tokens/typography';
@@ -13,6 +14,7 @@ import { ArrowRight } from '@phosphor-icons/react';
 
 const Welcome = () => {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   // Handle the "Começar" button click
@@ -77,8 +79,8 @@ const Welcome = () => {
   // Title styles using Instrument Serif (Font B)
   const titleStyles = {
     fontFamily: typography.fontFamily['instrument-serif'],
-    fontSize: typography.desktop.size['4xl'],
-    fontWeight: typography.desktop.weight.semibold,
+    fontSize: typography.desktop.size['3xl'],
+    fontWeight: typography.desktop.weight.normal,
     lineHeight: typography.desktop.lineHeight.leading7,
     letterSpacing: typography.desktop.letterSpacing.normal,
     color: colors.text.default,
@@ -124,9 +126,9 @@ const Welcome = () => {
           <div style={topContainerStyles}>
             {/* Text container */}
             <div style={textContainerStyles}>
-              <h1 style={titleStyles}>Bem-Vindo!</h1>
+              <h1 style={titleStyles}>{t('onboarding.welcome.title')}</h1>
               <p style={subtitleStyles}>
-                Queremos te ajudar a aparecer de forma consistente no LinkedIn com conteúdos que tenham a sua cara.
+                {t('onboarding.welcome.subtitle')}
               </p>
             </div>
 
@@ -134,7 +136,7 @@ const Welcome = () => {
             <Button
               style="primary"
               size="lg"
-              label="Começar"
+              label={t('onboarding.welcome.startButton')}
               tailIcon={<ArrowRight size={16} />}
               onClick={handleStartClick}
               fullWidth
@@ -144,7 +146,7 @@ const Welcome = () => {
           {/* Bottom container */}
           <div style={bottomContainerStyles}>
             <p style={bottomTextStyles}>
-              Faremos algumas perguntas para personalizar a sua estratégia.
+              {t('onboarding.welcome.bottomText')}
             </p>
           </div>
         </div>

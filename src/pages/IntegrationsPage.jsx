@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '@/services/theme-context';
+import { useTranslation } from '@/services/i18n-context';
 import { useAuth } from '@/hooks/api/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { spacing } from '@/design-system/tokens/spacing';
@@ -28,6 +29,7 @@ import { LinkedinLogo as Linkedin } from '@phosphor-icons/react';
  */
 const IntegrationsPage = () => {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -118,13 +120,13 @@ const IntegrationsPage = () => {
       setWhatsappModalOpen(false);
       
       if (hasNumber) {
-        toast.success('WhatsApp number saved successfully!');
+        toast.success(t('integrations.messages.whatsappSaved'));
       } else {
-        toast.success('WhatsApp number removed successfully!');
+        toast.success(t('integrations.messages.whatsappRemoved'));
       }
     } catch (error) {
       console.error('Error saving WhatsApp number:', error);
-      toast.error('Failed to save WhatsApp number. Please try again.');
+      toast.error(t('integrations.messages.whatsappFailed'));
     } finally {
       setSavingWhatsapp(false);
     }
@@ -135,34 +137,50 @@ const IntegrationsPage = () => {
     {
       key: 'whatsapp',
       name: 'WhatsApp',
-      description: 'Add files to your knowledge base from WhatsApp and create content directly from messages',
+      description: t('integrations.descriptions.whatsapp'),
       icon: <img src={whatsappLogo} alt="WhatsApp" style={{ width: 24, height: 24 }} />,
       iconColor: '#25D366',
-      features: ['Knowledge base integration', 'Content creation', 'File management'],
+      features: [
+        t('integrations.features.whatsapp.knowledge'),
+        t('integrations.features.whatsapp.content'),
+        t('integrations.features.whatsapp.files')
+      ],
     },
     {
       key: 'linkedin',
       name: 'LinkedIn',
-      description: 'Analyze your LinkedIn posts to understand your writing style and create personalized content',
+      description: t('integrations.descriptions.linkedin'),
       icon: <Linkedin size={24} color="#0A66C2" />,
       iconColor: '#0A66C2',
-      features: ['Writing style analysis', 'Post scraping', 'Content personalization'],
+      features: [
+        t('integrations.features.linkedin.analysis'),
+        t('integrations.features.linkedin.scraping'),
+        t('integrations.features.linkedin.personalization')
+      ],
     },
     {
       key: 'readai',
       name: 'Read.ai',
-      description: 'Add meeting transcripts to your knowledge base for enhanced content creation',
+      description: t('integrations.descriptions.readai'),
       icon: <img src={readaiLogo} alt="Read.ai" style={{ width: 24, height: 24 }} />,
       iconColor: '#6366F1',
-      features: ['Meeting transcription', 'Knowledge base sync', 'Content insights'],
+      features: [
+        t('integrations.features.readai.transcription'),
+        t('integrations.features.readai.sync'),
+        t('integrations.features.readai.insights')
+      ],
     },
     {
       key: 'googleCalendar',
       name: 'Google Calendar',
-      description: 'Sync your calendar to understand your routines and create more relevant content',
+      description: t('integrations.descriptions.googleCalendar'),
       icon: <img src={googleCalendarLogo} alt="Google Calendar" style={{ width: 24, height: 24 }} />,
       iconColor: '#4285F4',
-      features: ['Calendar sync', 'Routine analysis', 'Context-aware content'],
+      features: [
+        t('integrations.features.googleCalendar.sync'),
+        t('integrations.features.googleCalendar.analysis'),
+        t('integrations.features.googleCalendar.context')
+      ],
     },
   ];
 
@@ -174,24 +192,17 @@ const IntegrationsPage = () => {
     backgroundColor: 'transparent',
   };
 
-  // Title style using awesome serif font, 4xl semi bold
+  // Title style using Instrument Serif font, 3xl normal
   const titleStyle = {
-    fontFamily: typography.fontFamily['awesome-serif'],
-    fontSize: typography.desktop.size['4xl'],
-    fontWeight: typography.desktop.weight.semibold,
+    fontFamily: typography.fontFamily['instrument-serif'],
+    fontSize: typography.desktop.size['3xl'],
+    fontWeight: typography.desktop.weight.normal,
     lineHeight: typography.desktop.lineHeight.leading7,
     letterSpacing: typography.desktop.letterSpacing.normal,
     color: colors.text.default,
     margin: 0,
   };
 
-  // Subtitle style - sm medium, text subtle
-  const subtitleStyle = {
-    ...textStyles.sm.medium,
-    color: colors.text.subtle,
-    margin: 0,
-    marginTop: spacing.spacing[8],
-  };
 
   // Grid styles
   const gridStyles = {
@@ -223,10 +234,10 @@ const IntegrationsPage = () => {
           if (user?.id) authUrl.searchParams.set('state', user.id);
           window.location.href = authUrl.toString();
         } else {
-          toast.error(result.error || 'Failed to start Calendar connection');
+          toast.error(result.error || t('integrations.messages.calendarFailed'));
         }
       } catch (e) {
-        toast.error('Failed to start Calendar connection');
+        toast.error(t('integrations.messages.calendarFailed'));
       }
       return;
     }
@@ -256,7 +267,7 @@ const IntegrationsPage = () => {
       }
     }));
     
-    toast.success('Read.ai integration configured successfully!');
+    toast.success(t('integrations.messages.readaiConfigured'));
   };
 
   // Handle LinkedIn setup completion
@@ -270,17 +281,14 @@ const IntegrationsPage = () => {
       }
     }));
     
-    toast.success('LinkedIn integration configured successfully!');
+    toast.success(t('integrations.messages.linkedinConfigured'));
   };
 
   return (
     <div style={containerStyles}>
       {/* Header Section */}
       <div>
-        <h1 style={titleStyle}>Integrations</h1>
-        <p style={subtitleStyle}>
-          Connect your favorite tools to streamline your content creation workflow
-        </p>
+        <h1 style={titleStyle}>{t('integrations.title')}</h1>
       </div>
 
       {/* Integration Cards Grid */}

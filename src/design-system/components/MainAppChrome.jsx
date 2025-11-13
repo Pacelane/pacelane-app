@@ -13,9 +13,9 @@ import Logo from '@/design-system/components/Logo';
 
 /**
  * MainAppChrome - shared app chrome with sidebar and centered content container
- * - Provides theme-aware background (colors.bg.subtle)
+ * - Provides theme-aware background (colors.bg.default)
  * - Renders `HomeSidebar` on the left (except for content editor)
- * - Wraps children in an 840px centered container with vertical padding
+ * - Wraps children in a 1280px centered container with vertical padding
  */
 const MainAppChrome = ({ className = '', children, ...rest }) => {
   const { colors } = useTheme();
@@ -107,7 +107,7 @@ const MainAppChrome = ({ className = '', children, ...rest }) => {
     display: 'flex',
     minHeight: '100vh',
     width: '100%',
-    backgroundColor: colors.bg.subtle,
+    backgroundColor: colors.bg.default,
   };
 
   const mainStyles = {
@@ -123,12 +123,12 @@ const MainAppChrome = ({ className = '', children, ...rest }) => {
 
   const contentWrapperStyles = hideSidebar ? undefined : {
     width: '100%',
-    maxWidth: isMobile ? 'none' : '840px',
+    maxWidth: isMobile ? 'none' : '1280px',
     margin: '0 auto',
     paddingTop: spacing.spacing[40],
     paddingBottom: isMobile ? spacing.spacing[40] : spacing.spacing[80],
-    paddingLeft: spacing.spacing[24],
-    paddingRight: spacing.spacing[24],
+    paddingLeft: spacing.spacing[80],
+    paddingRight: spacing.spacing[80],
     backgroundColor: 'transparent',
     boxSizing: 'border-box',
   };

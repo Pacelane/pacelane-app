@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DotsThree as MoreHorizontal } from '@phosphor-icons/react';
 import { useTheme } from '../../services/theme-context.jsx';
+import { useTranslation } from '../../services/i18n-context.jsx';
 import { spacing } from '../tokens/spacing.js';
 import { cornerRadius } from '../tokens/corner-radius.js';
 import { textStyles } from '../styles/typography/typography-styles.js';
@@ -30,8 +31,8 @@ const ContentCard = ({
   variant = 'gradient',          // 'gradient' | 'image'
   
   // Content
-  title = 'Content Title',
-  subtitle = 'Last edited',
+  title,
+  subtitle,
   content = mockContent,
   image,                         // Image URL for image variant
   status = 'draft',              // Current status of the content
@@ -46,6 +47,7 @@ const ContentCard = ({
   ...rest
 }) => {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const [isHovered, setIsHovered] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
 
@@ -60,21 +62,21 @@ const ContentCard = ({
   // Add status change options (only show options that differ from current status)
   if (status !== 'draft') {
     dropdownItems.push({
-      label: 'Mark as Draft',
+      label: t('components.contentCard.actions.markAsDraft'),
       onClick: () => onMenuAction?.('mark-draft')
     });
   }
   
   if (status !== 'published') {
     dropdownItems.push({
-      label: 'Mark as Published',
+      label: t('components.contentCard.actions.markAsPublished'),
       onClick: () => onMenuAction?.('mark-published')
     });
   }
   
   if (status !== 'archived') {
     dropdownItems.push({
-      label: 'Mark as Archived',
+      label: t('components.contentCard.actions.markAsArchived'),
       onClick: () => onMenuAction?.('mark-archived')
     });
   }
@@ -86,7 +88,7 @@ const ContentCard = ({
   
   // Add delete option
   dropdownItems.push({
-    label: 'Delete',
+    label: t('components.contentCard.actions.delete'),
     type: 'destructive',
     onClick: () => onMenuAction?.('delete')
   });
@@ -261,7 +263,7 @@ const ContentCard = ({
             margin: 0
           }}
         >
-          {title}
+          {title || t('components.contentCard.defaultTitle')}
         </h3>
         
         {/* Subtitle */}
@@ -272,7 +274,7 @@ const ContentCard = ({
             margin: 0
           }}
         >
-          {subtitle}
+          {subtitle || t('components.contentCard.defaultSubtitle')}
         </p>
       </div>
     </motion.div>

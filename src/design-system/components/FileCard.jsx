@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DotsThree as MoreHorizontal } from '@phosphor-icons/react';
 import { useTheme } from '../../services/theme-context.jsx';
+import { useTranslation } from '../../services/i18n-context.jsx';
 import { spacing } from '../tokens/spacing.js';
 import { cornerRadius } from '../tokens/corner-radius.js';
 import { textStyles } from '../styles/typography/typography-styles.js';
@@ -42,6 +43,7 @@ const FileCard = ({
   ...rest
 }) => {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const [isHovered, setIsHovered] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
 
@@ -65,15 +67,15 @@ const FileCard = ({
     const statusMap = {
       ready: {
         color: 'green',
-        label: 'Ready to use'
+        label: t('components.fileCard.status.ready')
       },
       uploading: {
         color: 'orange',
-        label: 'Uploading...'
+        label: t('components.fileCard.status.uploading')
       },
       error: {
         color: 'red',
-        label: 'Error'
+        label: t('components.fileCard.status.error')
       }
     };
     return statusMap[status] || statusMap.ready;
@@ -82,15 +84,15 @@ const FileCard = ({
   // Dropdown menu items
   const dropdownItems = [
     {
-      label: 'Download',
+      label: t('components.fileCard.actions.download'),
       onClick: () => onMenuAction?.('download')
     },
     {
-      label: 'Move',
+      label: t('components.fileCard.actions.move'),
       onClick: () => onMenuAction?.('move')
     },
     {
-      label: 'Delete',
+      label: t('components.fileCard.actions.delete'),
       type: 'destructive',
       onClick: () => onMenuAction?.('delete')
     }

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '@/services/theme-context';
+import { useTranslation } from '@/services/i18n-context';
 import { spacing } from '@/design-system/tokens/spacing';
 import { typography } from '@/design-system/tokens/typography';
 import { textStyles } from '@/design-system/styles/typography/typography-styles';
@@ -13,7 +14,7 @@ import { useAuth } from '@/hooks/api/useAuth';
 import Modal from '@/design-system/components/Modal';
 import Button from '@/design-system/components/Button';
 import Input from '@/design-system/components/Input';
-import LoadingSpinner from '@/design-system/components/LoadingSpinner';
+import SubtleLoadingSpinner from '@/design-system/components/SubtleLoadingSpinner';
 
 // Icons
 import { User, ArrowsClockwise as RefreshCw, ArrowSquareOut as ExternalLink, CheckCircle, WarningCircle as AlertCircle, Trash as Trash2, LinkedinLogo as Linkedin } from '@phosphor-icons/react';
@@ -28,6 +29,7 @@ import { User, ArrowsClockwise as RefreshCw, ArrowSquareOut as ExternalLink, Che
  */
 const LinkedInConfigModal = ({ isOpen = false, onClose, onComplete }) => {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -70,33 +72,33 @@ const LinkedInConfigModal = ({ isOpen = false, onClose, onComplete }) => {
       if (result.data?.success) {
         setToneAnalysis(result.data.analysis);
         setStep('analysis');
-        toast.success('Writing style analyzed successfully!');
+        toast.success(t('components.linkedInConfig.toneAnalyzed'));
         onComplete?.(); // Notify parent of completion
       } else {
-        toast.error(result.error || 'Failed to analyze writing tone');
+        toast.error(result.error || t('components.linkedInConfig.analysisError'));
       }
     } catch (error) {
       console.error('Error analyzing tone:', error);
-      toast.error('Failed to analyze writing tone');
+      toast.error(t('components.linkedInConfig.analysisError'));
     } finally {
       setIsAnalyzing(false);
     }
   };
 
   const handleDeletePosts = async () => {
-    if (!confirm('Are you sure you want to delete all scraped posts? This will remove your writing style analysis.')) {
+    if (!confirm(t('components.linkedInConfig.deleteConfirm'))) {
       return;
     }
 
     try {
       // Note: We'd need to add a delete method to ContentService
-      toast.success('Posts deleted successfully!');
+      toast.success(t('components.linkedInConfig.deleteSuccess'));
       setPosts([]);
       setToneAnalysis(null);
       setStep('setup');
     } catch (error) {
       console.error('Error deleting posts:', error);
-      toast.error('Failed to delete posts');
+      toast.error(t('components.linkedInConfig.deleteFailed'));
     }
   };
 
@@ -157,12 +159,12 @@ const LinkedInConfigModal = ({ isOpen = false, onClose, onComplete }) => {
   // Validation for username
   const validateUsername = (username) => {
     if (!username.trim()) {
-      return 'LinkedIn username is required';
+      return t('components.linkedInConfig.usernameRequired');
     }
     // Basic validation for LinkedIn username format
     const cleanUsername = username.trim().replace(/[^a-zA-Z0-9-]/g, '');
     if (cleanUsername.length < 3) {
-      return 'Username must be at least 3 characters long';
+      return t('components.linkedInConfig.usernameMinLength');
     }
     return '';
   };
@@ -191,15 +193,15 @@ const LinkedInConfigModal = ({ isOpen = false, onClose, onComplete }) => {
       const result = await ContentService.scrapeLinkedInPosts(username.trim(), 20);
       
       if (result.data?.success) {
-        toast.success(`Successfully scraped ${result.data.postsCount} posts!`);
+        toast.success(t('components.linkedInConfig.scrapeSuccess').replace('{count}', result.data.postsCount));
         await loadExistingPosts(); // Reload to show new posts
         setStep('posts');
       } else {
-        toast.error(result.error || 'Failed to scrape LinkedIn posts');
+        toast.error(result.error || t('components.linkedInConfig.scrapeFailed'));
       }
     } catch (error) {
       console.error('Error scraping LinkedIn posts:', error);
-      toast.error('Failed to scrape LinkedIn posts');
+      toast.error(t('components.linkedInConfig.scrapeFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -219,15 +221,15 @@ const LinkedInConfigModal = ({ isOpen = false, onClose, onComplete }) => {
             {/* Username Input */}
             <div>
               <Input
-                label="LinkedIn Username"
-                placeholder="your-linkedin-username"
+                label={t('components.linkedInConfig.usernameLabel')}
+                placeholder={t('components.linkedInConfig.usernamePlaceholder')}
                 value={username}
                 onChange={handleUsernameChange}
                 style="default"
                 size="lg"
                 disabled={isLoading}
                 failed={!!usernameError}
-                caption={usernameError || 'Enter your LinkedIn username (the part after linkedin.com/in/)'}
+                caption={usernameError || t('components.linkedInConfig.usernameHelper')}
                 leadIcon={<User size={18} />}
               />
             </div>
@@ -239,7 +241,7 @@ const LinkedInConfigModal = ({ isOpen = false, onClose, onComplete }) => {
                 color: colors.text.default,
                 margin: 0,
               }}>
-                What we'll analyze:
+                {t('components.linkedInConfig.infoTitle')}
               </h4>
               <ul style={{
                 ...textStyles.xs.normal,
@@ -248,10 +250,10 @@ const LinkedInConfigModal = ({ isOpen = false, onClose, onComplete }) => {
                 paddingLeft: spacing.spacing[16],
                 listStyleType: 'disc',
               }}>
-                <li>Writing tone and style patterns</li>
-                <li>Sentence structure preferences</li>
-                <li>Content themes and topics</li>
-                <li>Engagement patterns for better content strategy</li>
+                <li>{t('components.linkedInConfig.infoTone')}</li>
+                <li>{t('components.linkedInConfig.infoStructure')}</li>
+                <li>{t('components.linkedInConfig.infoThemes')}</li>
+                <li>{t('components.linkedInConfig.infoEngagement')}</li>
               </ul>
               <p style={{
                 ...textStyles.xs.normal,
@@ -260,7 +262,7 @@ const LinkedInConfigModal = ({ isOpen = false, onClose, onComplete }) => {
                 marginTop: spacing.spacing[8],
                 fontStyle: 'italic',
               }}>
-                Your posts are used only for analysis and are not stored or shared.
+                {t('components.linkedInConfig.infoPrivacy')}
               </p>
             </div>
 
@@ -274,7 +276,7 @@ const LinkedInConfigModal = ({ isOpen = false, onClose, onComplete }) => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: spacing.spacing[8] }}>
                   <CheckCircle size={16} color={colors.icon.success} />
                   <span style={{ ...textStyles.sm.medium, color: colors.text.default }}>
-                    Found {posts.length} existing posts
+                    {t('components.linkedInConfig.existingPosts').replace('{count}', posts.length)}
                   </span>
                 </div>
                 <p style={{
@@ -282,7 +284,7 @@ const LinkedInConfigModal = ({ isOpen = false, onClose, onComplete }) => {
                   color: colors.text.muted,
                   margin: 0,
                 }}>
-                  You can scrape new posts or proceed to analyze your existing posts.
+                  {t('components.linkedInConfig.useExistingInfo')}
                 </p>
               </div>
             )}
@@ -291,7 +293,7 @@ const LinkedInConfigModal = ({ isOpen = false, onClose, onComplete }) => {
           {/* Footer */}
           <div style={footerStyles}>
             <Button
-              label="Cancel"
+              label={t('components.linkedInConfig.cancel')}
               style="secondary"
               size="sm"
               onClick={onClose}
@@ -299,7 +301,7 @@ const LinkedInConfigModal = ({ isOpen = false, onClose, onComplete }) => {
             />
             {hasExistingPosts && (
               <Button
-                label="Use Existing Posts"
+                label={t('components.linkedInConfig.useExistingButton')}
                 style="soft"
                 size="sm"
                 leadIcon={<CheckCircle size={16} />}
@@ -308,7 +310,7 @@ const LinkedInConfigModal = ({ isOpen = false, onClose, onComplete }) => {
               />
             )}
             <Button
-              label={isLoading ? "Scraping..." : "Scrape Posts"}
+              label={isLoading ? t('components.linkedInConfig.scrapingPosts') : t('components.linkedInConfig.scrapeButton')}
               style="primary"
               size="sm"
               leadIcon={isLoading ? undefined : <RefreshCw size={16} />}
@@ -333,7 +335,7 @@ const LinkedInConfigModal = ({ isOpen = false, onClose, onComplete }) => {
                 color: colors.text.default,
                 margin: 0,
               }}>
-                Found {posts.length} LinkedIn Posts
+                {t('components.linkedInConfig.foundPosts').replace('{count}', posts.length)}
               </h3>
               <p style={{
                 ...textStyles.sm.normal,
@@ -341,7 +343,7 @@ const LinkedInConfigModal = ({ isOpen = false, onClose, onComplete }) => {
                 margin: 0,
                 marginTop: spacing.spacing[4],
               }}>
-                Review your imported posts and proceed to analyze your writing style
+                {t('components.linkedInConfig.reviewPosts')}
               </p>
             </div>
 
@@ -389,7 +391,7 @@ const LinkedInConfigModal = ({ isOpen = false, onClose, onComplete }) => {
                       {new Date(post.publishedAt).toLocaleDateString()}
                     </span>
                     <span style={{ ...textStyles.xs.normal, color: colors.text.muted }}>
-                      {post.engagement?.likes || 0} likes • {post.engagement?.comments || 0} comments
+                      {post.engagement?.likes || 0} {t('components.linkedInConfig.likes')} • {post.engagement?.comments || 0} {t('components.linkedInConfig.comments')}
                     </span>
                   </div>
                 </div>
@@ -402,7 +404,7 @@ const LinkedInConfigModal = ({ isOpen = false, onClose, onComplete }) => {
                   margin: 0,
                   fontStyle: 'italic',
                 }}>
-                  And {posts.length - 3} more posts...
+                  {t('components.linkedInConfig.andMore').replace('{count}', posts.length - 3)}
                 </p>
               )}
             </div>
@@ -411,7 +413,7 @@ const LinkedInConfigModal = ({ isOpen = false, onClose, onComplete }) => {
           {/* Footer */}
           <div style={footerStyles}>
             <Button
-              label="Delete Posts"
+              label={t('components.linkedInConfig.deletePosts')}
               style="ghost"
               size="sm"
               leadIcon={<Trash2 size={16} />}
@@ -420,14 +422,14 @@ const LinkedInConfigModal = ({ isOpen = false, onClose, onComplete }) => {
             />
             <div style={{ display: 'flex', gap: spacing.spacing[12] }}>
               <Button
-                label="Back"
+                label={t('components.linkedInConfig.back')}
                 style="secondary"
                 size="sm"
                 onClick={() => setStep('setup')}
                 disabled={isAnalyzing}
               />
               <Button
-                label={isAnalyzing ? "Analyzing..." : "Analyze Writing Style"}
+                label={isAnalyzing ? t('components.linkedInConfig.analyzingTone') : t('components.linkedInConfig.analyzeTone')}
                 style="primary"
                 size="sm"
                 leadIcon={isAnalyzing ? undefined : <CheckCircle size={16} />}
@@ -452,7 +454,7 @@ const LinkedInConfigModal = ({ isOpen = false, onClose, onComplete }) => {
                 color: colors.text.default,
                 margin: 0,
               }}>
-                Writing Style Analysis Complete
+                {t('components.linkedInConfig.analysisComplete')}
               </h3>
               <p style={{
                 ...textStyles.sm.normal,
@@ -460,7 +462,7 @@ const LinkedInConfigModal = ({ isOpen = false, onClose, onComplete }) => {
                 margin: 0,
                 marginTop: spacing.spacing[4],
               }}>
-                Your LinkedIn posts have been analyzed to understand your unique writing style
+                {t('components.linkedInConfig.analysisCompleteSubtitle')}
               </p>
             </div>
 
@@ -472,7 +474,7 @@ const LinkedInConfigModal = ({ isOpen = false, onClose, onComplete }) => {
                 margin: 0,
                 marginBottom: spacing.spacing[8],
               }}>
-                Your Writing Profile
+                {t('components.linkedInConfig.writingProfile')}
               </h4>
               <div style={{ 
                 display: 'grid', 
@@ -481,28 +483,28 @@ const LinkedInConfigModal = ({ isOpen = false, onClose, onComplete }) => {
                 marginBottom: spacing.spacing[12],
               }}>
                 <div>
-                  <span style={{ ...textStyles.xs.medium, color: colors.text.subtle }}>Overall Tone:</span>
+                  <span style={{ ...textStyles.xs.medium, color: colors.text.subtle }}>{t('components.linkedInConfig.overallTone')}</span>
                   <br />
                   <span style={{ ...textStyles.sm.normal, color: colors.text.default }}>
                     {toneAnalysis.tone || 'Professional'}
                   </span>
                 </div>
                 <div>
-                  <span style={{ ...textStyles.xs.medium, color: colors.text.subtle }}>Sentence Style:</span>
+                  <span style={{ ...textStyles.xs.medium, color: colors.text.subtle }}>{t('components.linkedInConfig.sentenceStyle')}</span>
                   <br />
                   <span style={{ ...textStyles.sm.normal, color: colors.text.default }}>
                     {toneAnalysis.writingStyle?.sentenceLength || 'Balanced'}
                   </span>
                 </div>
                 <div>
-                  <span style={{ ...textStyles.xs.medium, color: colors.text.subtle }}>Vocabulary:</span>
+                  <span style={{ ...textStyles.xs.medium, color: colors.text.subtle }}>{t('components.linkedInConfig.vocabulary')}</span>
                   <br />
                   <span style={{ ...textStyles.sm.normal, color: colors.text.default }}>
                     {toneAnalysis.writingStyle?.vocabularyLevel || 'Business'}
                   </span>
                 </div>
                 <div>
-                  <span style={{ ...textStyles.xs.medium, color: colors.text.subtle }}>Emoji Usage:</span>
+                  <span style={{ ...textStyles.xs.medium, color: colors.text.subtle }}>{t('components.linkedInConfig.emojiUsage')}</span>
                   <br />
                   <span style={{ ...textStyles.sm.normal, color: colors.text.default }}>
                     {toneAnalysis.contentPreferences?.emojiUsage || 'Minimal'}
@@ -520,7 +522,7 @@ const LinkedInConfigModal = ({ isOpen = false, onClose, onComplete }) => {
               <div style={{ display: 'flex', alignItems: 'center', gap: spacing.spacing[8] }}>
                 <CheckCircle size={16} color={colors.icon.success} />
                 <span style={{ ...textStyles.sm.medium, color: colors.text.default }}>
-                  Writing style analysis saved successfully!
+                  {t('components.linkedInConfig.analysisSavedTitle')}
                 </span>
               </div>
               <p style={{
@@ -529,7 +531,7 @@ const LinkedInConfigModal = ({ isOpen = false, onClose, onComplete }) => {
                 margin: 0,
                 marginTop: spacing.spacing[4],
               }}>
-                Your future content will be personalized to match your unique writing tone and style.
+                {t('components.linkedInConfig.analysisSavedSubtitle')}
               </p>
             </div>
           </div>
@@ -537,7 +539,7 @@ const LinkedInConfigModal = ({ isOpen = false, onClose, onComplete }) => {
           {/* Footer */}
           <div style={footerStyles}>
             <Button
-              label="Complete Setup"
+              label={t('components.linkedInConfig.completeSetup')}
               style="primary"
               size="sm"
               leadIcon={<CheckCircle size={16} />}
@@ -575,10 +577,10 @@ const LinkedInConfigModal = ({ isOpen = false, onClose, onComplete }) => {
           }}>
             <Linkedin size={16} color="white" />
           </div>
-          <h2 style={titleStyle}>LinkedIn Integration Setup</h2>
+          <h2 style={titleStyle}>{t('components.linkedInConfig.title')}</h2>
         </div>
         <p style={subtitleStyle}>
-          Analyze your LinkedIn posts to understand your writing style and create personalized content
+          {t('components.linkedInConfig.subtitle')}
         </p>
       </div>
 

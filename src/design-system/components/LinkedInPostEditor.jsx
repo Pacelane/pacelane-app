@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { useTheme } from '@/services/theme-context';
+import { useTranslation } from '@/services/i18n-context';
 import { spacing } from '@/design-system/tokens/spacing';
 import { cornerRadius } from '@/design-system/tokens/corner-radius';
 import { typography } from '@/design-system/tokens/typography';
@@ -29,6 +30,7 @@ const LinkedInPostEditor = ({
   ...props
 }) => {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const contentRef = useRef(null);
 
   // Update content when value prop changes
@@ -197,7 +199,7 @@ const LinkedInPostEditor = ({
             ...textStyles.xs.normal, 
             color: colors.text.muted 
           }}>
-            {company} • Draft
+            {company} • Rascunho
           </span>
         </div>
       </div>

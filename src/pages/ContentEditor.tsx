@@ -5,6 +5,7 @@ import { useContent } from '@/hooks/api/useContent';
 import { useTheme } from '@/services/theme-context';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useHelp } from '../services/help-context';
+import { useTranslation } from '@/services/i18n-context';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/design-system/components/Toast';
 
@@ -18,7 +19,7 @@ import TextArea from '@/design-system/components/TextArea';
 import LinkedInPostEditor from '@/design-system/components/LinkedInPostEditor';
 import Checkbox from '@/design-system/components/Checkbox';
 import Modal from '@/design-system/components/Modal';
-import LoadingSpinner from '@/design-system/components/LoadingSpinner';
+import SubtleLoadingSpinner from '@/design-system/components/SubtleLoadingSpinner';
 import Bichaurinho from '@/design-system/components/Bichaurinho';
 import EmptyState from '@/design-system/components/EmptyState';
 import FileUpload from '@/design-system/components/FileUpload';
@@ -80,6 +81,7 @@ const ContentEditor = () => {
   const { colors, themePreference, setTheme } = useTheme();
   const { openHelp } = useHelp();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const isMobile = useIsMobile();
   
   console.log('ContentEditor: Location state:', location.state);
@@ -119,9 +121,9 @@ const ContentEditor = () => {
   // ========== LOCAL COMPONENT STATE ==========
   const [chatInput, setChatInput] = useState('');
   const [draftId, setDraftId] = useState<string | null>(null);
-  const [draftTitle, setDraftTitle] = useState('New Post');
+  const [draftTitle, setDraftTitle] = useState(t('contentEditor.newPost'));
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  const [editorContent, setEditorContent] = useState('# New Post\n\nStart writing your content here...');
+  const [editorContent, setEditorContent] = useState(`# ${t('contentEditor.newPost')}\n\n${t('contentEditor.placeholder')}`);
   const [sidebarSplit, setSidebarSplit] = useState(60); // Percentage for knowledge base section
   const [showConversationDropdown, setShowConversationDropdown] = useState(false);
   const [conversations, setConversations] = useState<any[]>([]);
@@ -217,7 +219,7 @@ const ContentEditor = () => {
   };
 
   const formatTitle = (title: string) => {
-    if (!title || title.trim() === '') return 'Untitled Conversation';
+    if (!title || title.trim() === '') return t('contentEditor.aiAssistant.untitled');
     return title.length > 30 ? `${title.substring(0, 30)}...` : title;
   };
 
@@ -227,9 +229,9 @@ const ContentEditor = () => {
     const diffInHours = Math.abs(now.getTime() - date.getTime()) / (1000 * 60 * 60);
     
     if (diffInHours < 24) {
-      return 'Today';
+      return t('contentEditor.aiAssistant.today');
     } else if (diffInHours < 48) {
-      return 'Yesterday';
+      return t('contentEditor.aiAssistant.yesterday');
     } else {
       return date.toLocaleDateString();
     }
@@ -317,9 +319,12 @@ const ContentEditor = () => {
       });
     } else {
       setShowFileUploadModal(false);
+      const message = files.length === 1 
+        ? t('contentEditor.messages.filesUploaded')
+        : `${files.length} ${t('contentEditor.messages.filesUploadedPlural')}`;
       toast({
         type: 'success',
-        message: `Successfully uploaded ${files.length} file${files.length > 1 ? 's' : ''}`,
+        message: message,
       });
     }
   };
@@ -338,7 +343,7 @@ const ContentEditor = () => {
       setShowFileUploadModal(false);
       toast({
         type: 'success',
-        message: 'Link added successfully',
+        message: t('contentEditor.messages.linkAdded'),
       });
     }
   };
@@ -354,7 +359,7 @@ const ContentEditor = () => {
     setEditorContent(draft.content);
     setLastSaved(new Date(draft.updated_at));
     
-    toast.success(`"${draft.title}" has been loaded for editing.`);
+    toast.success(t('contentEditor.sidebar.recentPosts.loadedSuccess', { title: draft.title }));
   };
 
   const handleSaveDraft = async (silent = false) => {
@@ -389,11 +394,11 @@ const ContentEditor = () => {
       setLastSaved(new Date());
       
       if (!silent) {
-        toast.success('Draft saved successfully');
+        toast.success(t('contentEditor.messages.draftSaved'));
       }
     } catch (error: any) {
       if (!silent) {
-        toast.error(error.message || 'Failed to save draft');
+        toast.error(error.message || t('contentEditor.messages.draftSaveFailed'));
       }
     }
   };
@@ -426,20 +431,20 @@ const ContentEditor = () => {
         }
       }
     } catch (error: any) {
-      toast.error(error.message || 'Failed to send message');
+      toast.error(error.message || t('contentEditor.aiAssistant.chat.messageFailed'));
     }
   };
 
   const handleQuickAction = async (action: string) => {
     const actionMessages = {
-      'professional': 'Make this content more professional and business-focused for LinkedIn. Provide the edited version.',
-      'bullet_points': 'Convert this content to use bullet points and make it more scannable. Provide the edited version.',
-      'improve_hook': 'Improve the opening hook to make it more engaging and attention-grabbing. Provide the edited version.',
-      'add_hashtags': 'Suggest relevant hashtags for this LinkedIn post. Provide the edited version.',
-      'shorter': 'Make this content more concise and to the point. Provide the edited version.',
-      'longer': 'Expand this content with more details and examples. Provide the edited version.',
-      'storytelling': 'Add storytelling elements to make this more engaging. Provide the edited version.',
-      'actionable': 'Make this content more actionable with specific steps or takeaways. Provide the edited version.'
+      'professional': 'Torne este conteúdo mais profissional e focado em negócios para o LinkedIn. Forneça a versão editada.',
+      'bullet_points': 'Converta este conteúdo para usar marcadores e torne-o mais escaneável. Forneça a versão editada.',
+      'improve_hook': 'Melhore o gancho de abertura para torná-lo mais envolvente e chamativo. Forneça a versão editada.',
+      'add_hashtags': 'Sugira hashtags relevantes para este post do LinkedIn. Forneça a versão editada.',
+      'shorter': 'Torne este conteúdo mais conciso e direto ao ponto. Forneça a versão editada.',
+      'longer': 'Expanda este conteúdo com mais detalhes e exemplos. Forneça a versão editada.',
+      'storytelling': 'Adicione elementos de storytelling para tornar isso mais envolvente. Forneça a versão editada.',
+      'actionable': 'Torne este conteúdo mais acionável com etapas ou conclusões específicas. Forneça a versão editada.'
     };
 
     const message = actionMessages[action as keyof typeof actionMessages] || action;
@@ -451,13 +456,13 @@ const ContentEditor = () => {
     if (aiEditSuggestion) {
       setEditorContent(aiEditSuggestion.suggestedContent);
       setAiEditSuggestion(null);
-      toast.success('AI edit applied successfully!');
+      toast.success(t('contentEditor.aiAssistant.editSuggestion.applied'));
     }
   };
 
   const handleRejectAIEdit = () => {
     setAiEditSuggestion(null);
-    toast.info('AI edit rejected');
+    toast.info(t('contentEditor.aiAssistant.editSuggestion.rejected'));
   };
 
 
@@ -541,10 +546,10 @@ const ContentEditor = () => {
     if (!textSelection) return;
     
     const actionInstructions: Record<string, string> = {
-      'expand': 'Expand this text with more details and examples while maintaining the same tone',
-      'shorten': 'Make this text more concise and to the point while keeping the key message',
-      'continue_writing': 'Continue writing from where this text ends, maintaining the same style and tone',
-      'improve_writing': 'Improve the writing quality, clarity, and impact of this text'
+      'expand': 'Expanda este texto com mais detalhes e exemplos mantendo o mesmo tom',
+      'shorten': 'Torne este texto mais conciso e direto ao ponto mantendo a mensagem principal',
+      'continue_writing': 'Continue escrevendo de onde este texto termina, mantendo o mesmo estilo e tom',
+      'improve_writing': 'Melhore a qualidade da escrita, clareza e impacto deste texto'
     };
     
     const instruction = actionInstructions[actionId];
@@ -652,7 +657,7 @@ const ContentEditor = () => {
       
     } catch (error: any) {
       console.error('Inline edit error:', error);
-      toast.error(error.message || 'Failed to get AI suggestion');
+      toast.error(error.message || t('contentEditor.inlineEdit.failed'));
     } finally {
       setInlineEditLoading(false);
     }
@@ -673,14 +678,14 @@ const ContentEditor = () => {
     setTextSelection(null);
     setInlineDiff(null);
     
-    toast.success('Changes applied successfully!');
+    toast.success(t('contentEditor.inlineEdit.applied'));
   };
 
   // Handle rejecting inline diff
   const handleRejectInlineDiff = () => {
     setInlineDiff(null);
     setTextSelection(null);
-    toast.info('Changes rejected');
+    toast.info(t('contentEditor.inlineEdit.rejected'));
   };
 
   const toggleFolder = (folderId: string) => {
@@ -941,9 +946,9 @@ const ContentEditor = () => {
             style="segmented"
             type="fixed"
             tabs={[
-              { id: 'editor', label: 'Editor', leadIcon: <FileText size={16} /> },
-              { id: 'knowledge', label: 'Knowledge', leadIcon: <Book size={16} /> },
-              { id: 'chat', label: 'AI Chat', leadIcon: <User size={16} /> },
+              { id: 'editor', label: t('contentEditor.tabs.editor'), leadIcon: <FileText size={16} /> },
+              { id: 'knowledge', label: t('contentEditor.tabs.knowledge'), leadIcon: <Book size={16} /> },
+              { id: 'chat', label: t('contentEditor.tabs.chat'), leadIcon: <User size={16} /> },
             ]}
             activeTab={activeMobileTab}
             onTabChange={(tabId) => setActiveMobileTab(tabId as 'editor' | 'knowledge' | 'chat')}
@@ -971,7 +976,7 @@ const ContentEditor = () => {
                   color: colors.text.default,
                   margin: 0 
                 }}>
-                  Knowledge Base
+                  {t('contentEditor.sidebar.knowledgeBase.title')}
                 </h3>
                 <Button
                   size="2xs"
@@ -1000,18 +1005,21 @@ const ContentEditor = () => {
                       color: colors.text.default,
                       margin: 0 
                     }}>
-                      Knowledge Files
+                      {t('contentEditor.sidebar.knowledgeBase.knowledgeFiles')}
                     </h4>
                     <span style={{ 
                       ...textStyles.xs.normal, 
                       color: colors.text.muted 
                     }}>
-                    {getSelectedFiles().length} selected
+                    {getSelectedFiles().length} {getSelectedFiles().length === 1 ? t('contentEditor.sidebar.knowledgeBase.selected') : t('contentEditor.sidebar.knowledgeBase.selectedPlural')}
                   </span>
                 </div>
                 {loadingFiles ? (
-                    <div style={{ textAlign: 'center', padding: spacing.spacing[16] }}>
-                      <LoadingSpinner size={16} color={colors.icon.muted} />
+                    <div style={{ padding: spacing.spacing[16] }}>
+                      <SubtleLoadingSpinner 
+                        title={t('contentEditor.sidebar.knowledgeBase.loading')}
+                        size={16}
+                      />
                   </div>
                 ) : (() => {
                   if (knowledgeFiles.length === 0) {
@@ -1022,7 +1030,7 @@ const ContentEditor = () => {
                         textAlign: 'center',
                         padding: spacing.spacing[8]
                       }}>
-                        No files found. Upload files in Knowledge Base.
+                        {t('contentEditor.sidebar.knowledgeBase.noFiles')}
                       </p>
                     );
                   }
@@ -1092,13 +1100,16 @@ const ContentEditor = () => {
                 color: colors.text.default,
                 margin: 0 
               }}>
-              Recent Posts
+              {t('contentEditor.sidebar.recentPosts.title')}
               </h3>
             </div>
                          <div style={sectionContentStyles}>
              {loadingDrafts ? (
-                 <div style={{ textAlign: 'center', padding: spacing.spacing[16] }}>
-                   <LoadingSpinner size={12} color={colors.icon.muted} />
+                 <div style={{ padding: spacing.spacing[16] }}>
+                   <SubtleLoadingSpinner 
+                     title={t('contentEditor.sidebar.recentPosts.loading')}
+                     size={16}
+                   />
                </div>
              ) : savedDrafts.length === 0 ? (
                  <p style={{ 
@@ -1107,7 +1118,7 @@ const ContentEditor = () => {
                    textAlign: 'center',
                    padding: spacing.spacing[8]
                  }}>
-                 No saved drafts yet
+                 {t('contentEditor.sidebar.recentPosts.noDrafts')}
                </p>
              ) : (
                  <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[4] }}>
@@ -1142,7 +1153,7 @@ const ContentEditor = () => {
                          textOverflow: 'ellipsis',
                          whiteSpace: 'nowrap'
                        }}>
-                       {draft.title || 'Untitled'}
+                       {draft.title || t('contentEditor.sidebar.recentPosts.untitled')}
                      </div>
                        <div style={{ 
                          ...textStyles.xs.normal, 
@@ -1157,7 +1168,7 @@ const ContentEditor = () => {
              )}
               <div style={{ marginTop: spacing.spacing[8] }}>
                 <Button
-                  label="View all posts"
+                  label={t('contentEditor.sidebar.recentPosts.viewAll')}
                   style="dashed"
                   size="xs"
                   onClick={() => navigate('/posts')}
@@ -1174,7 +1185,7 @@ const ContentEditor = () => {
               items={themeItems}
             />
             <Button
-              label="Help"
+              label={t('contentEditor.sidebar.actions.help')}
               style="dashed"
               size="xs"
               leadIcon={<HelpCircle size={12} />}
@@ -1204,7 +1215,7 @@ const ContentEditor = () => {
             <LinkedInPostEditor
               value={editorContent}
               onChange={(e) => setEditorContent(e.target.value)}
-              placeholder="What do you want to talk about?"
+              placeholder={t('contentEditor.editorPlaceholder')}
               user={user}
               profile={profile}
             />
@@ -1264,13 +1275,13 @@ const ContentEditor = () => {
                 color: colors.text.default,
                 margin: 0 
               }}>
-                AI Assistant
+                {t('contentEditor.aiAssistant.title')}
               </h3>
               <div style={{ position: 'relative' }}>
                 <Button
                   label={currentConversationId 
-                    ? formatTitle(conversations.find(c => c.id === currentConversationId)?.title || 'Current Chat')
-                    : 'New Conversation'
+                    ? formatTitle(conversations.find(c => c.id === currentConversationId)?.title || t('contentEditor.aiAssistant.currentChat'))
+                    : t('contentEditor.aiAssistant.newConversation')
                   }
                   style="secondary"
                   size="xs"
@@ -1315,7 +1326,7 @@ const ContentEditor = () => {
                       <div style={{ display: 'flex', alignItems: 'center', gap: spacing.spacing[8] }}>
                         <Plus size={14} style={{ color: colors.icon.highlight }} />
                         <span style={{ ...textStyles.sm.medium, color: colors.text.default }}>
-                          New Conversation
+                          {t('contentEditor.aiAssistant.newConversation')}
                         </span>
                       </div>
                     </div>
@@ -1329,7 +1340,7 @@ const ContentEditor = () => {
                           borderBottom: `1px solid ${colors.border.default}`,
                         }}>
                           <span style={{ ...textStyles.xs.semibold, color: colors.text.muted }}>
-                            Recent Conversations
+                            {t('contentEditor.aiAssistant.recentConversations')}
                           </span>
                         </div>
                         {conversations.map((conversation) => (
@@ -1365,9 +1376,11 @@ const ContentEditor = () => {
                     {loadingConversations && (
                       <div style={{
                         padding: spacing.spacing[12],
-                        textAlign: 'center',
                       }}>
-                        <LoadingSpinner size={16} color={colors.icon.muted} />
+                        <SubtleLoadingSpinner 
+                          title={t('contentEditor.aiAssistant.loadingConversations')}
+                          size={16}
+                        />
                       </div>
                     )}
                   </div>
@@ -1385,7 +1398,10 @@ const ContentEditor = () => {
                   color: colors.text.default,
                   margin: 0 
                 }}>
-                {getSelectedFiles().length} file{getSelectedFiles().length > 1 ? 's' : ''} selected as context
+                {getSelectedFiles().length === 1 
+                  ? t('contentEditor.aiAssistant.filesSelected', { count: getSelectedFiles().length })
+                  : t('contentEditor.aiAssistant.filesSelectedPlural', { count: getSelectedFiles().length })
+                }
               </p>
             </div>
           )}
@@ -1396,10 +1412,10 @@ const ContentEditor = () => {
           {chatMessages.length === 0 ? (
               <div style={{ textAlign: 'center', color: colors.text.muted, marginTop: spacing.spacing[32] }}>
                 <p style={{ ...textStyles.sm.medium, margin: 0, marginBottom: spacing.spacing[8] }}>
-                  👋 Hello! I'm your AI content assistant.
+                  {t('contentEditor.aiAssistant.chat.welcome')}
                 </p>
                 <p style={{ ...textStyles.xs.normal, margin: 0 }}>
-                  Ask me anything about your content, writing tips, or ideas!
+                  {t('contentEditor.aiAssistant.chat.welcomeSubtitle')}
                 </p>
             </div>
           ) : (
@@ -1418,7 +1434,7 @@ const ContentEditor = () => {
                       ...textStyles.xs.semibold, 
                       color: colors.text.default 
                     }}>
-                      {message.role === 'user' ? 'You' : 'Assistant'}
+                      {message.role === 'user' ? t('contentEditor.aiAssistant.chat.you') : t('contentEditor.aiAssistant.chat.assistant')}
                     </span>
                   </div>
 
@@ -1497,7 +1513,7 @@ const ContentEditor = () => {
                             textTransform: 'uppercase',
                             letterSpacing: '0.5px',
                           }}>
-                            Hook
+                            {t('contentEditor.aiAssistant.editSuggestion.hook')}
                           </div>
                           <div style={{
                             ...textStyles.sm.normal,
@@ -1518,7 +1534,7 @@ const ContentEditor = () => {
                               textTransform: 'uppercase',
                               letterSpacing: '0.5px',
                             }}>
-                              Body Text
+                              {t('contentEditor.aiAssistant.editSuggestion.bodyText')}
                             </div>
                             <div style={{
                               ...textStyles.sm.normal,
@@ -1541,13 +1557,13 @@ const ContentEditor = () => {
                         justifyContent: 'flex-end',
                       }}>
                         <Button
-                          label="Reject"
+                          label={t('contentEditor.aiAssistant.editSuggestion.reject')}
                           style="secondary"
                           size="xs"
                           onClick={handleRejectAIEdit}
                         />
                         <Button
-                          label="Apply"
+                          label={t('contentEditor.aiAssistant.editSuggestion.apply')}
                           style="primary"
                           size="xs"
                           onClick={handleApplyAIEdit}
@@ -1568,7 +1584,7 @@ const ContentEditor = () => {
                     ...textStyles.xs.semibold, 
                     color: colors.text.default 
                   }}>
-                    Assistant
+                    {t('contentEditor.aiAssistant.chat.assistant')}
                   </span>
                 </div>
                 <div style={botMessageStyles}>
@@ -1623,7 +1639,7 @@ const ContentEditor = () => {
             marginBottom: spacing.spacing[8],
           }}>
             <span style={{ ...textStyles.xs.semibold, color: colors.text.muted }}>
-              Quick Actions
+              {t('contentEditor.aiAssistant.quickActions.title')}
             </span>
             <Button
               label=""
@@ -1641,56 +1657,56 @@ const ContentEditor = () => {
               gap: spacing.spacing[6],
             }}>
               <Button
-                label="Professional"
+                label={t('contentEditor.aiAssistant.quickActions.professional')}
                 style="secondary"
                 size="xs"
                 onClick={() => handleQuickAction('professional')}
                 disabled={aiLoading}
               />
               <Button
-                label="Bullet Points"
+                label={t('contentEditor.aiAssistant.quickActions.bulletPoints')}
                 style="secondary"
                 size="xs"
                 onClick={() => handleQuickAction('bullet_points')}
                 disabled={aiLoading}
               />
               <Button
-                label="Better Hook"
+                label={t('contentEditor.aiAssistant.quickActions.betterHook')}
                 style="secondary"
                 size="xs"
                 onClick={() => handleQuickAction('improve_hook')}
                 disabled={aiLoading}
               />
               <Button
-                label="Add Hashtags"
+                label={t('contentEditor.aiAssistant.quickActions.addHashtags')}
                 style="secondary"
                 size="xs"
                 onClick={() => handleQuickAction('add_hashtags')}
                 disabled={aiLoading}
               />
               <Button
-                label="Make Shorter"
+                label={t('contentEditor.aiAssistant.quickActions.makeShorter')}
                 style="secondary"
                 size="xs"
                 onClick={() => handleQuickAction('shorter')}
                 disabled={aiLoading}
               />
               <Button
-                label="Make Longer"
+                label={t('contentEditor.aiAssistant.quickActions.makeLonger')}
                 style="secondary"
                 size="xs"
                 onClick={() => handleQuickAction('longer')}
                 disabled={aiLoading}
               />
               <Button
-                label="Add Story"
+                label={t('contentEditor.aiAssistant.quickActions.addStory')}
                 style="secondary"
                 size="xs"
                 onClick={() => handleQuickAction('storytelling')}
                 disabled={aiLoading}
               />
               <Button
-                label="Make Actionable"
+                label={t('contentEditor.aiAssistant.quickActions.makeActionable')}
                 style="secondary"
                 size="xs"
                 onClick={() => handleQuickAction('actionable')}
@@ -1704,7 +1720,7 @@ const ContentEditor = () => {
           <div style={chatInputAreaStyles}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[8] }}>
               <TextArea
-                placeholder="Ask AI anything about your content..."
+                placeholder={t('contentEditor.aiAssistant.chat.placeholder')}
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
                 onKeyDown={handleChatKeyPress}
@@ -1712,7 +1728,7 @@ const ContentEditor = () => {
                 disabled={aiLoading}
               />
               <Button
-                label="Send Message"
+                label={t('contentEditor.aiAssistant.chat.sendMessage')}
                 style="primary"
                 size="sm"
                 leadIcon={<Send size={16} />}
@@ -1729,7 +1745,7 @@ const ContentEditor = () => {
           <Modal
             isOpen={showFileUploadModal}
             onClose={handleUploadModalClose}
-            title="Add Files to Knowledge Base"
+            title={t('contentEditor.uploadModal.title')}
             size="md"
           >
             <div style={{

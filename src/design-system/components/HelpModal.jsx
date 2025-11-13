@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { PaperPlaneTilt as Send, CircleNotch as Loader2 } from '@phosphor-icons/react';
 import { useTheme } from '@/services/theme-context';
 import { useHelp } from '@/services/help-context';
+import { useTranslation } from '@/services/i18n-context';
 import { useToast } from './Toast';
 import { spacing } from '../tokens/spacing.js';
 import { textStyles } from '../styles/typography/typography-styles.js';
@@ -27,6 +28,7 @@ const HelpModal = () => {
   const { colors } = useTheme();
   const { isHelpModalOpen, closeHelp, submitHelpRequest, helpContext } = useHelp();
   const { toast } = useToast();
+  const { t } = useTranslation();
   
   // Form state
   const [formData, setFormData] = useState({
@@ -40,12 +42,12 @@ const HelpModal = () => {
 
   // Form field options
   const helpTypeOptions = [
-    { value: 'question', label: 'General Question' },
-    { value: 'bug', label: 'Bug Report' },
-    { value: 'feature', label: 'Feature Request' },
-    { value: 'account', label: 'Account Issue' },
-    { value: 'billing', label: 'Billing Question' },
-    { value: 'other', label: 'Other' },
+    { value: 'question', label: t('help.types.question') },
+    { value: 'bug', label: t('help.types.bug') },
+    { value: 'feature', label: t('help.types.feature') },
+    { value: 'account', label: t('help.types.account') },
+    { value: 'billing', label: t('help.types.billing') },
+    { value: 'other', label: t('help.types.other') },
   ];
 
 
@@ -65,15 +67,15 @@ const HelpModal = () => {
     const newErrors = {};
     
     if (!formData.subject.trim()) {
-      newErrors.subject = 'Subject is required';
+      newErrors.subject = t('help.validation.subjectRequired');
     } else if (formData.subject.length < 5) {
-      newErrors.subject = 'Subject must be at least 5 characters';
+      newErrors.subject = t('help.validation.subjectTooShort');
     }
     
     if (!formData.message.trim()) {
-      newErrors.message = 'Message is required';
+      newErrors.message = t('help.validation.messageRequired');
     } else if (formData.message.length < 10) {
-      newErrors.message = 'Message must be at least 10 characters';
+      newErrors.message = t('help.validation.messageTooShort');
     }
     
     setErrors(newErrors);
@@ -91,8 +93,8 @@ const HelpModal = () => {
     setIsSubmitting(true);
     
     // Show loading toast
-    const loadingToastId = toast.loading('Sending your help request...', {
-      title: 'Submitting Request'
+    const loadingToastId = toast.loading(t('help.messages.submitting'), {
+      title: t('help.messages.submittingTitle')
     });
     
     try {
@@ -103,8 +105,8 @@ const HelpModal = () => {
       
       if (result.success) {
         // Show success toast
-        toast.success(result.message || 'Your help request has been submitted successfully!', {
-          title: 'Request Submitted',
+        toast.success(result.message || t('help.messages.success'), {
+          title: t('help.messages.successTitle'),
           duration: 5000
         });
         
@@ -119,13 +121,13 @@ const HelpModal = () => {
         // Modal will be closed by the help context
       } else {
         // Show error toast
-        toast.error(result.error || 'Failed to submit help request. Please try again.', {
-          title: 'Submission Failed',
+        toast.error(result.error || t('help.messages.failed'), {
+          title: t('help.messages.failedTitle'),
           duration: 6000
         });
         
         // Also set form error for inline display
-        setErrors({ submit: result.error || 'Failed to submit help request' });
+        setErrors({ submit: result.error || t('help.messages.failed') });
       }
     } catch (error) {
       // Remove loading toast
@@ -134,13 +136,13 @@ const HelpModal = () => {
       console.error('Help request submission error:', error);
       
       // Show error toast
-      toast.error('An unexpected error occurred. Please try again.', {
-        title: 'Submission Error',
+      toast.error(t('help.messages.error'), {
+        title: t('help.messages.errorTitle'),
         duration: 6000
       });
       
       // Set form error for inline display
-      setErrors({ submit: 'An unexpected error occurred. Please try again.' });
+      setErrors({ submit: t('help.messages.error') });
     } finally {
       setIsSubmitting(false);
     }
@@ -218,9 +220,9 @@ const HelpModal = () => {
     >
       {/* Header */}
       <div style={headerStyles}>
-        <h2 style={titleStyle}>Get Help</h2>
+        <h2 style={titleStyle}>{t('help.modalTitle')}</h2>
         <p style={subtitleStyle}>
-          Describe your issue and we'll get back to you as soon as possible
+          {t('help.modalSubtitle')}
         </p>
       </div>
 
@@ -229,7 +231,7 @@ const HelpModal = () => {
         {/* Help Type */}
         <div>
           <Select
-            label="What can we help you with?"
+            label={t('help.typeLabel')}
             value={formData.type}
             onValueChange={(value) => handleInputChange('type', value)}
             options={helpTypeOptions}
@@ -240,10 +242,10 @@ const HelpModal = () => {
         {/* Subject */}
         <div>
           <Input
-            label="Subject"
+            label={t('help.subjectLabel')}
             value={formData.subject}
             onChange={(e) => handleInputChange('subject', e.target.value)}
-            placeholder="Briefly describe your issue"
+            placeholder={t('help.subjectPlaceholder')}
             required
             failed={!!errors.subject}
           />
@@ -255,10 +257,10 @@ const HelpModal = () => {
         {/* Message */}
         <div>
           <TextArea
-            label="Message"
+            label={t('help.messageLabel')}
             value={formData.message}
             onChange={(e) => handleInputChange('message', e.target.value)}
-            placeholder="Please provide as much detail as possible about your issue..."
+            placeholder={t('help.messagePlaceholder')}
             rows={6}
             required
             failed={!!errors.message}
@@ -284,19 +286,19 @@ const HelpModal = () => {
           ...textStyles.xs.normal,
           color: colors.text.muted,
         }}>
-          We typically respond within 24 hours
+          {t('help.responseTime')}
         </div>
         
         <div style={{ display: 'flex', gap: spacing.spacing[12] }}>
           <Button
-            label="Cancel"
+            label={t('help.cancelButton')}
             style="ghost"
             size="md"
             onClick={handleClose}
             disabled={isSubmitting}
           />
           <Button
-            label={isSubmitting ? "Sending..." : "Send Help Request"}
+            label={isSubmitting ? t('help.sendingButton') : t('help.sendButton')}
             style="primary"
             size="md"
             leadIcon={isSubmitting ? <Loader2 size={16} /> : <Send size={16} />}

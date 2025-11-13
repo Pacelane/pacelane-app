@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTheme } from '@/services/theme-context';
+import { useTranslation } from '@/services/i18n-context';
 import { spacing } from '@/design-system/tokens/spacing';
 import { cornerRadius } from '@/design-system/tokens/corner-radius';
 import { textStyles } from '@/design-system/styles/typography/typography-styles';
@@ -17,6 +18,7 @@ import { FileText, Copy, CheckCircle, WarningCircle as AlertCircle, X } from '@p
 
 const TranscriptPasteModal = ({ isOpen, onClose, onTranscriptSubmit, loading = false }) => {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const [transcript, setTranscript] = useState('');
   const [title, setTitle] = useState('');
   const [validationError, setValidationError] = useState('');
@@ -33,15 +35,15 @@ const TranscriptPasteModal = ({ isOpen, onClose, onTranscriptSubmit, loading = f
   // Validate transcript content
   const validateTranscript = (text) => {
     if (!text.trim()) {
-      return 'Please paste a meeting transcript';
+      return t('components.transcriptPaste.transcriptRequired');
     }
 
     if (text.trim().length < 100) {
-      return 'Transcript seems too short. Please paste a complete meeting transcript (at least 100 characters)';
+      return t('components.transcriptPaste.transcriptTooShort');
     }
 
     if (text.trim().length > 50000) {
-      return 'Transcript is too long. Please paste a transcript under 50,000 characters';
+      return t('components.transcriptPaste.transcriptTooLong');
     }
 
     return null;
@@ -85,12 +87,12 @@ const TranscriptPasteModal = ({ isOpen, onClose, onTranscriptSubmit, loading = f
     );
 
     if (firstMeaningfulLine) {
-      // Take first 50 characters and add "Meeting"
+      // Take first 50 characters and add prefix from translation
       const excerpt = firstMeaningfulLine.trim().substring(0, 50);
-      return `Meeting: ${excerpt}${excerpt.length === 50 ? '...' : ''}`;
+      return `${t('components.transcriptPaste.autoTitlePrefix')} ${excerpt}${excerpt.length === 50 ? '...' : ''}`;
     }
 
-    return 'Meeting Transcript';
+    return t('components.transcriptPaste.defaultTitle');
   };
 
 
@@ -105,7 +107,7 @@ const TranscriptPasteModal = ({ isOpen, onClose, onTranscriptSubmit, loading = f
   };
 
   const titleStyle = {
-    fontFamily: typography.fontFamily['awesome-serif'],
+    fontFamily: typography.fontFamily['instrument-serif'],
     fontSize: typography.desktop.size['2xl'],
     fontWeight: typography.desktop.weight.semibold,
     lineHeight: typography.desktop.lineHeight.leading7,
@@ -151,11 +153,11 @@ const TranscriptPasteModal = ({ isOpen, onClose, onTranscriptSubmit, loading = f
         <div style={{ display: 'flex', alignItems: 'center', gap: spacing.spacing[12] }}>
           <FileText size={24} color={colors.icon.default} />
           <h2 style={titleStyle}>
-            Paste Meeting Transcript
+            {t('components.transcriptPaste.title')}
           </h2>
         </div>
         <p style={subtitleStyle}>
-          Paste your meeting transcript from Fireflies, Fathom, Otter.ai, Zoom, or any other transcription tool
+          {t('components.transcriptPaste.subtitle')}
         </p>
       </div>
 
@@ -167,13 +169,13 @@ const TranscriptPasteModal = ({ isOpen, onClose, onTranscriptSubmit, loading = f
           ...textStyles.sm.medium,
           color: colors.text.default,
         }}>
-          Meeting Title (Optional)
+          {t('components.transcriptPaste.titleLabel')}
         </label>
         <input
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="e.g., Weekly Team Standup, Client Strategy Meeting..."
+          placeholder={t('components.transcriptPaste.titlePlaceholder')}
           style={{
             padding: spacing.spacing[12],
             borderRadius: cornerRadius.borderRadius.md,
@@ -195,7 +197,7 @@ const TranscriptPasteModal = ({ isOpen, onClose, onTranscriptSubmit, loading = f
           color: colors.text.muted,
           margin: 0,
         }}>
-          If left blank, we'll generate a title from your transcript content
+          {t('components.transcriptPaste.helpDescription')}
         </p>
       </div>
 
@@ -205,17 +207,12 @@ const TranscriptPasteModal = ({ isOpen, onClose, onTranscriptSubmit, loading = f
           ...textStyles.sm.medium,
           color: colors.text.default,
         }}>
-          Meeting Transcript *
+          {t('components.transcriptPaste.transcriptLabel')}
         </label>
         <TextArea
           value={transcript}
           onChange={handleTranscriptChange}
-          placeholder="Paste your meeting transcript here...
-
-Example formats we support:
-• Speaker Name: What they said during the meeting
-• [10:30] John: Discussion about project timeline  
-• Jane Doe (15:45): Let's review the quarterly goals"
+          placeholder={t('components.transcriptPaste.transcriptPlaceholder')}
           rows={12}
           style={{ 
             fontFamily: typography.fontFamily.jetbrains,
@@ -231,7 +228,7 @@ Example formats we support:
             color: colors.text.muted,
             margin: 0,
           }}>
-            {transcript.length > 0 ? `${transcript.length.toLocaleString()} characters` : 'Minimum 100 characters required'}
+            {transcript.length > 0 ? `${transcript.length.toLocaleString()} ${t('contentEditor.characterCount')}` : 'Mínimo de 100 caracteres necessário'}
           </p>
           
           {transcript.length > 0 && (
@@ -243,7 +240,7 @@ Example formats we support:
                     ...textStyles.xs.medium,
                     color: colors.text.success,
                   }}>
-                    Ready to process
+                    Pronto para processar
                   </span>
                 </>
               ) : (
@@ -253,7 +250,7 @@ Example formats we support:
                     ...textStyles.xs.medium,
                     color: colors.text.warning,
                   }}>
-                    Need {100 - transcript.length} more characters
+                    Faltam {100 - transcript.length} caracteres
                   </span>
                 </>
               )}
@@ -288,14 +285,14 @@ Example formats we support:
       {/* Footer */}
       <div style={footerStyles}>
         <Button
-          label="Cancel"
+          label={t('components.transcriptPaste.cancel')}
           style="ghost"
           size="md"
           onClick={onClose}
           disabled={loading}
         />
         <Button
-          label={loading ? "Processing..." : "Create Content from Transcript"}
+          label={loading ? t('components.transcriptPaste.submitting') : t('components.transcriptPaste.submit')}
           style="primary"
           size="md"
           onClick={handleSubmit}

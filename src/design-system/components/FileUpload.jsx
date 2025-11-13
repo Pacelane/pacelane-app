@@ -1,6 +1,7 @@
 import React, { useState, useRef, forwardRef, useImperativeHandle } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '../../services/theme-context.jsx';
+import { useTranslation } from '../../services/i18n-context.jsx';
 import { spacing } from '../tokens/spacing.js';
 import { cornerRadius } from '../tokens/corner-radius.js';
 import { textStyles } from '../styles/typography/typography-styles.js';
@@ -31,6 +32,7 @@ const FileUpload = forwardRef(({
   ...rest
 }, ref) => {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const [isHovered, setIsHovered] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef(null);
@@ -207,11 +209,11 @@ const FileUpload = forwardRef(({
         >
           <div style={{ ...textStyles.sm.medium }}>
             <span style={{ color: (disabled || uploading) ? colors.text.hint : colors.text.default }}>
-              {uploading ? 'Uploading files...' : 'Drop your files here, or'}{uploading ? '' : ' '}
+              {uploading ? t('components.fileUpload.uploadingFiles') : t('components.fileUpload.dropOrClick')}{uploading ? '' : ' '}
             </span>
             {!uploading && (
               <span style={{ color: (disabled || uploading) ? colors.text.hint : colors.text.informative }}>
-                click to browse
+                {t('components.fileUpload.clickToBrowse')}
               </span>
             )}
           </div>
@@ -223,8 +225,8 @@ const FileUpload = forwardRef(({
             }}
           >
             {uploading 
-              ? 'Please wait while files are being uploaded...'
-              : `Up to ${maxFiles} files, ${Math.round(maxTotalSize / (1024 * 1024))}MB total limit`
+              ? t('components.fileUpload.pleaseWait')
+              : `${t('components.fileUpload.filesLimit').replace('{size}', Math.round(maxTotalSize / (1024 * 1024)))}`
             }
           </div>
         </div>
@@ -241,7 +243,7 @@ const FileUpload = forwardRef(({
               color: disabled ? colors.text.hint : colors.text.default,
             }}
           >
-            Drop a link to a website
+            {t('components.fileUpload.dropLinkHere')}
           </div>
         )}
         
@@ -255,7 +257,7 @@ const FileUpload = forwardRef(({
                 addOnPrefix="https://"
                 value={urlValue}
                 onChange={(e) => onUrlChange?.(e.target.value)}
-                placeholder={urlPlaceholder}
+                placeholder={urlPlaceholder || t('components.fileUpload.urlPlaceholder')}
                 disabled={disabled}
                 type="url"
               />

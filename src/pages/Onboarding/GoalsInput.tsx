@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/services/theme-context';
+import { useTranslation } from '@/services/i18n-context';
 import { spacing } from '@/design-system/tokens/spacing';
 import { cornerRadius } from '@/design-system/tokens/corner-radius';
 import { typography } from '@/design-system/tokens/typography';
@@ -17,18 +18,19 @@ import { Plus, Trash } from '@phosphor-icons/react';
 
 const GoalsInput = () => {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
   const [targetAudiences, setTargetAudiences] = useState<string[]>(['', '']);
 
   // Goals options
   const goalsOptions = [
-    'Reconhecimento de Marca',
-    'Geração de Leads',
-    'Recrutamento',
-    'Liderança de Pensamento',
-    'Atrair oportunidades',
-    'Manter-se Relevante',
+    t('onboarding.goals.options.brandRecognition'),
+    t('onboarding.goals.options.leadGeneration'),
+    t('onboarding.goals.options.recruitment'),
+    t('onboarding.goals.options.thoughtLeadership'),
+    t('onboarding.goals.options.attractOpportunities'),
+    t('onboarding.goals.options.stayRelevant'),
   ];
 
   // Handle goal selection
@@ -139,8 +141,8 @@ const GoalsInput = () => {
   // Title styles using Instrument Serif
   const titleStyles = {
     fontFamily: typography.fontFamily['instrument-serif'],
-    fontSize: typography.desktop.size['4xl'],
-    fontWeight: typography.desktop.weight.semibold,
+    fontSize: typography.desktop.size['3xl'],
+    fontWeight: typography.desktop.weight.normal,
     lineHeight: typography.desktop.lineHeight.leading7,
     letterSpacing: typography.desktop.letterSpacing.normal,
     color: colors.text.default,
@@ -276,13 +278,13 @@ const GoalsInput = () => {
 
   // Steps list
   const steps = [
-    { label: 'URL do LinkedIn', active: true },
-    { label: 'Número do WhatsApp', active: true },
-    { label: 'Frequência', active: true },
-    { label: 'Objetivos', active: false },
-    { label: 'Pilares', active: false },
-    { label: 'Formato', active: false },
-    { label: 'Conhecimento', active: false },
+    { label: t('onboarding.progress.steps.linkedIn'), active: true },
+    { label: t('onboarding.progress.steps.whatsapp'), active: true },
+    { label: t('onboarding.progress.steps.pacing'), active: true },
+    { label: t('onboarding.progress.steps.goals'), active: false },
+    { label: t('onboarding.progress.steps.pillars'), active: false },
+    { label: t('onboarding.progress.steps.format'), active: false },
+    { label: t('onboarding.progress.steps.knowledge'), active: false },
   ];
 
   return (
@@ -319,15 +321,15 @@ const GoalsInput = () => {
             <div className="goals-content-container" style={contentContainerStyles}>
               {/* Text container */}
               <div style={textContainerStyles}>
-                <h1 style={titleStyles}>Seus Objetivos</h1>
+                <h1 style={titleStyles}>{t('onboarding.goals.title')}</h1>
                 <p style={subtitleStyles}>
-                  Nos diga quais são seus objetivos e os públicos-alvo que você quer alcançar
+                  {t('onboarding.goals.subtitle')}
                 </p>
               </div>
 
               {/* Goals section */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[12] }}>
-                <p style={sectionTitleStyles}>Quais são seus objetivos?</p>
+                <p style={sectionTitleStyles}>{t('onboarding.goals.goalsQuestion')}</p>
                 <div style={chipsContainerStyles}>
                   {goalsOptions.map((goal) => (
                     <Chips
@@ -344,7 +346,7 @@ const GoalsInput = () => {
 
               {/* Target audiences section */}
               <div style={audiencesSectionStyles}>
-                <p style={sectionTitleStyles}>Quais são seus públicos-alvo?</p>
+                <p style={sectionTitleStyles}>{t('onboarding.goals.audienceQuestion')}</p>
                 
                 {/* Target audience inputs */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[8] }}>
@@ -353,7 +355,7 @@ const GoalsInput = () => {
                       key={index}
                       style="tail-action"
                       size="lg"
-                      placeholder={`Público-alvo ${index + 1}`}
+                      placeholder={`${t('onboarding.goals.audiencePlaceholder')} ${index + 1}`}
                       value={audience}
                       onChange={(e) => handleAudienceChange(index, e.target.value)}
                       tailAction={{
@@ -367,7 +369,7 @@ const GoalsInput = () => {
                   <Button
                     style="secondary"
                     size="sm"
-                    label="Adicionar Público-alvo"
+                    label={t('onboarding.goals.addAudienceButton')}
                     leadIcon={<Plus size={16} />}
                     onClick={handleAddAudience}
                   />
@@ -381,7 +383,7 @@ const GoalsInput = () => {
                 <Button
                   style="secondary"
                   size="sm"
-                  label="Voltar"
+                  label={t('onboarding.goals.backButton')}
                   onClick={handleGoBack}
                   fullWidth
                 />
@@ -390,7 +392,7 @@ const GoalsInput = () => {
                 <Button
                   style="primary"
                   size="sm"
-                  label="Continuar"
+                  label={t('onboarding.goals.continueButton')}
                   onClick={handleContinue}
                   fullWidth
                 />
@@ -402,7 +404,7 @@ const GoalsInput = () => {
           <div style={accuracyBarStyles}>
             {/* Bar container */}
             <div style={barContainerStyles}>
-              <p style={labelTextStyles}>Precisão dos resultados</p>
+              <p style={labelTextStyles}>{t('onboarding.progress.accuracyLabel')}</p>
               <div style={{ marginTop: spacing.spacing[8] }}>
                 <div style={linesBarContainerStyles}>
                   {[...Array(27)].map((_, index) => (
@@ -410,10 +412,10 @@ const GoalsInput = () => {
                   ))}
                 </div>
               </div>
-              <p style={{ ...infoTextStyles, marginTop: spacing.spacing[4] }}>25% Concluído</p>
+              <p style={{ ...infoTextStyles, marginTop: spacing.spacing[4] }}>25% {t('onboarding.progress.completed')}</p>
               <div style={{ ...dividerStyles, marginTop: spacing.spacing[8] }} />
               <p style={{ ...infoTextStyles, marginTop: spacing.spacing[8] }}>
-                Quanto mais informações você fornecer sobre si mesmo, melhores serão os resultados.
+                {t('onboarding.progress.infoText')}
               </p>
             </div>
 

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTheme } from '@/services/theme-context';
+import { useTranslation } from '@/services/i18n-context';
 import { spacing } from '@/design-system/tokens/spacing';
 import { cornerRadius } from '@/design-system/tokens/corner-radius';
 import { stroke } from '@/design-system/tokens/stroke';
@@ -21,6 +22,7 @@ const InlineDiffView = ({
   loading = false 
 }) => {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   
   console.log('InlineDiffView rendering:', { originalText, suggestedText });
 
@@ -110,7 +112,7 @@ const InlineDiffView = ({
     <div style={containerStyles} data-inline-diff>
       <div style={headerStyles}>
         <span style={{ ...textStyles.xs.semibold, color: colors.text.muted }}>
-          ✨ AI Suggested Changes
+          ✨ Alterações Sugeridas pela IA
         </span>
       </div>
       
@@ -120,7 +122,7 @@ const InlineDiffView = ({
       
       <div style={actionsStyles}>
         <Button
-          label="Reject"
+          label={t('contentEditor.inlineEdit.reject')}
           style="secondary"
           size="sm"
           leadIcon={<X size={16} />}
@@ -128,7 +130,7 @@ const InlineDiffView = ({
           disabled={loading}
         />
         <Button
-          label="Accept"
+          label={t('contentEditor.inlineEdit.accept')}
           style="primary"
           size="sm"
           leadIcon={<Check size={16} />}

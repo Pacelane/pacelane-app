@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTheme } from '../../services/theme-context.jsx';
+import { useTranslation } from '../../services/i18n-context.jsx';
 import { useIsMobile } from '../../hooks/use-mobile.tsx';
 import { spacing } from '../tokens/spacing.js';
 import { stroke } from '../tokens/stroke.js';
@@ -35,6 +36,7 @@ const EditorNav = ({
   ...rest 
 }) => {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const isMobile = useIsMobile();
 
   // Handle go back button click
@@ -119,9 +121,9 @@ const EditorNav = ({
         style="dashed"
         size="xs"
         leadIcon={<ArrowLeft size={16} />}
-        label="Go Back"
+        label={t('contentEditor.nav.goBack')}
         onClick={handleGoBack}
-        aria-label="Go back to previous page"
+        aria-label={t('contentEditor.nav.goBack')}
       />
       
       {/* Title in center with inline editing */}
@@ -129,7 +131,7 @@ const EditorNav = ({
         <InlineEditInput
           value={title}
           onSave={handleTitleChange}
-          placeholder="Enter title..."
+          placeholder={t('contentEditor.sidebar.recentPosts.untitled')}
           size="lg"
         />
       </div>
@@ -139,10 +141,10 @@ const EditorNav = ({
         style="primary"
         size="xs"
         leadIcon={<Save size={16} />}
-        label="Save Draft"
+        label={t('contentEditor.nav.saveDraft')}
         onClick={handleSaveDraft}
         disabled={!canSave}
-        aria-label="Save draft"
+        aria-label={t('contentEditor.nav.saveDraft')}
       />
     </nav>
   );

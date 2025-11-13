@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CaretDown as ChevronDown, Check } from '@phosphor-icons/react';
 import { useTheme } from '../../services/theme-context.jsx';
+import { useTranslation } from '../../services/i18n-context.jsx';
 import { spacing } from '../tokens/spacing.js';
 import { cornerRadius } from '../tokens/corner-radius.js';
 import { textStyles } from '../styles/typography/typography-styles.js';
@@ -11,7 +12,7 @@ import { stroke } from '../tokens/stroke.js';
 const Select = ({
   // Core props
   value,
-  placeholder = 'Select an option',
+  placeholder,
   options = [], // Array of { value, label } objects
   onValueChange,
   
@@ -32,6 +33,7 @@ const Select = ({
   ...rest
 }) => {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const selectRef = useRef(null);
@@ -211,7 +213,7 @@ const Select = ({
         name={name}
       >
         <span style={{ flex: 1, textAlign: 'left' }}>
-          {selectedOption ? selectedOption.label : placeholder}
+          {selectedOption ? selectedOption.label : (placeholder || t('components.select.placeholder'))}
         </span>
         
         <motion.div

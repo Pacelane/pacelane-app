@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '@/services/theme-context';
+import { useTranslation } from '@/services/i18n-context';
 import { spacing } from '@/design-system/tokens/spacing';
 import { typography } from '@/design-system/tokens/typography';
 import { textStyles } from '@/design-system/styles/typography/typography-styles';
@@ -31,6 +32,7 @@ const WhatsAppConfigModal = ({
   loading = false,
 }) => {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [error, setError] = useState('');
 
@@ -45,17 +47,17 @@ const WhatsAppConfigModal = ({
   // Validate WhatsApp number format
   const validateNumber = (number) => {
     if (!number.trim()) {
-      return 'WhatsApp number is required';
+      return t('integrations.whatsapp.errors.required');
     }
     
     // Basic validation for international format
     const cleanNumber = number.replace(/\s+/g, '');
     if (!cleanNumber.startsWith('+')) {
-      return 'Please use international format starting with +';
+      return t('integrations.whatsapp.errors.invalidFormat');
     }
     
     if (cleanNumber.length < 10 || cleanNumber.length > 17) {
-      return 'Please enter a valid WhatsApp number';
+      return t('integrations.whatsapp.errors.invalidNumber');
     }
     
     return '';
@@ -167,10 +169,10 @@ const WhatsAppConfigModal = ({
           }}>
             <MessageCircle size={16} color="white" />
           </div>
-          <h2 style={titleStyle}>WhatsApp Configuration</h2>
+          <h2 style={titleStyle}>{t('integrations.whatsapp.modalTitle')}</h2>
         </div>
         <p style={subtitleStyle}>
-          Connect your WhatsApp number to receive content ideas and platform updates
+          {t('integrations.whatsapp.modalSubtitle')}
         </p>
       </div>
 
@@ -179,15 +181,15 @@ const WhatsAppConfigModal = ({
         {/* WhatsApp Number Input */}
         <div>
           <Input
-            label="WhatsApp Number"
-            placeholder="+55 11 99999-9999"
+            label={t('integrations.whatsapp.numberLabel')}
+            placeholder={t('integrations.whatsapp.numberPlaceholder')}
             value={whatsappNumber}
             onChange={handleInputChange}
             style="default"
             size="lg"
             disabled={loading}
             failed={!!error}
-            caption={error || 'Use international format: +55 11 99999-9999 (Brazil) or +1 555 123-4567 (US)'}
+            caption={error || t('integrations.whatsapp.helper')}
             leadIcon={<MessageCircle size={18} />}
           />
         </div>
@@ -199,7 +201,7 @@ const WhatsAppConfigModal = ({
             color: colors.text.default,
             margin: 0,
           }}>
-            What you'll receive:
+            {t('integrations.whatsapp.infoTitle')}
           </h4>
           <ul style={{
             ...textStyles.xs.normal,
@@ -208,9 +210,9 @@ const WhatsAppConfigModal = ({
             paddingLeft: spacing.spacing[16],
             listStyleType: 'disc',
           }}>
-            <li>Personalized content ideas based on your knowledge base</li>
-            <li>Platform updates and feature announcements</li>
-            <li>Content creation tips and best practices</li>
+            <li>{t('integrations.whatsapp.infoBullet1')}</li>
+            <li>{t('integrations.whatsapp.infoBullet2')}</li>
+            <li>{t('integrations.whatsapp.infoBullet3')}</li>
           </ul>
           <p style={{
             ...textStyles.xs.normal,
@@ -219,7 +221,7 @@ const WhatsAppConfigModal = ({
             marginTop: spacing.spacing[8],
             fontStyle: 'italic',
           }}>
-            You can unsubscribe or change your number at any time.
+            {t('integrations.whatsapp.unsubscribe')}
           </p>
         </div>
       </div>
@@ -228,7 +230,7 @@ const WhatsAppConfigModal = ({
       <div style={footerStyles}>
         {canRemove && (
           <Button
-            label="Remove Number"
+            label={t('integrations.whatsapp.removeButton')}
             style="ghost"
             size="sm"
             leadIcon={<X size={16} />}
@@ -238,14 +240,14 @@ const WhatsAppConfigModal = ({
         )}
         <div style={{ display: 'flex', gap: spacing.spacing[12] }}>
           <Button
-            label="Cancel"
+            label={t('integrations.whatsapp.cancelButton')}
             style="secondary"
             size="sm"
             onClick={onClose}
             disabled={loading}
           />
           <Button
-            label={loading ? "Saving..." : "Save Number"}
+            label={loading ? t('integrations.whatsapp.savingButton') : t('integrations.whatsapp.saveButton')}
             style="primary"
             size="sm"
             leadIcon={loading ? undefined : <Check size={16} />}

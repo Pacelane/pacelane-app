@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTheme } from '@/services/theme-context';
+import { useTranslation } from '@/services/i18n-context';
 import { spacing } from '@/design-system/tokens/spacing';
 import { cornerRadius } from '@/design-system/tokens/corner-radius';
 import { stroke } from '@/design-system/tokens/stroke';
@@ -20,6 +21,7 @@ const InlinePromptInput = ({
   loading = false 
 }) => {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const [instruction, setInstruction] = useState('');
   const [position, setPosition] = useState({ top: 0, left: 0 });
   const inputRef = useRef(null);
@@ -124,7 +126,7 @@ const InlinePromptInput = ({
     <div ref={containerRef} style={containerStyles} data-inline-prompt>
       <div style={headerStyles}>
         <span style={{ ...textStyles.xs.semibold, color: colors.text.muted }}>
-          What would you like to change?
+          {t('contentEditor.inlineEdit.promptPlaceholder')}
         </span>
         <button
           onClick={onCancel}
@@ -146,7 +148,7 @@ const InlinePromptInput = ({
         <div style={{ flex: 1 }}>
           <Input
             ref={inputRef}
-            placeholder="E.g., 'Make this more concise' or 'Add more details'"
+            placeholder={t('contentEditor.inlineEdit.promptPlaceholder')}
             value={instruction}
             onChange={(e) => setInstruction(e.target.value)}
             onKeyDown={handleKeyPress}
@@ -169,7 +171,7 @@ const InlinePromptInput = ({
         ...textStyles.xs.normal,
         color: colors.text.hint
       }}>
-        Press Enter to send, Esc to cancel
+        Enter para enviar, Esc para cancelar
       </div>
     </div>
   );

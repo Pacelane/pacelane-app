@@ -9,6 +9,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 
 // Design System Components
 import { useTheme } from '@/services/theme-context';
+import { useTranslation } from '@/services/i18n-context';
 import { spacing } from '@/design-system/tokens/spacing';
 import { cornerRadius } from '@/design-system/tokens/corner-radius';
 import { typography } from '@/design-system/tokens/typography';
@@ -17,7 +18,7 @@ import { colors as primitiveColors } from '@/design-system/tokens/primitive-colo
 import { shadows, getShadow } from '@/design-system/tokens/shadows';
 import { getResponsivePadding, getResponsiveWidth } from '@/design-system/utils/responsive';
 import Logo from '@/design-system/components/Logo';
-import LoadingSpinner from '@/design-system/components/LoadingSpinner';
+import SubtleLoadingSpinner from '@/design-system/components/SubtleLoadingSpinner';
 import Input from '@/design-system/components/Input';
 import Button from '@/design-system/components/Button';
 import Divider from '@/design-system/components/Divider';
@@ -35,6 +36,7 @@ const SignIn = () => {
   const navigate = useNavigate();
   const { user, profile, signIn, signUp, signInWithGoogle } = useAuth();
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
@@ -96,7 +98,7 @@ const SignIn = () => {
     try {
       if (isSignUp) {
         // Show loading toast for sign up
-        toast.info('Creating your account...');
+        toast.info(t('auth.messages.creatingAccount'));
         
         const result = await signUp({
           email: data.email,
@@ -115,28 +117,28 @@ const SignIn = () => {
           console.error('Sign-up error:', result.error);
           
           if (errorMessage.includes('already registered') || errorMessage.includes('User already registered')) {
-            errorMessage = 'An account with this email already exists. Please sign in instead.';
+            errorMessage = t('auth.messages.userAlreadyExists');
           } else if (errorMessage.includes('Password should be at least')) {
-            errorMessage = 'Password must be at least 8 characters long with uppercase, lowercase, and number.';
+            errorMessage = t('auth.messages.weakPassword');
           } else if (errorMessage.includes('Invalid email')) {
-            errorMessage = 'Please enter a valid email address.';
+            errorMessage = t('auth.messages.invalidEmail');
           } else if (errorMessage.includes('weak password') || errorMessage.includes('Password is too weak')) {
-            errorMessage = 'Password must contain at least one uppercase letter, one lowercase letter, and one number.';
+            errorMessage = t('auth.messages.passwordRequirements');
           } else if (errorMessage.includes('signup is disabled')) {
-            errorMessage = 'Account creation is currently disabled. Please contact support.';
+            errorMessage = t('auth.messages.signupDisabled');
           } else if (errorMessage.includes('rate limit')) {
-            errorMessage = 'Too many sign-up attempts. Please wait a moment and try again.';
+            errorMessage = t('auth.messages.rateLimitSignup');
           } else {
             // Default error handler for unexpected errors
             console.error('Unexpected sign-up error:', result.error);
-            errorMessage = 'Unable to create account. Please try again or contact support if the problem persists.';
+            errorMessage = t('auth.messages.genericSignupError');
           }
           
           toast.error(errorMessage);
           return;
         }
         
-        toast.success('Account created successfully!');
+        toast.success(t('auth.messages.accountCreated'));
         
         // Navigate to onboarding flow
         console.log('SignIn: New user created, redirecting to onboarding');
@@ -144,7 +146,7 @@ const SignIn = () => {
         
       } else {
         // Show loading toast for sign in
-        toast.info('Signing you in...');
+        toast.info(t('auth.signIn.signingIn'));
         setIsProcessingAuth(true);
         
         const result = await signIn({
@@ -157,13 +159,13 @@ const SignIn = () => {
           let errorMessage = String(result.error);
           
           if (errorMessage.includes('Invalid login credentials')) {
-            errorMessage = 'Invalid email or password. Please check your credentials and try again.';
+            errorMessage = t('auth.messages.invalidCredentials');
           } else if (errorMessage.includes('Email not confirmed')) {
-            errorMessage = 'Please check your email and click the confirmation link before signing in.';
+            errorMessage = t('auth.messages.emailNotConfirmed');
           } else if (errorMessage.includes('Too many requests')) {
-            errorMessage = 'Too many login attempts. Please wait a moment and try again.';
+            errorMessage = t('auth.messages.tooManyRequests');
           } else if (errorMessage.includes('Invalid email')) {
-            errorMessage = 'Please enter a valid email address.';
+            errorMessage = t('auth.messages.invalidEmail');
           }
           
           toast.error(errorMessage);
@@ -171,7 +173,7 @@ const SignIn = () => {
           return;
         }
         
-        toast.success('Welcome back!');
+        toast.success(t('auth.messages.welcomeBack'));
         // The useEffect will handle the redirect based on onboarding status once profile loads
         console.log('SignIn: Sign-in successful, waiting for profile to load for redirect decision');
         // Don't set isProcessingAuth to false here - let the redirect happen
@@ -180,18 +182,18 @@ const SignIn = () => {
       console.error('Authentication error:', error);
       
       // Enhanced error handling for different types of errors
-      let errorMessage = 'Something went wrong. Please try again.';
+      let errorMessage = t('auth.messages.genericError');
       
       if (error.name === 'NetworkError' || error.message?.includes('network')) {
-        errorMessage = 'Network error. Please check your internet connection and try again.';
+        errorMessage = t('auth.messages.networkError');
       } else if (error.message?.includes('timeout')) {
-        errorMessage = 'Request timed out. Please try again.';
+        errorMessage = t('auth.messages.timeoutError');
       } else if (error.message?.includes('CORS')) {
-        errorMessage = 'Connection error. Please try again in a moment.';
+        errorMessage = t('auth.messages.networkError');
       } else if (error.message) {
         // Log the actual error message for debugging but show a user-friendly message
         console.error('Detailed error:', error.message);
-        errorMessage = 'Unable to process your request. Please try again or contact support.';
+        errorMessage = t('auth.messages.genericError');
       }
       
       toast.error(errorMessage);
@@ -211,7 +213,7 @@ const SignIn = () => {
 
   const handleGoogleSignIn = async () => {
     try {
-      toast.info('Redirecting to Google...');
+      toast.info(t('auth.messages.redirectingToGoogle'));
       setIsProcessingAuth(true);
       
       const result = await signInWithGoogle();
@@ -220,11 +222,11 @@ const SignIn = () => {
         let errorMessage = result.error;
         
         if (result.error.includes('popup_closed_by_user')) {
-          errorMessage = 'Google sign-in was cancelled. Please try again.';
+          errorMessage = t('auth.messages.googleCancelled');
         } else if (result.error.includes('access_denied')) {
-          errorMessage = 'Google sign-in access denied. Please try again.';
+          errorMessage = t('auth.messages.googleAccessDenied');
         } else if (result.error.includes('network')) {
-          errorMessage = 'Network error. Please check your connection and try again.';
+          errorMessage = t('auth.messages.networkError');
         }
         
         toast.error(errorMessage);
@@ -238,7 +240,7 @@ const SignIn = () => {
 
     } catch (error: any) {
       console.error('Google sign-in error:', error);
-      toast.error('Failed to sign in with Google. Please try again.');
+      toast.error(t('auth.messages.failedGoogleSignIn'));
       setIsProcessingAuth(false);
     }
   };
@@ -382,17 +384,11 @@ const SignIn = () => {
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: colors.bg.muted,
-        flexDirection: 'column',
-        gap: spacing.spacing[16]
       }}>
-        <LoadingSpinner size={48} color={colors.icon.default} />
-        <p style={{
-          ...textStyles.md.medium,
-          color: colors.text.subtle,
-          margin: 0
-        }}>
-          Signing you in...
-        </p>
+        <SubtleLoadingSpinner 
+          title={t('auth.signIn.signingIn')}
+          size={16}
+        />
       </div>
     );
   }
@@ -412,12 +408,15 @@ const SignIn = () => {
               {/* Heading Container */}
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: spacing.spacing[4] }}>
                 <h1 style={{
-                  ...textStyles['2xl'].semibold,
-                  color: colors.text.default,
                   fontFamily: typography.fontFamily['instrument-serif'].join(', '),
+                  fontSize: typography.desktop.size['3xl'],
+                  fontWeight: typography.desktop.weight.normal,
+                  lineHeight: typography.desktop.lineHeight.leading7,
+                  letterSpacing: typography.desktop.letterSpacing.normal,
+                  color: colors.text.default,
                   margin: 0
                 }}>
-                  {showEmailForm ? (isSignUp ? 'Sign Up with Email' : 'Sign In with Email') : (isSignUp ? 'Sign Up' : 'Sign In')}
+                  {showEmailForm ? (isSignUp ? t('auth.signUp.titleWithEmail') : t('auth.signIn.titleWithEmail')) : (isSignUp ? t('auth.signUp.title') : t('auth.signIn.title'))}
                 </h1>
 
                 {/* Subtitle */}
@@ -428,8 +427,8 @@ const SignIn = () => {
                   textAlign: 'left'
                 }}>
                   {showEmailForm 
-                    ? (isSignUp ? 'Create your account with email and password' : 'Sign in with your email and password')
-                    : (isSignUp ? 'Get started with your free account' : 'Welcome back! Sign in to continue.')
+                    ? (isSignUp ? t('auth.signUp.subtitleWithEmail') : t('auth.signIn.subtitleWithEmail'))
+                    : (isSignUp ? t('auth.signUp.subtitle') : t('auth.signIn.subtitle'))
                   }
                 </p>
               </div>
@@ -440,7 +439,7 @@ const SignIn = () => {
                   <>
                     {/* Google Sign In Button - Secondary Action */}
                     <Button
-                      label={`${isSignUp ? 'Sign Up' : 'Sign In'} with Google`}
+                      label={isSignUp ? t('auth.signUp.googleButton') : t('auth.signIn.googleButton')}
                       style="secondary"
                       size="lg"
                       leadIcon={<GoogleLogo size={18} weight="bold" />}
@@ -455,8 +454,8 @@ const SignIn = () => {
                       {isSignUp && (
                         <Input
                           type="text"
-                          label="Full Name"
-                          placeholder="Enter your full name"
+                          label={t('auth.signUp.nameLabel')}
+                          placeholder={t('auth.signUp.namePlaceholder')}
                           value={form.watch('name') || ''}
                           onChange={(e) => form.setValue('name', e.target.value)}
                           required
@@ -468,8 +467,8 @@ const SignIn = () => {
 
                       <Input
                         type="email"
-                        label="Email address"
-                        placeholder="Enter your email"
+                        label={t('auth.signIn.emailLabel')}
+                        placeholder={t('auth.signIn.emailPlaceholder')}
                         value={form.watch('email') || ''}
                         onChange={(e) => form.setValue('email', e.target.value)}
                         required
@@ -481,8 +480,8 @@ const SignIn = () => {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[4] }}>
                         <Input
                           type="password"
-                          label="Password"
-                          placeholder="Enter your password"
+                          label={t('auth.signIn.passwordLabel')}
+                          placeholder={t('auth.signIn.passwordPlaceholder')}
                           value={form.watch('password') || ''}
                           onChange={(e) => form.setValue('password', e.target.value)}
                           required
@@ -496,14 +495,14 @@ const SignIn = () => {
                             color: colors.text.muted,
                             margin: 0,
                           }}>
-                            At least 8 characters, 1 uppercase, 1 lowercase, 1 number
+                            {t('auth.signUp.passwordHelper')}
                           </p>
                         )}
                       </div>
 
                       {/* Sign In/Up Button */}
                       <Button
-                        label={form.formState.isSubmitting ? 'Loading...' : (isSignUp ? 'Create account' : 'Sign In')}
+                        label={form.formState.isSubmitting ? t('common.loading') : (isSignUp ? t('auth.signUp.emailButton') : t('auth.signIn.emailButton'))}
                         style="primary"
                         size="lg"
                         onClick={handleFormSubmit}
@@ -528,7 +527,7 @@ const SignIn = () => {
                           textDecoration: 'none',
                         }}
                       >
-                        ← Back to Google Sign In
+                        {t('auth.signIn.backToGoogle')}
                       </button>
                     </div>
                   </>
@@ -546,12 +545,12 @@ const SignIn = () => {
                   margin: 0,
                   textAlign: 'center'
                 }}>
-                  {isSignUp ? 'Already have an account? ' : "Don't have an account? "}
+                  {isSignUp ? t('auth.signUp.switchToSignIn') : t('auth.signIn.switchToSignUp')}
                   <span 
                     style={{ color: colors.text.informative, cursor: 'pointer' }}
                     onClick={toggleAuthMode}
                   >
-                    {isSignUp ? 'Sign In' : 'Sign Up'}
+                    {isSignUp ? t('auth.signUp.switchToSignInLink') : t('auth.signIn.switchToSignUpLink')}
                   </span>
                 </p>
 
@@ -571,7 +570,7 @@ const SignIn = () => {
                       fontSize: '11px',
                     }}
                   >
-                    Continue with email instead
+                    {t('auth.signIn.continueWithEmail')}
                   </button>
                 )}
               </div>
@@ -610,7 +609,7 @@ const SignIn = () => {
                 target.style.textDecoration = 'none';
               }}
             >
-              Terms of Service
+              {t('auth.legal.termsOfService')}
             </button>
             <span style={{
               ...textStyles.xs.normal,
@@ -644,7 +643,7 @@ const SignIn = () => {
                 target.style.textDecoration = 'none';
               }}
             >
-              Privacy Policy
+              {t('auth.legal.privacyPolicy')}
             </button>
           </div>
         </div>

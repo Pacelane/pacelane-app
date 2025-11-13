@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTheme } from '@/services/theme-context';
+import { useTranslation } from '@/services/i18n-context';
 import { spacing } from '@/design-system/tokens/spacing';
 import { cornerRadius } from '@/design-system/tokens/corner-radius';
 import { textStyles } from '@/design-system/styles/typography/typography-styles';
@@ -24,6 +25,7 @@ const Pagination = ({
   ...rest
 }) => {
   const { colors } = useTheme();
+  const { t } = useTranslation();
 
   // Don't render if there's only one page or no pages
   if (totalPages <= 1) return null;
@@ -108,7 +110,7 @@ const Pagination = ({
         style="ghost"
         size={currentSizeConfig.buttonSize}
         leadIcon={<ChevronLeft size={16} />}
-        label={showLabels ? 'Previous' : undefined}
+        label={showLabels ? t('components.pagination.previous') : undefined}
         variant={showLabels ? 'default' : 'iconOnly'}
         onClick={handlePrevious}
         disabled={currentPage === 1}
@@ -180,7 +182,7 @@ const Pagination = ({
         style="ghost"
         size={currentSizeConfig.buttonSize}
         tailIcon={<ChevronRight size={16} />}
-        label={showLabels ? 'Next' : undefined}
+        label={showLabels ? t('components.pagination.next') : undefined}
         variant={showLabels ? 'default' : 'iconOnly'}
         onClick={handleNext}
         disabled={currentPage === totalPages}

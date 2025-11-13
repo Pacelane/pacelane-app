@@ -3,8 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/api/useAuth';
 import { useTheme } from '@/services/theme-context';
 import { spacing } from '@/design-system/tokens/spacing';
-import { textStyles } from '@/design-system/styles/typography/typography-styles';
-import LoadingSpinner from '@/design-system/components/LoadingSpinner';
+import SubtleLoadingSpinner from '@/design-system/components/SubtleLoadingSpinner';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -26,12 +25,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
         height: '100vh',
         backgroundColor: colors.bg.default,
         padding: spacing.spacing[24],
-        gap: spacing.spacing[16],
       }}>
-        <LoadingSpinner size={48} color={colors.icon.default} />
-        <p style={{ ...textStyles.md.medium, color: colors.text.subtle, margin: 0 }}>
-          Authenticating...
-        </p>
+        <SubtleLoadingSpinner 
+          title="Authenticating..."
+          size={16}
+        />
       </div>
     );
   }
@@ -53,12 +51,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
         height: '100vh',
         backgroundColor: colors.bg.default,
         padding: spacing.spacing[24],
-        gap: spacing.spacing[16],
       }}>
-        <LoadingSpinner size={48} color={colors.icon.default} />
-        <p style={{ ...textStyles.md.medium, color: colors.text.subtle, margin: 0 }}>
-          Loading your profile...
-        </p>
+        <SubtleLoadingSpinner 
+          title="Loading your profile..."
+          size={16}
+        />
       </div>
     );
   }

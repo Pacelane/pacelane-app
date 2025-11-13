@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from '@phosphor-icons/react';
 import { useTheme } from '../../services/theme-context.jsx';
+import { useTranslation } from '../../services/i18n-context.jsx';
 import { spacing } from '../tokens/spacing.js';
 import { cornerRadius } from '../tokens/corner-radius.js';
 import { getShadow } from '../tokens/shadows.js';
@@ -37,6 +38,7 @@ const Modal = ({
   ...props 
 }) => {
   const { colors } = useTheme();
+  const { t } = useTranslation();
 
   // Handle escape key
   useEffect(() => {
@@ -142,7 +144,7 @@ const Modal = ({
                   size="sm"
                   leadIcon={<X size={16} />}
                   onClick={handleClose}
-                  aria-label="Close modal"
+                  aria-label={t('components.modal.closeAriaLabel')}
                 />
               </div>
             )}

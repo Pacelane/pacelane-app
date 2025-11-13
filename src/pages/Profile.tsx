@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/api/useAuth';
 import { useProfile } from '@/hooks/api/useProfile';
 import { useTheme } from '@/services/theme-context';
+import { useTranslation } from '@/services/i18n-context';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -31,7 +32,11 @@ import {
   X,
   Sparkle as Sparkles,
   Info,
-  SignOut as LogOut
+  SignOut as LogOut,
+  TextAlignLeft,
+  ListBullets,
+  Article,
+  Smiley
 } from '@phosphor-icons/react';
 
 const Profile = () => {
@@ -39,6 +44,7 @@ const Profile = () => {
   const { user, signOut } = useAuth();
   const { profile, saving, updateBasicProfile } = useProfile();
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const isMobile = useIsMobile();
   
   // Sidebar state
@@ -180,6 +186,43 @@ const Profile = () => {
     }
   }, [user]);
 
+  // ========================================
+  // MOCK DATA - DELETE AFTER BACKEND IMPLEMENTATION
+  // ========================================
+  // TODO: Replace all mock data with actual backend data once the backend is ready
+  // This mock data is placed here for easy deletion - search for "MOCK DATA" comment
+  
+  // Goals & Audiences mock data
+  const [selectedGoals, setSelectedGoals] = useState<string[]>([
+    'Reconhecimento de Marca',
+    'Liderança de Pensamento'
+  ]);
+  
+  const [targetAudiences, setTargetAudiences] = useState<string[]>([
+    'Founders and entrepreneurs',
+    'Product managers and designers'
+  ]);
+
+  // Content Pillars mock data
+  const [selectedContentTypes, setSelectedContentTypes] = useState<string[]>([
+    'Como Fazer',
+    'Lições de Carreira',
+    'Educacional'
+  ]);
+  
+  const [themes, setThemes] = useState<string[]>([
+    'Product Design',
+    'UX Research',
+    'Design Systems'
+  ]);
+
+  // Writing Format mock data
+  const [selectedFormat, setSelectedFormat] = useState<string>('formatted');
+
+  // ========================================
+  // END MOCK DATA
+  // ========================================
+
   // Dynamic lists state - will be connected to profile fields
   const [inspirations, setInspirations] = useState([
     { id: 1, value: '' }
@@ -211,7 +254,9 @@ const Profile = () => {
     targetPersona: false,
     competitors: false,
     guides: false,
-    pillars: false
+    pillars: false,
+    goals: false,
+    format: false
   });
 
   // Get user display info
@@ -226,10 +271,10 @@ const Profile = () => {
 
   // Side menu items
   const menuItems = [
-    { id: 'personal', label: 'Personal Information' },
-    // { id: 'inspirations', label: 'Inspirations' }, // Commented out per PCL-106
-    { id: 'guides', label: 'Tone of Voice' },
-    { id: 'pillars', label: 'Editorial Topics' }
+    { id: 'personal', label: t('profile.sections.personal') },
+    { id: 'goals', label: t('profile.sections.goalsAudiences') },
+    { id: 'pillars', label: t('profile.sections.contentPillars') },
+    { id: 'format', label: t('profile.sections.writingFormat') }
   ];
 
   // Generic functions for managing dynamic lists
@@ -282,6 +327,28 @@ const Profile = () => {
           };
           break;
 
+        case 'goals':
+          // TODO: Connect to backend when ready
+          // updateData = {
+          //   goals: selectedGoals,
+          //   target_audiences: targetAudiences.filter(a => a.trim())
+          // };
+          break;
+
+        case 'pillars':
+          // TODO: Connect to backend when ready
+          // updateData = {
+          //   content_types: selectedContentTypes,
+          //   content_themes: themes.filter(t => t.trim())
+          // };
+          break;
+
+        case 'format':
+          // TODO: Connect to backend when ready
+          // updateData = {
+          //   writing_format: selectedFormat
+          // };
+          break;
 
         case 'guides':
           updateData = {
@@ -294,11 +361,6 @@ const Profile = () => {
           setSavedStates(prev => ({ ...prev, inspirations: true }));
           setTimeout(() => setSavedStates(prev => ({ ...prev, inspirations: false })), 2000);
           return; // Exit early since we handle the saved state above
-        case 'pillars':
-          updateData = {
-            content_pillars: pillars.filter(p => p.value.trim()).map(p => p.value)
-          };
-          break;
         default:
           // For sections not yet connected to backend, just show saved state
           break;
@@ -445,8 +507,8 @@ const Profile = () => {
   // Title and subtitle styles
   const titleStyle = {
     fontFamily: typography.fontFamily['awesome-serif'],
-    fontSize: typography.desktop.size['4xl'],
-    fontWeight: typography.desktop.weight.semibold,
+    fontSize: typography.desktop.size['3xl'],
+    fontWeight: typography.desktop.weight.normal,
     lineHeight: typography.desktop.lineHeight.leading7,
     letterSpacing: typography.desktop.letterSpacing.normal,
     color: colors.text.default,
@@ -460,18 +522,98 @@ const Profile = () => {
     marginTop: spacing.spacing[8],
   };
 
+  // Goals options (from onboarding)
+  const goalsOptions = [
+    'Reconhecimento de Marca',
+    'Geração de Leads',
+    'Recrutamento',
+    'Liderança de Pensamento',
+    'Atrair oportunidades',
+    'Manter-se Relevante',
+  ];
+
+  // Content types options (from onboarding)
+  const contentTypesOptions = [
+    'Como Fazer',
+    'Opiniões sobre Notícias',
+    'Histórias Pessoais',
+    'Lições de Carreira',
+    'Bastidores',
+    'Histórias de Clientes',
+    'Educacional',
+    'Memes & Humor',
+  ];
+
+  // Format options (from onboarding)
+  const formatOptions = [
+    { id: 'standard', label: 'Padrão', icon: TextAlignLeft },
+    { id: 'formatted', label: 'Formatado', icon: ListBullets },
+    { id: 'short', label: 'Curto', icon: Article },
+    { id: 'emojis', label: 'Emojis', icon: Smiley },
+  ];
+
+  // Toggle goal selection
+  const toggleGoal = (goal: string) => {
+    setSelectedGoals((prev) =>
+      prev.includes(goal)
+        ? prev.filter((g) => g !== goal)
+        : [...prev, goal]
+    );
+  };
+
+  // Handle target audience changes
+  const handleAudienceChange = (index: number, value: string) => {
+    const newAudiences = [...targetAudiences];
+    newAudiences[index] = value;
+    setTargetAudiences(newAudiences);
+  };
+
+  const handleDeleteAudience = (index: number) => {
+    const newAudiences = targetAudiences.filter((_, i) => i !== index);
+    setTargetAudiences(newAudiences);
+  };
+
+  const handleAddAudience = () => {
+    setTargetAudiences([...targetAudiences, '']);
+  };
+
+  // Toggle content type selection
+  const toggleContentType = (type: string) => {
+    setSelectedContentTypes((prev) =>
+      prev.includes(type)
+        ? prev.filter((t) => t !== type)
+        : [...prev, type]
+    );
+  };
+
+  // Handle theme changes
+  const handleThemeChange = (index: number, value: string) => {
+    const newThemes = [...themes];
+    newThemes[index] = value;
+    setThemes(newThemes);
+  };
+
+  const handleDeleteTheme = (index: number) => {
+    const newThemes = themes.filter((_, i) => i !== index);
+    setThemes(newThemes);
+  };
+
+  const handleAddTheme = () => {
+    setThemes([...themes, '']);
+  };
+
   // Render different section content
   const renderSectionContent = () => {
     switch (activeSection) {
-      case 'guides':
+      case 'goals':
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[16] }}>
             <div>
               <h3 style={{ ...textStyles.sm.semibold, color: colors.text.default, margin: 0 }}>
-                Tone of Voice
+                Seus Objetivos
               </h3>
               <p style={{ ...textStyles.xs.normal, color: colors.text.subtle, margin: 0 }}>
-                Define the personality and style that should come through in your content
+                O que você busca alcançar com seu conteúdo?
               </p>
             </div>
 
@@ -482,63 +624,63 @@ const Profile = () => {
               minHeight: '44px',
               alignItems: 'flex-start'
             }}>
-              {guides.filter(guide => guide.value.trim()).map((guide) => (
+              {goalsOptions.map((goal) => (
                 <Chips
-                  key={guide.id}
-                  label={guide.value}
-                  style="default"
+                  key={goal}
+                  label={goal}
                   size="lg"
-                  selected={true}
-                  leadingIcon={<X size={16} />}
-                  onClick={() => removeGuideChip(guide.id)}
+                  style="default"
+                  selected={selectedGoals.includes(goal)}
+                  onClick={() => toggleGoal(goal)}
                 />
               ))}
-              {guides.filter(guide => guide.value.trim()).length === 0 && (
-                <EmptyState
-                  title="No tone of voice elements defined yet"
-                  fullSpace={true}
-                />
-              )}
             </div>
 
-            <Input
-              placeholder="Enter a tone of voice element (e.g., Professional, Friendly, Authoritative)..."
-              value={newGuide}
-              onChange={(e) => setNewGuide(e.target.value)}
-              onKeyPress={handleGuideKeyPress}
-              style="tail-action"
-              tailAction={{
-                icon: <Plus size={14} />,
-                onClick: addGuideChip,
-                disabled: !newGuide.trim()
-              }}
-            />
-
-            {/* Divider */}
-            <div style={{
-              width: '100%',
-              height: '1px',
-              backgroundColor: colors.border.default
-            }} />
-
-            {/* Give me some ideas button */}
-            <Button
-              label="Give me some ideas"
-              style="dashed"
-              size="md"
-              leadIcon={<Sparkles size={16} />}
-              tailIcon={<Info size={16} />}
-              onClick={() => console.log('Generate tone of voice ideas')}
-            />
+            {/* Target Audiences Section */}
+            <div style={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: spacing.spacing[12],
+              marginTop: spacing.spacing[16] 
+            }}>
+              <p style={{ ...textStyles.sm.medium, color: colors.text.default, margin: 0 }}>
+                Seus Públicos-Alvo
+              </p>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[8] }}>
+                {targetAudiences.map((audience, index) => (
+                  <Input
+                    key={index}
+                    style="tail-action"
+                    size="lg"
+                    placeholder={`${t('profile.fields.targetAudience')} ${index + 1}`}
+                    value={audience}
+                    onChange={(e) => handleAudienceChange(index, e.target.value)}
+                    tailAction={{
+                      icon: <Trash size={16} />,
+                      onClick: () => handleDeleteAudience(index),
+                    }}
+                  />
+                ))}
+                
+                <Button
+                  style="secondary"
+                  size="sm"
+                  label={t('profile.buttons.addTargetAudience')}
+                  leadIcon={<Plus size={16} />}
+                  onClick={handleAddAudience}
+                />
+              </div>
+            </div>
 
             <div style={{ alignSelf: 'flex-start' }}>
               <Button
-                label={savedStates.guides ? "Saved!" : "Save"}
+                label={savedStates.goals ? t('profile.buttons.saved') : t('profile.buttons.save')}
                 style="primary"
                 size="sm"
-                leadIcon={savedStates.guides ? <Check size={16} /> : undefined}
-                onClick={() => handleSave('guides')}
-                disabled={savedStates.guides}
+                leadIcon={savedStates.goals ? <Check size={16} /> : undefined}
+                onClick={() => handleSave('goals')}
+                disabled={savedStates.goals}
               />
             </div>
           </div>
@@ -549,10 +691,10 @@ const Profile = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[16] }}>
             <div>
               <h3 style={{ ...textStyles.sm.semibold, color: colors.text.default, margin: 0 }}>
-                Editorial Topics
+                Tipos de Conteúdo
               </h3>
               <p style={{ ...textStyles.xs.normal, color: colors.text.subtle, margin: 0 }}>
-                What are the main topics and themes you want to cover in your content?
+                Que tipos de conteúdo você quer criar?
               </p>
             </div>
 
@@ -563,63 +705,242 @@ const Profile = () => {
               minHeight: '44px',
               alignItems: 'flex-start'
             }}>
-              {pillars.filter(pillar => pillar.value.trim()).map((pillar) => (
+              {contentTypesOptions.map((type) => (
                 <Chips
-                  key={pillar.id}
-                  label={pillar.value}
-                  style="default"
+                  key={type}
+                  label={type}
                   size="lg"
-                  selected={true}
-                  leadingIcon={<X size={16} />}
-                  onClick={() => removePillarChip(pillar.id)}
+                  style="default"
+                  selected={selectedContentTypes.includes(type)}
+                  onClick={() => toggleContentType(type)}
                 />
               ))}
-              {pillars.filter(pillar => pillar.value.trim()).length === 0 && (
-                <EmptyState
-                  title="No editorial topics defined yet"
-                  fullSpace={true}
-                />
-              )}
             </div>
 
-            <Input
-              placeholder="Enter a content topic (e.g., Technology Trends, Industry Insights, Leadership)..."
-              value={newPillar}
-              onChange={(e) => setNewPillar(e.target.value)}
-              onKeyPress={handlePillarKeyPress}
-              style="tail-action"
-              tailAction={{
-                icon: <Plus size={14} />,
-                onClick: addPillarChip,
-                disabled: !newPillar.trim()
-              }}
-            />
-
-            {/* Divider */}
-            <div style={{
-              width: '100%',
-              height: '1px',
-              backgroundColor: colors.border.default
-            }} />
-
-            {/* Give me some ideas button */}
-            <Button
-              label="Give me some ideas"
-              style="dashed"
-              size="md"
-              leadIcon={<Sparkles size={16} />}
-              tailIcon={<Info size={16} />}
-              onClick={() => console.log('Generate editorial topic ideas')}
-            />
+            {/* Themes Section */}
+            <div style={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: spacing.spacing[12],
+              marginTop: spacing.spacing[16] 
+            }}>
+              <p style={{ ...textStyles.sm.medium, color: colors.text.default, margin: 0 }}>
+                Temas Sobre os Quais Você Quer Falar
+              </p>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[8] }}>
+                {themes.map((theme, index) => (
+                  <Input
+                    key={index}
+                    style="tail-action"
+                    size="lg"
+                    placeholder={`${t('profile.fields.theme')} ${index + 1}`}
+                    value={theme}
+                    onChange={(e) => handleThemeChange(index, e.target.value)}
+                    tailAction={{
+                      icon: <Trash size={16} />,
+                      onClick: () => handleDeleteTheme(index),
+                    }}
+                  />
+                ))}
+                
+                <Button
+                  style="secondary"
+                  size="sm"
+                  label={t('profile.buttons.addTheme')}
+                  leadIcon={<Plus size={16} />}
+                  onClick={handleAddTheme}
+                />
+              </div>
+            </div>
 
             <div style={{ alignSelf: 'flex-start' }}>
               <Button
-                label={savedStates.pillars ? "Saved!" : "Save"}
+                label={savedStates.pillars ? t('profile.buttons.saved') : t('profile.buttons.save')}
                 style="primary"
                 size="sm"
                 leadIcon={savedStates.pillars ? <Check size={16} /> : undefined}
                 onClick={() => handleSave('pillars')}
                 disabled={savedStates.pillars}
+              />
+            </div>
+          </div>
+        );
+
+      case 'format':
+        // Get utility text based on selected format
+        const getUtilityText = () => {
+          switch (selectedFormat) {
+            case 'standard':
+              return 'Posts padrão são escritos em parágrafos corridos, ideais para narrativas e reflexões mais longas.';
+            case 'formatted':
+              return 'Posts formatados usam listas, quebras de linha e estrutura clara para facilitar a leitura.';
+            case 'short':
+              return 'Posts curtos são diretos e objetivos, perfeitos para mensagens rápidas e impactantes.';
+            case 'emojis':
+              return 'Posts com emojis adicionam personalidade e tornam o conteúdo mais visual e engajador.';
+            default:
+              return 'Escolha o formato que melhor se adapta ao seu estilo de escrita. Este será o padrão para seus posts no LinkedIn.';
+          }
+        };
+
+        // Get post content based on selected format
+        const getPostContent = () => {
+          switch (selectedFormat) {
+            case 'standard':
+              return 'Hoje quero compartilhar uma reflexão importante sobre design de produtos.\n\nNos últimos meses, tenho trabalhado em projetos desafiadores que me ensinaram uma lição valiosa: a simplicidade é a sofisticação máxima.\n\nQuando começamos a projetar, é tentador adicionar recursos e detalhes. Mas os melhores produtos são aqueles que resolvem problemas complexos de forma simples.\n\nO que você acha? Como você aplica esse princípio no seu trabalho?';
+            case 'formatted':
+              return 'Hoje quero compartilhar 3 lições importantes sobre design de produtos:\n\n→ A simplicidade é a sofisticação máxima\n→ Menos recursos, mais valor\n→ Foque no problema, não na solução\n\nNos últimos meses, aprendi que os melhores produtos são aqueles que resolvem problemas complexos de forma simples.\n\nQual dessas lições ressoa mais com você?';
+            case 'short':
+              return 'A simplicidade é a sofisticação máxima.\n\nNos últimos meses aprendi que os melhores produtos resolvem problemas complexos de forma simples.\n\nMenos é mais.';
+            case 'emojis':
+              return '💡 Hoje quero compartilhar uma reflexão importante sobre design de produtos.\n\n✨ Nos últimos meses, tenho trabalhado em projetos desafiadores que me ensinaram uma lição valiosa: a simplicidade é a sofisticação máxima.\n\n🎯 Quando começamos a projetar, é tentador adicionar recursos e detalhes. Mas os melhores produtos são aqueles que resolvem problemas complexos de forma simples.\n\n🚀 Menos é mais!';
+            default:
+              return 'Hoje quero compartilhar uma reflexão importante sobre design de produtos.\n\nNos últimos meses, tenho trabalhado em projetos desafiadores que me ensinaram uma lição valiosa: a simplicidade é a sofisticação máxima.\n\nQuando começamos a projetar, é tentador adicionar recursos e detalhes. Mas os melhores produtos são aqueles que resolvem problemas complexos de forma simples.';
+          }
+        };
+
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[16] }}>
+            <div>
+              <h3 style={{ ...textStyles.sm.semibold, color: colors.text.default, margin: 0 }}>
+                Formato de Escrita
+              </h3>
+              <p style={{ ...textStyles.xs.normal, color: colors.text.subtle, margin: 0 }}>
+                Escolha o formato que melhor se adapta ao seu estilo de escrita
+              </p>
+            </div>
+
+            {/* Format selection cards */}
+            <div style={{ 
+              display: 'flex', 
+              flexDirection: 'row',
+              gap: spacing.spacing[8],
+              marginTop: spacing.spacing[12]
+            }}>
+              {formatOptions.map((format) => {
+                const IconComponent = format.icon;
+                const isSelected = selectedFormat === format.id;
+                
+                return (
+                  <div
+                    key={format.id}
+                    style={{
+                      flex: 1,
+                      padding: spacing.spacing[8],
+                      border: `1px solid ${isSelected ? colors.border.teal : colors.border.default}`,
+                      borderRadius: cornerRadius.borderRadius.md,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: spacing.spacing[4],
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      backgroundColor: isSelected ? colors.bg.badge.teal : 'transparent',
+                    }}
+                    onClick={() => setSelectedFormat(format.id)}
+                  >
+                    <div style={{
+                      width: '24px',
+                      height: '24px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}>
+                      <IconComponent 
+                        size={24} 
+                        color={isSelected ? colors.bg.basic.teal.strong : colors.icon.default}
+                        weight="regular"
+                      />
+                    </div>
+                    <p style={{ 
+                      ...textStyles.xs.medium, 
+                      color: colors.text.default, 
+                      margin: 0 
+                    }}>
+                      {format.label}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Utility text */}
+            <p style={{ 
+              ...textStyles.xs.normal, 
+              color: colors.text.subtle, 
+              margin: 0 
+            }}>
+              {getUtilityText()}
+            </p>
+
+            {/* LinkedIn post preview */}
+            <div style={{
+              backgroundColor: colors.bg.default,
+              border: `1px solid ${colors.border.default}`,
+              borderRadius: cornerRadius.borderRadius.md,
+              padding: spacing.spacing[16],
+              boxShadow: getShadow('regular.card', colors, { withBorder: false }),
+              display: 'flex',
+              flexDirection: 'column',
+              gap: spacing.spacing[12],
+            }}>
+              {/* Profile row */}
+              <div style={{
+                display: 'flex',
+                flexDirection: 'row',
+                gap: spacing.spacing[12],
+                alignItems: 'center',
+              }}>
+                <UserAvatar
+                  src={personalInfo.avatar}
+                  alt={personalInfo.name}
+                  size="48px"
+                  profile={profile}
+                  user={user}
+                />
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: spacing.spacing[2],
+                }}>
+                  <p style={{ 
+                    ...textStyles.sm.semibold, 
+                    color: colors.text.default, 
+                    margin: 0 
+                  }}>
+                    {personalInfo.name || 'Seu Nome'}
+                  </p>
+                  <p style={{ 
+                    ...textStyles.xs.normal, 
+                    color: colors.text.subtle, 
+                    margin: 0 
+                  }}>
+                    {personalInfo.profession || 'Sua Profissão'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Post content */}
+              <p style={{
+                ...textStyles.sm.normal,
+                color: colors.text.default,
+                margin: 0,
+                lineHeight: '1.5',
+                whiteSpace: 'pre-line',
+              }}>
+                {getPostContent()}
+              </p>
+            </div>
+
+            <div style={{ alignSelf: 'flex-start' }}>
+              <Button
+                label={savedStates.format ? t('profile.buttons.saved') : t('profile.buttons.save')}
+                style="primary"
+                size="sm"
+                leadIcon={savedStates.format ? <Check size={16} /> : undefined}
+                onClick={() => handleSave('format')}
+                disabled={savedStates.format}
               />
             </div>
           </div>
@@ -641,17 +962,14 @@ const Profile = () => {
             gap: isMobile ? spacing.spacing[16] : 0
           }}>
             <div>
-              <h1 style={titleStyle}>Profile Settings</h1>
-              <p style={subtitleStyle}>
-                Manage your personal information, company details, and content preferences
-              </p>
+              <h1 style={titleStyle}>{t('profile.title')}</h1>
             </div>
             <div style={{ 
               alignSelf: isMobile ? 'flex-start' : 'flex-start',
               flexShrink: 0
             }}>
               <Button
-                label="Sign Out"
+                label={t('profile.buttons.signOut')}
                 style="secondary"
                 size="sm"
                 leadIcon={<LogOut size={16} />}
@@ -721,13 +1039,13 @@ const Profile = () => {
                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: spacing.spacing[12] }}>
                         <div>
                           <h2 style={{
-                            fontFamily: typography.fontFamily['awesome-serif'],
+                            fontFamily: typography.fontFamily.geist,
                             fontSize: typography.desktop.size['2xl'],
                             fontWeight: typography.desktop.weight.semibold,
                             color: colors.text.default,
                             margin: 0,
                           }}>
-                            {personalInfo.name || 'Your Name'}
+                            {personalInfo.name || 'Seu Nome'}
                           </h2>
                           <p style={{
                             ...textStyles.sm.normal,
@@ -735,24 +1053,24 @@ const Profile = () => {
                             margin: 0,
                             marginTop: spacing.spacing[4],
                           }}>
-                            {personalInfo.profession || 'Your Profession'}
+                            {personalInfo.profession || 'Sua Profissão'}
                           </p>
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[8] }}>
                           <Input
-                            placeholder="Full Name"
+                            placeholder={t('profile.placeholders.fullName')}
                             value={personalInfo.name}
                             onChange={(e) => handlePersonalInfoChange('name', e.target.value)}
                             style="default"
                           />
                           <Input 
-                            placeholder="Professional Title"
+                            placeholder={t('profile.placeholders.profession')}
                             value={personalInfo.profession}
                             onChange={(e) => handlePersonalInfoChange('profession', e.target.value)}
                             style="default"
                           />
                           <Input 
-                            placeholder="LinkedIn URL"
+                            placeholder={t('profile.placeholders.linkedIn')}
                             value={personalInfo.linkedinUrl}
                             onChange={(e) => handlePersonalInfoChange('linkedinUrl', e.target.value)}
                             style="default"
@@ -762,7 +1080,7 @@ const Profile = () => {
                     </div>
                     <div style={{ alignSelf: 'flex-start' }}>
                       <Button
-                        label={savedStates.profile ? "Saved!" : "Save"}
+                        label={savedStates.profile ? t('profile.buttons.saved') : t('profile.buttons.save')}
                         style="primary"
                         size="sm"
                         leadIcon={savedStates.profile ? <Check size={16} /> : undefined}
@@ -786,10 +1104,10 @@ const Profile = () => {
                     gap: spacing.spacing[12],
                   }}>
                     <h4 style={{ ...textStyles.sm.semibold, color: colors.text.default, margin: 0 }}>
-                      Bio
+                      {t('profile.fields.bio')}
                     </h4>
                     <TextArea
-                      placeholder="Tell us about yourself..."
+                      placeholder={t('profile.placeholders.bio')}
                       value={personalInfo.bio}
                       onChange={(e) => handlePersonalInfoChange('bio', e.target.value)}
                       rows={3}
@@ -799,7 +1117,7 @@ const Profile = () => {
                     />
                     <div style={{ alignSelf: 'flex-start' }}>
                       <Button
-                        label={savedStates.bio ? "Saved!" : "Save"}
+                        label={savedStates.bio ? t('profile.buttons.saved') : t('profile.buttons.save')}
                         style="primary"
                         size="sm"
                         leadIcon={savedStates.bio ? <Check size={16} /> : undefined}
@@ -815,8 +1133,8 @@ const Profile = () => {
 
 
 
-              {/* Dynamic Sections (Guides, Pillars) */}
-              {(activeSection === 'guides' || activeSection === 'pillars') && (
+              {/* Dynamic Sections (Goals, Pillars, Format) */}
+              {(activeSection === 'goals' || activeSection === 'pillars' || activeSection === 'format') && (
                 <div style={{
                   backgroundColor: colors.bg.card.default,
                   border: `1px solid ${colors.border.default}`,
@@ -935,7 +1253,7 @@ const Profile = () => {
 
                     {/* TextArea *//*}
                     <TextArea
-                      placeholder="Describe your target persona..."
+                      placeholder={t('profile.placeholders.persona')}
                       value={targetPersona}
                       onChange={(e) => setTargetPersona(e.target.value)}
                       rows={4}
@@ -947,7 +1265,7 @@ const Profile = () => {
                     {/* Save Button *//*}
                     <div style={{ alignSelf: 'flex-start' }}>
                       <Button
-                        label={savedStates.targetPersona ? "Saved!" : "Save"}
+                        label={savedStates.targetPersona ? t('profile.buttons.saved') : t('profile.buttons.save')}
                         style="primary"
                         size="sm"
                         leadIcon={savedStates.targetPersona ? <Check size={16} /> : undefined}
@@ -987,7 +1305,7 @@ const Profile = () => {
                       {competitors.map((competitor) => (
                         <Input
                           key={competitor.id}
-                          placeholder="Enter competitor website URL..."
+                          placeholder={t('profile.placeholders.competitor')}
                           value={competitor.url}
                           onChange={(e) => updateCompetitor(competitor.id, e.target.value)}
                           style="tail-action"
@@ -1000,7 +1318,7 @@ const Profile = () => {
                       
                       <div style={{ marginTop: spacing.spacing[8] }}>
                         <Button
-                          label="Add Competitors"
+                          label={t('profile.buttons.addCompetitor')}
                           style="secondary"
                           size="sm"
                           leadIcon={<Plus size={14} />}
@@ -1012,7 +1330,7 @@ const Profile = () => {
                     {/* Save Button *//*}
                     <div style={{ alignSelf: 'flex-start' }}>
                       <Button
-                        label={savedStates.competitors ? "Saved!" : "Save"}
+                        label={savedStates.competitors ? t('profile.buttons.saved') : t('profile.buttons.save')}
                         style="primary"
                         size="sm"
                         leadIcon={savedStates.competitors ? <Check size={16} /> : undefined}

@@ -112,9 +112,10 @@ export const GoogleCalendarCallback: React.FC = () => {
 
   const titleStyle = {
     fontFamily: typography.fontFamily['instrument-serif'],
-    fontSize: typography.desktop.size['2xl'],
-    fontWeight: typography.desktop.weight.semibold,
+    fontSize: typography.desktop.size['3xl'],
+    fontWeight: typography.desktop.weight.normal,
     lineHeight: typography.desktop.lineHeight.leading7,
+    letterSpacing: typography.desktop.letterSpacing.normal,
     color: colors.text.default,
     margin: 0,
     marginBottom: spacing.spacing[8],

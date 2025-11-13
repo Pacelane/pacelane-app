@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/api/useAuth';
 import { useContent } from '@/hooks/api/useContent';
 import { useTheme } from '@/services/theme-context';
+import { useTranslation } from '@/services/i18n-context';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { SavedDraft, ContentSuggestion } from '@/types/content';
 import { useToast } from '@/design-system/components/Toast';
@@ -33,6 +34,7 @@ const Posts = () => {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const isMobile = useIsMobile();
   const { toast } = useToast();
   
@@ -66,60 +68,53 @@ const Posts = () => {
     gap: spacing.spacing[24],
   };
 
-  // Title style using awesome serif font, 4xl semi bold
+  // Title style - using Instrument Serif font, 3xl normal weight
   const titleStyle = {
-    fontFamily: typography.fontFamily['awesome-serif'],
-    fontSize: typography.desktop.size['4xl'],
-    fontWeight: typography.desktop.weight.semibold,
+    fontFamily: typography.fontFamily['instrument-serif'],
+    fontSize: typography.desktop.size['3xl'],
+    fontWeight: typography.desktop.weight.normal,
     lineHeight: typography.desktop.lineHeight.leading7,
     letterSpacing: typography.desktop.letterSpacing.normal,
     color: colors.text.default,
     margin: 0,
   };
 
-  // Subtitle style - sm medium, text subtle
-  const subtitleStyle = {
-    ...textStyles.sm.medium,
-    color: colors.text.subtle,
-    margin: 0,
-    marginTop: spacing.spacing[8],
-  };
 
   // Filter tabs configuration
   const filterTabs = [
-    { id: 'all', label: 'All' },
-    { id: 'draft', label: 'Drafts' },
-    { id: 'published', label: 'Published' },
-    { id: 'archived', label: 'Archived' },
+    { id: 'all', label: t('posts.filters.all') },
+    { id: 'draft', label: t('posts.filters.draft') },
+    { id: 'published', label: t('posts.filters.published') },
+    { id: 'archived', label: t('posts.filters.archived') },
   ];
 
   // Sort dropdown options
   const sortOptions = [
-    { label: 'Last Edited', onClick: () => setSortBy('lastEdited') },
-    { label: 'Newest First', onClick: () => setSortBy('newest') },
-    { label: 'Oldest First', onClick: () => setSortBy('oldest') },
-    { label: 'A-Z', onClick: () => setSortBy('nameAsc') },
-    { label: 'Z-A', onClick: () => setSortBy('nameDesc') },
+    { label: t('posts.sort.lastEdited'), onClick: () => setSortBy('lastEdited') },
+    { label: t('posts.sort.newest'), onClick: () => setSortBy('newest') },
+    { label: t('posts.sort.oldest'), onClick: () => setSortBy('oldest') },
+    { label: t('posts.sort.nameAsc'), onClick: () => setSortBy('nameAsc') },
+    { label: t('posts.sort.nameDesc'), onClick: () => setSortBy('nameDesc') },
   ];
 
   // Get current sort label
   const getCurrentSortLabel = () => {
     const option = sortOptions.find(opt => 
-      (sortBy === 'lastEdited' && opt.label === 'Last Edited') ||
-      (sortBy === 'newest' && opt.label === 'Newest First') ||
-      (sortBy === 'oldest' && opt.label === 'Oldest First') ||
-      (sortBy === 'nameAsc' && opt.label === 'A-Z') ||
-      (sortBy === 'nameDesc' && opt.label === 'Z-A')
+      (sortBy === 'lastEdited' && opt.label === t('posts.sort.lastEdited')) ||
+      (sortBy === 'newest' && opt.label === t('posts.sort.newest')) ||
+      (sortBy === 'oldest' && opt.label === t('posts.sort.oldest')) ||
+      (sortBy === 'nameAsc' && opt.label === t('posts.sort.nameAsc')) ||
+      (sortBy === 'nameDesc' && opt.label === t('posts.sort.nameDesc'))
     );
-    return option?.label || 'Last Edited';
+    return option?.label || t('posts.sort.lastEdited');
   };
 
   // Get all content items (drafts + suggestions)
   const getAllContentItems = () => {
     const draftItems = savedDrafts.map(draft => ({
       id: draft.id,
-      title: draft.title || 'Untitled',
-      subtitle: `Last edited ${new Date(draft.updated_at).toLocaleDateString()}`,
+      title: draft.title || t('posts.content.untitled'),
+      subtitle: t('posts.content.lastEdited', { date: new Date(draft.updated_at).toLocaleDateString() }),
       content: draft.content.substring(0, 200) + (draft.content.length > 200 ? '...' : ''),
       variant: 'gradient',
       status: draft.status,
@@ -131,8 +126,8 @@ const Posts = () => {
     const suggestionItems = contentSuggestions.map(suggestion => ({
       id: suggestion.id,
       title: suggestion.title,
-      subtitle: 'Content suggestion',
-      content: suggestion.description || suggestion.suggested_outline?.substring(0, 200) || 'No description available',
+      subtitle: t('posts.content.contentSuggestion'),
+      content: suggestion.description || suggestion.suggested_outline?.substring(0, 200) || t('posts.content.noDescription'),
       variant: 'image',
       status: 'suggestion',
       type: 'suggestion',
@@ -210,9 +205,9 @@ const Posts = () => {
         return;
       }
       
-      toast.success('Draft deleted successfully');
+      toast.success(t('posts.messages.deleteSuccess'));
     } catch (error: any) {
-      toast.error(error.message || 'Failed to delete draft');
+      toast.error(error.message || t('posts.messages.deleteError'));
     }
   };
 
@@ -233,10 +228,10 @@ const Posts = () => {
         return;
       }
       
-      const statusLabel = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
-      toast.success(`Post marked as ${statusLabel}`);
+      const statusLabel = t(`posts.status.${newStatus}`);
+      toast.success(t('posts.messages.statusUpdated', { status: statusLabel }));
     } catch (error: any) {
-      toast.error(error.message || 'Failed to update post status');
+      toast.error(error.message || t('posts.messages.statusUpdateError'));
     }
   };
 
@@ -340,7 +335,7 @@ const Posts = () => {
   // Content grid styles - responsive and view-mode aware
   const contentGridStyles = {
     display: 'grid',
-    gridTemplateColumns: viewMode === 'line' ? '1fr' : (isMobile ? '1fr' : '1fr 1fr'),
+    gridTemplateColumns: viewMode === 'line' ? '1fr' : (isMobile ? '1fr' : 'repeat(3, 1fr)'),
     gap: spacing.spacing[12],
   };
 
@@ -363,10 +358,7 @@ const Posts = () => {
     <div style={containerStyles}>
           {/* Header Section */}
           <div>
-            <h1 style={titleStyle}>Posts</h1>
-            <p style={subtitleStyle}>
-              Manage your saved drafts and content suggestions
-            </p>
+            <h1 style={titleStyle}>{t('posts.title')}</h1>
           </div>
 
           {/* Controls Row - Filter Tabs, Search and Sort */}
@@ -387,7 +379,7 @@ const Posts = () => {
                 <Input
                   size="lg"
                   style="default"
-                  placeholder="Search posts..."
+                  placeholder={t('posts.search.placeholder')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   leadIcon={<Search size={16} />}
@@ -421,16 +413,18 @@ const Posts = () => {
                  style={viewMode === 'grid' ? 'soft' : 'ghost'}
                  size="sm"
                  leadIcon={<LayoutGrid size={16} />}
-                 label="Grid"
+                 label={t('posts.viewModes.grid')}
                  onClick={() => setViewMode('grid')}
+                 onFocus={(e) => e.target.blur()}
                />
                <Button
                  variant="default"
                  style={viewMode === 'line' ? 'soft' : 'ghost'}
                  size="sm"
                  leadIcon={<AlignJustify size={16} />}
-                 label="List"
+                 label={t('posts.viewModes.list')}
                  onClick={() => setViewMode('line')}
+                 onFocus={(e) => e.target.blur()}
                />
             </div>
           </div>
@@ -443,7 +437,7 @@ const Posts = () => {
               padding: spacing.spacing[48],
             }}>
               <SubtleLoadingSpinner 
-                title="Loading your posts..."
+                title={t('posts.loading.posts')}
                 size={16}
               />
             </div>
@@ -454,12 +448,12 @@ const Posts = () => {
             <>
               {contentItems.length === 0 ? (
                 <EmptyState
-                  title="No content found"
+                  title={t('posts.empty.title')}
                   subtitle={selectedFilter === 'all' 
-                    ? "Start writing to create your first post or wait for content suggestions!"
-                    : `No ${selectedFilter} content found. Try changing the filter or search terms.`
+                    ? t('posts.empty.subtitleAll')
+                    : t('posts.empty.subtitleFiltered', { filter: selectedFilter })
                   }
-                  buttonLabel="Create New Post"
+                  buttonLabel={t('posts.empty.cta')}
                   onButtonClick={handleCreateNewClick}
                 />
               ) : (

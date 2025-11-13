@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTheme } from '@/services/theme-context';
+import { useTranslation } from '@/services/i18n-context';
 import { spacing } from '@/design-system/tokens/spacing';
 import { cornerRadius } from '@/design-system/tokens/corner-radius';
 import { stroke } from '@/design-system/tokens/stroke';
@@ -25,15 +26,16 @@ const SelectionToolbar = ({
   disabled = false 
 }) => {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const [position, setPosition] = useState({ top: 0, left: 0 });
   const toolbarRef = useRef(null);
 
   // Quick action options matching the design
   const quickActions = [
-    { id: 'expand', label: 'Expand', icon: <Maximize2 size={14} /> },
-    { id: 'shorten', label: 'Shorten', icon: <Minimize2 size={14} /> },
-    { id: 'continue_writing', label: 'Continue Writing', icon: <PenLine size={14} /> },
-    { id: 'improve_writing', label: 'Improve Writing', icon: <Sparkles size={14} /> },
+    { id: 'expand', label: t('components.selectionToolbar.expand'), icon: <Maximize2 size={14} /> },
+    { id: 'shorten', label: t('components.selectionToolbar.shorten'), icon: <Minimize2 size={14} /> },
+    { id: 'continue_writing', label: t('components.selectionToolbar.continueWriting'), icon: <PenLine size={14} /> },
+    { id: 'improve_writing', label: t('components.selectionToolbar.improveWriting'), icon: <Sparkles size={14} /> },
   ];
 
   // Calculate toolbar position based on selection
@@ -105,7 +107,7 @@ const SelectionToolbar = ({
       
       {/* Ask AI button - blue primary button at the end */}
       <Button
-        label="Ask AI"
+        label={t('components.selectionToolbar.askAI')}
         style="primary"
         size="xs"
         leadIcon={<Sparkles size={14} />}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/services/theme-context';
 import { useTranslation } from '@/services/i18n-context';
@@ -11,25 +11,46 @@ import { stroke } from '@/design-system/tokens/stroke';
 import { colors as primitiveColors } from '@/design-system/tokens/primitive-colors';
 import TopNav from '@/design-system/components/TopNav';
 import Button from '@/design-system/components/Button';
-import Input from '@/design-system/components/Input';
 import StatusBadge from '@/design-system/components/StatusBadge';
-import { WhatsappLogo } from '@phosphor-icons/react';
+import { User, MapPin, Buildings, LinkedinLogo } from '@phosphor-icons/react';
 
-const WhatsAppInput = () => {
+const ProfileReview = () => {
   const { colors } = useTheme();
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [whatsappNumber, setWhatsappNumber] = useState('');
+
+  // Mock LinkedIn profile data
+  const profileData = {
+    name: 'João Silva',
+    profession: 'UX Designer',
+    location: 'São Paulo, Brasil',
+    company: 'Tech Innovations Inc.',
+    url: 'linkedin.com/in/joaosilva',
+    bio: 'Designer de produtos apaixonado por criar experiências digitais que fazem a diferença. Especializado em design systems, pesquisa de usuários e design thinking. Sempre buscando aprender e compartilhar conhecimento com a comunidade.',
+    topSkills: ['UX Design', 'UI Design', 'Design Systems', 'Figma', 'User Research', 'Prototyping'],
+    recentExperience: [
+      {
+        title: 'Senior UX Designer',
+        company: 'Tech Innovations Inc.',
+        period: '2022 - Presente',
+        description: 'Liderando o design de produtos digitais e mentoria de designers juniores.'
+      },
+      {
+        title: 'UX Designer',
+        company: 'Digital Solutions Ltd.',
+        period: '2019 - 2022',
+        description: 'Responsável pelo design de aplicativos mobile e web para diversos clientes.'
+      }
+    ]
+  };
 
   // Handle button clicks
   const handleGoBack = () => {
-    navigate('/onboarding/profile-review');
+    navigate('/onboarding/first-things-first');
   };
 
   const handleContinue = () => {
-    // Navigate to Pacing input page
-    console.log('WhatsApp Number:', whatsappNumber);
-    navigate('/onboarding/pacing');
+    navigate('/onboarding/whatsapp');
   };
 
   // Page container styles
@@ -83,15 +104,19 @@ const WhatsAppInput = () => {
     display: 'flex',
     flexDirection: 'column' as const,
     gap: spacing.spacing[16],
+    overflowY: 'auto' as const,
+    scrollbarWidth: 'thin' as const,
+    scrollbarColor: `${colors.border.default} transparent`,
   };
 
   // Text container styles
   const textContainerStyles = {
-    flex: 1,
     width: '100%',
+    height: '140px',
+    flexShrink: 0,
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: spacing.spacing[16],
+    gap: spacing.spacing[8],
   };
 
   // Title styles using Instrument Serif
@@ -112,17 +137,123 @@ const WhatsAppInput = () => {
     margin: 0,
   };
 
-  // WhatsApp section title styles
-  const whatsappTitleStyles = {
-    ...textStyles.sm.medium,
+  // Section styles
+  const sectionStyles = {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: spacing.spacing[8],
+  };
+
+  // Label styles
+  const labelStyles = {
+    ...textStyles.xs.semibold,
+    color: colors.text.subtle,
+    margin: 0,
+    textTransform: 'uppercase' as const,
+    letterSpacing: '0.5px',
+  };
+
+  // Value styles
+  const valueStyles = {
+    ...textStyles.sm.normal,
     color: colors.text.default,
     margin: 0,
   };
 
-  // WhatsApp utility text styles
-  const utilityTextStyles = {
-    ...textStyles.xs.normal,
+  // Profile header card styles
+  const profileHeaderCardStyles = {
+    backgroundColor: colors.bg.subtle,
+    border: `${stroke.DEFAULT} solid ${colors.border.default}`,
+    borderRadius: cornerRadius.borderRadius.md,
+    padding: spacing.spacing[20],
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: spacing.spacing[16],
+  };
+
+  // Profile name styles
+  const profileNameStyles = {
+    ...textStyles.lg.normal,
+    color: colors.text.default,
+    margin: 0,
+  };
+
+  // Profile profession styles
+  const profileProfessionStyles = {
+    ...textStyles.md.normal,
     color: colors.text.subtle,
+    margin: 0,
+  };
+
+  // Profile info row styles
+  const profileInfoRowStyles = {
+    display: 'flex',
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    gap: spacing.spacing[8],
+  };
+
+  // Profile info icon container
+  const iconContainerStyles = {
+    width: '16px',
+    height: '16px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  };
+
+  // Profile info text styles
+  const profileInfoTextStyles = {
+    ...textStyles.sm.normal,
+    color: colors.text.default,
+    margin: 0,
+  };
+
+  // Skills container styles
+  const skillsContainerStyles = {
+    display: 'flex',
+    flexWrap: 'wrap' as const,
+    gap: spacing.spacing[8],
+  };
+
+  // Skill tag styles
+  const skillTagStyles = {
+    ...textStyles.xs.medium,
+    color: colors.text.default,
+    backgroundColor: colors.bg.state.soft,
+    padding: `${spacing.spacing[4]} ${spacing.spacing[8]}`,
+    borderRadius: cornerRadius.borderRadius.full,
+    border: `${stroke.DEFAULT} solid ${colors.border.default}`,
+  };
+
+  // Experience item styles
+  const experienceItemStyles = {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: spacing.spacing[4],
+    paddingBottom: spacing.spacing[12],
+    borderBottom: `${stroke.DEFAULT} solid ${colors.border.default}`,
+  };
+
+  // Experience title styles
+  const experienceTitleStyles = {
+    ...textStyles.sm.semibold,
+    color: colors.text.default,
+    margin: 0,
+  };
+
+  // Experience company styles
+  const experienceCompanyStyles = {
+    ...textStyles.sm.normal,
+    color: colors.text.subtle,
+    margin: 0,
+  };
+
+  // Experience period styles
+  const experiencePeriodStyles = {
+    ...textStyles.xs.normal,
+    color: colors.text.muted,
     margin: 0,
   };
 
@@ -232,6 +363,23 @@ const WhatsAppInput = () => {
 
   return (
     <div style={pageContainerStyles}>
+      {/* Custom scrollbar styles */}
+      <style>{`
+        .profile-content-container::-webkit-scrollbar {
+          width: 6px;
+        }
+        .profile-content-container::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .profile-content-container::-webkit-scrollbar-thumb {
+          background-color: ${colors.border.default};
+          border-radius: 3px;
+        }
+        .profile-content-container::-webkit-scrollbar-thumb:hover {
+          background-color: ${colors.border.darker};
+        }
+      `}</style>
+
       {/* TopNav Bar - Stuck to the top */}
       <div style={{ position: 'sticky', top: 0, zIndex: 100 }}>
         <TopNav />
@@ -244,55 +392,85 @@ const WhatsAppInput = () => {
           {/* Main container (left side) */}
           <div style={mainContainerStyles}>
             {/* Content container */}
-            <div style={contentContainerStyles}>
+            <div className="profile-content-container" style={contentContainerStyles}>
               {/* Text container */}
               <div style={textContainerStyles}>
-                <h1 style={titleStyles}>{t('onboarding.whatsapp.title')}</h1>
+                <h1 style={titleStyles}>{t('onboarding.profileReview.title')}</h1>
                 <p style={subtitleStyles}>
-                  {t('onboarding.whatsapp.subtitle')}
+                  {t('onboarding.profileReview.subtitle')}
                 </p>
               </div>
 
-              {/* WhatsApp input section */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[12] }}>
-                <p style={whatsappTitleStyles}>{t('onboarding.whatsapp.whatsappTitle')}</p>
-                <Input
-                  style="default"
-                  size="lg"
-                  placeholder={t('onboarding.whatsapp.inputPlaceholder')}
-                  value={whatsappNumber}
-                  onChange={(e) => setWhatsappNumber(e.target.value)}
-                  required
-                />
-                <p style={utilityTextStyles}>
-                  {t('onboarding.whatsapp.utility')}
-                </p>
+              {/* Profile Header Card */}
+              <div style={profileHeaderCardStyles}>
+                {/* Name and Profession */}
+                <div>
+                  <p style={profileNameStyles}>{profileData.name}</p>
+                  <p style={profileProfessionStyles}>{profileData.profession}</p>
+                </div>
+
+                {/* Profile Info Grid */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[8] }}>
+                  {/* Location */}
+                  <div style={profileInfoRowStyles}>
+                    <div style={iconContainerStyles}>
+                      <MapPin size={16} color={colors.icon.muted} weight="fill" />
+                    </div>
+                    <p style={profileInfoTextStyles}>{profileData.location}</p>
+                  </div>
+
+                  {/* Company */}
+                  <div style={profileInfoRowStyles}>
+                    <div style={iconContainerStyles}>
+                      <Buildings size={16} color={colors.icon.muted} weight="fill" />
+                    </div>
+                    <p style={profileInfoTextStyles}>{profileData.company}</p>
+                  </div>
+
+                  {/* LinkedIn URL */}
+                  <div style={profileInfoRowStyles}>
+                    <div style={iconContainerStyles}>
+                      <LinkedinLogo size={16} color={colors.icon.muted} weight="fill" />
+                    </div>
+                    <p style={{ ...profileInfoTextStyles, color: colors.text.informative }}>
+                      {profileData.url}
+                    </p>
+                  </div>
+                </div>
               </div>
 
-              {/* Divider */}
-              <div style={{ 
-                width: '100%', 
-                height: '1px', 
-                backgroundColor: colors.border.default 
-              }} />
+              <div style={sectionStyles}>
+                <p style={labelStyles}>{t('onboarding.profileReview.bioLabel')}</p>
+                <p style={valueStyles}>{profileData.bio}</p>
+              </div>
 
-              {/* WhatsApp Send Message section */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[12] }}>
-                <Button
-                  style="primary"
-                  size="md"
-                  label={t('onboarding.whatsapp.sendMessageButton')}
-                  leadIcon={<WhatsappLogo size={20} weight="fill" />}
-                  onClick={() => {
-                    // Open WhatsApp with pre-filled message
-                    const message = encodeURIComponent(t('onboarding.whatsapp.whatsappMessage'));
-                    window.open(`https://wa.me/?text=${message}`, '_blank');
-                  }}
-                  fullWidth
-                />
-                <p style={utilityTextStyles}>
-                  {t('onboarding.whatsapp.sendMessageUtility')}
-                </p>
+              <div style={sectionStyles}>
+                <p style={labelStyles}>{t('onboarding.profileReview.topSkillsLabel')}</p>
+                <div style={skillsContainerStyles}>
+                  {profileData.topSkills.map((skill, index) => (
+                    <span key={index} style={skillTagStyles}>
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div style={sectionStyles}>
+                <p style={labelStyles}>{t('onboarding.profileReview.experienceLabel')}</p>
+                {profileData.recentExperience.map((exp, index) => (
+                  <div 
+                    key={index} 
+                    style={{
+                      ...experienceItemStyles,
+                      borderBottom: index === profileData.recentExperience.length - 1 ? 'none' : experienceItemStyles.borderBottom
+                    }}
+                  >
+                    <p style={experienceTitleStyles}>{exp.title}</p>
+                    <p style={experienceCompanyStyles}>{exp.company}</p>
+                    <p style={experiencePeriodStyles}>{exp.period}</p>
+                    <p style={valueStyles}>{exp.description}</p>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -302,7 +480,7 @@ const WhatsAppInput = () => {
                 <Button
                   style="secondary"
                   size="sm"
-                  label={t('onboarding.whatsapp.backButton')}
+                  label={t('onboarding.profileReview.backButton')}
                   onClick={handleGoBack}
                   fullWidth
                 />
@@ -311,7 +489,7 @@ const WhatsAppInput = () => {
                 <Button
                   style="primary"
                   size="sm"
-                  label={t('onboarding.whatsapp.continueButton')}
+                  label={t('onboarding.profileReview.continueButton')}
                   onClick={handleContinue}
                   fullWidth
                 />
@@ -358,5 +536,5 @@ const WhatsAppInput = () => {
   );
 };
 
-export default WhatsAppInput;
+export default ProfileReview;
 

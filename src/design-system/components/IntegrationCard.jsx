@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTheme } from '@/services/theme-context';
+import { useTranslation } from '@/services/i18n-context';
 import { spacing } from '@/design-system/tokens/spacing';
 import { cornerRadius } from '@/design-system/tokens/corner-radius';
 import { textStyles } from '@/design-system/styles/typography/typography-styles';
@@ -35,6 +36,7 @@ const IntegrationCard = ({
   style = {},
 }) => {
   const { colors } = useTheme();
+  const { t } = useTranslation();
 
 
 
@@ -143,7 +145,7 @@ const IntegrationCard = ({
       <div style={footerContainerStyles}>
         <div style={{ display: 'flex', gap: spacing.spacing[8] }}>
           <Button 
-            label="Configure"
+            label={t('integrations.configure')}
             style="secondary"
             size="sm"
             leadIcon={<Settings size={12} />}
@@ -152,7 +154,7 @@ const IntegrationCard = ({
           {/* Optional Sync button when provided */}
           {onSync && (
             <Button 
-              label="Sync"
+              label={t('integrations.sync')}
               style="primary"
               size="sm"
               onClick={onSync}

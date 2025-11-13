@@ -47,12 +47,12 @@ const SidebarMenuItem = ({
 
   const getTextColor = () => {
     if (disabled) return colors.text.muted;
-    return effectiveState === 'active' ? colors.text.accent : colors.text.subtle;
+    return effectiveState === 'active' ? colors.text.default : colors.text.subtle;
   };
 
   const getIconColor = () => {
     if (disabled) return colors.icon.disabled;
-    return effectiveState === 'active' ? colors.text.accent : colors.icon.subtle;
+    return effectiveState === 'active' ? colors.icon.default : colors.icon.subtle;
   };
 
   // Size configurations
@@ -124,7 +124,7 @@ const SidebarMenuItem = ({
     // Appearance
     backgroundColor: getBackgroundColor(),
     borderRadius: cornerRadius.borderRadius.sm,
-    border: effectiveState === 'active' ? `1px solid ${colors.border.highlight}` : 'none',
+    border: effectiveState === 'active' ? `1px solid ${colors.border.darker}` : 'none',
     outline: 'none',
     boxShadow: effectiveState === 'active' ? shadows.regular.card : 'none',
     

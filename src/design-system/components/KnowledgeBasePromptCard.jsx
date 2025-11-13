@@ -1,7 +1,9 @@
 import React from 'react';
 import { useTheme } from '@/services/theme-context';
+import { useTranslation } from '@/services/i18n-context';
 import { spacing } from '@/design-system/tokens/spacing';
 import { cornerRadius } from '@/design-system/tokens/corner-radius';
+import { typography } from '@/design-system/tokens/typography';
 import { textStyles } from '@/design-system/styles/typography/typography-styles';
 import { getShadow } from '@/design-system/tokens/shadows';
 import Button from '@/design-system/components/Button';
@@ -35,6 +37,7 @@ const KnowledgeBasePromptCard = ({
   style = {},
 }) => {
   const { colors } = useTheme();
+  const { t } = useTranslation();
 
   // Card container styles
   const containerStyles = {
@@ -58,8 +61,11 @@ const KnowledgeBasePromptCard = ({
 
   // Title styles
   const titleStyle = {
-    ...textStyles['2xl'].semibold,
     fontFamily: typography.fontFamily['instrument-serif'].join(', '),
+    fontSize: typography.desktop.size['3xl'],
+    fontWeight: typography.desktop.weight.normal,
+    lineHeight: typography.desktop.lineHeight.leading7,
+    letterSpacing: typography.desktop.letterSpacing.normal,
     color: colors.text.default,
     margin: 0,
   };
@@ -157,9 +163,9 @@ const KnowledgeBasePromptCard = ({
             <FileText size={20} />
           </div>
           <div>
-            <h4 style={contentTypeTitleStyle}>Documents & Files</h4>
+            <h4 style={contentTypeTitleStyle}>{t('common.knowledgePrompt.documentsTitle')}</h4>
             <p style={contentTypeDescriptionStyle}>
-              PDFs, text files, and other documents
+              {t('common.knowledgePrompt.documentsDesc')}
             </p>
           </div>
         </div>
@@ -173,9 +179,9 @@ const KnowledgeBasePromptCard = ({
             <Video size={20} />
           </div>
           <div>
-            <h4 style={contentTypeTitleStyle}>Video URLs</h4>
+            <h4 style={contentTypeTitleStyle}>{t('common.knowledgePrompt.videosTitle')}</h4>
             <p style={contentTypeDescriptionStyle}>
-              YouTube, Vimeo, and other video links
+              {t('common.knowledgePrompt.videosDesc')}
             </p>
           </div>
         </div>
@@ -189,9 +195,9 @@ const KnowledgeBasePromptCard = ({
             <Globe size={20} />
           </div>
           <div>
-            <h4 style={contentTypeTitleStyle}>Website URLs</h4>
+            <h4 style={contentTypeTitleStyle}>{t('common.knowledgePrompt.websitesTitle')}</h4>
             <p style={contentTypeDescriptionStyle}>
-              Articles, blogs, and web pages
+              {t('common.knowledgePrompt.websitesDesc')}
             </p>
           </div>
         </div>

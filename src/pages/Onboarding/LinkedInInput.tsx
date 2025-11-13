@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/services/theme-context';
+import { useTranslation } from '@/services/i18n-context';
 import { spacing } from '@/design-system/tokens/spacing';
 import { cornerRadius } from '@/design-system/tokens/corner-radius';
 import { typography } from '@/design-system/tokens/typography';
@@ -15,6 +16,7 @@ import StatusBadge from '@/design-system/components/StatusBadge';
 
 const LinkedInInput = () => {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [linkedInUrl, setLinkedInUrl] = useState('');
 
@@ -24,9 +26,9 @@ const LinkedInInput = () => {
   };
 
   const handleContinue = () => {
-    // Navigate to WhatsApp input page
+    // Navigate to Profile Review page
     console.log('LinkedIn URL:', linkedInUrl);
-    navigate('/onboarding/whatsapp');
+    navigate('/onboarding/profile-review');
   };
 
   // Page container styles
@@ -94,8 +96,8 @@ const LinkedInInput = () => {
   // Title styles using Instrument Serif
   const titleStyles = {
     fontFamily: typography.fontFamily['instrument-serif'],
-    fontSize: typography.desktop.size['4xl'],
-    fontWeight: typography.desktop.weight.semibold,
+    fontSize: typography.desktop.size['3xl'],
+    fontWeight: typography.desktop.weight.normal,
     lineHeight: typography.desktop.lineHeight.leading7,
     letterSpacing: typography.desktop.letterSpacing.normal,
     color: colors.text.default,
@@ -204,13 +206,13 @@ const LinkedInInput = () => {
 
   // Steps list
   const steps = [
-    'URL do LinkedIn',
-    'Número do WhatsApp',
-    'Frequência',
-    'Objetivos',
-    'Pilares',
-    'Formato',
-    'Conhecimento',
+    t('onboarding.progress.steps.linkedIn'),
+    t('onboarding.progress.steps.whatsapp'),
+    t('onboarding.progress.steps.pacing'),
+    t('onboarding.progress.steps.goals'),
+    t('onboarding.progress.steps.pillars'),
+    t('onboarding.progress.steps.format'),
+    t('onboarding.progress.steps.knowledge'),
   ];
 
   return (
@@ -230,9 +232,9 @@ const LinkedInInput = () => {
             <div style={contentContainerStyles}>
               {/* Text container */}
               <div style={textContainerStyles}>
-                <h1 style={titleStyles}>Seu LinkedIn</h1>
+                <h1 style={titleStyles}>{t('onboarding.linkedIn.title')}</h1>
                 <p style={subtitleStyles}>
-                  Nos diga qual é a sua URL do LinkedIn, para que possamos escrever posts que tenham a sua cara.
+                  {t('onboarding.linkedIn.subtitle')}
                 </p>
               </div>
 
@@ -240,9 +242,9 @@ const LinkedInInput = () => {
               <Input
                 style="add-on"
                 size="lg"
-                label="Seu Perfil do LinkedIn"
-                addOnPrefix="https://"
-                placeholder="linkedin.com/in/seuperfil"
+                label={t('onboarding.linkedIn.inputLabel')}
+                addOnPrefix={t('onboarding.linkedIn.addOnPrefix')}
+                placeholder={t('onboarding.linkedIn.inputPlaceholder')}
                 value={linkedInUrl}
                 onChange={(e) => setLinkedInUrl(e.target.value)}
                 required
@@ -255,7 +257,7 @@ const LinkedInInput = () => {
                 <Button
                   style="secondary"
                   size="sm"
-                  label="Voltar"
+                  label={t('onboarding.linkedIn.backButton')}
                   onClick={handleGoBack}
                   fullWidth
                 />
@@ -264,7 +266,7 @@ const LinkedInInput = () => {
                 <Button
                   style="primary"
                   size="sm"
-                  label="Continuar"
+                  label={t('onboarding.linkedIn.continueButton')}
                   onClick={handleContinue}
                   fullWidth
                 />
@@ -276,7 +278,7 @@ const LinkedInInput = () => {
           <div style={accuracyBarStyles}>
             {/* Bar container */}
             <div style={barContainerStyles}>
-              <p style={labelTextStyles}>Precisão dos resultados</p>
+              <p style={labelTextStyles}>{t('onboarding.progress.accuracyLabel')}</p>
               <div style={{ marginTop: spacing.spacing[8] }}>
                 <div style={linesBarContainerStyles}>
                   {[...Array(27)].map((_, index) => (
@@ -284,10 +286,10 @@ const LinkedInInput = () => {
                   ))}
                 </div>
               </div>
-              <p style={{ ...infoTextStyles, marginTop: spacing.spacing[4] }}>0% Concluído</p>
+              <p style={{ ...infoTextStyles, marginTop: spacing.spacing[4] }}>0% {t('onboarding.progress.completed')}</p>
               <div style={{ ...dividerStyles, marginTop: spacing.spacing[8] }} />
               <p style={{ ...infoTextStyles, marginTop: spacing.spacing[8] }}>
-                Quanto mais informações você fornecer sobre si mesmo, melhores serão os resultados.
+                {t('onboarding.progress.infoText')}
               </p>
             </div>
 

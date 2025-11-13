@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/services/theme-context';
+import { useTranslation } from '@/services/i18n-context';
 import { spacing } from '@/design-system/tokens/spacing';
 import { cornerRadius } from '@/design-system/tokens/corner-radius';
 import { typography } from '@/design-system/tokens/typography';
@@ -15,18 +16,19 @@ import Checkbox from '@/design-system/components/Checkbox';
 
 const PacingInput = () => {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [selectedDays, setSelectedDays] = useState<string[]>([]);
 
   // Days of the week
   const daysOfWeek = [
-    { id: 'mon', label: 'S', fullName: 'Segunda' },
-    { id: 'tue', label: 'T', fullName: 'Terça' },
-    { id: 'wed', label: 'Q', fullName: 'Quarta' },
-    { id: 'thu', label: 'Q', fullName: 'Quinta' },
-    { id: 'fri', label: 'S', fullName: 'Sexta' },
-    { id: 'sat', label: 'S', fullName: 'Sábado' },
-    { id: 'sun', label: 'D', fullName: 'Domingo' },
+    { id: 'mon', label: t('onboarding.pacing.days.mondayShort'), fullName: t('onboarding.pacing.days.monday') },
+    { id: 'tue', label: t('onboarding.pacing.days.tuesdayShort'), fullName: t('onboarding.pacing.days.tuesday') },
+    { id: 'wed', label: t('onboarding.pacing.days.wednesdayShort'), fullName: t('onboarding.pacing.days.wednesday') },
+    { id: 'thu', label: t('onboarding.pacing.days.thursdayShort'), fullName: t('onboarding.pacing.days.thursday') },
+    { id: 'fri', label: t('onboarding.pacing.days.fridayShort'), fullName: t('onboarding.pacing.days.friday') },
+    { id: 'sat', label: t('onboarding.pacing.days.saturdayShort'), fullName: t('onboarding.pacing.days.saturday') },
+    { id: 'sun', label: t('onboarding.pacing.days.sundayShort'), fullName: t('onboarding.pacing.days.sunday') },
   ];
 
   // Handle day selection
@@ -114,8 +116,8 @@ const PacingInput = () => {
   // Title styles using Instrument Serif
   const titleStyles = {
     fontFamily: typography.fontFamily['instrument-serif'],
-    fontSize: typography.desktop.size['4xl'],
-    fontWeight: typography.desktop.weight.semibold,
+    fontSize: typography.desktop.size['3xl'],
+    fontWeight: typography.desktop.weight.normal,
     lineHeight: typography.desktop.lineHeight.leading7,
     letterSpacing: typography.desktop.letterSpacing.normal,
     color: colors.text.default,
@@ -276,13 +278,13 @@ const PacingInput = () => {
 
   // Steps list
   const steps = [
-    { label: 'URL do LinkedIn', active: true },
-    { label: 'Número do WhatsApp', active: true },
-    { label: 'Frequência', active: false },
-    { label: 'Objetivos', active: false },
-    { label: 'Pilares', active: false },
-    { label: 'Formato', active: false },
-    { label: 'Conhecimento', active: false },
+    { label: t('onboarding.progress.steps.linkedIn'), active: true },
+    { label: t('onboarding.progress.steps.whatsapp'), active: true },
+    { label: t('onboarding.progress.steps.pacing'), active: false },
+    { label: t('onboarding.progress.steps.goals'), active: false },
+    { label: t('onboarding.progress.steps.pillars'), active: false },
+    { label: t('onboarding.progress.steps.format'), active: false },
+    { label: t('onboarding.progress.steps.knowledge'), active: false },
   ];
 
   return (
@@ -302,18 +304,18 @@ const PacingInput = () => {
             <div style={contentContainerStyles}>
               {/* Text container */}
               <div style={textContainerStyles}>
-                <h1 style={titleStyles}>Seu Ritmo</h1>
+                <h1 style={titleStyles}>{t('onboarding.pacing.title')}</h1>
                 <p style={subtitleStyles}>
-                  Nos diga com que frequência você quer que mantenhamos seu ritmo
+                  {t('onboarding.pacing.subtitle')}
                 </p>
               </div>
 
               {/* Frequency card */}
               <div style={frequencyCardStyles}>
                 <div>
-                  <p style={cardTitleStyles}>Frequência</p>
+                  <p style={cardTitleStyles}>{t('onboarding.pacing.frequencyTitle')}</p>
                   <p style={{ ...cardSubtitleStyles, marginTop: spacing.spacing[4] }}>
-                    Defina quando você quer postar
+                    {t('onboarding.pacing.frequencySubtitle')}
                   </p>
                 </div>
 
@@ -341,7 +343,7 @@ const PacingInput = () => {
                 <Button
                   style="secondary"
                   size="sm"
-                  label="Voltar"
+                  label={t('onboarding.pacing.backButton')}
                   onClick={handleGoBack}
                   fullWidth
                 />
@@ -350,7 +352,7 @@ const PacingInput = () => {
                 <Button
                   style="primary"
                   size="sm"
-                  label="Continuar"
+                  label={t('onboarding.pacing.continueButton')}
                   onClick={handleContinue}
                   fullWidth
                 />
@@ -362,7 +364,7 @@ const PacingInput = () => {
           <div style={accuracyBarStyles}>
             {/* Bar container */}
             <div style={barContainerStyles}>
-              <p style={labelTextStyles}>Precisão dos resultados</p>
+              <p style={labelTextStyles}>{t('onboarding.progress.accuracyLabel')}</p>
               <div style={{ marginTop: spacing.spacing[8] }}>
                 <div style={linesBarContainerStyles}>
                   {[...Array(27)].map((_, index) => (
@@ -370,10 +372,10 @@ const PacingInput = () => {
                   ))}
                 </div>
               </div>
-              <p style={{ ...infoTextStyles, marginTop: spacing.spacing[4] }}>20% Concluído</p>
+              <p style={{ ...infoTextStyles, marginTop: spacing.spacing[4] }}>20% {t('onboarding.progress.completed')}</p>
               <div style={{ ...dividerStyles, marginTop: spacing.spacing[8] }} />
               <p style={{ ...infoTextStyles, marginTop: spacing.spacing[8] }}>
-                Quanto mais informações você fornecer sobre si mesmo, melhores serão os resultados.
+                {t('onboarding.progress.infoText')}
               </p>
             </div>
 

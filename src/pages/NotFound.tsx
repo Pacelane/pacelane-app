@@ -2,6 +2,7 @@ import React from "react";
 import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { useTheme } from "@/services/theme-context";
+import { useTranslation } from "@/services/i18n-context";
 import { typography } from "@/design-system/tokens/typography";
 import { textStyles } from "@/design-system/styles/typography/typography-styles";
 import { spacing } from "@/design-system/tokens/spacing";
@@ -13,6 +14,7 @@ import { House as Home, ArrowLeft } from "@phosphor-icons/react";
 const NotFound = () => {
   const location = useLocation();
   const { colors } = useTheme();
+  const { t } = useTranslation();
 
   useEffect(() => {
     console.error(
@@ -101,26 +103,26 @@ const NotFound = () => {
 
           {/* Title and description */}
           <div>
-            <h1 style={titleStyle}>Page Not Found</h1>
+            <h1 style={titleStyle}>{t('notFound.title')}</h1>
             <p style={subtitleStyle}>
-              Oops! The page you're looking for doesn't exist
+              {t('notFound.subtitle')}
             </p>
             <p style={descriptionStyle}>
-              The page "{location.pathname}" couldn't be found. It might have been moved, deleted, or you entered the wrong URL.
+              A página "{location.pathname}" não foi encontrada. Ela pode ter sido movida, excluída, ou você digitou a URL errada.
             </p>
           </div>
 
           {/* Action buttons */}
           <div style={buttonContainerStyles}>
             <Button
-              label="Go Home"
+              label={t('notFound.homeButton')}
               style="primary"
               size="lg"
               leadIcon={<Home size={20} />}
               onClick={() => window.location.href = '/product-home'}
             />
             <Button
-              label="Go Back"
+              label={t('common.back')}
               style="secondary"
               size="lg"
               leadIcon={<ArrowLeft size={20} />}

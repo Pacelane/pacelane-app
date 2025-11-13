@@ -5,6 +5,7 @@ import { Outlet } from "react-router-dom";
 
 import { ThemeProvider } from "@/services/theme-context";
 import { HelpProvider } from "./services/help-context";
+import { I18nProvider } from "@/services/i18n-context";
 import ProtectedRoute from "./design-system/components/ProtectedRoute";
 import MainAppChrome from "./design-system/components/MainAppChrome";
 import HelpModal from "./design-system/components/HelpModal";
@@ -22,9 +23,13 @@ import IntegrationsPage from "./pages/IntegrationsPage";
 import Welcome from "./pages/Onboarding/Welcome";
 import LinkedInInput from "./pages/Onboarding/LinkedInInput";
 import WhatsAppInput from "./pages/Onboarding/WhatsAppInput";
+import ProfileReview from "./pages/Onboarding/ProfileReview";
 import PacingInput from "./pages/Onboarding/PacingInput";
 import GoalsInput from "./pages/Onboarding/GoalsInput";
 import PillarsInput from "./pages/Onboarding/PillarsInput";
+import WritingFormatInput from "./pages/Onboarding/WritingFormatInput";
+import KnowledgeInput from "./pages/Onboarding/KnowledgeInput";
+import ReadyPage from "./pages/Onboarding/ReadyPage";
 import LoadingPage from "./pages/LoadingPage";
 import NotFound from "./pages/NotFound";
 import GoogleCalendarCallback from "./pages/GoogleCalendarCallback";
@@ -39,19 +44,24 @@ const App = () => {
   return (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
-      <HelpProvider>
-        <ToastProvider>
-          <BrowserRouter>
-        <Routes>
+      <I18nProvider>
+        <HelpProvider>
+          <ToastProvider>
+            <BrowserRouter>
+          <Routes>
           {/* Public routes */}
           <Route path="/" element={<SignIn />} />
           <Route path="/signin" element={<SignIn />} />
           <Route path="/onboarding/welcome" element={<Welcome />} />
           <Route path="/onboarding/first-things-first" element={<LinkedInInput />} />
           <Route path="/onboarding/whatsapp" element={<WhatsAppInput />} />
+          <Route path="/onboarding/profile-review" element={<ProfileReview />} />
           <Route path="/onboarding/pacing" element={<PacingInput />} />
           <Route path="/onboarding/goals" element={<GoalsInput />} />
           <Route path="/onboarding/pillars" element={<PillarsInput />} />
+          <Route path="/onboarding/writing-format" element={<WritingFormatInput />} />
+          <Route path="/onboarding/knowledge" element={<KnowledgeInput />} />
+          <Route path="/onboarding/ready" element={<ReadyPage />} />
           {/* Public legal pages */}
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
@@ -87,11 +97,12 @@ const App = () => {
           <Route path="*" element={<NotFound />} />
         </Routes>
         
-        {/* Global Help Modal */}
-        <HelpModal />
-      </BrowserRouter>
-      </ToastProvider>
-      </HelpProvider>
+          {/* Global Help Modal */}
+          <HelpModal />
+        </BrowserRouter>
+        </ToastProvider>
+        </HelpProvider>
+      </I18nProvider>
     </ThemeProvider>
   </QueryClientProvider>
   );

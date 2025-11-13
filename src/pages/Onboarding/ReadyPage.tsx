@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/services/theme-context';
 import { useTranslation } from '@/services/i18n-context';
@@ -11,25 +11,17 @@ import { stroke } from '@/design-system/tokens/stroke';
 import { colors as primitiveColors } from '@/design-system/tokens/primitive-colors';
 import TopNav from '@/design-system/components/TopNav';
 import Button from '@/design-system/components/Button';
-import Input from '@/design-system/components/Input';
 import StatusBadge from '@/design-system/components/StatusBadge';
-import { WhatsappLogo } from '@phosphor-icons/react';
 
-const WhatsAppInput = () => {
+const ReadyPage = () => {
   const { colors } = useTheme();
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [whatsappNumber, setWhatsappNumber] = useState('');
 
-  // Handle button clicks
-  const handleGoBack = () => {
-    navigate('/onboarding/profile-review');
-  };
-
-  const handleContinue = () => {
-    // Navigate to Pacing input page
-    console.log('WhatsApp Number:', whatsappNumber);
-    navigate('/onboarding/pacing');
+  // Handle complete setup
+  const handleCompleteSetup = () => {
+    // Navigate to home page
+    navigate('/product-home');
   };
 
   // Page container styles
@@ -82,7 +74,7 @@ const WhatsAppInput = () => {
     paddingRight: spacing.spacing[36],
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: spacing.spacing[16],
+    gap: spacing.spacing[24],
   };
 
   // Text container styles
@@ -91,7 +83,7 @@ const WhatsAppInput = () => {
     width: '100%',
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: spacing.spacing[16],
+    gap: spacing.spacing[8],
   };
 
   // Title styles using Instrument Serif
@@ -112,29 +104,23 @@ const WhatsAppInput = () => {
     margin: 0,
   };
 
-  // WhatsApp section title styles
-  const whatsappTitleStyles = {
-    ...textStyles.sm.medium,
-    color: colors.text.default,
-    margin: 0,
-  };
-
-  // WhatsApp utility text styles
-  const utilityTextStyles = {
-    ...textStyles.xs.normal,
-    color: colors.text.subtle,
-    margin: 0,
-  };
-
-  // Button container styles (bottom part of main container)
-  const buttonContainerStyles = {
+  // Bottom container styles
+  const bottomContainerStyles = {
     paddingTop: spacing.spacing[20],
     paddingBottom: spacing.spacing[20],
     paddingLeft: spacing.spacing[36],
     paddingRight: spacing.spacing[36],
     display: 'flex',
-    flexDirection: 'row' as const,
-    gap: spacing.spacing[4],
+    flexDirection: 'column' as const,
+    alignItems: 'center',
+  };
+
+  // Bottom text styles
+  const bottomTextStyles = {
+    ...textStyles.sm.normal,
+    color: colors.text.subtle,
+    margin: 0,
+    textAlign: 'center' as const,
   };
 
   // Accuracy bar (right side) styles
@@ -166,14 +152,14 @@ const WhatsAppInput = () => {
     gap: '2px',
   };
 
-  // Individual line bar styles (with red accent for first 4 lines)
-  const getLineBarStyles = (index: number) => ({
+  // Individual line bar styles (all emerald)
+  const lineBarStyles = {
     flex: '1 1 0',
     minWidth: '2px',
     height: '18px',
-    backgroundColor: index < 4 ? primitiveColors.red[500] : primitiveColors.transparentDark[10],
+    backgroundColor: primitiveColors.emerald[500],
     borderRadius: cornerRadius.borderRadius['2xs'],
-  });
+  };
 
   // Divider styles
   const dividerStyles = {
@@ -219,15 +205,15 @@ const WhatsAppInput = () => {
     margin: 0,
   };
 
-  // Steps list
+  // Steps list - all active
   const steps = [
     { label: t('onboarding.progress.steps.linkedIn'), active: true },
-    { label: t('onboarding.progress.steps.whatsapp'), active: false },
-    { label: t('onboarding.progress.steps.pacing'), active: false },
-    { label: t('onboarding.progress.steps.goals'), active: false },
-    { label: t('onboarding.progress.steps.pillars'), active: false },
-    { label: t('onboarding.progress.steps.format'), active: false },
-    { label: t('onboarding.progress.steps.knowledge'), active: false },
+    { label: t('onboarding.progress.steps.whatsapp'), active: true },
+    { label: t('onboarding.progress.steps.pacing'), active: true },
+    { label: t('onboarding.progress.steps.goals'), active: true },
+    { label: t('onboarding.progress.steps.pillars'), active: true },
+    { label: t('onboarding.progress.steps.format'), active: true },
+    { label: t('onboarding.progress.steps.knowledge'), active: true },
   ];
 
   return (
@@ -247,75 +233,27 @@ const WhatsAppInput = () => {
             <div style={contentContainerStyles}>
               {/* Text container */}
               <div style={textContainerStyles}>
-                <h1 style={titleStyles}>{t('onboarding.whatsapp.title')}</h1>
+                <h1 style={titleStyles}>{t('onboarding.ready.title')}</h1>
                 <p style={subtitleStyles}>
-                  {t('onboarding.whatsapp.subtitle')}
+                  {t('onboarding.ready.subtitle')}
                 </p>
               </div>
 
-              {/* WhatsApp input section */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[12] }}>
-                <p style={whatsappTitleStyles}>{t('onboarding.whatsapp.whatsappTitle')}</p>
-                <Input
-                  style="default"
-                  size="lg"
-                  placeholder={t('onboarding.whatsapp.inputPlaceholder')}
-                  value={whatsappNumber}
-                  onChange={(e) => setWhatsappNumber(e.target.value)}
-                  required
-                />
-                <p style={utilityTextStyles}>
-                  {t('onboarding.whatsapp.utility')}
-                </p>
-              </div>
-
-              {/* Divider */}
-              <div style={{ 
-                width: '100%', 
-                height: '1px', 
-                backgroundColor: colors.border.default 
-              }} />
-
-              {/* WhatsApp Send Message section */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[12] }}>
-                <Button
-                  style="primary"
-                  size="md"
-                  label={t('onboarding.whatsapp.sendMessageButton')}
-                  leadIcon={<WhatsappLogo size={20} weight="fill" />}
-                  onClick={() => {
-                    // Open WhatsApp with pre-filled message
-                    const message = encodeURIComponent(t('onboarding.whatsapp.whatsappMessage'));
-                    window.open(`https://wa.me/?text=${message}`, '_blank');
-                  }}
-                  fullWidth
-                />
-                <p style={utilityTextStyles}>
-                  {t('onboarding.whatsapp.sendMessageUtility')}
-                </p>
-              </div>
+              {/* Complete Setup Button */}
+              <Button
+                style="primary"
+                size="lg"
+                label={t('onboarding.ready.completeButton')}
+                onClick={handleCompleteSetup}
+                fullWidth
+              />
             </div>
 
-            {/* Button container */}
-            <div style={buttonContainerStyles}>
-              <div style={{ flex: 1 }}>
-                <Button
-                  style="secondary"
-                  size="sm"
-                  label={t('onboarding.whatsapp.backButton')}
-                  onClick={handleGoBack}
-                  fullWidth
-                />
-              </div>
-              <div style={{ flex: 1 }}>
-                <Button
-                  style="primary"
-                  size="sm"
-                  label={t('onboarding.whatsapp.continueButton')}
-                  onClick={handleContinue}
-                  fullWidth
-                />
-              </div>
+            {/* Bottom container */}
+            <div style={bottomContainerStyles}>
+              <p style={bottomTextStyles}>
+                {t('onboarding.ready.bottomText')}
+              </p>
             </div>
           </div>
 
@@ -327,11 +265,11 @@ const WhatsAppInput = () => {
               <div style={{ marginTop: spacing.spacing[8] }}>
                 <div style={linesBarContainerStyles}>
                   {[...Array(27)].map((_, index) => (
-                    <div key={index} style={getLineBarStyles(index)} />
+                    <div key={index} style={lineBarStyles} />
                   ))}
                 </div>
               </div>
-              <p style={{ ...infoTextStyles, marginTop: spacing.spacing[4] }}>12% {t('onboarding.progress.completed')}</p>
+              <p style={{ ...infoTextStyles, marginTop: spacing.spacing[4] }}>100% {t('onboarding.progress.completed')}</p>
               <div style={{ ...dividerStyles, marginTop: spacing.spacing[8] }} />
               <p style={{ ...infoTextStyles, marginTop: spacing.spacing[8] }}>
                 {t('onboarding.progress.infoText')}
@@ -358,5 +296,5 @@ const WhatsAppInput = () => {
   );
 };
 
-export default WhatsAppInput;
+export default ReadyPage;
 

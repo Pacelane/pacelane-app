@@ -4,12 +4,12 @@ import { useTheme } from '@/services/theme-context';
 import { useAuth } from '@/hooks/api/useAuth';
 import { cornerRadius } from '@/design-system/tokens/corner-radius';
 import { stroke } from '@/design-system/tokens/stroke';
-import { getBichaurinhoAvatarUrl, getUserDisplayName } from '@/utils/avatarUtils';
+import { getUserDisplayName } from '@/utils/avatarUtils';
+import defaultAvatar from '@/assets/images/pfp-avatar.png';
 
 /**
  * UserAvatar - A design system component for displaying user avatars
- * Automatically handles fallback to Bichaurinho avatars with white background
- * when no custom avatar is available
+ * Automatically handles fallback to default avatar when no custom avatar is available
  * 
  * @param {Object} props
  * @param {string} [props.size] - Avatar size ('xs', 'sm', 'md', 'lg', 'xl' or pixel value)
@@ -60,12 +60,12 @@ const UserAvatar = ({
     // 3. Check for OAuth provider avatar
     if (currentUser?.user_metadata?.avatar_url) return currentUser.user_metadata.avatar_url;
     
-    // 4. Fallback to Bichaurinho avatar
-    return getBichaurinhoAvatarUrl();
+    // 4. Fallback to default avatar
+    return defaultAvatar;
   };
   
   const avatarSrc = getAvatarSrc();
-  const isBichaurinho = avatarSrc.includes('bichaurinhos');
+  const isDefaultAvatar = avatarSrc === defaultAvatar;
   
   // Determine alt text
   const getAltText = () => {
@@ -85,7 +85,7 @@ const UserAvatar = ({
     borderRadius: cornerRadius.borderRadius.full,
     overflow: 'hidden',
     border: `${stroke.default} solid ${colors.border.default}`,
-    backgroundColor: isBichaurinho ? '#FFFFFF' : colors.bg.subtle,
+    backgroundColor: colors.bg.subtle,
     flexShrink: 0,
     ...style,
   };
@@ -99,15 +99,6 @@ const UserAvatar = ({
     display: 'block',
   };
   
-  // Special styles for Bichaurinho avatars
-  const bichaurinhoStyles = isBichaurinho ? {
-    ...imageStyles,
-    padding: '10%', // Add padding for Bichaurinho to not touch edges
-    width: '80%',
-    height: '80%',
-    objectFit: 'contain', // Use contain instead of cover for SVGs
-  } : imageStyles;
-  
   return (
     <div
       className={className}
@@ -117,11 +108,11 @@ const UserAvatar = ({
       <img
         src={avatarSrc}
         alt={getAltText()}
-        style={bichaurinhoStyles}
+        style={imageStyles}
         onError={(e) => {
-          // Fallback to default Bichaurinho if image fails to load
-          if (!e.target.src.includes('bichaurinhos')) {
-            e.target.src = getBichaurinhoAvatarUrl();
+          // Fallback to default avatar if image fails to load
+          if (e.target.src !== defaultAvatar) {
+            e.target.src = defaultAvatar;
           }
         }}
       />

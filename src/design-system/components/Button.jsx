@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../../services/theme-context.jsx';
+import { useTranslation } from '../../services/i18n-context.jsx';
 import { spacing } from '../tokens/spacing.js';
 import { cornerRadius } from '../tokens/corner-radius.js';
 import { textStyles } from '../styles/typography/typography-styles.js';
@@ -35,6 +36,7 @@ const Button = ({
   ...rest
 }) => {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const [isHovered, setIsHovered] = useState(false);
   const [isPressed, setIsPressed] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
@@ -531,7 +533,7 @@ const Button = ({
       
       {shouldShowText && (
         <span>
-          {loading ? 'Loading...' : label}
+          {loading ? t('components.button.loading') : label}
         </span>
       )}
       

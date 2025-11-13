@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTheme } from '@/services/theme-context';
+import { useTranslation } from '@/services/i18n-context';
 import { spacing } from '@/design-system/tokens/spacing';
 import { typography } from '@/design-system/tokens/typography';
 import { textStyles } from '@/design-system/styles/typography/typography-styles';
@@ -32,6 +33,7 @@ const ReadAiConfigModal = ({
   onComplete,
 }) => {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
 
@@ -174,14 +176,14 @@ const ReadAiConfigModal = ({
               color: colors.text.default,
               margin: 0,
             }}>
-              Navigate to the integrations page
+              {t('integrations.readai.step1.title')}
             </h3>
             <p style={{
               ...textStyles.sm.normal,
               color: colors.text.subtle,
               margin: 0,
             }}>
-              In your Read.ai account, click on the account menu and navigate to the Integrations page.
+              {t('integrations.readai.step1.instruction')}
             </p>
             <img 
               src={integrationsPageImage} 
@@ -199,14 +201,14 @@ const ReadAiConfigModal = ({
               color: colors.text.default,
               margin: 0,
             }}>
-              Click "Add Webhook"
+              {t('integrations.readai.step2.title')}
             </h3>
             <p style={{
               ...textStyles.sm.normal,
               color: colors.text.subtle,
               margin: 0,
             }}>
-              Once on the integrations page, look for the webhook section and click "Add Webhook" to create a new webhook integration.
+              {t('integrations.readai.step2.instruction')}
             </p>
             <img 
               src={addWebhookImage} 
@@ -224,14 +226,14 @@ const ReadAiConfigModal = ({
               color: colors.text.default,
               margin: 0,
             }}>
-              Add webhook name and URL
+              {t('integrations.readai.step3.title')}
             </h3>
             <p style={{
               ...textStyles.sm.normal,
               color: colors.text.subtle,
               margin: 0,
             }}>
-              Enter a name for your webhook (e.g., "Pacelane Integration") and paste the URL below into the webhook URL field.
+              {t('integrations.readai.step3.instruction')}
             </p>
             
             <div>
@@ -241,7 +243,7 @@ const ReadAiConfigModal = ({
                 margin: 0,
                 marginBottom: spacing.spacing[4],
               }}>
-                Webhook URL:
+                {t('integrations.readai.step3.webhookLabel')}:
               </p>
               <div style={urlBoxStyles}>
                 <code style={{
@@ -281,14 +283,14 @@ const ReadAiConfigModal = ({
               color: colors.text.default,
               margin: 0,
             }}>
-              Test your webhook
+              {t('integrations.readai.step4.title')}
             </h3>
             <p style={{
               ...textStyles.sm.normal,
               color: colors.text.subtle,
               margin: 0,
             }}>
-              Before saving, use the "Test" button to send a test request to verify your webhook is properly configured and responding.
+              {t('integrations.readai.step4.instruction')}
             </p>
             <img 
               src={testWebhookImage} 
@@ -306,14 +308,14 @@ const ReadAiConfigModal = ({
               color: colors.text.default,
               margin: 0,
             }}>
-              Complete setup and start using
+              {t('integrations.readai.step5.title')}
             </h3>
             <p style={{
               ...textStyles.sm.normal,
               color: colors.text.subtle,
               margin: 0,
             }}>
-              Save your webhook configuration. The status will show as "Pending" until your next meeting. After a meeting, Read.ai will automatically send meeting transcripts to your Pacelane knowledge base!
+              {t('integrations.readai.step5.instruction')}
             </p>
             <div style={{
               backgroundColor: colors.bg.card.subtle,
@@ -363,10 +365,10 @@ const ReadAiConfigModal = ({
           }}>
             <Video size={16} color="white" />
           </div>
-          <h2 style={titleStyle}>Read.ai Integration Setup</h2>
+          <h2 style={titleStyle}>{t('integrations.readai.modalTitle')}</h2>
         </div>
         <p style={subtitleStyle}>
-          Connect Read.ai to automatically add meeting transcripts to your knowledge base
+          {t('integrations.readai.modalSubtitle')}
         </p>
       </div>
 
@@ -381,7 +383,7 @@ const ReadAiConfigModal = ({
             ...textStyles.sm.medium,
             color: colors.text.default,
           }}>
-            Step {currentStep} of 5
+            {t('integrations.readai.step')} {currentStep} {t('integrations.readai.of')} 5
           </span>
         </div>
 
@@ -392,7 +394,7 @@ const ReadAiConfigModal = ({
       {/* Footer */}
       <div style={footerStyles}>
         <Button
-          label="Read.ai Documentation"
+          label={t('integrations.readai.documentation')}
           style="ghost"
           size="sm"
           leadIcon={<ExternalLink size={16} />}
@@ -402,7 +404,7 @@ const ReadAiConfigModal = ({
         <div style={{ display: 'flex', gap: spacing.spacing[12] }}>
           {currentStep > 1 && (
             <Button
-              label="Previous"
+              label={t('integrations.readai.previousButton')}
               style="ghost"
               size="sm"
               onClick={handlePreviousStep}
@@ -410,14 +412,14 @@ const ReadAiConfigModal = ({
           )}
           {currentStep < 5 ? (
             <Button
-              label="Next Step"
+              label={t('integrations.readai.nextButton')}
               style="primary"
               size="sm"
               onClick={handleNextStep}
             />
           ) : (
             <Button
-              label="Mark as Complete"
+              label={t('integrations.readai.completeButton')}
               style="primary"
               size="sm"
               leadIcon={<Check size={16} />}

@@ -12,66 +12,153 @@ import { colors as primitiveColors } from '@/design-system/tokens/primitive-colo
 import TopNav from '@/design-system/components/TopNav';
 import Button from '@/design-system/components/Button';
 import StatusBadge from '@/design-system/components/StatusBadge';
-import Chips from '@/design-system/components/Chips';
-import Input from '@/design-system/components/Input';
-import { Plus, Trash } from '@phosphor-icons/react';
+import FileUpload from '@/design-system/components/FileUpload';
+import { X } from '@phosphor-icons/react';
 
-const PillarsInput = () => {
+// File icon imports
+import FileIconCode from '@/assets/icons/file-code.svg';
+import FileIconPDF from '@/assets/icons/file-pdf.svg';
+import FileIconVideo from '@/assets/icons/file-video.svg';
+import FileIconImage from '@/assets/icons/file-image.svg';
+import FileIconAudio from '@/assets/icons/file-audio.svg';
+import FileIconLink from '@/assets/icons/file-link.svg';
+import FileIconZip from '@/assets/icons/file-zip.svg';
+import FileIconDefault from '@/assets/icons/file-default.svg';
+
+interface UploadedFile {
+  id: string;
+  name: string;
+  size: number;
+  status: 'uploading' | 'uploaded' | 'error';
+}
+
+const KnowledgeInput = () => {
   const { colors } = useTheme();
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [selectedContentTypes, setSelectedContentTypes] = useState<string[]>([]);
-  const [themes, setThemes] = useState<string[]>(['', '']);
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [urlValue, setUrlValue] = useState('');
 
-  // Content types options
-  const contentTypesOptions = [
-    t('onboarding.pillars.options.howTo'),
-    t('onboarding.pillars.options.newsOpinions'),
-    t('onboarding.pillars.options.personalStories'),
-    t('onboarding.pillars.options.careerLessons'),
-    t('onboarding.pillars.options.behindTheScenes'),
-    t('onboarding.pillars.options.customerStories'),
-    t('onboarding.pillars.options.educational'),
-    t('onboarding.pillars.options.memesHumor'),
-  ];
+  // Handle file selection
+  const handleFileSelect = (files: File[]) => {
+    const newFiles: UploadedFile[] = files.map((file, index) => ({
+      id: `${Date.now()}-${index}`,
+      name: file.name,
+      size: file.size,
+      status: 'uploading',
+    }));
 
-  // Handle content type selection
-  const toggleContentType = (type: string) => {
-    setSelectedContentTypes((prev) =>
-      prev.includes(type)
-        ? prev.filter((t) => t !== type)
-        : [...prev, type]
-    );
+    setUploadedFiles((prev) => [...prev, ...newFiles]);
+
+    // Simulate upload process
+    newFiles.forEach((file) => {
+      setTimeout(() => {
+        setUploadedFiles((prev) =>
+          prev.map((f) =>
+            f.id === file.id ? { ...f, status: 'uploaded' as const } : f
+          )
+        );
+      }, 2000);
+    });
   };
 
-  // Handle theme input change
-  const handleThemeChange = (index: number, value: string) => {
-    const newThemes = [...themes];
-    newThemes[index] = value;
-    setThemes(newThemes);
+  // Handle URL submit
+  const handleUrlSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (urlValue.trim()) {
+      const urlFile: UploadedFile = {
+        id: `url-${Date.now()}`,
+        name: urlValue,
+        size: 0,
+        status: 'uploading',
+      };
+
+      setUploadedFiles((prev) => [...prev, urlFile]);
+      setUrlValue('');
+
+      // Simulate upload
+      setTimeout(() => {
+        setUploadedFiles((prev) =>
+          prev.map((f) =>
+            f.id === urlFile.id ? { ...f, status: 'uploaded' as const } : f
+          )
+        );
+      }, 2000);
+    }
   };
 
-  // Handle delete theme
-  const handleDeleteTheme = (index: number) => {
-    const newThemes = themes.filter((_, i) => i !== index);
-    setThemes(newThemes);
+  // Handle file removal
+  const handleRemoveFile = (fileId: string) => {
+    setUploadedFiles((prev) => prev.filter((f) => f.id !== fileId));
   };
 
-  // Handle add theme
-  const handleAddTheme = () => {
-    setThemes([...themes, '']);
+  // Get file icon based on file type
+  const getFileIcon = (fileName: string): string => {
+    const extension = fileName.split('.').pop()?.toLowerCase();
+    
+    // Check if it's a URL (no size = URL)
+    if (!extension || fileName.startsWith('http')) return FileIconLink;
+    
+    // Code files
+    if (['js', 'jsx', 'ts', 'tsx', 'py', 'java', 'cpp', 'c', 'html', 'css', 'json', 'xml'].includes(extension)) {
+      return FileIconCode;
+    }
+    
+    // PDFs
+    if (extension === 'pdf') return FileIconPDF;
+    
+    // Videos
+    if (['mp4', 'avi', 'mov', 'wmv', 'flv', 'mkv', 'webm'].includes(extension)) {
+      return FileIconVideo;
+    }
+    
+    // Images
+    if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp'].includes(extension)) {
+      return FileIconImage;
+    }
+    
+    // Audio
+    if (['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a'].includes(extension)) {
+      return FileIconAudio;
+    }
+    
+    // Zip/Archives
+    if (['zip', 'rar', '7z', 'tar', 'gz'].includes(extension)) {
+      return FileIconZip;
+    }
+    
+    return FileIconDefault;
+  };
+
+  // Format file size
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return 'URL';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  // Get status color and text
+  const getStatusDisplay = (status: UploadedFile['status']) => {
+    switch (status) {
+      case 'uploading':
+        return { text: t('onboarding.knowledge.uploadStatus.uploading'), color: colors.text.informative };
+      case 'uploaded':
+        return { text: t('onboarding.knowledge.uploadStatus.uploaded'), color: colors.text.success };
+      case 'error':
+        return { text: t('onboarding.knowledge.uploadStatus.error'), color: colors.text.destructive };
+    }
   };
 
   // Handle button clicks
   const handleGoBack = () => {
-    navigate('/onboarding/goals');
+    navigate('/onboarding/writing-format');
   };
 
   const handleContinue = () => {
-    // Navigate to Writing Format input page
-    console.log('Selected Content Types:', selectedContentTypes);
-    console.log('Themes:', themes);
-    navigate('/onboarding/writing-format');
+    // Navigate to Ready page
+    console.log('Uploaded Files:', uploadedFiles);
+    navigate('/onboarding/ready');
   };
 
   // Page container styles
@@ -158,26 +245,75 @@ const PillarsInput = () => {
     margin: 0,
   };
 
-  // Section title styles
-  const sectionTitleStyles = {
+  // File card styles
+  const fileCardStyles = {
+    width: '100%',
+    maxWidth: '100%',
+    paddingTop: spacing.spacing[8],
+    paddingBottom: spacing.spacing[8],
+    paddingLeft: spacing.spacing[8],
+    paddingRight: spacing.spacing[16],
+    border: `${stroke.DEFAULT} solid ${colors.border.default}`,
+    borderRadius: cornerRadius.borderRadius.md,
+    boxShadow: getShadow('regular.card', colors, { withBorder: false }),
+    display: 'flex',
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    gap: spacing.spacing[12],
+    boxSizing: 'border-box' as const,
+  };
+
+  // File info container styles
+  const fileInfoContainerStyles = {
+    flex: 1,
+    minWidth: 0,
+    overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: spacing.spacing[4],
+  };
+
+  // File name styles
+  const fileNameStyles = {
     ...textStyles.sm.medium,
     color: colors.text.default,
     margin: 0,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap' as const,
+    maxWidth: '160px',
   };
 
-  // Chips container styles
-  const chipsContainerStyles = {
+  // File meta row styles
+  const fileMetaRowStyles = {
     display: 'flex',
-    flexWrap: 'wrap' as const,
+    flexDirection: 'row' as const,
     gap: spacing.spacing[8],
+    alignItems: 'center',
   };
 
-  // Themes section styles
-  const themesSectionStyles = {
+  // File size styles
+  const fileSizeStyles = {
+    ...textStyles.xs.normal,
+    color: colors.text.subtle,
+    margin: 0,
+  };
+
+  // File status styles
+  const fileStatusStyles = {
+    ...textStyles.xs.medium,
+    margin: 0,
+  };
+
+  // Remove button styles
+  const removeButtonStyles = {
+    width: '20px',
+    height: '20px',
     display: 'flex',
-    flexDirection: 'column' as const,
-    gap: spacing.spacing[12],
-    marginTop: spacing.spacing[16],
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    flexShrink: 0,
   };
 
   // Button container styles (bottom part of main container)
@@ -220,7 +356,7 @@ const PillarsInput = () => {
     gap: '2px',
   };
 
-  // Individual line bar styles (with red accent for first 4 lines, orange for next 12)
+  // Individual line bar styles (4 red, 12 orange, 6 emerald)
   const getLineBarStyles = (index: number) => ({
     flex: '1 1 0',
     minWidth: '2px',
@@ -229,7 +365,9 @@ const PillarsInput = () => {
       index < 4 
         ? primitiveColors.red[500] 
         : index < 16 
-        ? primitiveColors.orange[500] 
+        ? primitiveColors.orange[500]
+        : index < 22
+        ? primitiveColors.emerald[500]
         : primitiveColors.transparentDark[10],
     borderRadius: cornerRadius.borderRadius['2xs'],
   });
@@ -284,8 +422,8 @@ const PillarsInput = () => {
     { label: t('onboarding.progress.steps.whatsapp'), active: true },
     { label: t('onboarding.progress.steps.pacing'), active: true },
     { label: t('onboarding.progress.steps.goals'), active: true },
-    { label: t('onboarding.progress.steps.pillars'), active: false },
-    { label: t('onboarding.progress.steps.format'), active: false },
+    { label: t('onboarding.progress.steps.pillars'), active: true },
+    { label: t('onboarding.progress.steps.format'), active: true },
     { label: t('onboarding.progress.steps.knowledge'), active: false },
   ];
 
@@ -293,17 +431,17 @@ const PillarsInput = () => {
     <div style={pageContainerStyles}>
       {/* Custom scrollbar styles */}
       <style>{`
-        .pillars-content-container::-webkit-scrollbar {
+        .knowledge-content-container::-webkit-scrollbar {
           width: 6px;
         }
-        .pillars-content-container::-webkit-scrollbar-track {
+        .knowledge-content-container::-webkit-scrollbar-track {
           background: transparent;
         }
-        .pillars-content-container::-webkit-scrollbar-thumb {
+        .knowledge-content-container::-webkit-scrollbar-thumb {
           background-color: ${colors.border.default};
           border-radius: 3px;
         }
-        .pillars-content-container::-webkit-scrollbar-thumb:hover {
+        .knowledge-content-container::-webkit-scrollbar-thumb:hover {
           background-color: ${colors.border.darker};
         }
       `}</style>
@@ -320,63 +458,65 @@ const PillarsInput = () => {
           {/* Main container (left side) */}
           <div style={mainContainerStyles}>
             {/* Content container */}
-            <div className="pillars-content-container" style={contentContainerStyles}>
+            <div className="knowledge-content-container" style={contentContainerStyles}>
               {/* Text container */}
               <div style={textContainerStyles}>
-                <h1 style={titleStyles}>{t('onboarding.pillars.title')}</h1>
+                <h1 style={titleStyles}>{t('onboarding.knowledge.title')}</h1>
                 <p style={subtitleStyles}>
-                  {t('onboarding.pillars.subtitle')}
+                  {t('onboarding.knowledge.subtitle')}
                 </p>
               </div>
 
-              {/* Content types section */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[12] }}>
-                <p style={sectionTitleStyles}>{t('onboarding.pillars.contentTypesQuestion')}</p>
-                <div style={chipsContainerStyles}>
-                  {contentTypesOptions.map((type) => (
-                    <Chips
-                      key={type}
-                      label={type}
-                      size="lg"
-                      style="default"
-                      selected={selectedContentTypes.includes(type)}
-                      onClick={() => toggleContentType(type)}
-                    />
-                  ))}
-                </div>
-              </div>
+              {/* File Upload Area */}
+              <FileUpload
+                onFileSelect={handleFileSelect}
+                onUrlSubmit={handleUrlSubmit}
+                urlValue={urlValue}
+                onUrlChange={setUrlValue}
+                multiple={true}
+                maxFiles={10}
+              />
 
-              {/* Themes section */}
-              <div style={themesSectionStyles}>
-                <p style={sectionTitleStyles}>{t('onboarding.pillars.themesQuestion')}</p>
-                
-                {/* Theme inputs */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[8] }}>
-                  {themes.map((theme, index) => (
-                    <Input
-                      key={index}
-                      style="tail-action"
-                      size="lg"
-                      placeholder={`${t('onboarding.pillars.themePlaceholder')} ${index + 1}`}
-                      value={theme}
-                      onChange={(e) => handleThemeChange(index, e.target.value)}
-                      tailAction={{
-                        icon: <Trash size={16} />,
-                        onClick: () => handleDeleteTheme(index),
-                      }}
-                    />
-                  ))}
-                  
-                  {/* Add Theme button */}
-                  <Button
-                    style="secondary"
-                    size="sm"
-                    label={t('onboarding.pillars.addThemeButton')}
-                    leadIcon={<Plus size={16} />}
-                    onClick={handleAddTheme}
-                  />
+              {/* Uploaded Files List */}
+              {uploadedFiles.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[8], width: '100%', maxWidth: '100%' }}>
+                  {uploadedFiles.map((file) => {
+                    const statusDisplay = getStatusDisplay(file.status);
+                    
+                    return (
+                      <div key={file.id} style={fileCardStyles}>
+                        {/* File Icon */}
+                        <div style={{ flexShrink: 0, width: '24px', height: '24px' }}>
+                          <img
+                            src={getFileIcon(file.name)}
+                            alt="file icon"
+                            style={{ width: '24px', height: '24px' }}
+                          />
+                        </div>
+
+                        {/* File Info */}
+                        <div style={fileInfoContainerStyles}>
+                          <p style={fileNameStyles}>{file.name}</p>
+                          <div style={fileMetaRowStyles}>
+                            <p style={fileSizeStyles}>{formatFileSize(file.size)}</p>
+                            <p style={{ ...fileStatusStyles, color: statusDisplay.color }}>
+                              {statusDisplay.text}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Remove Button */}
+                        <div
+                          style={{ ...removeButtonStyles, flexShrink: 0 }}
+                          onClick={() => handleRemoveFile(file.id)}
+                        >
+                          <X size={16} color={colors.icon.muted} weight="bold" />
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Button container */}
@@ -385,7 +525,7 @@ const PillarsInput = () => {
                 <Button
                   style="secondary"
                   size="sm"
-                  label={t('onboarding.pillars.backButton')}
+                  label={t('onboarding.knowledge.backButton')}
                   onClick={handleGoBack}
                   fullWidth
                 />
@@ -394,7 +534,7 @@ const PillarsInput = () => {
                 <Button
                   style="primary"
                   size="sm"
-                  label={t('onboarding.pillars.continueButton')}
+                  label={t('onboarding.knowledge.continueButton')}
                   onClick={handleContinue}
                   fullWidth
                 />
@@ -414,7 +554,7 @@ const PillarsInput = () => {
                   ))}
                 </div>
               </div>
-              <p style={{ ...infoTextStyles, marginTop: spacing.spacing[4] }}>35% {t('onboarding.progress.completed')}</p>
+              <p style={{ ...infoTextStyles, marginTop: spacing.spacing[4] }}>70% {t('onboarding.progress.completed')}</p>
               <div style={{ ...dividerStyles, marginTop: spacing.spacing[8] }} />
               <p style={{ ...infoTextStyles, marginTop: spacing.spacing[8] }}>
                 {t('onboarding.progress.infoText')}
@@ -441,5 +581,5 @@ const PillarsInput = () => {
   );
 };
 
-export default PillarsInput;
+export default KnowledgeInput;
 
