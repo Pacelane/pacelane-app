@@ -15,7 +15,10 @@ import TopNav from '@/design-system/components/TopNav';
 import Button from '@/design-system/components/Button';
 import PhoneInput from '@/design-system/components/PhoneInput';
 import Badge from '@/design-system/components/Badge';
-import { ArrowRight, Loader2 } from 'lucide-react';
+import { ArrowRight, Loader2, MessageSquare } from 'lucide-react';
+
+// Configuration
+const PACELANE_WHATSAPP_NUMBER = '551152360591'; // Business WhatsApp number
 
 const WhatsAppInput = () => {
   const { colors } = useTheme();
@@ -25,10 +28,36 @@ const WhatsAppInput = () => {
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [cleanWhatsAppNumber, setCleanWhatsAppNumber] = useState('');
   const [saving, setSaving] = useState(false);
+  const [hasOpenedWhatsApp, setHasOpenedWhatsApp] = useState(false);
+  const [canContinueAfterSync, setCanContinueAfterSync] = useState(false);
 
   // Handle button clicks
   const handleGoBack = () => {
     navigate('/onboarding/first-things-first');
+  };
+
+  const handleSyncWhatsApp = () => {
+    // Open WhatsApp in a new tab (NO redirect)
+    const message = encodeURIComponent("Hi! I want to connect my WhatsApp to Pacelane for personalized content suggestions.");
+    const whatsappUrl = `https://wa.me/${PACELANE_WHATSAPP_NUMBER}?text=${message}`;
+    
+    // Create a temporary anchor element and click it programmatically
+    // This approach is more reliable for opening links in new tabs
+    const link = document.createElement('a');
+    link.href = whatsappUrl;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Mark that WhatsApp was opened
+    setHasOpenedWhatsApp(true);
+    
+    // Enable continue button after a delay (user can come back and click it)
+    setTimeout(() => {
+      setCanContinueAfterSync(true);
+    }, 1000);
   };
 
   const handleContinue = async () => {
@@ -327,10 +356,28 @@ const WhatsAppInput = () => {
                   leadIcon={saving ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : undefined}
                   tailIcon={!saving ? <ArrowRight size={16} /> : undefined}
                   onClick={handleContinue}
-                  disabled={!canContinue || saving}
+                  disabled={!canContinue || !hasOpenedWhatsApp || !canContinueAfterSync || saving}
                   fullWidth
                 />
               </div>
+            </div>
+            
+            {/* Sync WhatsApp Button */}
+            <div style={{ 
+              paddingTop: spacing.spacing[12],
+              paddingBottom: spacing.spacing[12],
+              paddingLeft: spacing.spacing[36],
+              paddingRight: spacing.spacing[36],
+            }}>
+              <Button
+                label={hasOpenedWhatsApp ? "✓ WhatsApp Aberto" : "Sincronizar WhatsApp"}
+                style={hasOpenedWhatsApp ? "soft" : "primary"}
+                size="sm"
+                leadIcon={hasOpenedWhatsApp ? undefined : <MessageSquare size={16} />}
+                onClick={handleSyncWhatsApp}
+                disabled={hasOpenedWhatsApp}
+                fullWidth
+              />
             </div>
           </div>
 

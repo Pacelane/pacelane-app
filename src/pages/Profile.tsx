@@ -167,11 +167,38 @@ const Profile = () => {
         }
       }
 
-      // Load goals
+      // Load goals and target audiences
       if (profile.goals) {
-        const goalsArray = Array.isArray(profile.goals) ? profile.goals : [];
-        setSelectedGoals(goalsArray);
+        if (typeof profile.goals === 'object' && profile.goals !== null && !Array.isArray(profile.goals)) {
+          // New format: { goals: [], target_audiences: [] }
+          if (profile.goals.goals) {
+            setSelectedGoals(Array.isArray(profile.goals.goals) ? profile.goals.goals : []);
+          } else {
+            setSelectedGoals([]);
+          }
+          if (profile.goals.target_audiences) {
+            const audiencesArray = Array.isArray(profile.goals.target_audiences) ? profile.goals.target_audiences : [];
+            setTargetAudiences(audiencesArray.length > 0 ? audiencesArray : ['']);
+          } else {
+            setTargetAudiences(['']);
+          }
+        } else if (Array.isArray(profile.goals)) {
+          // Old format: array of goal strings (backward compatibility)
+          setSelectedGoals(profile.goals);
+          setTargetAudiences(['']);
+        }
+      } else {
+        // Initialize empty state if no goals
+        console.log('Profile: No goals data, initializing empty state');
+        setSelectedGoals([]);
+        setTargetAudiences(['']); // Always show at least one empty input
       }
+      
+      // Log current state for debugging
+      console.log('Profile: Goals state after loading:', {
+        selectedGoals,
+        targetAudiences
+      });
 
       // Load content pillars
       if (profile.content_pillars) {
@@ -179,31 +206,90 @@ const Profile = () => {
         if (typeof profile.content_pillars === 'object' && profile.content_pillars !== null && !Array.isArray(profile.content_pillars)) {
           // New format: { content_types: [], themes: [] }
           console.log('Profile: Detected new format (object)');
+          
+          // Normalize content types to match Profile.tsx options (handle variations)
+          const normalizeContentType = (type: string): string => {
+            const mapping: { [key: string]: string } = {
+              'How-To': 'How To',
+              'How To': 'How To',
+              'News Opinions': 'News & Opinions',
+              'News & Opinions': 'News & Opinions',
+              'Behind the Scenes': 'Behind The Scenes',
+              'Behind The Scenes': 'Behind The Scenes',
+              'Client Stories': 'Customer Stories',
+              'Customer Stories': 'Customer Stories'
+            };
+            return mapping[type] || type;
+          };
+          
           if (profile.content_pillars.content_types) {
-            console.log('Profile: Setting content_types:', profile.content_pillars.content_types);
-            setSelectedContentTypes(profile.content_pillars.content_types);
+            // Normalize and filter content types to only include valid options
+            const savedTypes = Array.isArray(profile.content_pillars.content_types) 
+              ? profile.content_pillars.content_types 
+              : [];
+            
+            const validContentTypes = savedTypes
+              .map((savedType: string) => normalizeContentType(savedType))
+              .filter((normalized: string) => contentTypesOptions.includes(normalized));
+            
+            console.log('Profile: Setting content_types:', validContentTypes);
+            setSelectedContentTypes(validContentTypes);
+          } else {
+            setSelectedContentTypes([]);
           }
+          
           if (profile.content_pillars.themes) {
-            console.log('Profile: Setting themes:', profile.content_pillars.themes);
-            setThemes(profile.content_pillars.themes.length > 0 ? profile.content_pillars.themes : ['']);
+            // Filter out any themes that are actually content types
+            const savedThemes = Array.isArray(profile.content_pillars.themes) 
+              ? profile.content_pillars.themes 
+              : [];
+            
+            const validThemes = savedThemes.filter((theme: string) => {
+              const normalized = normalizeContentType(theme);
+              return !contentTypesOptions.includes(normalized) && !contentTypesOptions.includes(theme);
+            });
+            
+            console.log('Profile: Setting themes:', validThemes);
+            setThemes(validThemes.length > 0 ? validThemes : ['']);
+          } else {
+            setThemes(['']);
           }
         } else if (Array.isArray(profile.content_pillars)) {
           // Old format: array of strings (from onboarding)
           console.log('Profile: Detected old format (array):', profile.content_pillars);
           // Try to separate content types from themes based on the options
           const pillarsArray = profile.content_pillars;
-          const contentTypesOptionsList = [
-            'How To',
-            'News & Opinions',
-            'Personal Stories',
-            'Career Lessons',
-            'Behind The Scenes',
-            'Customer Stories',
-            'Educational',
-            'Memes & Humor'
-          ];
-          const foundContentTypes = pillarsArray.filter(p => contentTypesOptionsList.includes(p));
-          const foundThemes = pillarsArray.filter(p => !contentTypesOptionsList.includes(p));
+          
+          // Normalize content type names for matching
+          const normalizeContentType = (type: string): string => {
+            const mapping: { [key: string]: string } = {
+              'How-To': 'How To',
+              'How To': 'How To',
+              'News Opinions': 'News & Opinions',
+              'News & Opinions': 'News & Opinions',
+              'Behind the Scenes': 'Behind The Scenes',
+              'Behind The Scenes': 'Behind The Scenes',
+              'Client Stories': 'Customer Stories',
+              'Customer Stories': 'Customer Stories'
+            };
+            return mapping[type] || type;
+          };
+          
+          // Find content types by checking against normalized options
+          const foundContentTypes = pillarsArray.filter(p => {
+            const normalized = normalizeContentType(p);
+            return contentTypesOptions.includes(normalized) || contentTypesOptions.includes(p);
+          }).map(p => {
+            const normalized = normalizeContentType(p);
+            return contentTypesOptions.includes(normalized) ? normalized : p;
+          });
+          
+          // Themes are everything that's not a content type
+          const foundThemes = pillarsArray.filter(p => {
+            const normalized = normalizeContentType(p);
+            return !contentTypesOptions.includes(normalized) && !contentTypesOptions.includes(p);
+          });
+          
           console.log('Profile: Separated content_types:', foundContentTypes, 'themes:', foundThemes);
           if (foundContentTypes.length > 0) {
             setSelectedContentTypes(foundContentTypes);
@@ -216,6 +302,10 @@ const Profile = () => {
           // Also set pillars for backward compatibility
           setPillars(pillarsArray.map((pillar, index) => ({ id: index + 1, value: pillar })));
         }
+      } else {
+        // Initialize empty state if no content_pillars
+        setSelectedContentTypes([]);
+        setThemes(['']);
       }
 
       // Load writing format
@@ -225,6 +315,8 @@ const Profile = () => {
           if (profile.content_guides.writing_format) {
             console.log('Profile: Setting writing_format:', profile.content_guides.writing_format);
             setSelectedFormat(profile.content_guides.writing_format);
+          } else {
+            setSelectedFormat('standard');
           }
         } else if (typeof profile.content_guides === 'string') {
           // Handle case where it might be stored as a string
@@ -233,12 +325,22 @@ const Profile = () => {
             const parsed = JSON.parse(profile.content_guides);
             if (parsed.writing_format) {
               setSelectedFormat(parsed.writing_format);
+            } else {
+              setSelectedFormat('standard');
             }
           } catch (e) {
             console.error('Profile: Failed to parse content_guides:', e);
+            setSelectedFormat('standard');
           }
         }
+      } else {
+        // Initialize default format if no content_guides
+        console.log('Profile: No content_guides data, initializing default format');
+        setSelectedFormat('standard');
       }
+      
+      // Log current state for debugging
+      console.log('Profile: Writing format state after loading:', selectedFormat);
 
       // Load inspirations from separate table
       loadInspirations();
@@ -276,7 +378,7 @@ const Profile = () => {
   ];
   
   const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
-  const [targetAudiences, setTargetAudiences] = useState<string[]>(['']);
+  const [targetAudiences, setTargetAudiences] = useState<string[]>(['']); // Always start with at least one empty input
 
   // Content Pillars state
   const contentTypesOptions = [
@@ -301,7 +403,7 @@ const Profile = () => {
     { id: 'emojis', label: 'Emojis', icon: Smiley },
   ];
   
-  const [selectedFormat, setSelectedFormat] = useState<string>('');
+  const [selectedFormat, setSelectedFormat] = useState<string>('standard'); // Default to 'standard' format
 
   // New item input states
   const [newPillar, setNewPillar] = useState('');
@@ -430,8 +532,14 @@ const Profile = () => {
           console.log('Profile: Saving format with data:', updateData);
           break;
         case 'goals':
+          // Filter out empty target audiences
+          const filteredAudiences = targetAudiences.filter(audience => audience.trim().length > 0);
+          // Save goals and target audiences in the new format
           updateData = {
-            goals: selectedGoals
+            goals: {
+              goals: selectedGoals.length > 0 ? selectedGoals : [],
+              target_audiences: filteredAudiences.length > 0 ? filteredAudiences : []
+            }
           };
           console.log('Profile: Saving goals with data:', updateData);
           break;
@@ -1283,8 +1391,8 @@ const Profile = () => {
 
 
 
-              {/* Dynamic Sections (Guides, Pillars) */}
-              {(activeSection === 'guides' || activeSection === 'pillars') && (
+              {/* Dynamic Sections (Goals, Guides, Pillars, Format) */}
+              {(activeSection === 'goals' || activeSection === 'guides' || activeSection === 'pillars' || activeSection === 'format') && (
                 <div style={{
                   backgroundColor: colors.bg.card.default,
                   border: `1px solid ${colors.border.default}`,

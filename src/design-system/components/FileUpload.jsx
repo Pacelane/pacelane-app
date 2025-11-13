@@ -1,274 +1,170 @@
-import React, { useState, useRef, forwardRef, useImperativeHandle } from 'react';
-import { motion } from 'framer-motion';
-import { useTheme } from '../../services/theme-context.jsx';
-import { spacing } from '../tokens/spacing.js';
-import { cornerRadius } from '../tokens/corner-radius.js';
-import { textStyles } from '../styles/typography/typography-styles.js';
-import { stroke } from '../tokens/stroke.js';
-
-import Input from './Input.jsx';
-import Divider from './Divider.jsx';
-import downloadIcon from '../../assets/icons/download--T.svg';
+import React, { useRef, useState, useCallback, forwardRef, useImperativeHandle } from 'react';
+import { useTheme } from '@/services/theme-context';
+import { spacing } from '@/design-system/tokens/spacing';
+import { cornerRadius } from '@/design-system/tokens/corner-radius';
+import { textStyles } from '@/design-system/styles/typography/typography-styles';
+import { Upload } from 'lucide-react';
 
 const FileUpload = forwardRef(({
-  // Core props
   onFileSelect,
-  onUrlSubmit,
   accept = '*/*',
   multiple = true,
   maxFiles = 10,
-  maxTotalSize = 100 * 1024 * 1024, // 100MB in bytes
-  
-  // URL input props
-  urlValue = '',
-  onUrlChange,
-  urlPlaceholder = 'Paste a website URL here',
-  
-  // State props
+  maxTotalSize,
+  uploading = false,
   disabled = false,
-  uploading = false, // New prop to show uploading state
-  className,
-  ...rest
 }, ref) => {
   const { colors } = useTheme();
-  const [isHovered, setIsHovered] = useState(false);
-  const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef(null);
-  
-  // Expose methods to parent component
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragCounter, setDragCounter] = useState(0);
+
   useImperativeHandle(ref, () => ({
     triggerFileSelect: () => {
-      if (fileInputRef.current && !disabled) {
-        fileInputRef.current.click();
-      }
-    }
+      fileInputRef.current?.click();
+    },
   }));
-  
-  // Handle file drop
-  const handleDrop = (e) => {
+
+  const handleFileChange = useCallback((e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0 && onFileSelect) {
+      onFileSelect(files);
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }, [onFileSelect]);
+
+  const handleDragEnter = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsDragOver(false);
-    
-    if (disabled) return;
-    
-    const files = Array.from(e.dataTransfer.files);
-    if (files.length > 0) {
-      console.log('FileUpload: Files dropped:', files.length);
-      onFileSelect?.(files);
+    setDragCounter(prev => prev + 1);
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      setIsDragging(true);
     }
-  };
-  
-  // Handle drag over
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    if (!disabled) {
-      setIsDragOver(true);
-    }
-  };
-  
-  // Handle drag leave
-  const handleDragLeave = (e) => {
-    e.preventDefault();
-    setIsDragOver(false);
-  };
-  
-  // Handle click to browse with smart target detection
-  const handleBrowseClick = (e) => {
-    // Don't trigger file browser if click is on URL section or its children
-    const clickedElement = e.target;
-    const isUrlSection = clickedElement.closest('[data-upload-section="url"]');
-    const isInputElement = clickedElement.tagName === 'INPUT' || 
-                          clickedElement.tagName === 'BUTTON' ||
-                          clickedElement.closest('form');
-    
-    // Only trigger file browser for clicks on designated upload areas
-    if (!disabled && !isUrlSection && !isInputElement && fileInputRef.current) {
-      fileInputRef.current.click();
-    }
-  };
-  
-  // Handle file input change
-  const handleFileInputChange = (e) => {
-    const files = Array.from(e.target.files);
-    if (files.length > 0) {
-      console.log('FileUpload: Files selected via input:', files.length);
-      onFileSelect?.(files);
-    }
-    // Reset input to allow selecting the same file again
-    e.target.value = '';
-  };
-  
-  // Handle URL submission
-  const handleUrlSubmit = (e) => {
-    e.preventDefault();
-    if (urlValue.trim()) {
-      onUrlSubmit?.(urlValue.trim());
-    }
-  };
-  
-  // Get background color based on state
-  const getBackgroundColor = () => {
-    if (disabled || uploading) return colors.bg.state.secondary;
-    if (isDragOver) return colors.bg.state.primaryHover;
-    if (isHovered) return colors.bg.state.secondaryHover;
-    return colors.bg.state.secondary;
-  };
-  
-  // Get border color based on state
-  const getBorderColor = () => {
-    if (isDragOver) return colors.border.highlight;
-    return colors.border.darker;
-  };
-  
-  // Get box shadow based on state
-  const getBoxShadow = () => {
-    if (disabled || uploading) return 'none';
-    if (isHovered || isDragOver) return 'inset 0 2px 4px rgba(0, 0, 0, 0.1)';
-    return 'none';
-  };
-  
-  // Download icon component
-  const DownloadIcon = () => (
-    <img
-      src={downloadIcon}
-      alt="Download"
-      width="40"
-      height="40"
-      style={{
-        width: 40,
-        height: 40,
-        flexShrink: 0,
-      }}
-    />
-  );
-  
+  }, []);
 
-  
+  const handleDragLeave = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragCounter(prev => {
+      const newCounter = prev - 1;
+      if (newCounter === 0) {
+        setIsDragging(false);
+      }
+      return newCounter;
+    });
+  }, []);
+
+  const handleDragOver = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    setDragCounter(0);
+
+    if (disabled || uploading) return;
+
+    const files = Array.from(e.dataTransfer.files || []);
+    if (files.length > 0 && onFileSelect) {
+      let filesToUpload = files;
+      if (maxFiles && files.length > maxFiles) {
+        filesToUpload = files.slice(0, maxFiles);
+      }
+      
+      if (maxTotalSize) {
+        let totalSize = 0;
+        filesToUpload = filesToUpload.filter(file => {
+          if (totalSize + file.size <= maxTotalSize) {
+            totalSize += file.size;
+            return true;
+          }
+          return false;
+        });
+      }
+
+      if (filesToUpload.length > 0) {
+        onFileSelect(filesToUpload);
+      }
+    }
+  }, [disabled, uploading, onFileSelect, maxFiles, maxTotalSize]);
+
+  const handleClick = useCallback(() => {
+    if (!disabled && !uploading) {
+      fileInputRef.current?.click();
+    }
+  }, [disabled, uploading]);
+
+  const containerStyle = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacing.spacing[16],
+  };
+
+  const dropZoneStyle = {
+    border: `2px dashed ${isDragging ? colors.border.teal : colors.border.default}`,
+    borderRadius: cornerRadius.borderRadius.lg,
+    backgroundColor: isDragging ? colors.bg.badge.teal : colors.bg.card.subtle,
+    padding: spacing.spacing[24],
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.spacing[12],
+    cursor: disabled || uploading ? 'not-allowed' : 'pointer',
+    transition: 'all 0.2s ease',
+    opacity: disabled || uploading ? 0.5 : 1,
+    minHeight: '120px',
+  };
+
+  const iconStyle = {
+    color: isDragging ? colors.bg.basic.teal.strong : colors.icon.default,
+  };
+
   return (
-    <div className={className} {...rest}>
-      {/* Main upload area */}
+    <div style={containerStyle}>
       <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          padding: `${spacing.spacing[32]} ${spacing.spacing[24]}`,
-          borderRadius: cornerRadius.borderRadius.sm,
-          backgroundColor: getBackgroundColor(),
-          border: `${stroke.DEFAULT} dashed ${getBorderColor()}`,
-          boxShadow: getBoxShadow(),
-          cursor: (disabled || uploading) ? 'not-allowed' : 'pointer',
-          transition: 'background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out',
-          alignItems: 'center',
-          textAlign: 'center',
-        }}
-        onDrop={handleDrop}
+        style={dropZoneStyle}
+        onDragEnter={handleDragEnter}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
-        onMouseEnter={() => !disabled && !uploading && setIsHovered(true)}
-        onMouseLeave={() => !disabled && !uploading && setIsHovered(false)}
-        onClick={handleBrowseClick}
+        onDrop={handleDrop}
+        onClick={handleClick}
       >
-        {/* Hidden file input */}
         <input
           ref={fileInputRef}
           type="file"
           accept={accept}
           multiple={multiple}
-          onChange={handleFileInputChange}
-          disabled={disabled || uploading}
+          onChange={handleFileChange}
           style={{ display: 'none' }}
+          disabled={disabled || uploading}
         />
         
-        {/* Inner content with motion */}
-        <motion.div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: spacing.spacing[12],
-            alignItems: 'center',
-            width: '100%',
-          }}
-          animate={{ scale: !disabled && !uploading && (isHovered || isDragOver) ? 0.97 : 1 }}
-          transition={{ duration: 0.2, ease: "easeInOut" }}
-        >
+        <Upload size={32} style={iconStyle} />
         
-        {/* Upload icon */}
-        <DownloadIcon />
-        
-        {/* Main upload text */}
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: spacing.spacing[4],
-            alignItems: 'center',
-          }}
-        >
-          <div style={{ ...textStyles.sm.medium }}>
-            <span style={{ color: (disabled || uploading) ? colors.text.hint : colors.text.default }}>
-              {uploading ? 'Uploading files...' : 'Drop your files here, or'}{uploading ? '' : ' '}
-            </span>
-            {!uploading && (
-              <span style={{ color: (disabled || uploading) ? colors.text.hint : colors.text.informative }}>
-                click to browse
-              </span>
-            )}
-          </div>
-          
-          <div
-            style={{
-              ...textStyles.xs.normal,
-              color: (disabled || uploading) ? colors.text.hint : colors.text.muted,
-            }}
-          >
-            {uploading 
-              ? 'Please wait while files are being uploaded...'
-              : `Up to ${maxFiles} files, ${Math.round(maxTotalSize / (1024 * 1024))}MB total limit`
-            }
-          </div>
+        <div style={{ textAlign: 'center' }}>
+          <p style={{ ...textStyles.sm.medium, color: colors.text.default, margin: 0 }}>
+            {uploading ? 'Uploading...' : 'Drag and drop files here'}
+          </p>
+          <p style={{ ...textStyles.xs.normal, color: colors.text.muted, margin: 0, marginTop: spacing.spacing[4] }}>
+            or click to browse
+          </p>
+          {maxFiles && (
+            <p style={{ ...textStyles.xs.normal, color: colors.text.subtle, margin: 0, marginTop: spacing.spacing[4] }}>
+              Max {maxFiles} file{maxFiles > 1 ? 's' : ''}
+            </p>
+          )}
         </div>
-        
-        {/* Divider */}
-        <Divider maxWidth={400} />
-        
-        {/* URL section header */}
-        {!uploading && (
-          <div
-            data-upload-section="url"
-            style={{
-              ...textStyles.sm.medium,
-              color: disabled ? colors.text.hint : colors.text.default,
-            }}
-          >
-            Drop a link to a website
-          </div>
-        )}
-        
-        {/* URL input */}
-        {!uploading && (
-          <div data-upload-section="url" style={{ width: '100%', maxWidth: 400 }}>
-            <form onSubmit={handleUrlSubmit}>
-              <Input
-                size="sm"
-                style="add-on"
-                addOnPrefix="https://"
-                value={urlValue}
-                onChange={(e) => onUrlChange?.(e.target.value)}
-                placeholder={urlPlaceholder}
-                disabled={disabled}
-                type="url"
-              />
-            </form>
-          </div>
-        )}
-        </motion.div>
       </div>
     </div>
   );
 });
 
-// Add display name for better debugging
 FileUpload.displayName = 'FileUpload';
 
 export default FileUpload;

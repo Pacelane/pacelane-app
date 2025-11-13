@@ -74,10 +74,34 @@ const ContentPillars = () => {
         .filter(option => option.value && option.value.trim().length > 0)
         .map(option => option.value.trim());
 
+      // Get existing content_pillars to preserve content_types if they exist
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('content_pillars')
+        .eq('user_id', user.id)
+        .single();
+
+      // Preserve existing content_types if they exist, otherwise use empty array
+      let existingContentTypes: string[] = [];
+      if (profileData?.content_pillars) {
+        if (typeof profileData.content_pillars === 'object' && profileData.content_pillars !== null && !Array.isArray(profileData.content_pillars)) {
+          // New format: { content_types: [], themes: [] }
+          existingContentTypes = Array.isArray(profileData.content_pillars.content_types) 
+            ? profileData.content_pillars.content_types 
+            : [];
+        }
+      }
+
+      // Save in the correct format: { content_types: [], themes: [] }
+      const contentPillarsData = {
+        content_types: existingContentTypes,
+        themes: validTopicOptions.length > 0 ? validTopicOptions : []
+      };
+
       const { error } = await supabase
         .from('profiles')
         .update({ 
-          content_pillars: validTopicOptions
+          content_pillars: contentPillarsData
         } as any)
         .eq('user_id', user.id);
 

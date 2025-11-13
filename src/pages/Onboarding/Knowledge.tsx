@@ -539,14 +539,6 @@ const Knowledge = () => {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
         }
-        /* Hide URL section and divider from FileUpload component */
-        [data-upload-section="url"] {
-          display: none !important;
-        }
-        /* Hide divider that appears before URL section */
-        div:has(+ [data-upload-section="url"]) {
-          display: none !important;
-        }
       `}</style>
 
       {/* TopNav Bar - Stuck to the top */}
@@ -574,10 +566,6 @@ const Knowledge = () => {
               <FileUpload
                 ref={fileUploadRef}
                 onFileSelect={handleFileSelect}
-                onUrlSubmit={undefined} // Disable auto-submit
-                urlValue=""
-                onUrlChange={() => {}} // Disable URL input in FileUpload
-                urlPlaceholder=""
                 maxFiles={10}
                 maxTotalSize={100 * 1024 * 1024} // 100MB
                 uploading={uploading}

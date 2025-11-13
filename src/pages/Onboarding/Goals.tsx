@@ -81,19 +81,21 @@ const Goals = () => {
       // Filter out empty target audiences
       const filteredAudiences = targetAudiences.filter(audience => audience.trim().length > 0);
 
-      // Save goals to the goals column (JSONB)
-      // The goals column stores an array of goal strings
+      // Save goals and target audiences
+      // Store goals as an object with both goals array and target_audiences array
+      const goalsData = {
+        goals: selectedGoals.length > 0 ? selectedGoals : [],
+        target_audiences: filteredAudiences.length > 0 ? filteredAudiences : []
+      };
+
       const { error } = await supabase
         .from('profiles')
         .update({ 
-          goals: selectedGoals.length > 0 ? selectedGoals : null
+          goals: goalsData
         } as any)
         .eq('user_id', user.id);
 
       if (error) throw error;
-
-      // Note: target_audiences could be saved in a separate column if needed
-      // For now, we're saving goals in the goals column
 
       toast.success('Goals and target audiences saved!');
       navigate('/onboarding/pillars');

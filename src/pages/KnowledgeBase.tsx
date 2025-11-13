@@ -738,10 +738,6 @@ const KnowledgeBase = () => {
           <FileUpload
             ref={fileUploadRef}
             onFileSelect={handleFileSelect}
-            onUrlSubmit={handleUrlSubmit}
-            urlValue={urlInput}
-            onUrlChange={setUrlInput}
-            urlPlaceholder="Paste a website URL or document link here"
             accept="*/*"
             multiple={true}
             maxFiles={20}

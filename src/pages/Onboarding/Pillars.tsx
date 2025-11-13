@@ -28,13 +28,14 @@ const Pillars = () => {
   const [saving, setSaving] = useState(false);
 
   // Content types options
+  // Note: These names must match Profile.tsx contentTypesOptions exactly
   const contentTypesOptions = [
-    'How-To',
-    'News Opinions',
+    'How To',
+    'News & Opinions',
     'Personal Stories',
     'Career Lessons',
-    'Behind the Scenes',
-    'Client Stories',
+    'Behind The Scenes',
+    'Customer Stories',
     'Educational',
     'Memes & Humor',
   ];
@@ -83,17 +84,17 @@ const Pillars = () => {
       // Filter out empty themes
       const filteredThemes = themes.filter(theme => theme.trim().length > 0);
 
-      // Save to content_pillars column (JSONB array)
-      // Combine themes and content types into a single array
-      const allPillars = [
-        ...filteredThemes,
-        ...selectedContentTypes
-      ].filter(p => p.trim().length > 0); // Remove any empty strings
+      // Save to content_pillars column as an object with content_types and themes
+      // This matches the format expected by Profile.tsx
+      const contentPillarsData = {
+        content_types: selectedContentTypes.length > 0 ? selectedContentTypes : [],
+        themes: filteredThemes.length > 0 ? filteredThemes : []
+      };
 
       const { error } = await supabase
         .from('profiles')
         .update({ 
-          content_pillars: allPillars.length > 0 ? allPillars : null
+          content_pillars: contentPillarsData
         } as any)
         .eq('user_id', user.id);
 
