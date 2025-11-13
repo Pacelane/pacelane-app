@@ -88,3 +88,4 @@ Para evitar esse problema no futuro:
 - O código usa um timestamp em base36 para gerar títulos únicos quando necessário
 - O `skill_name` no frontmatter do SKILL.md não precisa ser único (apenas o `display_title`)
 
+

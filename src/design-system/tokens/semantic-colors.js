@@ -56,7 +56,9 @@ const mapColor = (cssVar) => {
     'teal-100': colors.teal[100],
     'teal-400': colors.teal[400],
     'teal-500': colors.teal[500],
+    'teal-600': colors.teal[600],
     'teal-700': colors.teal[700],
+    'teal-800': colors.teal[800],
     'teal-900': colors.teal[900],
     
     'cyan-100': colors.cyan[100],
@@ -209,10 +211,10 @@ export const themes = {
         disabled: mapColor('var(--transparent-dark-6)')
       },
       state: {
-        primary: mapColor('var(--blue-500)'),
-        primaryHover: mapColor('var(--blue-400)'),
-        primaryPress: mapColor('var(--blue-500)'),
-        primaryLoading: mapColor('var(--blue-300)'),
+        primary: mapColor('var(--teal-700)'),
+        primaryHover: mapColor('var(--teal-800)'),
+        primaryPress: mapColor('var(--teal-600)'),
+        primaryLoading: mapColor('var(--teal-400)'),
         
         secondary: mapColor('var(--gray-00)'),
         secondaryHover: mapColor('var(--gray-50)'),
@@ -234,27 +236,23 @@ export const themes = {
         ghostPressInverted: mapColor('var(--transparent-light-15)'),
         ghostLoadingInverted: mapColor('var(--transparent-light-8)'),
         
-        menuItem: mapColor('var(--transparent-dark-00)'),
-        menuItemHover: mapColor('var(--transparent-dark-6)'),
-        menuItemActive: mapColor('var(--transparent-teal-10)'),
-        
         destructive: mapColor('var(--red-500)'),
         destructiveHover: mapColor('var(--red-400)'),
         destructivePress: mapColor('var(--red-500)'),
         destructiveLoading: mapColor('var(--red-300)'),
         
-        brand: mapColor('var(--blue-500)'),
-        brandHover: mapColor('var(--blue-400)'),
-        brandPress: mapColor('var(--blue-500)'),
-        brandLoading: mapColor('var(--blue-300)'),
+        brand: mapColor('var(--teal-700)'),
+        brandHover: mapColor('var(--teal-800)'),
+        brandPress: mapColor('var(--teal-600)'),
+        brandLoading: mapColor('var(--teal-400)'),
         
         gray: mapColor('var(--gray-950)'),
         disabled: mapColor('var(--transparent-dark-8)')
       },
       checkbox: {
         default: mapColor('var(--gray-00)'),
-        active: mapColor('var(--blue-500)'),
-        activeHover: mapColor('var(--blue-400)'),
+        active: mapColor('var(--teal-700)'),
+        activeHover: mapColor('var(--teal-800)'),
         disabled: mapColor('var(--transparent-dark-6)')
       },
       switch: {
@@ -369,10 +367,9 @@ export const themes = {
       informative: mapColor('var(--blue-500)'),
       success: mapColor('var(--green-500)'),
       warning: mapColor('var(--orange-500)'),
-      highlight: mapColor('var(--transparent-blue-40)'),
+      highlight: mapColor('var(--transparent-teal-50)'),
       highlightDestructive: mapColor('var(--transparent-red-40)'),
       inputHighlight: mapColor('var(--transparent-dark-40)'),
-      menuItem: mapColor('var(--transparent-teal-50)'),
       white: mapColor('var(--transparent-light-20)'),
       red: mapColor('var(--transparent-red-20)'),
       orange: mapColor('var(--transparent-orange-20)'),
@@ -468,10 +465,10 @@ export const themes = {
         disabled: mapColor('var(--transparent-light-15)')
       },
       state: {
-        primary: mapColor('var(--blue-600)'),
-        primaryHover: mapColor('var(--blue-500)'),
-        primaryPress: mapColor('var(--blue-600)'),
-        primaryLoading: mapColor('var(--blue-300)'),
+        primary: mapColor('var(--teal-700)'),
+        primaryHover: mapColor('var(--teal-800)'),
+        primaryPress: mapColor('var(--teal-600)'),
+        primaryLoading: mapColor('var(--teal-400)'),
         
         secondary: mapColor('var(--transparent-light-4)'),
         secondaryHover: mapColor('var(--transparent-light-8)'),
@@ -493,27 +490,23 @@ export const themes = {
         ghostPressInverted: mapColor('var(--transparent-dark-8)'),
         ghostLoadingInverted: mapColor('var(--transparent-dark-4)'),
         
-        menuItem: mapColor('var(--transparent-light-00)'),
-        menuItemHover: mapColor('var(--transparent-light-8)'),
-        menuItemActive: mapColor('var(--transparent-teal-30)'),
-        
         destructive: mapColor('var(--red-500)'),
         destructiveHover: mapColor('var(--red-400)'),
         destructivePress: mapColor('var(--red-500)'),
         destructiveLoading: mapColor('var(--red-300)'),
         
-        brand: mapColor('var(--blue-500)'),
-        brandHover: mapColor('var(--blue-400)'),
-        brandPress: mapColor('var(--blue-500)'),
-        brandLoading: mapColor('var(--blue-300)'),
+        brand: mapColor('var(--teal-700)'),
+        brandHover: mapColor('var(--teal-800)'),
+        brandPress: mapColor('var(--teal-600)'),
+        brandLoading: mapColor('var(--teal-400)'),
         
         gray: mapColor('var(--gray-00)'),
         disabled: mapColor('var(--transparent-light-8)')
       },
       checkbox: {
         default: mapColor('var(--transparent-light-6)'),
-        active: mapColor('var(--blue-500)'),
-        activeHover: mapColor('var(--blue-400)'),
+        active: mapColor('var(--teal-700)'),
+        activeHover: mapColor('var(--teal-800)'),
         disabled: mapColor('var(--transparent-light-6)')
       },
       switch: {
@@ -628,10 +621,9 @@ export const themes = {
       informative: mapColor('var(--blue-400)'),
       success: mapColor('var(--green-400)'),
       warning: mapColor('var(--orange-400)'),
-      highlight: mapColor('var(--transparent-blue-40)'),
+      highlight: mapColor('var(--transparent-teal-20)'),
       highlightDestructive: mapColor('var(--transparent-red-40)'),
       inputHighlight: mapColor('var(--transparent-light-45)'),
-      menuItem: mapColor('var(--transparent-teal-20)'),
       white: mapColor('var(--transparent-light-20)'),
       red: mapColor('var(--transparent-red-20)'),
       orange: mapColor('var(--transparent-orange-20)'),

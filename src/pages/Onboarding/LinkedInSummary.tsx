@@ -173,7 +173,7 @@ const LinkedInSummary = () => {
   };
 
   const handleContinue = () => {
-    navigate('/onboarding/guides');
+    navigate('/onboarding/whatsapp');
   };
 
   if (isLoading) {
@@ -251,8 +251,8 @@ const LinkedInSummary = () => {
           {/* Back Button */}
           <div style={{ 
             alignSelf: 'flex-start', 
-            width: isMobile ? '100%' : '400px',
-            maxWidth: isMobile ? '320px' : '400px'
+            width: isMobile ? '100%' : '700px',
+            maxWidth: isMobile ? '100%' : '700px'
           }}>
             <Button
               label="Go Back"
@@ -265,8 +265,8 @@ const LinkedInSummary = () => {
 
           {/* Progress Indicator */}
           <div style={{ 
-            width: isMobile ? '100%' : '400px',
-            maxWidth: isMobile ? '320px' : '400px'
+            width: isMobile ? '100%' : '700px',
+            maxWidth: isMobile ? '100%' : '700px'
           }}>
             <OnboardingProgressIndicator 
               currentStep={3}
@@ -281,8 +281,8 @@ const LinkedInSummary = () => {
               borderRadius: cornerRadius.borderRadius.lg,
               border: `1px solid ${colors.border.darker}`,
               boxShadow: getShadow('regular.card', colors, { withBorder: true }),
-              width: isMobile ? '100%' : '400px',
-              maxWidth: isMobile ? '320px' : '400px',
+              width: isMobile ? '100%' : '700px',
+              maxWidth: isMobile ? '100%' : '700px',
               overflow: 'hidden',
             }}
           >
@@ -302,15 +302,10 @@ const LinkedInSummary = () => {
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'flex-start',
-                  gap: spacing.spacing[16],
+                  gap: spacing.spacing[12],
                   marginBottom: spacing.spacing[32],
                 }}
               >
-                {/* Bichaurinho */}
-                <div>
-                  <Bichaurinho variant={13} size={48} />
-                </div>
-
                 {/* Title and Subtitle Container */}
                 <div
                   style={{

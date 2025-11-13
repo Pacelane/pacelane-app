@@ -28,8 +28,13 @@ import LinkedInSummary from "./pages/Onboarding/LinkedInSummary";
 import Guides from "./pages/Onboarding/Guides";
 import ContentPillars from "./pages/Onboarding/ContentPillars";
 import Pacing from "./pages/Onboarding/Pacing";
+import Goals from "./pages/Onboarding/Goals";
+import Pillars from "./pages/Onboarding/Pillars";
+import Format from "./pages/Onboarding/Format";
+import Knowledge from "./pages/Onboarding/Knowledge";
 import Contact from "./pages/Onboarding/Contact";
 import WhatsAppSetup from "./pages/Onboarding/WhatsAppSetup";
+import WhatsAppInput from "./pages/Onboarding/WhatsAppInput";
 import Ready from "./pages/Onboarding/Ready";
 import LoadingPage from "./pages/LoadingPage";
 import NotFound from "./pages/NotFound";
@@ -55,9 +60,14 @@ const App = () => {
           <Route path="/onboarding/welcome" element={<Welcome />} />
           <Route path="/onboarding/first-things-first" element={<FirstThingsFirst />} />
           <Route path="/onboarding/linkedin-summary" element={<LinkedInSummary />} />
+          <Route path="/onboarding/whatsapp" element={<WhatsAppInput />} />
           <Route path="/onboarding/guides" element={<Guides />} />
           <Route path="/onboarding/content-pillars" element={<ContentPillars />} />
           <Route path="/onboarding/pacing" element={<Pacing />} />
+          <Route path="/onboarding/goals" element={<Goals />} />
+          <Route path="/onboarding/pillars" element={<Pillars />} />
+          <Route path="/onboarding/format" element={<Format />} />
+          <Route path="/onboarding/knowledge" element={<Knowledge />} />
           <Route path="/onboarding/contact" element={<Contact />} />
           <Route path="/onboarding/whatsapp-setup" element={<WhatsAppSetup />} />
           <Route path="/onboarding/ready" element={<Ready />} />

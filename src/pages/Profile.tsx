@@ -26,17 +26,21 @@ import { textStyles } from '@/design-system/styles/typography/typography-styles'
 // Icons
 import { 
   Plus,
-  Trash2,
+  Trash,
   Check,
   X,
-  Sparkles,
+  Sparkle as Sparkles,
   Info,
-  LogOut
-} from 'lucide-react';
+  SignOut as LogOut,
+  TextAlignLeft,
+  ListBullets,
+  Article,
+  Smiley
+} from '@phosphor-icons/react';
 
 const Profile = () => {
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, signOut, refreshProfile } = useAuth();
   const { profile, saving, updateBasicProfile } = useProfile();
   const { colors } = useTheme();
   const isMobile = useIsMobile();
@@ -148,7 +152,7 @@ const Profile = () => {
 
 
 
-      // Load guides, pillars, and inspirations from profile
+      // Load guides, pillars, goals, and format from profile
 
       // Check both 'guides' and 'content_guides' columns for backward compatibility
       const guidesData = profile.guides || profile.content_guides;
@@ -163,9 +167,77 @@ const Profile = () => {
         }
       }
 
+      // Load goals
+      if (profile.goals) {
+        const goalsArray = Array.isArray(profile.goals) ? profile.goals : [];
+        setSelectedGoals(goalsArray);
+      }
+
+      // Load content pillars
       if (profile.content_pillars) {
-        const pillarsArray = Array.isArray(profile.content_pillars) ? profile.content_pillars : [];
-        setPillars(pillarsArray.map((pillar, index) => ({ id: index + 1, value: pillar })));
+        console.log('Profile: Loading content_pillars:', profile.content_pillars);
+        if (typeof profile.content_pillars === 'object' && profile.content_pillars !== null && !Array.isArray(profile.content_pillars)) {
+          // New format: { content_types: [], themes: [] }
+          console.log('Profile: Detected new format (object)');
+          if (profile.content_pillars.content_types) {
+            console.log('Profile: Setting content_types:', profile.content_pillars.content_types);
+            setSelectedContentTypes(profile.content_pillars.content_types);
+          }
+          if (profile.content_pillars.themes) {
+            console.log('Profile: Setting themes:', profile.content_pillars.themes);
+            setThemes(profile.content_pillars.themes.length > 0 ? profile.content_pillars.themes : ['']);
+          }
+        } else if (Array.isArray(profile.content_pillars)) {
+          // Old format: array of strings (from onboarding)
+          console.log('Profile: Detected old format (array):', profile.content_pillars);
+          // Try to separate content types from themes based on the options
+          const pillarsArray = profile.content_pillars;
+          const contentTypesOptionsList = [
+            'How To',
+            'News & Opinions',
+            'Personal Stories',
+            'Career Lessons',
+            'Behind The Scenes',
+            'Customer Stories',
+            'Educational',
+            'Memes & Humor'
+          ];
+          const foundContentTypes = pillarsArray.filter(p => contentTypesOptionsList.includes(p));
+          const foundThemes = pillarsArray.filter(p => !contentTypesOptionsList.includes(p));
+          console.log('Profile: Separated content_types:', foundContentTypes, 'themes:', foundThemes);
+          if (foundContentTypes.length > 0) {
+            setSelectedContentTypes(foundContentTypes);
+          }
+          if (foundThemes.length > 0) {
+            setThemes(foundThemes);
+          } else {
+            setThemes(['']);
+          }
+          // Also set pillars for backward compatibility
+          setPillars(pillarsArray.map((pillar, index) => ({ id: index + 1, value: pillar })));
+        }
+      }
+
+      // Load writing format
+      console.log('Profile: Loading content_guides:', profile.content_guides);
+      if (profile.content_guides) {
+        if (typeof profile.content_guides === 'object' && profile.content_guides !== null) {
+          if (profile.content_guides.writing_format) {
+            console.log('Profile: Setting writing_format:', profile.content_guides.writing_format);
+            setSelectedFormat(profile.content_guides.writing_format);
+          }
+        } else if (typeof profile.content_guides === 'string') {
+          // Handle case where it might be stored as a string
+          console.log('Profile: content_guides is a string, trying to parse');
+          try {
+            const parsed = JSON.parse(profile.content_guides);
+            if (parsed.writing_format) {
+              setSelectedFormat(parsed.writing_format);
+            }
+          } catch (e) {
+            console.error('Profile: Failed to parse content_guides:', e);
+          }
+        }
       }
 
       // Load inspirations from separate table
@@ -193,6 +265,44 @@ const Profile = () => {
     { id: 1, value: '' }
   ]);
 
+  // Goals & Audiences state
+  const goalsOptions = [
+    'Brand Recognition',
+    'Lead Generation',
+    'Recruitment',
+    'Thought Leadership',
+    'Attract Opportunities',
+    'Stay Relevant'
+  ];
+  
+  const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
+  const [targetAudiences, setTargetAudiences] = useState<string[]>(['']);
+
+  // Content Pillars state
+  const contentTypesOptions = [
+    'How To',
+    'News & Opinions',
+    'Personal Stories',
+    'Career Lessons',
+    'Behind The Scenes',
+    'Customer Stories',
+    'Educational',
+    'Memes & Humor'
+  ];
+  
+  const [selectedContentTypes, setSelectedContentTypes] = useState<string[]>([]);
+  const [themes, setThemes] = useState<string[]>(['']);
+
+  // Writing Format state
+  const formatOptions = [
+    { id: 'standard', label: 'Standard', icon: TextAlignLeft },
+    { id: 'formatted', label: 'Formatted', icon: ListBullets },
+    { id: 'short', label: 'Short', icon: Article },
+    { id: 'emojis', label: 'Emojis', icon: Smiley },
+  ];
+  
+  const [selectedFormat, setSelectedFormat] = useState<string>('');
+
   // New item input states
   const [newPillar, setNewPillar] = useState('');
   const [newGuide, setNewGuide] = useState('');
@@ -211,7 +321,9 @@ const Profile = () => {
     targetPersona: false,
     competitors: false,
     guides: false,
-    pillars: false
+    pillars: false,
+    goals: false,
+    format: false
   });
 
   // Get user display info
@@ -227,9 +339,9 @@ const Profile = () => {
   // Side menu items
   const menuItems = [
     { id: 'personal', label: 'Personal Information' },
-    // { id: 'inspirations', label: 'Inspirations' }, // Commented out per PCL-106
-    { id: 'guides', label: 'Tone of Voice' },
-    { id: 'pillars', label: 'Editorial Topics' }
+    { id: 'goals', label: 'Goals & Audiences' },
+    { id: 'pillars', label: 'Content Pillars' },
+    { id: 'format', label: 'Writing Format' }
   ];
 
   // Generic functions for managing dynamic lists
@@ -272,6 +384,7 @@ const Profile = () => {
   // Save functions for different sections
   const handleSave = async (sectionId) => {
     try {
+      console.log('Profile: Saving section:', sectionId);
       let updateData = {};
 
       switch (sectionId) {
@@ -295,9 +408,32 @@ const Profile = () => {
           setTimeout(() => setSavedStates(prev => ({ ...prev, inspirations: false })), 2000);
           return; // Exit early since we handle the saved state above
         case 'pillars':
+          const filteredThemes = themes.filter(t => t.trim());
           updateData = {
-            content_pillars: pillars.filter(p => p.value.trim()).map(p => p.value)
+            content_pillars: {
+              content_types: selectedContentTypes,
+              themes: filteredThemes
+            }
           };
+          console.log('Profile: Saving pillars with data:', updateData);
+          break;
+        case 'format':
+          if (!selectedFormat) {
+            console.warn('Profile: No format selected, skipping save');
+            return;
+          }
+          updateData = {
+            content_guides: {
+              writing_format: selectedFormat
+            }
+          };
+          console.log('Profile: Saving format with data:', updateData);
+          break;
+        case 'goals':
+          updateData = {
+            goals: selectedGoals
+          };
+          console.log('Profile: Saving goals with data:', updateData);
           break;
         default:
           // For sections not yet connected to backend, just show saved state
@@ -305,7 +441,31 @@ const Profile = () => {
       }
 
       if (Object.keys(updateData).length > 0) {
-        await updateBasicProfile(updateData);
+        console.log('Profile: Calling updateBasicProfile with:', updateData);
+        
+        // For content_pillars and content_guides, use Supabase directly
+        // since BasicProfileUpdate doesn't include these fields
+        if (sectionId === 'pillars' || sectionId === 'format' || sectionId === 'goals') {
+          console.log('Profile: Using Supabase directly for:', sectionId);
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update(updateData)
+            .eq('user_id', user!.id);
+          
+          if (updateError) {
+            console.error('Profile: Supabase update error:', updateError);
+            throw updateError;
+          }
+          
+          console.log('Profile: Supabase update successful');
+          // Refresh profile to get updated data
+          await refreshProfile();
+        } else {
+          const result = await updateBasicProfile(updateData);
+          console.log('Profile: Update result:', result);
+        }
+      } else {
+        console.warn('Profile: No update data for section:', sectionId);
       }
 
       setSavedStates(prev => ({
@@ -428,6 +588,54 @@ const Profile = () => {
     }));
   };
 
+  // Goals helper functions
+  const toggleGoal = (goal: string) => {
+    setSelectedGoals((prev) =>
+      prev.includes(goal)
+        ? prev.filter((g) => g !== goal)
+        : [...prev, goal]
+    );
+  };
+
+  const handleAudienceChange = (index: number, value: string) => {
+    const newAudiences = [...targetAudiences];
+    newAudiences[index] = value;
+    setTargetAudiences(newAudiences);
+  };
+
+  const handleDeleteAudience = (index: number) => {
+    const newAudiences = targetAudiences.filter((_, i) => i !== index);
+    setTargetAudiences(newAudiences.length > 0 ? newAudiences : ['']);
+  };
+
+  const handleAddAudience = () => {
+    setTargetAudiences([...targetAudiences, '']);
+  };
+
+  // Content Pillars helper functions
+  const toggleContentType = (type: string) => {
+    setSelectedContentTypes((prev) =>
+      prev.includes(type)
+        ? prev.filter((t) => t !== type)
+        : [...prev, type]
+    );
+  };
+
+  const handleThemeChange = (index: number, value: string) => {
+    const newThemes = [...themes];
+    newThemes[index] = value;
+    setThemes(newThemes);
+  };
+
+  const handleDeleteTheme = (index: number) => {
+    const newThemes = themes.filter((_, i) => i !== index);
+    setThemes(newThemes.length > 0 ? newThemes : ['']);
+  };
+
+  const handleAddTheme = () => {
+    setThemes([...themes, '']);
+  };
+
 
 
 
@@ -463,6 +671,87 @@ const Profile = () => {
   // Render different section content
   const renderSectionContent = () => {
     switch (activeSection) {
+      case 'goals':
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[16] }}>
+            <div>
+              <h3 style={{ ...textStyles.sm.semibold, color: colors.text.default, margin: 0 }}>
+                Your Goals
+              </h3>
+              <p style={{ ...textStyles.xs.normal, color: colors.text.subtle, margin: 0 }}>
+                What do you want to achieve with your content?
+              </p>
+            </div>
+
+            <div style={{ 
+              display: 'flex', 
+              flexWrap: 'wrap', 
+              gap: spacing.spacing[8],
+              minHeight: '44px',
+              alignItems: 'flex-start'
+            }}>
+              {goalsOptions.map((goal) => (
+                <Chips
+                  key={goal}
+                  label={goal}
+                  size="lg"
+                  style="default"
+                  selected={selectedGoals.includes(goal)}
+                  onClick={() => toggleGoal(goal)}
+                />
+              ))}
+            </div>
+
+            {/* Target Audiences Section */}
+            <div style={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: spacing.spacing[12],
+              marginTop: spacing.spacing[16] 
+            }}>
+              <p style={{ ...textStyles.sm.medium, color: colors.text.default, margin: 0 }}>
+                Your Target Audiences
+              </p>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[8] }}>
+                {targetAudiences.map((audience, index) => (
+                  <Input
+                    key={index}
+                    style="tail-action"
+                    size="lg"
+                    placeholder={`Target Audience ${index + 1}`}
+                    value={audience}
+                    onChange={(e) => handleAudienceChange(index, e.target.value)}
+                    tailAction={{
+                      icon: <Trash size={16} />,
+                      onClick: () => handleDeleteAudience(index),
+                    }}
+                  />
+                ))}
+                
+                <Button
+                  style="secondary"
+                  size="sm"
+                  label="Add Target Audience"
+                  leadIcon={<Plus size={16} />}
+                  onClick={handleAddAudience}
+                />
+              </div>
+            </div>
+
+            <div style={{ alignSelf: 'flex-start' }}>
+              <Button
+                label={savedStates.goals ? "Saved!" : "Save"}
+                style="primary"
+                size="sm"
+                leadIcon={savedStates.goals ? <Check size={16} /> : undefined}
+                onClick={() => handleSave('goals')}
+                disabled={savedStates.goals}
+              />
+            </div>
+          </div>
+        );
+
       case 'guides':
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[16] }}>
@@ -549,10 +838,10 @@ const Profile = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[16] }}>
             <div>
               <h3 style={{ ...textStyles.sm.semibold, color: colors.text.default, margin: 0 }}>
-                Editorial Topics
+                Content Types
               </h3>
               <p style={{ ...textStyles.xs.normal, color: colors.text.subtle, margin: 0 }}>
-                What are the main topics and themes you want to cover in your content?
+                What types of content do you want to create?
               </p>
             </div>
 
@@ -563,54 +852,54 @@ const Profile = () => {
               minHeight: '44px',
               alignItems: 'flex-start'
             }}>
-              {pillars.filter(pillar => pillar.value.trim()).map((pillar) => (
+              {contentTypesOptions.map((type) => (
                 <Chips
-                  key={pillar.id}
-                  label={pillar.value}
-                  style="default"
+                  key={type}
+                  label={type}
                   size="lg"
-                  selected={true}
-                  leadingIcon={<X size={16} />}
-                  onClick={() => removePillarChip(pillar.id)}
+                  style="default"
+                  selected={selectedContentTypes.includes(type)}
+                  onClick={() => toggleContentType(type)}
                 />
               ))}
-              {pillars.filter(pillar => pillar.value.trim()).length === 0 && (
-                <EmptyState
-                  title="No editorial topics defined yet"
-                  fullSpace={true}
-                />
-              )}
             </div>
 
-            <Input
-              placeholder="Enter a content topic (e.g., Technology Trends, Industry Insights, Leadership)..."
-              value={newPillar}
-              onChange={(e) => setNewPillar(e.target.value)}
-              onKeyPress={handlePillarKeyPress}
-              style="tail-action"
-              tailAction={{
-                icon: <Plus size={14} />,
-                onClick: addPillarChip,
-                disabled: !newPillar.trim()
-              }}
-            />
-
-            {/* Divider */}
-            <div style={{
-              width: '100%',
-              height: '1px',
-              backgroundColor: colors.border.default
-            }} />
-
-            {/* Give me some ideas button */}
-            <Button
-              label="Give me some ideas"
-              style="dashed"
-              size="md"
-              leadIcon={<Sparkles size={16} />}
-              tailIcon={<Info size={16} />}
-              onClick={() => console.log('Generate editorial topic ideas')}
-            />
+            {/* Themes Section */}
+            <div style={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: spacing.spacing[12],
+              marginTop: spacing.spacing[16] 
+            }}>
+              <p style={{ ...textStyles.sm.medium, color: colors.text.default, margin: 0 }}>
+                Themes You Want to Talk About
+              </p>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[8] }}>
+                {themes.map((theme, index) => (
+                  <Input
+                    key={index}
+                    style="tail-action"
+                    size="lg"
+                    placeholder={`Theme ${index + 1}`}
+                    value={theme}
+                    onChange={(e) => handleThemeChange(index, e.target.value)}
+                    tailAction={{
+                      icon: <Trash size={16} />,
+                      onClick: () => handleDeleteTheme(index),
+                    }}
+                  />
+                ))}
+                
+                <Button
+                  style="secondary"
+                  size="sm"
+                  label="Add Theme"
+                  leadIcon={<Plus size={16} />}
+                  onClick={handleAddTheme}
+                />
+              </div>
+            </div>
 
             <div style={{ alignSelf: 'flex-start' }}>
               <Button
@@ -620,6 +909,185 @@ const Profile = () => {
                 leadIcon={savedStates.pillars ? <Check size={16} /> : undefined}
                 onClick={() => handleSave('pillars')}
                 disabled={savedStates.pillars}
+              />
+            </div>
+          </div>
+        );
+
+      case 'format':
+        // Get utility text based on selected format
+        const getUtilityText = () => {
+          switch (selectedFormat) {
+            case 'standard':
+              return 'Standard posts are written in continuous paragraphs, ideal for longer narratives and reflections.';
+            case 'formatted':
+              return 'Formatted posts use lists, line breaks, and clear structure to make reading easier.';
+            case 'short':
+              return 'Short posts are direct and objective, perfect for quick and impactful messages.';
+            case 'emojis':
+              return 'Posts with emojis add personality and make content more visual and engaging.';
+            default:
+              return 'Choose the format that best fits your writing style. This will be the default for your LinkedIn posts.';
+          }
+        };
+
+        // Get post content based on selected format
+        const getPostContent = () => {
+          switch (selectedFormat) {
+            case 'standard':
+              return 'Today I want to share an important reflection on product design.\n\nIn recent months, I\'ve been working on challenging projects that taught me a valuable lesson: simplicity is the ultimate sophistication.\n\nWhen we start designing, it\'s tempting to add features and details. But the best products are those that solve complex problems simply.\n\nWhat do you think? How do you apply this principle in your work?';
+            case 'formatted':
+              return 'Today I want to share 3 important lessons about product design:\n\n→ Simplicity is the ultimate sophistication\n→ Fewer features, more value\n→ Focus on the problem, not the solution\n\nIn recent months, I learned that the best products solve complex problems simply.\n\nWhich of these lessons resonates most with you?';
+            case 'short':
+              return 'Simplicity is the ultimate sophistication.\n\nIn recent months I learned that the best products solve complex problems simply.\n\nLess is more.';
+            case 'emojis':
+              return '💡 Today I want to share an important reflection on product design.\n\n✨ In recent months, I\'ve been working on challenging projects that taught me a valuable lesson: simplicity is the ultimate sophistication.\n\n🎯 When we start designing, it\'s tempting to add features and details. But the best products solve complex problems simply.\n\n🚀 Less is more!';
+            default:
+              return 'Today I want to share an important reflection on product design.\n\nIn recent months, I\'ve been working on challenging projects that taught me a valuable lesson: simplicity is the ultimate sophistication.\n\nWhen we start designing, it\'s tempting to add features and details. But the best products are those that solve complex problems simply.';
+          }
+        };
+
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[16] }}>
+            <div>
+              <h3 style={{ ...textStyles.sm.semibold, color: colors.text.default, margin: 0 }}>
+                Writing Format
+              </h3>
+              <p style={{ ...textStyles.xs.normal, color: colors.text.subtle, margin: 0 }}>
+                Choose the format that best fits your writing style
+              </p>
+            </div>
+
+            {/* Format selection cards */}
+            <div style={{ 
+              display: 'flex', 
+              flexDirection: 'row',
+              gap: spacing.spacing[8],
+              marginTop: spacing.spacing[12]
+            }}>
+              {formatOptions.map((format) => {
+                const IconComponent = format.icon;
+                const isSelected = selectedFormat === format.id;
+                
+                return (
+                  <div
+                    key={format.id}
+                    style={{
+                      flex: 1,
+                      padding: spacing.spacing[8],
+                      border: `1px solid ${isSelected ? colors.border.teal : colors.border.default}`,
+                      borderRadius: cornerRadius.borderRadius.md,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: spacing.spacing[4],
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      backgroundColor: isSelected ? colors.bg.badge.teal : 'transparent',
+                    }}
+                    onClick={() => setSelectedFormat(format.id)}
+                  >
+                    <div style={{
+                      width: '24px',
+                      height: '24px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}>
+                      <IconComponent 
+                        size={24} 
+                        color={isSelected ? colors.bg.basic.teal.strong : colors.icon.default}
+                        weight="regular"
+                      />
+                    </div>
+                    <p style={{ 
+                      ...textStyles.xs.medium, 
+                      color: colors.text.default, 
+                      margin: 0 
+                    }}>
+                      {format.label}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Utility text */}
+            <p style={{ 
+              ...textStyles.xs.normal, 
+              color: colors.text.subtle, 
+              margin: 0 
+            }}>
+              {getUtilityText()}
+            </p>
+
+            {/* LinkedIn post preview */}
+            <div style={{
+              backgroundColor: colors.bg.default,
+              border: `1px solid ${colors.border.default}`,
+              borderRadius: cornerRadius.borderRadius.md,
+              padding: spacing.spacing[16],
+              boxShadow: getShadow('regular.card', colors, { withBorder: false }),
+              display: 'flex',
+              flexDirection: 'column',
+              gap: spacing.spacing[12],
+            }}>
+              {/* Profile row */}
+              <div style={{
+                display: 'flex',
+                flexDirection: 'row',
+                gap: spacing.spacing[12],
+                alignItems: 'center',
+              }}>
+                <UserAvatar
+                  src={personalInfo.avatar}
+                  alt={personalInfo.name}
+                  size="48px"
+                  profile={profile}
+                  user={user}
+                />
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: spacing.spacing[2],
+                }}>
+                  <p style={{ 
+                    ...textStyles.sm.semibold, 
+                    color: colors.text.default, 
+                    margin: 0 
+                  }}>
+                    {personalInfo.name || 'Your Name'}
+                  </p>
+                  <p style={{ 
+                    ...textStyles.xs.normal, 
+                    color: colors.text.subtle, 
+                    margin: 0 
+                  }}>
+                    {personalInfo.profession || 'Your Profession'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Post content */}
+              <p style={{
+                ...textStyles.sm.normal,
+                color: colors.text.default,
+                margin: 0,
+                lineHeight: '1.5',
+                whiteSpace: 'pre-line',
+              }}>
+                {getPostContent()}
+              </p>
+            </div>
+
+            <div style={{ alignSelf: 'flex-start' }}>
+              <Button
+                label={savedStates.format ? "Saved!" : "Save"}
+                style="primary"
+                size="sm"
+                leadIcon={savedStates.format ? <Check size={16} /> : undefined}
+                onClick={() => handleSave('format')}
+                disabled={savedStates.format}
               />
             </div>
           </div>

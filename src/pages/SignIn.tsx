@@ -11,22 +11,22 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useTheme } from '@/services/theme-context';
 import { spacing } from '@/design-system/tokens/spacing';
 import { cornerRadius } from '@/design-system/tokens/corner-radius';
+import { typography } from '@/design-system/tokens/typography';
 import { textStyles } from '@/design-system/styles/typography/typography-styles';
 import { colors as primitiveColors } from '@/design-system/tokens/primitive-colors';
 import { shadows, getShadow } from '@/design-system/tokens/shadows';
 import { getResponsivePadding, getResponsiveWidth } from '@/design-system/utils/responsive';
 import Logo from '@/design-system/components/Logo';
-import Bichaurinho from '@/design-system/components/Bichaurinho';
-import SpinningBichaurinho from '@/design-system/components/SpinningBichaurinho';
+import SubtleLoadingSpinner from '@/design-system/components/SubtleLoadingSpinner';
 import Input from '@/design-system/components/Input';
 import Button from '@/design-system/components/Button';
 import Divider from '@/design-system/components/Divider';
 
 // Icons
-import { FcGoogle } from 'react-icons/fc';
+import { GoogleLogo } from '@phosphor-icons/react';
 
 // Assets
-import signinBichaurinho from '@/assets/images/signin-bichaurinho.svg';
+import signinImage from '@/assets/images/signin-image.png';
 
 const SignIn = () => {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -289,7 +289,7 @@ const SignIn = () => {
     display: 'flex',
     flexDirection: isMobile ? 'column' : 'row',
     position: 'relative',
-    backgroundColor: colors.bg.default,
+    backgroundColor: colors.bg.muted,
   };
 
   // Main column styles - responsive width and padding
@@ -364,7 +364,10 @@ const SignIn = () => {
   const rightContainerStyles = {
     width: '100%',
     height: '100%',
-    backgroundColor: primitiveColors.cyan[100], // D5EFF6 equivalent
+    backgroundImage: `url(${signinImage})`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat',
     borderRadius: cornerRadius.borderRadius['3xl'],
     position: 'relative' as const,
     overflow: 'hidden' as const,
@@ -378,18 +381,12 @@ const SignIn = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: colors.bg.default,
-        flexDirection: 'column',
-        gap: spacing.spacing[24]
+        backgroundColor: colors.bg.muted,
       }}>
-        <SpinningBichaurinho title="Signing you in..." />
-        <p style={{
-          ...textStyles.md.normal,
-          color: colors.text.muted,
-          margin: 0
-        }}>
-          Please wait while we load your profile...
-        </p>
+        <SubtleLoadingSpinner 
+          title="Signing you in..."
+          size={16}
+        />
       </div>
     );
   }
@@ -409,9 +406,12 @@ const SignIn = () => {
               {/* Heading Container */}
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: spacing.spacing[4] }}>
                 <h1 style={{
-                  ...textStyles['2xl'].semibold,
+                  fontFamily: typography.fontFamily['awesome-serif'].join(', '),
+                  fontSize: typography.desktop.size['3xl'],
+                  fontWeight: typography.desktop.weight.normal,
+                  lineHeight: typography.desktop.lineHeight.leading7,
+                  letterSpacing: typography.desktop.letterSpacing.normal,
                   color: colors.text.default,
-                  fontFamily: 'Awesome Serif VAR, ui-serif, Georgia, serif',
                   margin: 0
                 }}>
                   {showEmailForm ? (isSignUp ? 'Sign Up with Email' : 'Sign In with Email') : (isSignUp ? 'Sign Up' : 'Sign In')}
@@ -436,16 +436,14 @@ const SignIn = () => {
                 {!showEmailForm ? (
                   <>
                     {/* Google Sign In Button - Secondary Action */}
-                    <div style={{ width: '100%' }}>
-                      <Button
-                        label={`${isSignUp ? 'Sign Up' : 'Sign In'} with Google`}
-                        style="secondary"
-                        size="lg"
-                        leadIcon={<FcGoogle size={18} />}
-                        onClick={handleGoogleSignIn}
-                        className="w-full"
-                      />
-                    </div>
+                    <Button
+                      label={`${isSignUp ? 'Sign Up' : 'Sign In'} with Google`}
+                      style="secondary"
+                      size="lg"
+                      leadIcon={<GoogleLogo size={18} weight="bold" />}
+                      onClick={handleGoogleSignIn}
+                      fullWidth={true}
+                    />
                   </>
                 ) : (
                   <>
@@ -508,7 +506,7 @@ const SignIn = () => {
                         onClick={handleFormSubmit}
                         loading={form.formState.isSubmitting}
                         disabled={form.formState.isSubmitting || !isFormValid}
-                        className="w-full"
+                        fullWidth={true}
                       />
                     </form>
 
@@ -652,21 +650,7 @@ const SignIn = () => {
       {/* Right Column - Only show on desktop */}
       {!isMobile && (
         <div style={rightColumnStyles}>
-          <div style={rightContainerStyles}>
-            {/* Sign In Bichaurinho - positioned bottom right */}
-            <img
-              src={signinBichaurinho}
-              alt="Sign in illustration"
-              style={{
-                position: 'absolute',
-                bottom: '-150px', // Partially outside container
-                right: '-100px', // Partially outside container
-                width: '800px',
-                height: '800px',
-                objectFit: 'contain',
-              }}
-            />
-          </div>
+          <div style={rightContainerStyles} />
         </div>
       )}
     </div>

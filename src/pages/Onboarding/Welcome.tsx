@@ -1,14 +1,12 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/services/theme-context';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/hooks/api/useAuth';
 
 // Design System Components
 import TopNav from '@/design-system/components/TopNav';
 import Button from '@/design-system/components/Button';
 import Bichaurinho from '@/design-system/components/Bichaurinho';
-import OnboardingProgressIndicator from '@/design-system/components/OnboardingProgressIndicator';
 
 // Design System Tokens
 import { spacing } from '@/design-system/tokens/spacing';
@@ -16,15 +14,14 @@ import { cornerRadius } from '@/design-system/tokens/corner-radius';
 import { getShadow } from '@/design-system/tokens/shadows';
 import { typography } from '@/design-system/tokens/typography';
 import { textStyles } from '@/design-system/styles/typography/typography-styles';
-import { getResponsiveContainer, getResponsiveWidth } from '@/design-system/utils/responsive';
+import { stroke } from '@/design-system/tokens/stroke';
 
 // Icons
 import { ArrowRight } from 'lucide-react';
 
 const Welcome = () => {
-  const navigate = useNavigate();
   const { colors } = useTheme();
-  const isMobile = useIsMobile();
+  const navigate = useNavigate();
   const { user, profile, loading } = useAuth();
 
   // Check onboarding status and redirect accordingly
@@ -72,310 +69,138 @@ const Welcome = () => {
     );
   }
 
-  const handleContinue = () => {
+  // Handle the "Começar" button click
+  const handleStartClick = () => {
+    // Navigate to the next onboarding step
     navigate('/onboarding/first-things-first');
   };
 
+  // Page container styles
+  const pageContainerStyles = {
+    minHeight: '100vh',
+    backgroundColor: colors.bg.muted,
+    display: 'flex',
+    flexDirection: 'column' as const,
+  };
+
+  // Main content container styles (below TopNav)
+  const mainContentStyles = {
+    flex: 1,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.spacing[24],
+  };
+
+  // Main card container styles
+  const mainCardStyles = {
+    width: '400px',
+    height: '480px',
+    backgroundColor: colors.bg.card.subtle,
+    borderRadius: cornerRadius.borderRadius.md,
+    border: `${stroke.DEFAULT} solid ${colors.border.default}`,
+    boxShadow: getShadow('regular.card', colors, { withBorder: false }),
+    display: 'flex',
+    flexDirection: 'column' as const,
+    overflow: 'hidden',
+  };
+
+  // Top container styles (with border bottom)
+  const topContainerStyles = {
+    flex: 1,
+    backgroundColor: colors.bg.card.default,
+    borderBottom: `${stroke.DEFAULT} solid ${colors.border.default}`,
+    paddingTop: spacing.spacing[36],
+    paddingLeft: spacing.spacing[36],
+    paddingRight: spacing.spacing[36],
+    paddingBottom: spacing.spacing[24],
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: spacing.spacing[24],
+  };
+
+  // Text container styles
+  const textContainerStyles = {
+    flex: 1,
+    width: '100%',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: spacing.spacing[16],
+  };
+
+  // Title styles using Awesome Serif (corrigido de instrument-serif)
+  const titleStyles = {
+    fontFamily: typography.fontFamily['awesome-serif'],
+    fontSize: typography.desktop.size['4xl'],
+    fontWeight: typography.desktop.weight.semibold,
+    lineHeight: typography.desktop.lineHeight.leading7,
+    letterSpacing: typography.desktop.letterSpacing.normal,
+    color: colors.text.default,
+    margin: 0,
+    width: '100%',
+  };
+
+  // Subtitle styles
+  const subtitleStyles = {
+    ...textStyles.sm.normal,
+    color: colors.text.muted,
+    margin: 0,
+    width: '100%',
+  };
+
+  // Bottom container styles
+  const bottomContainerStyles = {
+    paddingLeft: spacing.spacing[36],
+    paddingRight: spacing.spacing[36],
+    paddingTop: spacing.spacing[24],
+    paddingBottom: spacing.spacing[24],
+    display: 'flex',
+    alignItems: 'center',
+  };
+
+  // Bottom text styles
+  const bottomTextStyles = {
+    ...textStyles.sm.normal,
+    color: colors.text.muted,
+    margin: 0,
+  };
+
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        backgroundColor: colors.bg.default,
-        display: 'flex',
-        flexDirection: 'column',
-      }}
-    >
-      {/* Top Navigation */}
+    <div style={pageContainerStyles}>
+      {/* TopNav Bar - Stuck to the top */}
       <TopNav />
 
-      {/* Content Container */}
-      <div
-        style={{
-          flex: 1,
-          position: 'relative',
-          backgroundColor: colors.bg.default,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          ...getResponsiveContainer(isMobile, 'page'),
-        }}
-      >
-        {/* Gradient background with low opacity */}
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundImage: 'url(/src/assets/images/gradient-bg.svg)',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-            opacity: 0.03,
-            zIndex: 0,
-          }}
-        />
-        
-        {/* Main Content Container */}
-        <div
-          style={{
-            position: 'relative',
-            zIndex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: spacing.spacing[32],
-            alignItems: 'center',
-            width: '100%',
-          }}
-        >
-          {/* Progress Indicator */}
-          <div style={{
-            ...getResponsiveWidth(isMobile, 'card')
-          }}>
-            <OnboardingProgressIndicator 
-              currentStep={1}
-              compact={true}
+      {/* Main content container */}
+      <div style={mainContentStyles}>
+        {/* Main card container */}
+        <div style={mainCardStyles}>
+          {/* Top container */}
+          <div style={topContainerStyles}>
+            {/* Text container */}
+            <div style={textContainerStyles}>
+              <h1 style={titleStyles}>Bem-Vindo!</h1>
+              <p style={subtitleStyles}>
+                Queremos te ajudar a aparecer de forma consistente no LinkedIn com conteúdos que tenham a sua cara.
+              </p>
+            </div>
+
+            {/* Button - Full width */}
+            <Button
+              style="primary"
+              size="lg"
+              label="Começar"
+              tailIcon={<ArrowRight size={16} />}
+              onClick={handleStartClick}
+              fullWidth
             />
           </div>
 
-          {/* Welcome Header Card */}
-          <div
-            style={{
-              backgroundColor: colors.bg.card.default,
-              borderRadius: cornerRadius.borderRadius.lg,
-              border: `1px solid ${colors.border.default}`,
-              boxShadow: getShadow('regular.card', colors, { withBorder: true }),
-              overflow: 'hidden',
-              ...getResponsiveWidth(isMobile, 'card'),
-            }}
-          >
-            {/* Bichaurinho Section */}
-            <div
-              style={{
-                paddingTop: spacing.spacing[32],
-                paddingBottom: spacing.spacing[12],
-                paddingLeft: spacing.spacing[32],
-                paddingRight: spacing.spacing[32],
-                display: 'flex',
-                justifyContent: 'flex-start',
-              }}
-            >
-              <Bichaurinho variant={15} size={48} />
-            </div>
-
-            {/* Header Section */}
-            <div
-              style={{
-                paddingTop: spacing.spacing[12],
-                paddingBottom: spacing.spacing[32],
-                paddingLeft: spacing.spacing[32],
-                paddingRight: spacing.spacing[32],
-                borderBottom: `1px solid ${colors.border.default}`,
-                textAlign: 'left',
-              }}
-            >
-              <h1
-                style={{
-                  fontFamily: typography.fontFamily['awesome-serif'],
-                  fontSize: typography.desktop.size['5xl'],
-                  fontWeight: typography.desktop.weight.semibold,
-                  lineHeight: typography.desktop.lineHeight.leading7,
-                  color: colors.text.default,
-                  margin: 0,
-                }}
-              >
-                Welcome!
-              </h1>
-              <p
-                style={{
-                  ...textStyles.sm.normal,
-                  color: colors.text.muted,
-                  margin: 0,
-                  marginTop: spacing.spacing[16],
-                }}
-              >
-                We want to help you show up consistently on LinkedIn with content that feels like you.
-              </p>
-            </div>
-
-            {/* Content Section */}
-            <div
-              style={{
-                paddingTop: spacing.spacing[24],
-                paddingBottom: spacing.spacing[24],
-                paddingLeft: '36px',
-                paddingRight: '36px',
-                backgroundColor: colors.bg.card.subtle,
-              }}
-            >
-              <p
-                style={{
-                  ...textStyles.sm.normal,
-                  color: colors.text.muted,
-                  margin: 0,
-                  lineHeight: '1.6',
-                }}
-              >
-                We'll ask a few questions to tailor your strategy.
-              </p>
-            </div>
+          {/* Bottom container */}
+          <div style={bottomContainerStyles}>
+            <p style={bottomTextStyles}>
+              Faremos algumas perguntas para personalizar a sua estratégia.
+            </p>
           </div>
-
-          {/* What to Expect */}
-          <div
-            style={{
-              background: `linear-gradient(0deg, rgba(67, 125, 252, 0.08) 0%, rgba(67, 125, 252, 0) 100%), ${colors.bg.card.default}`,
-              borderRadius: cornerRadius.borderRadius.lg,
-              border: `1px solid ${colors.border.default}`,
-              boxShadow: getShadow('regular.card', colors, { withBorder: true }),
-              padding: spacing.spacing[24],
-              ...getResponsiveWidth(isMobile, 'card'),
-            }}
-          >
-            <h2
-              style={{
-                fontFamily: typography.fontFamily['awesome-serif'],
-                fontSize: typography.desktop.size['2xl'],
-                fontWeight: typography.desktop.weight.semibold,
-                lineHeight: typography.desktop.lineHeight.leading7,
-                letterSpacing: typography.desktop.letterSpacing.normal,
-                color: colors.text.default,
-                margin: 0,
-                marginBottom: spacing.spacing[12],
-              }}
-            >
-              What to Expect
-            </h2>
-            
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-                gap: spacing.spacing[16],
-              }}
-            >
-              {/* Setup Time */}
-              <div
-                style={{
-                  backgroundColor: colors.bg.card.default,
-                  padding: spacing.spacing[16],
-                  borderRadius: cornerRadius.borderRadius.md,
-                  border: `1px solid ${colors.border.default}`,
-                  boxShadow: getShadow('regular.card', colors, { withBorder: true }),
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: spacing.spacing[8],
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                <h3 style={{ 
-                  fontFamily: typography.fontFamily['awesome-serif'],
-                  fontSize: typography.desktop.size.md,
-                  fontWeight: typography.desktop.weight.semibold,
-                  lineHeight: typography.desktop.lineHeight.leading6,
-                  color: colors.text.default, 
-                  margin: 0 
-                }}>
-                  Setup Time: ~5 minutes
-                </h3>
-                <p style={{ ...textStyles.sm.normal, color: colors.text.subtle, margin: 0, lineHeight: '1.5' }}>
-                  Quick questions about your LinkedIn profile, goals, and content preferences
-                </p>
-              </div>
-              
-              {/* Content Delivery */}
-              <div
-                style={{
-                  backgroundColor: colors.bg.card.default,
-                  padding: spacing.spacing[16],
-                  borderRadius: cornerRadius.borderRadius.md,
-                  border: `1px solid ${colors.border.default}`,
-                  boxShadow: getShadow('regular.card', colors, { withBorder: true }),
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: spacing.spacing[8],
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                <h3 style={{ 
-                  fontFamily: typography.fontFamily['awesome-serif'],
-                  fontSize: typography.desktop.size.md,
-                  fontWeight: typography.desktop.weight.semibold,
-                  lineHeight: typography.desktop.lineHeight.leading6,
-                  color: colors.text.default, 
-                  margin: 0 
-                }}>
-                  Content Delivery
-                </h3>
-                <p style={{ ...textStyles.sm.normal, color: colors.text.subtle, margin: 0, lineHeight: '1.5' }}>
-                  Personalized posts delivered to WhatsApp based on your schedule
-                </p>
-              </div>
-              
-              {/* Your Voice, Amplified */}
-              <div
-                style={{
-                  backgroundColor: colors.bg.card.default,
-                  padding: spacing.spacing[16],
-                  borderRadius: cornerRadius.borderRadius.md,
-                  border: `1px solid ${colors.border.default}`,
-                  boxShadow: getShadow('regular.card', colors, { withBorder: true }),
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: spacing.spacing[8],
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                <h3 style={{ 
-                  fontFamily: typography.fontFamily['awesome-serif'],
-                  fontSize: typography.desktop.size.md,
-                  fontWeight: typography.desktop.weight.semibold,
-                  lineHeight: typography.desktop.lineHeight.leading6,
-                  color: colors.text.default, 
-                  margin: 0 
-                }}>
-                  Your Voice, Amplified
-                </h3>
-                <p style={{ ...textStyles.sm.normal, color: colors.text.subtle, margin: 0, lineHeight: '1.5' }}>
-                  AI learns from your existing content to match your unique style
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Button Container - Fixed at bottom */}
-      <div
-        style={{
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: '80px',
-          backgroundColor: colors.bg.default,
-          borderTop: `1px solid ${colors.border.default}`,
-          padding: spacing.spacing[40],
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 10,
-        }}
-      >
-        <div style={{ 
-          width: '280px',
-          display: 'flex',
-          justifyContent: 'center'
-        }}>
-          <Button
-            label="Let's Get Started"
-            style="primary"
-            size="lg"
-            tailIcon={<ArrowRight size={16} />}
-            onClick={handleContinue}
-            fullWidth={true}
-          />
         </div>
       </div>
     </div>

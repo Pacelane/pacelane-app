@@ -32,8 +32,7 @@ This guide walks you through setting up Google Calendar integration for Pacelane
    - **Developer contact information**: Your email
 4. Add your domain to **Authorized domains** (e.g., `pacelane.com`)
 5. Click **Save and Continue**
-6. Add the following scopes:
-   - `../auth/calendar.readonly`
+6. Add the following scope:
    - `../auth/calendar.events.readonly`
 7. Continue through the remaining steps
 
