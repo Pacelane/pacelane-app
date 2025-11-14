@@ -9,16 +9,16 @@ const corsHeaders = {
 };
 
 /**
- * Clean content to extract only the LinkedIn post text.
+ * Clean content to extract only the post text (LinkedIn or Substack).
  * Removes introductory phrases and explanatory text, keeping only the actual post content.
  */
-function cleanLinkedInPostContent(content: string): string {
+function cleanPostContent(content: string, platform: 'linkedin' | 'substack'): string {
   if (!content) return '';
   
   let cleaned = content.trim();
   
-  // Remove common introductory phrases (case-insensitive)
-  const introPatterns = [
+  // Platform-specific introductory phrases (case-insensitive)
+  const introPatterns = platform === 'linkedin' ? [
     /^I'll help you create.*?LinkedIn post[.:\s]*/i,
     /^Here's your LinkedIn post[.:\s]*/i,
     /^Here is your LinkedIn post[.:\s]*/i,
@@ -28,6 +28,16 @@ function cleanLinkedInPostContent(content: string): string {
     /^LinkedIn post[.:\s]*/i,
     /^Here's the post[.:\s]*/i,
     /^Here is the post[.:\s]*/i,
+  ] : [
+    /^I'll help you create.*?Substack (?:article|newsletter|post)[.:\s]*/i,
+    /^Here's your Substack (?:article|newsletter|post)[.:\s]*/i,
+    /^Here is your Substack (?:article|newsletter|post)[.:\s]*/i,
+    /^Based on.*?, here's.*?Substack (?:article|newsletter|post)[.:\s]*/i,
+    /^I've created.*?Substack (?:article|newsletter|post)[.:\s]*/i,
+    /^Your Substack (?:article|newsletter|post)[.:\s]*/i,
+    /^Substack (?:article|newsletter|post)[.:\s]*/i,
+    /^Here's the (?:article|newsletter|post)[.:\s]*/i,
+    /^Here is the (?:article|newsletter|post)[.:\s]*/i,
   ];
   
   for (const pattern of introPatterns) {
@@ -44,7 +54,7 @@ function cleanLinkedInPostContent(content: string): string {
   
   // Remove trailing explanatory text (common patterns)
   const trailingPatterns = [
-    /\s*This post.*$/i,
+    /\s*This (?:post|article|newsletter).*$/i,
     /\s*I hope this helps.*$/i,
     /\s*Let me know.*$/i,
     /\s*Feel free.*$/i,
@@ -61,6 +71,245 @@ function cleanLinkedInPostContent(content: string): string {
   cleaned = cleaned.trim();
   
   return cleaned;
+}
+
+/**
+ * Create skill content for LinkedIn or Substack platform
+ */
+function createSkillContent(skillData: any, platform: 'linkedin' | 'substack'): string {
+  const userIdClean = skillData.user_id.replace(/-/g, '');
+  const baseSkillName = platform === 'linkedin' 
+    ? `linkedin-content-creation-${userIdClean}`
+    : `substack-content-creation-${userIdClean}`;
+  
+  const platformName = platform === 'linkedin' ? 'LinkedIn' : 'Substack';
+  const contentType = platform === 'linkedin' ? 'post' : 'artigo/newsletter';
+  
+  if (platform === 'linkedin') {
+    return `---
+name: ${baseSkillName}
+description: Skill personalizada para criação de conteúdo LinkedIn para o usuário
+---
+
+# LinkedIn Content Creation Skill
+
+## Público-Alvo
+${skillData.target_audience}
+
+## Objetivos de Conteúdo
+${skillData.content_objectives}
+
+## Pilares de Conteúdo
+${skillData.content_pillars}
+
+## Resumo do Usuário
+${skillData.user_summary}
+
+## Instruções
+
+Use estas informações para criar conteúdo LinkedIn personalizado que:
+
+1. **Respeite o Público-Alvo**: Todo conteúdo deve ser direcionado especificamente para o público-alvo definido acima. Considere linguagem, tom, exemplos e referências que ressoem com esse público.
+
+2. **Alinhe com Objetivos**: O conteúdo deve avançar os objetivos definidos. Cada post deve ter um propósito claro e mensurável relacionado aos objetivos.
+
+3. **Siga os Pilares**: Mantenha consistência com os pilares de conteúdo estabelecidos. Use os pilares como guia para temas e abordagens.
+
+4. **Reflita a Personalidade**: O conteúdo deve refletir o resumo e experiência do usuário, mantendo autenticidade e credibilidade.
+
+5. **Contexto dos Posts Recentes**: Ao analisar posts recentes do usuário, mantenha consistência de tom, estilo e temas, mas traga novidade e valor.
+
+6. **Input do WhatsApp**: Use o input do WhatsApp como ponto de partida ou inspiração, mas transforme em conteúdo LinkedIn profissional e bem estruturado.
+
+7. **Formato LinkedIn**: Crie posts concisos, engajadores e profissionais. Use parágrafos curtos, emojis quando apropriado, e uma estrutura clara que funcione bem na timeline do LinkedIn.`;
+  } else {
+    // Substack skill content
+    return `---
+name: ${baseSkillName}
+description: Skill personalizada para criação de conteúdo Substack para o usuário
+---
+
+# Substack Content Creation Skill
+
+## Público-Alvo
+${skillData.target_audience}
+
+## Objetivos de Conteúdo
+${skillData.content_objectives}
+
+## Pilares de Conteúdo
+${skillData.content_pillars}
+
+## Resumo do Usuário
+${skillData.user_summary}
+
+## Instruções
+
+Use estas informações para criar conteúdo Substack personalizado que:
+
+1. **Respeite o Público-Alvo**: Todo conteúdo deve ser direcionado especificamente para o público-alvo definido acima. Considere linguagem, tom, exemplos e referências que ressoem com esse público.
+
+2. **Alinhe com Objetivos**: O conteúdo deve avançar os objetivos definidos. Cada artigo deve ter um propósito claro e mensurável relacionado aos objetivos.
+
+3. **Siga os Pilares**: Mantenha consistência com os pilares de conteúdo estabelecidos. Use os pilares como guia para temas e abordagens.
+
+4. **Reflita a Personalidade**: O conteúdo deve refletir o resumo e experiência do usuário, mantendo autenticidade e credibilidade.
+
+5. **Contexto dos Posts Recentes**: Ao analisar posts recentes do usuário (mesmo que sejam do LinkedIn), mantenha consistência de tom, estilo e temas, mas adapte para o formato mais longo e aprofundado do Substack.
+
+6. **Input do WhatsApp**: Use o input do WhatsApp como ponto de partida ou inspiração, mas transforme em conteúdo Substack profissional e bem estruturado.
+
+7. **Formato Substack**: Crie artigos/newsletters mais longos e aprofundados. O formato Substack permite:
+   - Desenvolvimento mais detalhado de ideias
+   - Estrutura de artigo com introdução, desenvolvimento e conclusão
+   - Tom mais editorial e reflexivo
+   - Uso de subtítulos para organizar o conteúdo
+   - Narrativa mais elaborada que posts curtos do LinkedIn
+   - Espaço para explorar nuances e contextos mais profundos`;
+  }
+}
+
+/**
+ * Create or get Anthropic skill ID for a given platform
+ */
+async function getOrCreateSkill(
+  supabase: any,
+  anthropicApiKey: string,
+  userId: string,
+  skillData: any,
+  platform: 'linkedin' | 'substack'
+): Promise<{ skillId: string; usedExistingSkill: boolean }> {
+  const skillColumn = platform === 'linkedin' ? 'anthropic_skill_id_linkedin' : 'anthropic_skill_id_substack';
+  const fallbackColumn = 'anthropic_skill_id'; // For backward compatibility
+  
+  // Try to get skill ID from platform-specific column, fallback to old column for LinkedIn
+  let skillId = skillData[skillColumn];
+  if (!skillId && platform === 'linkedin' && skillData[fallbackColumn]) {
+    skillId = skillData[fallbackColumn];
+    // Migrate to new column
+    await supabase
+      .from('user_content_skills')
+      .update({ anthropic_skill_id_linkedin: skillData[fallbackColumn] })
+      .eq('user_id', userId);
+  }
+  
+  let usedExistingSkill = true;
+  
+  if (!skillId) {
+    console.log(`🔨 Creating new ${platform} Anthropic skill for user: ${userId}`);
+    
+    const skillContent = createSkillContent(skillData, platform);
+    const userIdClean = userId.replace(/-/g, '');
+    const baseSkillName = platform === 'linkedin' 
+      ? `linkedin-content-creation-${userIdClean}`
+      : `substack-content-creation-${userIdClean}`;
+    
+    try {
+      let skillIdCreated = false;
+      let attempt = 0;
+      const maxAttempts = 3;
+      
+      while (!skillIdCreated && attempt < maxAttempts) {
+        try {
+          const formData = new FormData();
+          
+          const platformName = platform === 'linkedin' ? 'LinkedIn' : 'Substack';
+          let displayTitle = `${platformName} Content Creation - ${userId.substring(0, 8)}`;
+          if (attempt > 0) {
+            const timestamp = Date.now().toString(36).substring(0, 6);
+            displayTitle = `${platformName} Content Creation - ${userId.substring(0, 8)}-${timestamp}`;
+          }
+          formData.append('display_title', displayTitle);
+          
+          const skillBlob = new Blob([skillContent], { type: 'text/markdown' });
+          const skillFileName = `${baseSkillName}/SKILL.md`;
+          formData.append('files[]', skillBlob, skillFileName);
+
+          console.log(`📤 Creating ${platform} skill (attempt ${attempt + 1}/${maxAttempts}):`, {
+            displayTitle: displayTitle,
+            skillName: baseSkillName,
+            fileName: skillFileName,
+            fileSize: skillContent.length,
+          });
+
+          const skillResponse = await fetch('https://api.anthropic.com/v1/skills', {
+            method: 'POST',
+            headers: {
+              'x-api-key': anthropicApiKey,
+              'anthropic-version': '2023-06-01',
+              'anthropic-beta': 'skills-2025-10-02',
+            },
+            body: formData,
+          });
+
+          if (!skillResponse.ok) {
+            const errorText = await skillResponse.text();
+            console.error(`❌ Anthropic Skills API error (${platform}):`, errorText);
+            
+            let isDuplicateTitleError = false;
+            try {
+              const errorJson = JSON.parse(errorText);
+              isDuplicateTitleError = errorJson?.error?.message?.includes('display_title') || 
+                                     errorJson?.error?.message?.includes('reuse') ||
+                                     errorJson?.error?.message?.includes('existing display_title');
+            } catch (parseError) {
+              isDuplicateTitleError = errorText.includes('display_title') || 
+                                     errorText.includes('reuse') ||
+                                     errorText.includes('existing display_title');
+            }
+            
+            if (isDuplicateTitleError && attempt < maxAttempts - 1) {
+              console.log(`🔄 Duplicate display_title detected, retrying with unique title (attempt ${attempt + 1}/${maxAttempts})...`);
+              attempt++;
+              continue;
+            }
+            
+            throw new Error(`Failed to create ${platform} skill: ${skillResponse.status} - ${errorText}`);
+          }
+
+          const skillResult = await skillResponse.json();
+          skillId = skillResult.id;
+          usedExistingSkill = false;
+          skillIdCreated = true;
+
+          console.log(`✅ ${platform} skill created successfully: ${skillId}`);
+
+          // Save skill ID to database
+          const updateData: any = {};
+          updateData[skillColumn] = skillId;
+          
+          const { error: updateError } = await supabase
+            .from('user_content_skills')
+            .update(updateData)
+            .eq('user_id', userId);
+
+          if (updateError) {
+            console.error(`⚠️ Error saving ${platform} skill ID:`, updateError);
+            // Continue anyway, we have the skill ID
+          } else {
+            console.log(`💾 ${platform} skill ID saved to database`);
+          }
+        } catch (error) {
+          if (attempt >= maxAttempts - 1) {
+            console.error(`❌ Error creating ${platform} skill (max attempts reached):`, error);
+            throw new Error(`Failed to create ${platform} Anthropic skill: ${error.message}`);
+          }
+          attempt++;
+        }
+      }
+      
+      if (!skillIdCreated) {
+        throw new Error(`Failed to create ${platform} Anthropic skill after ${maxAttempts} attempts`);
+      }
+    } catch (error) {
+      console.error(`❌ Error creating ${platform} skill:`, error);
+      throw new Error(`Failed to create ${platform} Anthropic skill: ${error.message}`);
+    }
+  } else {
+    console.log(`♻️ Reusing existing ${platform} skill: ${skillId}`);
+  }
+  
+  return { skillId, usedExistingSkill };
 }
 
 serve(async (req) => {
@@ -117,7 +366,7 @@ serve(async (req) => {
       throw new Error(`Invalid JSON in request body: ${error.message}`);
     }
 
-    const { userId } = requestBody || {};
+    const { userId, platform } = requestBody || {};
 
     if (!userId) {
       throw new Error('userId is required in request body');
@@ -129,7 +378,16 @@ serve(async (req) => {
       throw new Error('userId must be a valid UUID');
     }
 
-    console.log(`Processing request for user: ${userId}`);
+    // Validate platform parameter
+    if (!platform) {
+      throw new Error('platform is required in request body. Must be "linkedin" or "substack"');
+    }
+
+    if (platform !== 'linkedin' && platform !== 'substack') {
+      throw new Error(`Invalid platform: "${platform}". Must be "linkedin" or "substack"`);
+    }
+
+    console.log(`📝 Processing request for user: ${userId}, platform: ${platform}`);
 
     // Step 1: Get or create user's content skill
     const { data: skillData, error: skillError } = await supabase
@@ -150,179 +408,32 @@ serve(async (req) => {
       throw new Error(`Skill configuration is incomplete. Missing or empty fields: ${missingFields.join(', ')}. Please complete the configuration in user_content_skills table.`);
     }
 
-    console.log('Skill configuration found:', {
-      hasAnthropicSkillId: !!skillData.anthropic_skill_id,
+    const skillColumn = platform === 'linkedin' ? 'anthropic_skill_id_linkedin' : 'anthropic_skill_id_substack';
+    const hasLinkedInSkill = !!skillData.anthropic_skill_id_linkedin || !!skillData.anthropic_skill_id;
+    const hasSubstackSkill = !!skillData.anthropic_skill_id_substack;
+    
+    console.log(`📋 Skill configuration found for ${platform}:`, {
+      hasLinkedInSkill: hasLinkedInSkill,
+      hasSubstackSkill: hasSubstackSkill,
       targetAudience: skillData.target_audience?.substring(0, 50) + '...',
       allFieldsPresent: requiredFields.every(field => skillData[field] && skillData[field].trim() !== ''),
     });
 
-    // Step 2: Create or reuse Anthropic skill
-    let skillId = skillData.anthropic_skill_id;
-    let usedExistingSkill = true;
-
-    if (!skillId) {
-      console.log('Creating new Anthropic skill for user:', userId);
-      
-      // Create SKILL.md content
-      // IMPORTANT: The skill name in the frontmatter must match the directory name
-      const baseSkillName = `linkedin-content-creation-${userId.replace(/-/g, '')}`;
-      const skillContent = `---
-name: ${baseSkillName}
-description: Skill personalizada para criação de conteúdo LinkedIn para o usuário
----
-
-# LinkedIn Content Creation Skill
-
-## Público-Alvo
-${skillData.target_audience}
-
-## Objetivos de Conteúdo
-${skillData.content_objectives}
-
-## Pilares de Conteúdo
-${skillData.content_pillars}
-
-## Resumo do Usuário
-${skillData.user_summary}
-
-## Instruções
-
-Use estas informações para criar conteúdo LinkedIn personalizado que:
-
-1. **Respeite o Público-Alvo**: Todo conteúdo deve ser direcionado especificamente para o público-alvo definido acima. Considere linguagem, tom, exemplos e referências que ressoem com esse público.
-
-2. **Alinhe com Objetivos**: O conteúdo deve avançar os objetivos definidos. Cada post deve ter um propósito claro e mensurável relacionado aos objetivos.
-
-3. **Siga os Pilares**: Mantenha consistência com os pilares de conteúdo estabelecidos. Use os pilares como guia para temas e abordagens.
-
-4. **Reflita a Personalidade**: O conteúdo deve refletir o resumo e experiência do usuário, mantendo autenticidade e credibilidade.
-
-5. **Contexto dos Posts Recentes**: Ao analisar posts recentes do usuário, mantenha consistência de tom, estilo e temas, mas traga novidade e valor.
-
-6. **Input do WhatsApp**: Use o input do WhatsApp como ponto de partida ou inspiração, mas transforme em conteúdo LinkedIn profissional e bem estruturado.`;
-
-      // Create skill via Anthropic Skills API
-      // Skills API requires files to be uploaded via FormData
-      // According to docs: https://docs.claude.com/en/api/skills/create-skill
-      // IMPORTANT: All files must be in the same top-level directory
-      // The SKILL.md file must be at the root of that directory
-      // Example from docs: -F "files[]=@excel-skill/SKILL.md;filename=excel-skill/SKILL.md"
-      // This means we need a top-level directory name in the filename path
-      try {
-        // Generate unique display_title with retry logic for duplicate titles
-        let skillIdCreated = false;
-        let attempt = 0;
-        const maxAttempts = 3;
-        
-        while (!skillIdCreated && attempt < maxAttempts) {
-          try {
-            // Use FormData API - Deno supports this natively
-            // The third parameter of append() specifies the filename with path
-            const formData = new FormData();
-            
-            // Generate display_title - add timestamp/hash for uniqueness if retrying
-            let displayTitle = `LinkedIn Content Creation - ${userId.substring(0, 8)}`;
-            if (attempt > 0) {
-              // Add timestamp to make it unique on retry
-              const timestamp = Date.now().toString(36).substring(0, 6);
-              displayTitle = `LinkedIn Content Creation - ${userId.substring(0, 8)}-${timestamp}`;
-            }
-            formData.append('display_title', displayTitle);
-            
-            // Add files[] field - CRITICAL: filename must include a top-level directory
-            // The format must be: "directory-name/SKILL.md"
-            // IMPORTANT: The directory name MUST match the skill name in SKILL.md frontmatter
-            // The directory name is the "top-level folder" and SKILL.md is at the root of that directory
-            const skillBlob = new Blob([skillContent], { type: 'text/markdown' });
-            // Use the skill name as the directory name (must match the name in SKILL.md frontmatter)
-            // Example: skill name is "linkedin-content-creation-72b290cd7363466a9f30d552d335d6c4"
-            // Directory must be: "linkedin-content-creation-72b290cd7363466a9f30d552d335d6c4/SKILL.md"
-            const skillFileName = `${baseSkillName}/SKILL.md`;
-            formData.append('files[]', skillBlob, skillFileName);
-
-            console.log(`Creating skill with FormData (attempt ${attempt + 1}/${maxAttempts}):`, {
-              displayTitle: displayTitle,
-              skillName: baseSkillName,
-              fileName: skillFileName,
-              fileSize: skillContent.length,
-            });
-
-            const skillResponse = await fetch('https://api.anthropic.com/v1/skills', {
-              method: 'POST',
-              headers: {
-                'x-api-key': anthropicApiKey,
-                'anthropic-version': '2023-06-01',
-                'anthropic-beta': 'skills-2025-10-02',
-                // Don't set Content-Type - let fetch set it automatically with boundary
-              },
-              body: formData,
-            });
-
-            if (!skillResponse.ok) {
-              const errorText = await skillResponse.text();
-              console.error('Anthropic Skills API error:', errorText);
-              
-              // Check if it's a duplicate display_title error
-              let isDuplicateTitleError = false;
-              try {
-                const errorJson = JSON.parse(errorText);
-                isDuplicateTitleError = errorJson?.error?.message?.includes('display_title') || 
-                                       errorJson?.error?.message?.includes('reuse') ||
-                                       errorJson?.error?.message?.includes('existing display_title');
-              } catch (parseError) {
-                // If error is not JSON, check if error text contains duplicate title keywords
-                isDuplicateTitleError = errorText.includes('display_title') || 
-                                       errorText.includes('reuse') ||
-                                       errorText.includes('existing display_title');
-              }
-              
-              if (isDuplicateTitleError && attempt < maxAttempts - 1) {
-                console.log(`Duplicate display_title detected, retrying with unique title (attempt ${attempt + 1}/${maxAttempts})...`);
-                attempt++;
-                continue; // Retry with new unique title
-              }
-              
-              throw new Error(`Failed to create skill: ${skillResponse.status} - ${errorText}`);
-            }
-
-            const skillResult = await skillResponse.json();
-            skillId = skillResult.id;
-            usedExistingSkill = false;
-            skillIdCreated = true;
-
-            console.log('Skill created successfully:', skillId);
-
-            // Save skill ID to database
-            const { error: updateError } = await supabase
-              .from('user_content_skills')
-              .update({ anthropic_skill_id: skillId })
-              .eq('user_id', userId);
-
-            if (updateError) {
-              console.error('Error saving skill ID:', updateError);
-              // Continue anyway, we have the skill ID
-            }
-          } catch (error) {
-            // If it's the last attempt, throw the error
-            if (attempt >= maxAttempts - 1) {
-              console.error('Error creating skill (max attempts reached):', error);
-              throw new Error(`Failed to create Anthropic skill: ${error.message}`);
-            }
-            // Otherwise, continue to retry
-            attempt++;
-          }
-        }
-        
-        if (!skillIdCreated) {
-          throw new Error(`Failed to create Anthropic skill after ${maxAttempts} attempts`);
-        }
-      } catch (error) {
-        console.error('Error creating skill:', error);
-        throw new Error(`Failed to create Anthropic skill: ${error.message}`);
-      }
-    } else {
-      console.log('Reusing existing skill:', skillId);
-    }
+    // Step 2: Create or reuse Anthropic skill for the specified platform
+    console.log(`🎯 Getting or creating ${platform} skill...`);
+    const { skillId, usedExistingSkill } = await getOrCreateSkill(
+      supabase,
+      anthropicApiKey,
+      userId,
+      skillData,
+      platform
+    );
+    
+    console.log(`✅ ${platform} skill ready:`, {
+      skillId: skillId,
+      usedExistingSkill: usedExistingSkill,
+      selectionMethod: 'deterministic' // Always deterministic based on platform parameter
+    });
 
     // Step 3: Get user posts and WhatsApp input (with id)
     const [postsResult, whatsappResult] = await Promise.all([
@@ -380,15 +491,18 @@ Use estas informações para criar conteúdo LinkedIn personalizado que:
     });
 
     // Step 4: Process with agent using the skill
-    const systemPrompt = `You are a LinkedIn content creation assistant. A personalized skill is loaded in the container at SKILL.md with information about:
+    const platformName = platform === 'linkedin' ? 'LinkedIn' : 'Substack';
+    const contentType = platform === 'linkedin' ? 'post' : 'article/newsletter';
+    
+    const systemPrompt = `You are a ${platformName} content creation assistant. A personalized skill is loaded in the container at SKILL.md with information about:
 - Target audience
 - Content objectives
 - Content pillars
 - User summary
 
-Read the skill file to understand the user's preferences, then create LinkedIn content that aligns with them.`;
+Read the skill file to understand the user's preferences, then create ${platformName} content that aligns with them.`;
 
-    const userMessage = `Transform the WhatsApp input into a LinkedIn post using the following context:
+    const userMessage = `Transform the WhatsApp input into a ${platformName} ${contentType} using the following context:
 
 **Recent Posts (REFERENCE ONLY - for tone and style):**
 ${postsContent}
@@ -406,15 +520,16 @@ ${whatsappContent}
 
 **Instructions:**
 1. Read the SKILL.md file from the container to understand my target audience, objectives, and content pillars
-2. Transform the WhatsApp input into a LinkedIn post that:
+2. Transform the WhatsApp input into a ${platformName} ${contentType} that:
    - Uses the WhatsApp input as the BASE CONTENT (transform it, don't ignore it)
    - Matches my target audience, objectives, and content pillars (from SKILL.md)
    - Follows the TONE and STYLE of my recent posts (but uses NEW content from WhatsApp input)
    - Is professional, engaging, and valuable
    - Does NOT copy or mix content from the recent posts examples
-3. Output ONLY the LinkedIn post content text - nothing else
+   - Follows the format guidelines for ${platformName} as specified in the skill file
+3. Output ONLY the ${platformName} ${contentType} content text - nothing else
 
-After reading the skill, generate the post content directly based on the WhatsApp input, using the style from recent posts but creating entirely new content.`;
+After reading the skill, generate the ${contentType} content directly based on the WhatsApp input, using the style from recent posts but creating entirely new content.`;
 
     // Create message with skill in container using REST API directly
     // (SDK may not fully support container/skills yet)
@@ -527,7 +642,7 @@ After reading the skill, generate the post content directly based on the WhatsAp
                 ...toolResults,
                 {
                   type: 'text',
-                  text: 'Now generate the LinkedIn post content based on the skill information. Output ONLY the post content text - nothing else.',
+                  text: `Now generate the ${platformName} ${contentType} content based on the skill information. Output ONLY the ${contentType} content text - nothing else.`,
                 },
               ],
             },
@@ -591,19 +706,30 @@ After reading the skill, generate the post content directly based on the WhatsAp
       console.warn('Generated content is very short:', content.length, 'characters');
     }
 
-    // Clean the content to extract only the LinkedIn post
-    const cleanedContent = cleanLinkedInPostContent(content);
+    // Clean the content to extract only the post content
+    const cleanedContent = cleanPostContent(content, platform);
     
     if (!cleanedContent || cleanedContent.length === 0) {
-      throw new Error('Failed to extract LinkedIn post content from response.');
+      throw new Error(`Failed to extract ${platform} ${platform === 'linkedin' ? 'post' : 'article'} content from response.`);
     }
 
-    console.log('Content generated successfully:', {
+    console.log(`✅ Content generated successfully for ${platform}:`, {
       originalLength: content.length,
       cleanedLength: cleanedContent.length,
+      platform: platform,
     });
 
-    // Step 5: Save generated post to database
+    // Step 5: Save generated post to database with platform and usage info
+    const usageInfo = {
+      skill_id: skillId,
+      skill_type: platform,
+      platform: platform,
+      used_existing_skill: usedExistingSkill,
+      selection_method: 'deterministic' // Always deterministic based on platform parameter
+    };
+    
+    console.log(`💾 Saving ${platform} post to database with usage info:`, usageInfo);
+    
     const { data: generatedPost, error: insertError } = await supabase
       .from('generated_posts')
       .insert({
@@ -611,23 +737,32 @@ After reading the skill, generate the post content directly based on the WhatsAp
         content: cleanedContent,
         whatsapp_input_id: whatsappInputId,
         status: 'draft',
+        platform: platform,
+        usage: usageInfo,
       })
       .select()
       .single();
 
     if (insertError) {
-      console.error('Error saving generated post to database:', insertError);
+      console.error(`❌ Error saving generated ${platform} post to database:`, insertError);
       throw new Error(`Failed to save generated post: ${insertError.message}`);
     }
 
-    console.log('Generated post saved to database:', generatedPost.id);
+    console.log(`✅ Generated ${platform} post saved to database:`, {
+      postId: generatedPost.id,
+      platform: platform,
+      skillId: skillId,
+      usedExistingSkill: usedExistingSkill,
+    });
 
     return new Response(JSON.stringify({
       success: true,
       content: cleanedContent,
       generatedPostId: generatedPost.id,
+      platform: platform,
       skillId: skillId,
       usedExistingSkill: usedExistingSkill,
+      usage: usageInfo,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
