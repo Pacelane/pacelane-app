@@ -29,12 +29,12 @@ const Goals = () => {
 
   // Goals options
   const goalsOptions = [
-    'Brand Recognition',
-    'Lead Generation',
-    'Recruitment',
-    'Thought Leadership',
-    'Attract Opportunities',
-    'Stay Relevant',
+    'Reconhecimento de Marca',
+    'Geração de Leads',
+    'Recrutamento',
+    'Liderança de Pensamento',
+    'Atrair Oportunidades',
+    'Manter-se Relevante',
   ];
 
   // Handle goal selection
@@ -97,11 +97,11 @@ const Goals = () => {
 
       if (error) throw error;
 
-      toast.success('Goals and target audiences saved!');
+      toast.success('Objetivos e públicos-alvo salvos!');
       navigate('/onboarding/pillars');
     } catch (error: any) {
       console.error('Error saving goals:', error);
-      toast.error('Failed to save goals. Please try again.');
+      toast.error('Falha ao salvar objetivos. Por favor, tente novamente.');
     } finally {
       setSaving(false);
     }
@@ -312,13 +312,13 @@ const Goals = () => {
 
   // Steps list
   const steps = [
-    { label: 'LinkedIn URL', active: true },
-    { label: 'WhatsApp Number', active: true },
-    { label: 'Frequency', active: true },
-    { label: 'Goals', active: false },
-    { label: 'Pillars', active: false },
-    { label: 'Format', active: false },
-    { label: 'Knowledge', active: false },
+    { label: 'URL do LinkedIn', active: true },
+    { label: 'Número do WhatsApp', active: true },
+    { label: 'Frequência', active: true },
+    { label: 'Objetivos', active: false },
+    { label: 'Pilares', active: false },
+    { label: 'Formato', active: false },
+    { label: 'Conhecimento', active: false },
   ];
 
   return (
@@ -355,15 +355,15 @@ const Goals = () => {
             <div className="goals-content-container" style={contentContainerStyles}>
               {/* Text container */}
               <div style={textContainerStyles}>
-                <h1 style={titleStyles}>Your Goals</h1>
+                <h1 style={titleStyles}>Seus Objetivos</h1>
                 <p style={subtitleStyles}>
-                  Tell us what your goals are and the target audiences you want to reach
+                  Conte-nos quais são seus objetivos e os públicos-alvo que você quer alcançar
                 </p>
               </div>
 
               {/* Goals section */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[12] }}>
-                <p style={sectionTitleStyles}>What are your goals?</p>
+                <p style={sectionTitleStyles}>Quais são seus objetivos?</p>
                 <div style={chipsContainerStyles}>
                   {goalsOptions.map((goal) => (
                     <Chips
@@ -381,7 +381,7 @@ const Goals = () => {
 
               {/* Target audiences section */}
               <div style={audiencesSectionStyles}>
-                <p style={sectionTitleStyles}>What are your target audiences?</p>
+                <p style={sectionTitleStyles}>Quais são seus públicos-alvo?</p>
                 
                 {/* Target audience inputs */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[8] }}>
@@ -390,7 +390,7 @@ const Goals = () => {
                       key={index}
                       style="tail-action"
                       size="lg"
-                      placeholder={`Target Audience ${index + 1}`}
+                      placeholder={`Público-Alvo ${index + 1}`}
                       value={audience}
                       onChange={(e) => handleAudienceChange(index, e.target.value)}
                       disabled={saving}
@@ -405,7 +405,7 @@ const Goals = () => {
                   <Button
                     style="secondary"
                     size="sm"
-                    label="Add Target Audience"
+                    label="Adicionar Público-Alvo"
                     leadIcon={<Plus size={16} />}
                     onClick={handleAddAudience}
                     disabled={saving}
@@ -430,7 +430,7 @@ const Goals = () => {
                 <Button
                   style="primary"
                   size="sm"
-                  label={saving ? "Saving..." : "Continue"}
+                  label={saving ? "Salvando..." : "Continuar"}
                   leadIcon={saving ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : undefined}
                   tailIcon={!saving ? <ArrowRight size={16} /> : undefined}
                   onClick={handleContinue}
@@ -445,7 +445,7 @@ const Goals = () => {
           <div style={accuracyBarStyles}>
             {/* Bar container */}
             <div style={barContainerStyles}>
-              <p style={labelTextStyles}>Result Accuracy</p>
+              <p style={labelTextStyles}>Precisão do Resultado</p>
               <div style={{ marginTop: spacing.spacing[8] }}>
                 <div style={linesBarContainerStyles}>
                   {[...Array(27)].map((_, index) => (
@@ -453,10 +453,10 @@ const Goals = () => {
                   ))}
                 </div>
               </div>
-              <p style={{ ...infoTextStyles, marginTop: spacing.spacing[4] }}>25% Complete</p>
+              <p style={{ ...infoTextStyles, marginTop: spacing.spacing[4] }}>25% Completo</p>
               <div style={{ ...dividerStyles, marginTop: spacing.spacing[8] }} />
               <p style={{ ...infoTextStyles, marginTop: spacing.spacing[8] }}>
-                The more information you provide about yourself, the better the results will be.
+                Quanto mais informações você fornecer sobre si mesmo, melhores serão os resultados.
               </p>
             </div>
 

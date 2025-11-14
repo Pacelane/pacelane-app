@@ -30,14 +30,14 @@ const Pillars = () => {
   // Content types options
   // Note: These names must match Profile.tsx contentTypesOptions exactly
   const contentTypesOptions = [
-    'How To',
-    'News & Opinions',
-    'Personal Stories',
-    'Career Lessons',
-    'Behind The Scenes',
-    'Customer Stories',
-    'Educational',
-    'Memes & Humor',
+    'Como Fazer',
+    'Notícias e Opiniões',
+    'Histórias Pessoais',
+    'Lições de Carreira',
+    'Bastidores',
+    'Histórias de Clientes',
+    'Educacional',
+    'Memes e Humor',
   ];
 
   // Handle content type selection
@@ -74,7 +74,7 @@ const Pillars = () => {
 
   const handleContinue = async () => {
     if (!user) {
-      toast.error('Please sign in to continue');
+      toast.error('Por favor, faça login para continuar');
       return;
     }
 
@@ -100,11 +100,11 @@ const Pillars = () => {
 
       if (error) throw error;
 
-      toast.success('Content pillars saved!');
+      toast.success('Pilares de conteúdo salvos!');
       navigate('/onboarding/format');
     } catch (error: any) {
       console.error('Error saving content pillars:', error);
-      toast.error('Failed to save content pillars. Please try again.');
+      toast.error('Falha ao salvar pilares de conteúdo. Por favor, tente novamente.');
     } finally {
       setSaving(false);
     }
@@ -315,13 +315,13 @@ const Pillars = () => {
 
   // Steps list
   const steps = [
-    { label: 'LinkedIn URL', active: true },
-    { label: 'WhatsApp Number', active: true },
-    { label: 'Frequency', active: true },
-    { label: 'Goals', active: true },
-    { label: 'Pillars', active: false },
-    { label: 'Format', active: false },
-    { label: 'Knowledge', active: false },
+    { label: 'URL do LinkedIn', active: true },
+    { label: 'Número do WhatsApp', active: true },
+    { label: 'Frequência', active: true },
+    { label: 'Objetivos', active: true },
+    { label: 'Pilares', active: false },
+    { label: 'Formato', active: false },
+    { label: 'Conhecimento', active: false },
   ];
 
   return (
@@ -358,15 +358,15 @@ const Pillars = () => {
             <div className="pillars-content-container" style={contentContainerStyles}>
               {/* Text container */}
               <div style={textContainerStyles}>
-                <h1 style={titleStyles}>Your Pillars</h1>
+                <h1 style={titleStyles}>Seus Pilares</h1>
                 <p style={subtitleStyles}>
-                  Tell us what types of content and themes you want to address
+                  Conte-nos quais tipos de conteúdo e temas você quer abordar
                 </p>
               </div>
 
               {/* Content types section */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[12] }}>
-                <p style={sectionTitleStyles}>Content types you want to create</p>
+                <p style={sectionTitleStyles}>Tipos de conteúdo que você quer criar</p>
                 <div style={chipsContainerStyles}>
                   {contentTypesOptions.map((type) => (
                     <Chips
@@ -384,7 +384,7 @@ const Pillars = () => {
 
               {/* Themes section */}
               <div style={themesSectionStyles}>
-                <p style={sectionTitleStyles}>Themes you want to talk about</p>
+                <p style={sectionTitleStyles}>Temas sobre os quais você quer falar</p>
                 
                 {/* Theme inputs */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[8] }}>
@@ -393,7 +393,7 @@ const Pillars = () => {
                       key={index}
                       style="tail-action"
                       size="lg"
-                      placeholder={`Theme ${index + 1}`}
+                      placeholder={`Tema ${index + 1}`}
                       value={theme}
                       onChange={(e) => handleThemeChange(index, e.target.value)}
                       disabled={saving}
@@ -408,7 +408,7 @@ const Pillars = () => {
                   <Button
                     style="secondary"
                     size="sm"
-                    label="Add Theme"
+                    label="Adicionar Tema"
                     leadIcon={<Plus size={16} />}
                     onClick={handleAddTheme}
                     disabled={saving}
@@ -423,7 +423,7 @@ const Pillars = () => {
                 <Button
                   style="secondary"
                   size="sm"
-                  label="Back"
+                  label="Voltar"
                   onClick={handleGoBack}
                   disabled={saving}
                   fullWidth
@@ -433,7 +433,7 @@ const Pillars = () => {
                 <Button
                   style="primary"
                   size="sm"
-                  label={saving ? "Saving..." : "Continue"}
+                  label={saving ? "Salvando..." : "Continuar"}
                   leadIcon={saving ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : undefined}
                   tailIcon={!saving ? <ArrowRight size={16} /> : undefined}
                   onClick={handleContinue}
@@ -448,7 +448,7 @@ const Pillars = () => {
           <div style={accuracyBarStyles}>
             {/* Bar container */}
             <div style={barContainerStyles}>
-              <p style={labelTextStyles}>Result Accuracy</p>
+              <p style={labelTextStyles}>Precisão do Resultado</p>
               <div style={{ marginTop: spacing.spacing[8] }}>
                 <div style={linesBarContainerStyles}>
                   {[...Array(27)].map((_, index) => (
@@ -456,10 +456,10 @@ const Pillars = () => {
                   ))}
                 </div>
               </div>
-              <p style={{ ...infoTextStyles, marginTop: spacing.spacing[4] }}>35% Complete</p>
+              <p style={{ ...infoTextStyles, marginTop: spacing.spacing[4] }}>35% Completo</p>
               <div style={{ ...dividerStyles, marginTop: spacing.spacing[8] }} />
               <p style={{ ...infoTextStyles, marginTop: spacing.spacing[8] }}>
-                The more information you provide about yourself, the better the results will be.
+                Quanto mais informações você fornecer sobre si mesmo, melhores serão os resultados.
               </p>
             </div>
 

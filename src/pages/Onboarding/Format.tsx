@@ -37,17 +37,17 @@ const Format = () => {
   const formatOptions: FormatOption[] = [
     {
       id: 'standard',
-      label: 'Standard',
+      label: 'Padrão',
       icon: <AlignJustify size={20} />
     },
     {
       id: 'formatted',
-      label: 'Formatted',
+      label: 'Formatado',
       icon: <List size={20} />
     },
     {
       id: 'short',
-      label: 'Short',
+      label: 'Curto',
       icon: <MessageSquare size={20} />
     },
     {
@@ -117,7 +117,7 @@ const Format = () => {
 
   const handleContinue = async () => {
     if (!user) {
-      toast.error('Please sign in to continue');
+      toast.error('Por favor, faça login para continuar');
       return;
     }
 
@@ -151,11 +151,11 @@ const Format = () => {
 
       if (error) throw error;
 
-      toast.success('Writing format saved!');
+      toast.success('Formato de escrita salvo!');
       navigate('/onboarding/knowledge');
     } catch (error: any) {
       console.error('Error saving writing format:', error);
-      toast.error('Failed to save writing format. Please try again.');
+      toast.error('Falha ao salvar formato de escrita. Por favor, tente novamente.');
     } finally {
       setSaving(false);
     }
@@ -427,13 +427,13 @@ const Format = () => {
 
   // Steps list
   const steps = [
-    { label: 'LinkedIn URL', active: true },
-    { label: 'WhatsApp Number', active: true },
-    { label: 'Frequency', active: true },
-    { label: 'Goals', active: true },
-    { label: 'Pillars', active: true },
-    { label: 'Format', active: false },
-    { label: 'Knowledge', active: false },
+    { label: 'URL do LinkedIn', active: true },
+    { label: 'Número do WhatsApp', active: true },
+    { label: 'Frequência', active: true },
+    { label: 'Objetivos', active: true },
+    { label: 'Pilares', active: true },
+    { label: 'Formato', active: false },
+    { label: 'Conhecimento', active: false },
   ];
 
   return (
@@ -470,9 +470,9 @@ const Format = () => {
             <div className="format-content-container" style={contentContainerStyles}>
               {/* Text container */}
               <div style={textContainerStyles}>
-                <h1 style={titleStyles}>Your Writing Format</h1>
+                <h1 style={titleStyles}>Seu Formato de Escrita</h1>
                 <p style={subtitleStyles}>
-                  Tell us what writing format you prefer for your LinkedIn posts
+                  Conte-nos qual formato de escrita você prefere para seus posts no LinkedIn
                 </p>
               </div>
 
@@ -544,7 +544,7 @@ const Format = () => {
                 <Button
                   style="secondary"
                   size="sm"
-                  label="Back"
+                  label="Voltar"
                   onClick={handleGoBack}
                   fullWidth
                   disabled={saving}
@@ -554,7 +554,7 @@ const Format = () => {
                 <Button
                   style="primary"
                   size="sm"
-                  label={saving ? "Saving..." : "Continue"}
+                  label={saving ? "Salvando..." : "Continuar"}
                   leadIcon={saving ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : undefined}
                   tailIcon={!saving ? <ArrowRight size={16} /> : undefined}
                   onClick={handleContinue}
@@ -569,7 +569,7 @@ const Format = () => {
           <div style={accuracyBarStyles}>
             {/* Bar container */}
             <div style={barContainerStyles}>
-              <p style={labelTextStyles}>Result Accuracy</p>
+              <p style={labelTextStyles}>Precisão do Resultado</p>
               <div style={{ marginTop: spacing.spacing[8] }}>
                 <div style={linesBarContainerStyles}>
                   {[...Array(27)].map((_, index) => (
@@ -577,10 +577,10 @@ const Format = () => {
                   ))}
                 </div>
               </div>
-              <p style={{ ...infoTextStyles, marginTop: spacing.spacing[4] }}>60% Complete</p>
+              <p style={{ ...infoTextStyles, marginTop: spacing.spacing[4] }}>60% Completo</p>
               <div style={{ ...dividerStyles, marginTop: spacing.spacing[8] }} />
               <p style={{ ...infoTextStyles, marginTop: spacing.spacing[8] }}>
-                The more information you provide about yourself, the better the results will be.
+                Quanto mais informações você fornecer sobre si mesmo, melhores serão os resultados.
               </p>
             </div>
 
