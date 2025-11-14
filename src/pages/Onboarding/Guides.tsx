@@ -44,7 +44,7 @@ const Guides = () => {
   const [toneOptions, setToneOptions] = useState<ToneOption[]>([
     {
       id: 1,
-      value: 'Professional but not formal',
+      value: 'Profissional mas não formal',
       isPreSelected: true
     }
   ]);
@@ -81,7 +81,7 @@ const Guides = () => {
     
     if (!user) {
       console.log('No user found, returning early');
-      toast.error('Please sign in to continue');
+      toast.error('Por favor, faça login para continuar');
       return;
     }
     
@@ -111,7 +111,7 @@ const Guides = () => {
       navigate('/onboarding/content-pillars');
     } catch (error) {
       console.error('Error saving tone of voice preferences:', error);
-      toast.error('Failed to save tone of voice preferences. Please try again.');
+      toast.error('Falha ao salvar preferências de tom de voz. Por favor, tente novamente.');
     } finally {
       setIsLoading(false);
     }
@@ -178,7 +178,7 @@ const Guides = () => {
             maxWidth: isMobile ? '320px' : '400px'
           }}>
             <Button
-              label="Go Back"
+              label="Voltar"
               style="dashed"
               size="xs"
               leadIcon={<ArrowLeft size={12} />}
@@ -255,7 +255,7 @@ const Guides = () => {
                       textAlign: 'left',
                     }}
                   >
-                    Tone of Voice
+                    Tom de Voz
                   </h1>
 
                   {/* Subtitle */}
@@ -270,7 +270,7 @@ const Guides = () => {
                       textAlign: 'left',
                     }}
                   >
-                    How do you want your content to sound? We've pre-selected a professional but approachable tone. Add more options that reflect your unique voice.
+                    Como você quer que seu conteúdo soe? Pré-selecionamos um tom profissional mas acessível. Adicione mais opções que reflitam sua voz única.
                   </p>
                 </div>
               </div>
@@ -286,7 +286,7 @@ const Guides = () => {
                 {toneOptions.map((option) => (
                   <div key={option.id}>
                     <Input
-                      placeholder="Enter your tone of voice preference"
+                      placeholder="Digite sua preferência de tom de voz"
                       value={option.value}
                       onChange={(e) => updateToneOption(option.id, e.target.value)}
                       style="tail-action"
@@ -303,7 +303,7 @@ const Guides = () => {
                 {/* Add Tone Option Button */}
                 <div style={{ marginTop: spacing.spacing[8], width: '100%' }}>
                   <Button
-                    label="Add Tone Option"
+                    label="Adicionar Opção de Tom"
                     style="secondary"
                     size="sm"
                     leadIcon={<Plus size={16} />}
@@ -337,8 +337,8 @@ const Guides = () => {
                 }}
               >
                 {!canContinue 
-                  ? "Please add at least one tone of voice option to continue."
-                  : `${toneOptions.filter(o => o.value.trim()).length} tone option${toneOptions.filter(o => o.value.trim()).length === 1 ? '' : 's'} ready.`
+                  ? "Por favor, adicione pelo menos uma opção de tom de voz para continuar."
+                  : `${toneOptions.filter(o => o.value.trim()).length} opção${toneOptions.filter(o => o.value.trim()).length === 1 ? '' : 'ões'} de tom pronta${toneOptions.filter(o => o.value.trim()).length === 1 ? '' : 's'}.`
                 }
               </p>
             </div>
@@ -369,7 +369,7 @@ const Guides = () => {
           justifyContent: 'center'
         }}>
           <Button
-            label={isLoading ? "Saving..." : "Continue"}
+            label={isLoading ? "Salvando..." : "Continuar"}
             style="primary"
             size="lg"
             tailIcon={!isLoading ? <ArrowRight size={16} /> : undefined}

@@ -63,7 +63,7 @@ const Welcome = () => {
           color: colors.text.muted,
           margin: 0
         }}>
-          Loading...
+          Carregando...
         </p>
       </div>
     );

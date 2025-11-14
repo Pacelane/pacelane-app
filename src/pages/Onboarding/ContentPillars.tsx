@@ -110,7 +110,7 @@ const ContentPillars = () => {
       navigate('/onboarding/pacing');
     } catch (error) {
       console.error('Error saving editorial topics:', error);
-      setToast({ message: 'Failed to save editorial topics. Please try again.', type: 'error' });
+      setToast({ message: 'Falha ao salvar tópicos editoriais. Por favor, tente novamente.', type: 'error' });
     } finally {
       setIsLoading(false);
     }
@@ -177,7 +177,7 @@ const ContentPillars = () => {
             maxWidth: isMobile ? '320px' : '400px'
           }}>
             <Button
-              label="Go Back"
+              label="Voltar"
               style="dashed"
               size="xs"
               leadIcon={<ArrowLeft size={12} />}
@@ -254,7 +254,7 @@ const ContentPillars = () => {
                       textAlign: 'left',
                     }}
                   >
-                    Editorial Topics
+                    Tópicos Editoriais
                   </h1>
 
                   {/* Subtitle */}
@@ -269,7 +269,7 @@ const ContentPillars = () => {
                       textAlign: 'left',
                     }}
                   >
-                    What topics do you want to write about? Add the main themes and subjects that interest you and your audience.
+                    Sobre quais tópicos você quer escrever? Adicione os principais temas e assuntos que interessam a você e ao seu público.
                   </p>
                 </div>
               </div>
@@ -285,7 +285,7 @@ const ContentPillars = () => {
                 {topicOptions.map((option) => (
                   <div key={option.id}>
                     <Input
-                      placeholder="Enter your editorial topic"
+                      placeholder="Digite seu tópico editorial"
                       value={option.value}
                       onChange={(e) => updateTopicOption(option.id, e.target.value)}
                       style="tail-action"
@@ -302,7 +302,7 @@ const ContentPillars = () => {
                 {/* Add Topic Option Button */}
                 <div style={{ marginTop: spacing.spacing[8], width: '100%' }}>
                   <Button
-                    label="Add Topic"
+                    label="Adicionar Tópico"
                     style="secondary"
                     size="sm"
                     leadIcon={<Plus size={16} />}
@@ -336,8 +336,8 @@ const ContentPillars = () => {
                 }}
               >
                 {!canContinue 
-                  ? "Please add at least one editorial topic to continue."
-                  : `${topicOptions.filter(o => o.value.trim()).length} topic${topicOptions.filter(o => o.value.trim()).length === 1 ? '' : 's'} ready.`
+                  ? "Por favor, adicione pelo menos um tópico editorial para continuar."
+                  : `${topicOptions.filter(o => o.value.trim()).length} tópico${topicOptions.filter(o => o.value.trim()).length === 1 ? '' : 's'} pronto${topicOptions.filter(o => o.value.trim()).length === 1 ? '' : 's'}.`
                 }
               </p>
             </div>
@@ -368,7 +368,7 @@ const ContentPillars = () => {
           justifyContent: 'center'
         }}>
           <Button
-            label={isLoading ? "Saving..." : "Continue"}
+            label={isLoading ? "Salvando..." : "Continuar"}
             style="primary"
             size="lg"
             tailIcon={!isLoading ? <ArrowRight size={16} /> : undefined}
