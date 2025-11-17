@@ -65,7 +65,7 @@ const LinkedInSummary = () => {
 
         if (error) {
           console.error('Error fetching LinkedIn profile:', error);
-          toast.error('Failed to load profile data');
+          toast.error('Falha ao carregar dados do perfil');
           return;
         }
 
@@ -88,7 +88,7 @@ const LinkedInSummary = () => {
                 return String(skill);
               });
             }
-            return ['Skills not available'];
+            return ['Habilidades não disponíveis'];
           };
 
           // Helper function to extract experience data
@@ -98,15 +98,15 @@ const LinkedInSummary = () => {
               return expData.map(exp => {
                 if (typeof exp === 'object') {
                   return {
-                    title: exp.title || exp.position || 'Unknown',
-                    company: exp.company || exp.organization || 'Unknown',
-                    duration: exp.duration || exp.period || exp.startDate + ' - ' + (exp.endDate || 'Present') || 'Unknown'
+                    title: exp.title || exp.position || 'Desconhecido',
+                    company: exp.company || exp.organization || 'Desconhecido',
+                    duration: exp.duration || exp.period || exp.startDate + ' - ' + (exp.endDate || 'Presente') || 'Desconhecido'
                   };
                 }
-                return { title: 'Unknown', company: 'Unknown', duration: 'Unknown' };
+                return { title: 'Desconhecido', company: 'Desconhecido', duration: 'Desconhecido' };
               });
             }
-            return [{ title: 'Experience not available', company: 'Unknown', duration: 'Unknown' }];
+            return [{ title: 'Experiência não disponível', company: 'Desconhecido', duration: 'Desconhecido' }];
           };
 
           // Helper function to extract education data
@@ -116,23 +116,23 @@ const LinkedInSummary = () => {
               return eduData.map(edu => {
                 if (typeof edu === 'object') {
                   return {
-                    degree: edu.degree || edu.fieldOfStudy || 'Unknown',
-                    school: edu.school || edu.institution || 'Unknown',
-                    year: edu.year || edu.graduationYear || 'Unknown'
+                    degree: edu.degree || edu.fieldOfStudy || 'Desconhecido',
+                    school: edu.school || edu.institution || 'Desconhecido',
+                    year: edu.year || edu.graduationYear || 'Desconhecido'
                   };
                 }
-                return { degree: 'Unknown', school: 'Unknown', year: 'Unknown' };
+                return { degree: 'Desconhecido', school: 'Desconhecido', year: 'Desconhecido' };
               });
             }
-            return [{ degree: 'Education not available', school: 'Unknown', year: 'Unknown' }];
+            return [{ degree: 'Educação não disponível', school: 'Desconhecido', year: 'Desconhecido' }];
           };
 
           setProfile({
-            name: rawData.basic_info?.fullname || summary.name || data.linkedin_name || 'Unknown',
-            headline: rawData.basic_info?.headline || summary.headline || data.linkedin_headline || 'No headline available',
-            location: rawData.basic_info?.location?.full || rawData.basic_info?.location?.city || summary.location || data.linkedin_location || 'Location not available',
-            company: rawData.basic_info?.current_company || summary.company || data.linkedin_company || 'Company not available',
-            website: summary.url || rawData.profileUrl || 'No website available',
+            name: rawData.basic_info?.fullname || summary.name || data.linkedin_name || 'Desconhecido',
+            headline: rawData.basic_info?.headline || summary.headline || data.linkedin_headline || 'Cargo não disponível',
+            location: rawData.basic_info?.location?.full || rawData.basic_info?.location?.city || summary.location || data.linkedin_location || 'Localização não disponível',
+            company: rawData.basic_info?.current_company || summary.company || data.linkedin_company || 'Empresa não disponível',
+            website: summary.url || rawData.profileUrl || 'Site não disponível',
             about: rawData.basic_info?.about || summary.about || data.linkedin_about || '',
             skills: extractSkills(rawData.skills || rawData.topSkills),
             experience: extractExperience(rawData.experience || rawData.workExperience),
@@ -173,7 +173,7 @@ const LinkedInSummary = () => {
   };
 
   const handleContinue = () => {
-    navigate('/onboarding/guides');
+    navigate('/onboarding/whatsapp');
   };
 
   if (isLoading) {
@@ -190,7 +190,7 @@ const LinkedInSummary = () => {
         <div style={{ textAlign: 'center' }}>
           <Bichaurinho variant={12} size={64} />
           <p style={{ ...textStyles.md.normal, color: colors.text.muted, marginTop: spacing.spacing[16] }}>
-            Loading your profile...
+            Carregando seu perfil...
           </p>
         </div>
       </div>
@@ -251,11 +251,11 @@ const LinkedInSummary = () => {
           {/* Back Button */}
           <div style={{ 
             alignSelf: 'flex-start', 
-            width: isMobile ? '100%' : '400px',
-            maxWidth: isMobile ? '320px' : '400px'
+            width: isMobile ? '100%' : '700px',
+            maxWidth: isMobile ? '100%' : '700px'
           }}>
             <Button
-              label="Go Back"
+              label="Voltar"
               style="dashed"
               size="xs"
               leadIcon={<ArrowLeft size={12} />}
@@ -265,8 +265,8 @@ const LinkedInSummary = () => {
 
           {/* Progress Indicator */}
           <div style={{ 
-            width: isMobile ? '100%' : '400px',
-            maxWidth: isMobile ? '320px' : '400px'
+            width: isMobile ? '100%' : '700px',
+            maxWidth: isMobile ? '100%' : '700px'
           }}>
             <OnboardingProgressIndicator 
               currentStep={3}
@@ -281,8 +281,8 @@ const LinkedInSummary = () => {
               borderRadius: cornerRadius.borderRadius.lg,
               border: `1px solid ${colors.border.darker}`,
               boxShadow: getShadow('regular.card', colors, { withBorder: true }),
-              width: isMobile ? '100%' : '400px',
-              maxWidth: isMobile ? '320px' : '400px',
+              width: isMobile ? '100%' : '700px',
+              maxWidth: isMobile ? '100%' : '700px',
               overflow: 'hidden',
             }}
           >
@@ -302,15 +302,10 @@ const LinkedInSummary = () => {
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'flex-start',
-                  gap: spacing.spacing[16],
+                  gap: spacing.spacing[12],
                   marginBottom: spacing.spacing[32],
                 }}
               >
-                {/* Bichaurinho */}
-                <div>
-                  <Bichaurinho variant={13} size={48} />
-                </div>
-
                 {/* Title and Subtitle Container */}
                 <div
                   style={{
@@ -332,7 +327,7 @@ const LinkedInSummary = () => {
                       textAlign: 'left',
                     }}
                   >
-                    Profile Summary
+                    Resumo do Perfil
                   </h1>
 
                   {/* Subtitle */}
@@ -347,7 +342,7 @@ const LinkedInSummary = () => {
                       textAlign: 'left',
                     }}
                   >
-                    Here's what we found from your LinkedIn profile. This information will help us personalize your content strategy.
+                    Aqui está o que encontramos no seu perfil do LinkedIn. Essas informações nos ajudarão a personalizar sua estratégia de conteúdo.
                   </p>
                 </div>
               </div>
@@ -375,7 +370,7 @@ const LinkedInSummary = () => {
                       margin: 0,
                     }}
                   >
-                    {profile?.name || 'Name not available'}
+                    {profile?.name || 'Nome não disponível'}
                   </h3>
                   
                   <p
@@ -385,7 +380,7 @@ const LinkedInSummary = () => {
                       margin: 0,
                     }}
                   >
-                    {profile?.headline || 'Headline not available'}
+                    {profile?.headline || 'Cargo não disponível'}
                   </p>
 
                   {/* Location and Company */}
@@ -436,7 +431,7 @@ const LinkedInSummary = () => {
                         marginBottom: spacing.spacing[12],
                       }}
                     >
-                      About
+                      Sobre
                     </h4>
                     <p
                       style={{
@@ -462,7 +457,7 @@ const LinkedInSummary = () => {
                         marginBottom: spacing.spacing[8],
                       }}
                     >
-                      Top Skills
+                      Principais Habilidades
                     </h4>
                     <div
                       style={{
@@ -501,7 +496,7 @@ const LinkedInSummary = () => {
                         marginBottom: spacing.spacing[8],
                       }}
                     >
-                      Recent Experience
+                      Experiência Recente
                     </h4>
                     <div
                       style={{
@@ -547,7 +542,7 @@ const LinkedInSummary = () => {
                         marginBottom: spacing.spacing[8],
                       }}
                     >
-                      Education
+                      Educação
                     </h4>
                     <div
                       style={{
@@ -607,7 +602,7 @@ const LinkedInSummary = () => {
                   textAlign: 'center',
                 }}
               >
-                This information will help us create personalized content that matches your professional background and expertise.
+                Essas informações nos ajudarão a criar conteúdo personalizado que corresponda ao seu histórico profissional e expertise.
               </p>
             </div>
           </div>
@@ -637,7 +632,7 @@ const LinkedInSummary = () => {
           justifyContent: 'center'
         }}>
           <Button
-            label="Continue"
+            label="Continuar"
             style="primary"
             size="lg"
             tailIcon={<ArrowRight size={16} />}

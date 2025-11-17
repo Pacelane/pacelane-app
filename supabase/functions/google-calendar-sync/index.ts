@@ -107,7 +107,6 @@ async function handleAuthUrl(req: Request) {
   }
 
   const scopes = [
-    'https://www.googleapis.com/auth/calendar.readonly',
     'https://www.googleapis.com/auth/calendar.events.readonly'
   ];
 
@@ -184,8 +183,9 @@ async function handleCallback(req: Request, supabase: any, requestBody?: any) {
     throw new Error('User ID not provided in state parameter');
   }
 
-  // Get user's primary calendar using direct API call
-  const calendarResponse = await fetch('https://www.googleapis.com/calendar/v3/users/me/calendarList', {
+  // Get user's primary calendar info using direct API call
+  // The primary calendar always has the ID "primary"
+  const calendarResponse = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary', {
     headers: {
       'Authorization': `Bearer ${tokens.access_token}`,
       'Content-Type': 'application/json',
@@ -193,13 +193,12 @@ async function handleCallback(req: Request, supabase: any, requestBody?: any) {
   });
 
   if (!calendarResponse.ok) {
-    throw new Error('Failed to fetch calendar list');
+    throw new Error('Failed to fetch primary calendar');
   }
 
-  const calendarData = await calendarResponse.json();
-  const primaryCalendar = calendarData.items?.find((cal: any) => cal.primary);
+  const primaryCalendar = await calendarResponse.json();
   
-  if (!primaryCalendar) {
+  if (!primaryCalendar || !primaryCalendar.id) {
     throw new Error('No primary calendar found');
   }
 
@@ -208,7 +207,7 @@ async function handleCallback(req: Request, supabase: any, requestBody?: any) {
     .from('user_calendars')
     .upsert({
       user_id: userId,
-      calendar_id: primaryCalendar.id!,
+      calendar_id: primaryCalendar.id,
       calendar_name: primaryCalendar.summary || 'Primary Calendar',
       access_token: tokens.access_token,
       refresh_token: tokens.refresh_token,

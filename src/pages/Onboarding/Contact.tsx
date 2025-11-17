@@ -57,11 +57,11 @@ const Contact = () => {
 
       if (error) throw error;
 
-      toast.success('WhatsApp number saved!');
+      toast.success('Número do WhatsApp salvo!');
       navigate('/onboarding/whatsapp-setup');
     } catch (error) {
       console.error('Error saving WhatsApp number:', error);
-      toast.error('Failed to save WhatsApp number. Please try again.');
+      toast.error('Falha ao salvar número do WhatsApp. Por favor, tente novamente.');
     } finally {
       setIsLoading(false);
     }
@@ -128,7 +128,7 @@ const Contact = () => {
             maxWidth: isMobile ? '320px' : '400px'
           }}>
             <Button
-              label="Go Back"
+              label="Voltar"
               style="dashed"
               size="xs"
               leadIcon={<ArrowLeft size={12} />}
@@ -205,7 +205,7 @@ const Contact = () => {
                       textAlign: 'left',
                     }}
                   >
-                    Keeping in<br />Contact
+                    Mantendo<br />Contato
                   </h1>
 
                   {/* Subtitle */}
@@ -220,7 +220,7 @@ const Contact = () => {
                       textAlign: 'left',
                     }}
                   >
-                    What's your WhatsApp number? We'll use it to send you personalized content suggestions.
+                    Qual é o seu número do WhatsApp? Vamos usá-lo para enviar sugestões de conteúdo personalizadas.
                   </p>
                 </div>
               </div>
@@ -267,7 +267,7 @@ const Contact = () => {
                   textAlign: 'center',
                 }}
               >
-                You can skip this step and add your WhatsApp number later in settings.
+                Você pode pular esta etapa e adicionar seu número do WhatsApp depois nas configurações.
               </p>
             </div>
           </div>
@@ -297,7 +297,7 @@ const Contact = () => {
           justifyContent: 'center'
         }}>
           <Button
-            label={isLoading ? "Saving..." : "Continue"}
+            label={isLoading ? "Salvando..." : "Continuar"}
             style="primary"
             size="lg"
             tailIcon={!isLoading ? <ArrowRight size={16} /> : undefined}

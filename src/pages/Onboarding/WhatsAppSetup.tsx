@@ -29,23 +29,63 @@ const WhatsAppSetup = () => {
   const { colors } = useTheme();
   const { toast } = useToast();
   const isMobile = useIsMobile();
-  const [hasClickedWhatsAppButton, setHasClickedWhatsAppButton] = useState(false);
+  const [hasOpenedWhatsApp, setHasOpenedWhatsApp] = useState(false);
+  const [canContinue, setCanContinue] = useState(false);
 
   const handleGoBack = () => {
     navigate('/onboarding/contact');
   };
 
-  const handleContinue = async () => {
-    // Simply navigate to the next page since the number is already saved
-    // and we can't track if they actually sent the message
+  const handleSyncWhatsApp = () => {
+    // Open WhatsApp in a new tab (NO redirect)
+    const message = encodeURIComponent("Hi! I want to connect my WhatsApp to Pacelane for personalized content suggestions.");
+    const whatsappUrl = `https://wa.me/${PACELANE_WHATSAPP_NUMBER}?text=${message}`;
+    
+    // Create a temporary anchor element and click it programmatically
+    // This approach is more reliable for opening links in new tabs
+    const link = document.createElement('a');
+    link.href = whatsappUrl;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Mark that WhatsApp was opened
+    setHasOpenedWhatsApp(true);
+    
+    // Enable continue button after a delay (user can come back and click it)
+    setTimeout(() => {
+      setCanContinue(true);
+    }, 1000);
+  };
+
+  const handleContinue = () => {
+    // Navigate to next page ONLY
     navigate('/onboarding/ready');
   };
 
   const handleWhatsAppConnect = () => {
+    // Open WhatsApp in a new tab
     const message = encodeURIComponent("Hi! I want to connect my WhatsApp to Pacelane for personalized content suggestions.");
     const whatsappUrl = `https://wa.me/${PACELANE_WHATSAPP_NUMBER}?text=${message}`;
-    window.open(whatsappUrl, '_blank');
-    setHasClickedWhatsAppButton(true);
+    
+    // Create a temporary anchor element and click it programmatically
+    const link = document.createElement('a');
+    link.href = whatsappUrl;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Mark that WhatsApp was opened
+    setHasOpenedWhatsApp(true);
+    
+    // Enable continue button after a delay
+    setTimeout(() => {
+      setCanContinue(true);
+    }, 1000);
   };
 
   return (
@@ -251,11 +291,11 @@ const WhatsAppSetup = () => {
 
                                  {/* WhatsApp Connection Button */}
                  <Button
-                   label={hasClickedWhatsAppButton ? "✓ Message Sent" : "Send WhatsApp Message"}
-                   style={hasClickedWhatsAppButton ? "soft" : "primary"}
+                   label={hasOpenedWhatsApp ? "✓ WhatsApp Opened" : "Send WhatsApp Message"}
+                   style={hasOpenedWhatsApp ? "soft" : "primary"}
                    size="lg"
                    leadIcon={
-                     hasClickedWhatsAppButton ? undefined : (
+                     hasOpenedWhatsApp ? undefined : (
                        <img 
                          src="/src/assets/images/whatsapp-logo.png" 
                          alt="WhatsApp" 
@@ -264,6 +304,7 @@ const WhatsAppSetup = () => {
                      )
                    }
                    onClick={handleWhatsAppConnect}
+                   disabled={hasOpenedWhatsApp}
                  />
               </div>
             </div>
@@ -314,17 +355,32 @@ const WhatsAppSetup = () => {
         }}
       >
         <div style={{ 
-          width: '280px',
+          width: '100%',
+          maxWidth: '560px',
           display: 'flex',
-          justifyContent: 'center'
+          flexDirection: 'column',
+          gap: spacing.spacing[12],
+          alignItems: 'center'
         }}>
+          {/* Sync WhatsApp Button */}
+          <Button
+            label={hasOpenedWhatsApp ? "✓ WhatsApp Opened" : "Sincronizar WhatsApp"}
+            style={hasOpenedWhatsApp ? "soft" : "primary"}
+            size="lg"
+            leadIcon={hasOpenedWhatsApp ? undefined : <MessageSquare size={16} />}
+            onClick={handleSyncWhatsApp}
+            disabled={hasOpenedWhatsApp}
+            fullWidth={true}
+          />
+          
+          {/* Continue Button */}
           <Button
             label="Continue"
             style="primary"
             size="lg"
             tailIcon={<ArrowRight size={16} />}
             onClick={handleContinue}
-            disabled={!hasClickedWhatsAppButton}
+            disabled={!hasOpenedWhatsApp || !canContinue}
             fullWidth={true}
           />
         </div>

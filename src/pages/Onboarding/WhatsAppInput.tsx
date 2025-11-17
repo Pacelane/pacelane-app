@@ -1,83 +1,63 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/api/useAuth';
-import { useProfile } from '@/hooks/api/useProfile';
 import { useTheme } from '@/services/theme-context';
+import { useAuth } from '@/hooks/api/useAuth';
 import { useToast } from '@/design-system/components/Toast';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-
-// LinkedIn URL parsing utilities
-import { parseLinkedInInput, isLinkedInUrl } from '@/utils/linkedinParser';
-
-// Updated schema that accepts both URLs and usernames
-const linkedInUsernameSchema = z.object({
-  profileUrl: z.string()
-    .min(1, 'Perfil do LinkedIn é obrigatório')
-    .refine((value) => {
-      const parsed = parseLinkedInInput(value);
-      return parsed.isValid;
-    }, 'Por favor, insira um nome de usuário ou URL válida do LinkedIn')
-});
-
-type LinkedInUsernameFormData = z.infer<typeof linkedInUsernameSchema>;
-
-// Design System Components
-import TopNav from '@/design-system/components/TopNav';
-import Button from '@/design-system/components/Button';
-import Input from '@/design-system/components/Input';
-import Badge from '@/design-system/components/Badge';
-
-// Design System Tokens
+import { supabase } from '@/integrations/supabase/client';
 import { spacing } from '@/design-system/tokens/spacing';
 import { cornerRadius } from '@/design-system/tokens/corner-radius';
-import { getShadow } from '@/design-system/tokens/shadows';
 import { typography } from '@/design-system/tokens/typography';
 import { textStyles } from '@/design-system/styles/typography/typography-styles';
+import { getShadow } from '@/design-system/tokens/shadows';
 import { stroke } from '@/design-system/tokens/stroke';
 import { colors as primitiveColors } from '@/design-system/tokens/primitive-colors';
+import TopNav from '@/design-system/components/TopNav';
+import Button from '@/design-system/components/Button';
+import PhoneInput from '@/design-system/components/PhoneInput';
+import Badge from '@/design-system/components/Badge';
+import { ArrowRight, Loader2, MessageSquare } from 'lucide-react';
 
-// Icons
-import { ArrowRight, Loader2 } from 'lucide-react';
+// Configuration
+const PACELANE_WHATSAPP_NUMBER = '551152360591'; // Business WhatsApp number
 
-const FirstThingsFirst = () => {
+const WhatsAppInput = () => {
   const { colors } = useTheme();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { setupLinkedInProfile, saving } = useProfile();
   const { toast } = useToast();
-  const [linkedInUrl, setLinkedInUrl] = useState('');
-
-  const form = useForm<LinkedInUsernameFormData>({
-    resolver: zodResolver(linkedInUsernameSchema),
-    defaultValues: {
-      profileUrl: '',
-    },
-  });
-
-  // Handle input changes with automatic URL detection
-  const handleInputChange = (value: string) => {
-    setLinkedInUrl(value);
-    
-    // Check if input looks like a LinkedIn URL
-    if (isLinkedInUrl(value)) {
-      const parsed = parseLinkedInInput(value);
-      if (parsed.isValid && parsed.username) {
-        // Automatically set the extracted username
-        form.setValue('profileUrl', parsed.username, { shouldValidate: true });
-        toast.success(`Nome de usuário do LinkedIn extraído: ${parsed.username}`);
-        return;
-      }
-    }
-    
-    // For non-URL inputs or invalid URLs, set the value directly
-    form.setValue('profileUrl', value, { shouldValidate: true });
-  };
+  const [whatsappNumber, setWhatsappNumber] = useState('');
+  const [cleanWhatsAppNumber, setCleanWhatsAppNumber] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [hasOpenedWhatsApp, setHasOpenedWhatsApp] = useState(false);
+  const [canContinueAfterSync, setCanContinueAfterSync] = useState(false);
 
   // Handle button clicks
   const handleGoBack = () => {
-    navigate('/onboarding/welcome');
+    navigate('/onboarding/first-things-first');
+  };
+
+  const handleSyncWhatsApp = () => {
+    // Open WhatsApp in a new tab (NO redirect)
+    const message = encodeURIComponent("Hi! I want to connect my WhatsApp to Pacelane for personalized content suggestions.");
+    const whatsappUrl = `https://wa.me/${PACELANE_WHATSAPP_NUMBER}?text=${message}`;
+    
+    // Create a temporary anchor element and click it programmatically
+    // This approach is more reliable for opening links in new tabs
+    const link = document.createElement('a');
+    link.href = whatsappUrl;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Mark that WhatsApp was opened
+    setHasOpenedWhatsApp(true);
+    
+    // Enable continue button after a delay (user can come back and click it)
+    setTimeout(() => {
+      setCanContinueAfterSync(true);
+    }, 1000);
   };
 
   const handleContinue = async () => {
@@ -86,46 +66,31 @@ const FirstThingsFirst = () => {
       return;
     }
 
-    const formData = form.getValues();
-    if (!formData.profileUrl?.trim() || !form.formState.isValid) {
-      form.trigger();
+    if (!cleanWhatsAppNumber.trim()) {
+      toast.error('Por favor, insira um número de WhatsApp válido');
       return;
     }
 
+    setSaving(true);
+
     try {
-      // Parse the input to extract the username
-      const parsed = parseLinkedInInput(formData.profileUrl);
+      // Save clean phone number to backend (format: +5563984602704)
+      const phoneNumberToSave = cleanWhatsAppNumber.trim();
       
-      if (!parsed.isValid) {
-        throw new Error('Por favor, insira um nome de usuário ou URL válida do LinkedIn');
-      }
+      const { error } = await supabase
+        .from('profiles')
+        .update({ whatsapp_number: phoneNumberToSave } as any)
+        .eq('user_id', user.id);
 
-      // Construct the full LinkedIn URL from the extracted username
-      const fullLinkedInUrl = `https://www.linkedin.com/in/${parsed.username.trim()}/`;
-      
-      // Use our clean LinkedIn setup API (includes scraper integration)
-      const result = await setupLinkedInProfile({
-        profileUrl: fullLinkedInUrl
-      });
+      if (error) throw error;
 
-      // Check if there was a critical error that prevented profile URL from being saved
-      if (result.error && (result.error.includes('required') || result.error.includes('User must be logged in'))) {
-        throw new Error(result.error);
-      }
-
-      // Always proceed to next page if profile URL was processed (even if scraping failed)
-      // The scraping can fail but the URL should still be saved in the database
-      if (result.error) {
-        // Scraping failed but URL was saved - show informative message
-        toast.success('Perfil do LinkedIn salvo! Vamos tentar coletar mais detalhes em segundo plano.');
-      } else {
-        // Complete success
-        toast.success('Configuração do perfil concluída!');
-      }
-      
-      navigate('/onboarding/linkedin-summary');
+      toast.success('Número do WhatsApp salvo!');
+      navigate('/onboarding/pacing');
     } catch (error: any) {
-      toast.error(error.message || 'Falha ao concluir a configuração');
+      console.error('Error saving WhatsApp number:', error);
+      toast.error('Falha ao salvar número do WhatsApp. Por favor, tente novamente.');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -209,6 +174,20 @@ const FirstThingsFirst = () => {
     margin: 0,
   };
 
+  // WhatsApp section title styles
+  const whatsappTitleStyles = {
+    ...textStyles.sm.medium,
+    color: colors.text.default,
+    margin: 0,
+  };
+
+  // WhatsApp utility text styles
+  const utilityTextStyles = {
+    ...textStyles.xs.normal,
+    color: colors.text.subtle,
+    margin: 0,
+  };
+
   // Button container styles (bottom part of main container)
   const buttonContainerStyles = {
     paddingTop: spacing.spacing[20],
@@ -249,14 +228,14 @@ const FirstThingsFirst = () => {
     gap: '2px',
   };
 
-  // Individual line bar styles
-  const lineBarStyles = {
+  // Individual line bar styles (with red accent for first 4 lines)
+  const getLineBarStyles = (index: number) => ({
     flex: '1 1 0',
     minWidth: '2px',
     height: '18px',
-    backgroundColor: primitiveColors.transparentDark[10],
+    backgroundColor: index < 4 ? primitiveColors.red[500] : primitiveColors.transparentDark[10],
     borderRadius: cornerRadius.borderRadius['2xs'],
-  };
+  });
 
   // Divider styles
   const dividerStyles = {
@@ -304,17 +283,16 @@ const FirstThingsFirst = () => {
 
   // Steps list
   const steps = [
-    'URL do LinkedIn',
-    'Número do WhatsApp',
-    'Frequência',
-    'Objetivos',
-    'Pilares',
-    'Formato',
-    'Conhecimento',
+    { label: 'URL do LinkedIn', active: true },
+    { label: 'Número do WhatsApp', active: false },
+    { label: 'Frequência', active: false },
+    { label: 'Objetivos', active: false },
+    { label: 'Pilares', active: false },
+    { label: 'Formato', active: false },
+    { label: 'Conhecimento', active: false },
   ];
 
-  // Check if form is valid
-  const canContinue = form.watch('profileUrl')?.trim() && form.formState.isValid;
+  const canContinue = cleanWhatsAppNumber.trim().length > 0;
 
   return (
     <div style={pageContainerStyles}>
@@ -333,26 +311,29 @@ const FirstThingsFirst = () => {
             <div style={contentContainerStyles}>
               {/* Text container */}
               <div style={textContainerStyles}>
-                <h1 style={titleStyles}>Seu LinkedIn</h1>
+                <h1 style={titleStyles}>Mantendo Contato</h1>
                 <p style={subtitleStyles}>
-                  Nos diga qual é a sua URL do LinkedIn, para que possamos escrever posts que tenham a sua cara.
+                  Nos diga como podemos manter contato
                 </p>
               </div>
 
-              {/* Input with add-on prefix */}
-              <Input
-                style="add-on"
-                size="lg"
-                label="Seu Perfil do LinkedIn"
-                addOnPrefix="https://"
-                placeholder="linkedin.com/in/seuperfil"
-                value={linkedInUrl}
-                onChange={(e) => handleInputChange(e.target.value)}
-                required
-                disabled={saving}
-                failed={!!form.formState.errors.profileUrl}
-                caption={form.formState.errors.profileUrl?.message}
-              />
+              {/* WhatsApp input section */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[8] }}>
+                <p style={whatsappTitleStyles}>WhatsApp</p>
+                <PhoneInput
+                  value={whatsappNumber}
+                  onChange={setWhatsappNumber}
+                  onCleanNumberChange={setCleanWhatsAppNumber}
+                  defaultCountry="BR"
+                  size="lg"
+                  label="Seu número do WhatsApp"
+                  placeholder="(11) 99999-9999"
+                  required
+                />
+                <p style={utilityTextStyles}>
+                  Enviaremos mensagens com rascunhos e sugestões de conteúdo baseadas no seu Plano de Conteúdo
+                </p>
+              </div>
             </div>
 
             {/* Button container */}
@@ -371,14 +352,32 @@ const FirstThingsFirst = () => {
                 <Button
                   style="primary"
                   size="sm"
-                  label={saving ? "Analisando..." : "Continuar"}
+                  label={saving ? "Salvando..." : "Continuar"}
                   leadIcon={saving ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : undefined}
                   tailIcon={!saving ? <ArrowRight size={16} /> : undefined}
                   onClick={handleContinue}
-                  disabled={!canContinue || saving}
+                  disabled={!canContinue || !hasOpenedWhatsApp || !canContinueAfterSync || saving}
                   fullWidth
                 />
               </div>
+            </div>
+            
+            {/* Sync WhatsApp Button */}
+            <div style={{ 
+              paddingTop: spacing.spacing[12],
+              paddingBottom: spacing.spacing[12],
+              paddingLeft: spacing.spacing[36],
+              paddingRight: spacing.spacing[36],
+            }}>
+              <Button
+                label={hasOpenedWhatsApp ? "✓ WhatsApp Aberto" : "Sincronizar WhatsApp"}
+                style={hasOpenedWhatsApp ? "soft" : "primary"}
+                size="sm"
+                leadIcon={hasOpenedWhatsApp ? undefined : <MessageSquare size={16} />}
+                onClick={handleSyncWhatsApp}
+                disabled={hasOpenedWhatsApp}
+                fullWidth
+              />
             </div>
           </div>
 
@@ -390,11 +389,11 @@ const FirstThingsFirst = () => {
               <div style={{ marginTop: spacing.spacing[8] }}>
                 <div style={linesBarContainerStyles}>
                   {[...Array(27)].map((_, index) => (
-                    <div key={index} style={lineBarStyles} />
+                    <div key={index} style={getLineBarStyles(index)} />
                   ))}
                 </div>
               </div>
-              <p style={{ ...infoTextStyles, marginTop: spacing.spacing[4] }}>0% Concluído</p>
+              <p style={{ ...infoTextStyles, marginTop: spacing.spacing[4] }}>12% Concluído</p>
               <div style={{ ...dividerStyles, marginTop: spacing.spacing[8] }} />
               <p style={{ ...infoTextStyles, marginTop: spacing.spacing[8] }}>
                 Quanto mais informações você fornecer sobre si mesmo, melhores serão os resultados.
@@ -405,10 +404,10 @@ const FirstThingsFirst = () => {
             <div style={stepsContainerStyles}>
               <div style={dividerStyles} />
               {steps.map((step) => (
-                <React.Fragment key={step}>
+                <React.Fragment key={step.label}>
                   <div style={stepItemStyles}>
-                    <Badge variant="dot" size="sm" color="neutral" />
-                    <p style={stepTextStyles}>{step}</p>
+                    <Badge variant="dot" size="sm" color={step.active ? "green" : "neutral"} />
+                    <p style={stepTextStyles}>{step.label}</p>
                   </div>
                   <div style={dividerStyles} />
                 </React.Fragment>
@@ -421,4 +420,5 @@ const FirstThingsFirst = () => {
   );
 };
 
-export default FirstThingsFirst;
+export default WhatsAppInput;
+

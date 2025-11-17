@@ -113,7 +113,6 @@ async function handleAuthUrl(req: Request) {
   }
 
   const scopes = [
-    'https://www.googleapis.com/auth/calendar.readonly',
     'https://www.googleapis.com/auth/calendar.events.readonly',
     'https://www.googleapis.com/auth/userinfo.email'
   ];

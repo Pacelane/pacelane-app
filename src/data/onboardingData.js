@@ -3,44 +3,44 @@
 
 // Expanded pillar options (more comprehensive list)
 export const allPillarOptions = [
-  'Industry Insights',
-  'Personal Stories',
-  'Tips & Advice',
-  'Behind the Scenes',
-  'Team & Culture',
-  'Product Updates',
-  'Thought Leadership',
-  'Educational Content',
-  'Company News',
-  'Customer Stories',
-  'Market Analysis',
-  'Case Studies',
-  'Best Practices',
-  'Innovation & Trends',
-  'Leadership Lessons',
-  'Career Development',
-  'Networking Tips',
-  'Success Stories',
-  'Challenges & Solutions',
-  'Future Predictions',
-  'Expert Interviews',
-  'Process Insights',
-  'Tool Recommendations',
-  'Industry Events',
-  'Professional Growth',
-  'Skill Development',
-  'Strategic Thinking',
-  'Client Success',
-  'Project Highlights',
-  'Lessons Learned'
+  'Insights da Indústria',
+  'Histórias Pessoais',
+  'Dicas e Conselhos',
+  'Bastidores',
+  'Equipe e Cultura',
+  'Atualizações de Produto',
+  'Liderança de Pensamento',
+  'Conteúdo Educacional',
+  'Notícias da Empresa',
+  'Histórias de Clientes',
+  'Análise de Mercado',
+  'Estudos de Caso',
+  'Melhores Práticas',
+  'Inovação e Tendências',
+  'Lições de Liderança',
+  'Desenvolvimento de Carreira',
+  'Dicas de Networking',
+  'Histórias de Sucesso',
+  'Desafios e Soluções',
+  'Previsões Futuras',
+  'Entrevistas com Especialistas',
+  'Insights de Processo',
+  'Recomendações de Ferramentas',
+  'Eventos da Indústria',
+  'Crescimento Profissional',
+  'Desenvolvimento de Habilidades',
+  'Pensamento Estratégico',
+  'Sucesso do Cliente',
+  'Destaques de Projetos',
+  'Lições Aprendidas'
 ];
 
 // Helper function to get default pillars (kept for backward compatibility)
 export const getPillarsForGoals = (selectedGoals) => {
   // Return default pillars since we're not using goal-based suggestions anymore
   return [
-    'Industry Insights',
-    'Personal Stories',
-    'Tips & Advice'
+    'Insights da Indústria',
+    'Histórias Pessoais',
+    'Dicas e Conselhos'
   ];
 };

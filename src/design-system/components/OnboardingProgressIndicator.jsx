@@ -31,64 +31,64 @@ const OnboardingProgressIndicator = ({
   const steps = [
     {
       id: 1,
-      title: 'Welcome',
-      description: 'Introduction to Pacelane',
+      title: 'Bem-vindo',
+      description: 'Introdução ao Pacelane',
       icon: Sparkles,
       route: '/onboarding/welcome'
     },
     {
       id: 2,
-      title: 'Profile Setup',
-      description: 'Connect your LinkedIn profile',
+      title: 'Configuração do Perfil',
+      description: 'Conecte seu perfil do LinkedIn',
       icon: User,
       route: '/onboarding/first-things-first'
     },
     {
       id: 3,
-      title: 'Profile Summary',
-      description: 'Review your LinkedIn information',
+      title: 'Resumo do Perfil',
+      description: 'Revise suas informações do LinkedIn',
       icon: User,
       route: '/onboarding/linkedin-summary'
     },
     {
       id: 4,
-      title: 'Tone of Voice',
-      description: 'Set your content style preferences',
+      title: 'Tom de Voz',
+      description: 'Defina suas preferências de estilo de conteúdo',
       icon: BookOpen,
       route: '/onboarding/guides'
     },
     {
       id: 5,
-      title: 'Editorial Topics',
-      description: 'Choose your topic focus areas',
+      title: 'Tópicos Editoriais',
+      description: 'Escolha suas áreas de foco de tópicos',
       icon: Layers,
       route: '/onboarding/content-pillars'
     },
     {
       id: 6,
-      title: 'Pacing',
-      description: 'Set posting schedule and frequency',
+      title: 'Ritmo',
+      description: 'Defina horário e frequência de postagem',
       icon: Clock,
       route: '/onboarding/pacing'
     },
     {
       id: 7,
-      title: 'Contact Info',
-      description: 'Add your contact information',
+      title: 'Informações de Contato',
+      description: 'Adicione suas informações de contato',
       icon: Phone,
       route: '/onboarding/contact'
     },
     {
       id: 8,
-      title: 'WhatsApp Setup',
-      description: 'Connect WhatsApp notifications',
+      title: 'Configuração do WhatsApp',
+      description: 'Conecte notificações do WhatsApp',
       icon: MessageSquare,
       route: '/onboarding/whatsapp-setup'
     },
     {
       id: 9,
-      title: 'Ready',
-      description: 'Complete your setup',
+      title: 'Pronto',
+      description: 'Complete sua configuração',
       icon: Check,
       route: '/onboarding/ready'
     }
@@ -211,10 +211,10 @@ const OnboardingProgressIndicator = ({
       <div className={className} style={containerStyle}>
         <div style={progressTextStyle}>
           <span style={currentStepTextStyle}>
-            Step {currentStep} of {totalSteps}
+            Etapa {currentStep} de {totalSteps}
           </span>
           <span style={progressCountStyle}>
-            {Math.round(progressPercentage)}% complete
+            {Math.round(progressPercentage)}% completo
           </span>
         </div>
         <div style={progressBarContainerStyle}>
@@ -227,12 +227,12 @@ const OnboardingProgressIndicator = ({
   return (
     <div className={className} style={containerStyle}>
       <div style={progressTextStyle}>
-        <span style={currentStepTextStyle}>
-          {steps[currentStep - 1]?.title || 'Onboarding Progress'}
-        </span>
-        <span style={progressCountStyle}>
-          {currentStep} of {totalSteps} ({Math.round(progressPercentage)}%)
-        </span>
+          <span style={currentStepTextStyle}>
+            {steps[currentStep - 1]?.title || 'Progresso do Onboarding'}
+          </span>
+          <span style={progressCountStyle}>
+            {currentStep} de {totalSteps} ({Math.round(progressPercentage)}%)
+          </span>
       </div>
       
       <div style={progressBarContainerStyle}>

@@ -41,21 +41,21 @@ const Chips = ({
       gap: spacing.spacing[4],
       iconSize: 16,
       textStyle: textStyles.sm.medium,
-      borderRadius: cornerRadius.borderRadius.full
+      borderRadius: cornerRadius.borderRadius.md // Changed from full to md for more square appearance
     },
     md: {
       padding: { horizontal: spacing.spacing[8], vertical: spacing.spacing[4] },
       gap: spacing.spacing[4],
       iconSize: 14,
       textStyle: textStyles.sm.medium,
-      borderRadius: cornerRadius.borderRadius.full
+      borderRadius: cornerRadius.borderRadius.md // Changed from full to md for more square appearance
     },
     sm: {
       padding: { horizontal: spacing.spacing[6], vertical: spacing.spacing[4] },
       gap: spacing.spacing[4],
       iconSize: 12,
       textStyle: textStyles.xs.medium,
-      borderRadius: cornerRadius.borderRadius.full
+      borderRadius: cornerRadius.borderRadius.md // Changed from full to md for more square appearance
     },
   };
 
@@ -87,9 +87,9 @@ const Chips = ({
         shadow: getShadow('', colors, { focusType: 'misc' })
       },
       selected: {
-        backgroundColor: colors.bg.badge.blue,
-        color: colors.bg.basic.blue.strong,
-        borderColor: colors.border.blue,
+        backgroundColor: colors.bg.badge.teal,
+        color: colors.bg.basic.teal.strong,
+        borderColor: colors.border.teal,
         shadow: 'none'
       },
       disabled: {
@@ -303,7 +303,7 @@ const Chips = ({
   // Icon color based on current state and style
   const getIconColor = () => {
     if (currentState === 'disabled') return colors.icon.disabled;
-    if (currentState === 'selected') return colors.bg.basic.blue.accent;
+    if (currentState === 'selected') return colors.bg.basic.teal.accent;
     
     switch (style) {
       case 'default':

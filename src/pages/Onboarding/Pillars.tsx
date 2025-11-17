@@ -1,83 +1,75 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/api/useAuth';
-import { useProfile } from '@/hooks/api/useProfile';
 import { useTheme } from '@/services/theme-context';
 import { useToast } from '@/design-system/components/Toast';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-
-// LinkedIn URL parsing utilities
-import { parseLinkedInInput, isLinkedInUrl } from '@/utils/linkedinParser';
-
-// Updated schema that accepts both URLs and usernames
-const linkedInUsernameSchema = z.object({
-  profileUrl: z.string()
-    .min(1, 'Perfil do LinkedIn é obrigatório')
-    .refine((value) => {
-      const parsed = parseLinkedInInput(value);
-      return parsed.isValid;
-    }, 'Por favor, insira um nome de usuário ou URL válida do LinkedIn')
-});
-
-type LinkedInUsernameFormData = z.infer<typeof linkedInUsernameSchema>;
-
-// Design System Components
-import TopNav from '@/design-system/components/TopNav';
-import Button from '@/design-system/components/Button';
-import Input from '@/design-system/components/Input';
-import Badge from '@/design-system/components/Badge';
-
-// Design System Tokens
+import { supabase } from '@/integrations/supabase/client';
 import { spacing } from '@/design-system/tokens/spacing';
 import { cornerRadius } from '@/design-system/tokens/corner-radius';
-import { getShadow } from '@/design-system/tokens/shadows';
 import { typography } from '@/design-system/tokens/typography';
 import { textStyles } from '@/design-system/styles/typography/typography-styles';
+import { getShadow } from '@/design-system/tokens/shadows';
 import { stroke } from '@/design-system/tokens/stroke';
 import { colors as primitiveColors } from '@/design-system/tokens/primitive-colors';
+import TopNav from '@/design-system/components/TopNav';
+import Button from '@/design-system/components/Button';
+import Badge from '@/design-system/components/Badge';
+import Chips from '@/design-system/components/Chips';
+import Input from '@/design-system/components/Input';
+import { ArrowRight, Plus, Trash2, Loader2 } from 'lucide-react';
 
-// Icons
-import { ArrowRight, Loader2 } from 'lucide-react';
-
-const FirstThingsFirst = () => {
+const Pillars = () => {
   const { colors } = useTheme();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { setupLinkedInProfile, saving } = useProfile();
   const { toast } = useToast();
-  const [linkedInUrl, setLinkedInUrl] = useState('');
+  const [selectedContentTypes, setSelectedContentTypes] = useState<string[]>([]);
+  const [themes, setThemes] = useState<string[]>(['', '']);
+  const [saving, setSaving] = useState(false);
 
-  const form = useForm<LinkedInUsernameFormData>({
-    resolver: zodResolver(linkedInUsernameSchema),
-    defaultValues: {
-      profileUrl: '',
-    },
-  });
+  // Content types options
+  // Note: These names must match Profile.tsx contentTypesOptions exactly
+  const contentTypesOptions = [
+    'Como Fazer',
+    'Notícias e Opiniões',
+    'Histórias Pessoais',
+    'Lições de Carreira',
+    'Bastidores',
+    'Histórias de Clientes',
+    'Educacional',
+    'Memes e Humor',
+  ];
 
-  // Handle input changes with automatic URL detection
-  const handleInputChange = (value: string) => {
-    setLinkedInUrl(value);
-    
-    // Check if input looks like a LinkedIn URL
-    if (isLinkedInUrl(value)) {
-      const parsed = parseLinkedInInput(value);
-      if (parsed.isValid && parsed.username) {
-        // Automatically set the extracted username
-        form.setValue('profileUrl', parsed.username, { shouldValidate: true });
-        toast.success(`Nome de usuário do LinkedIn extraído: ${parsed.username}`);
-        return;
-      }
-    }
-    
-    // For non-URL inputs or invalid URLs, set the value directly
-    form.setValue('profileUrl', value, { shouldValidate: true });
+  // Handle content type selection
+  const toggleContentType = (type: string) => {
+    setSelectedContentTypes((prev) =>
+      prev.includes(type)
+        ? prev.filter((t) => t !== type)
+        : [...prev, type]
+    );
+  };
+
+  // Handle theme input change
+  const handleThemeChange = (index: number, value: string) => {
+    const newThemes = [...themes];
+    newThemes[index] = value;
+    setThemes(newThemes);
+  };
+
+  // Handle delete theme
+  const handleDeleteTheme = (index: number) => {
+    const newThemes = themes.filter((_, i) => i !== index);
+    setThemes(newThemes);
+  };
+
+  // Handle add theme
+  const handleAddTheme = () => {
+    setThemes([...themes, '']);
   };
 
   // Handle button clicks
   const handleGoBack = () => {
-    navigate('/onboarding/welcome');
+    navigate('/onboarding/goals');
   };
 
   const handleContinue = async () => {
@@ -86,46 +78,35 @@ const FirstThingsFirst = () => {
       return;
     }
 
-    const formData = form.getValues();
-    if (!formData.profileUrl?.trim() || !form.formState.isValid) {
-      form.trigger();
-      return;
-    }
+    setSaving(true);
 
     try {
-      // Parse the input to extract the username
-      const parsed = parseLinkedInInput(formData.profileUrl);
-      
-      if (!parsed.isValid) {
-        throw new Error('Por favor, insira um nome de usuário ou URL válida do LinkedIn');
-      }
+      // Filter out empty themes
+      const filteredThemes = themes.filter(theme => theme.trim().length > 0);
 
-      // Construct the full LinkedIn URL from the extracted username
-      const fullLinkedInUrl = `https://www.linkedin.com/in/${parsed.username.trim()}/`;
-      
-      // Use our clean LinkedIn setup API (includes scraper integration)
-      const result = await setupLinkedInProfile({
-        profileUrl: fullLinkedInUrl
-      });
+      // Save to content_pillars column as an object with content_types and themes
+      // This matches the format expected by Profile.tsx
+      const contentPillarsData = {
+        content_types: selectedContentTypes.length > 0 ? selectedContentTypes : [],
+        themes: filteredThemes.length > 0 ? filteredThemes : []
+      };
 
-      // Check if there was a critical error that prevented profile URL from being saved
-      if (result.error && (result.error.includes('required') || result.error.includes('User must be logged in'))) {
-        throw new Error(result.error);
-      }
+      const { error } = await supabase
+        .from('profiles')
+        .update({ 
+          content_pillars: contentPillarsData
+        } as any)
+        .eq('user_id', user.id);
 
-      // Always proceed to next page if profile URL was processed (even if scraping failed)
-      // The scraping can fail but the URL should still be saved in the database
-      if (result.error) {
-        // Scraping failed but URL was saved - show informative message
-        toast.success('Perfil do LinkedIn salvo! Vamos tentar coletar mais detalhes em segundo plano.');
-      } else {
-        // Complete success
-        toast.success('Configuração do perfil concluída!');
-      }
-      
-      navigate('/onboarding/linkedin-summary');
+      if (error) throw error;
+
+      toast.success('Pilares de conteúdo salvos!');
+      navigate('/onboarding/format');
     } catch (error: any) {
-      toast.error(error.message || 'Falha ao concluir a configuração');
+      console.error('Error saving content pillars:', error);
+      toast.error('Falha ao salvar pilares de conteúdo. Por favor, tente novamente.');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -149,7 +130,7 @@ const FirstThingsFirst = () => {
   // Main card container styles
   const mainCardStyles = {
     width: '580px',
-    height: '480px',
+    height: '600px', // Increased to show more content
     backgroundColor: 'transparent',
     borderRadius: cornerRadius.borderRadius.lg,
     border: `${stroke.DEFAULT} solid ${colors.border.default}`,
@@ -180,15 +161,18 @@ const FirstThingsFirst = () => {
     display: 'flex',
     flexDirection: 'column' as const,
     gap: spacing.spacing[16],
+    overflowY: 'auto' as const,
+    scrollbarWidth: 'thin' as const,
+    scrollbarColor: `${colors.border.default} transparent`,
   };
 
   // Text container styles
   const textContainerStyles = {
-    flex: 1,
     width: '100%',
+    flexShrink: 0,
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: spacing.spacing[16],
+    gap: spacing.spacing[8],
   };
 
   // Title styles using Awesome Serif (corrigido de instrument-serif)
@@ -207,6 +191,28 @@ const FirstThingsFirst = () => {
     ...textStyles.sm.normal,
     color: colors.text.muted,
     margin: 0,
+  };
+
+  // Section title styles
+  const sectionTitleStyles = {
+    ...textStyles.sm.medium,
+    color: colors.text.default,
+    margin: 0,
+  };
+
+  // Chips container styles
+  const chipsContainerStyles = {
+    display: 'flex',
+    flexWrap: 'wrap' as const,
+    gap: spacing.spacing[8],
+  };
+
+  // Themes section styles
+  const themesSectionStyles = {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: spacing.spacing[12],
+    marginTop: spacing.spacing[16],
   };
 
   // Button container styles (bottom part of main container)
@@ -249,14 +255,19 @@ const FirstThingsFirst = () => {
     gap: '2px',
   };
 
-  // Individual line bar styles
-  const lineBarStyles = {
+  // Individual line bar styles (with red accent for first 4 lines, orange for next 12)
+  const getLineBarStyles = (index: number) => ({
     flex: '1 1 0',
     minWidth: '2px',
     height: '18px',
-    backgroundColor: primitiveColors.transparentDark[10],
+    backgroundColor: 
+      index < 4 
+        ? primitiveColors.red[500] 
+        : index < 16 
+        ? primitiveColors.orange[500] 
+        : primitiveColors.transparentDark[10],
     borderRadius: cornerRadius.borderRadius['2xs'],
-  };
+  });
 
   // Divider styles
   const dividerStyles = {
@@ -304,20 +315,34 @@ const FirstThingsFirst = () => {
 
   // Steps list
   const steps = [
-    'URL do LinkedIn',
-    'Número do WhatsApp',
-    'Frequência',
-    'Objetivos',
-    'Pilares',
-    'Formato',
-    'Conhecimento',
+    { label: 'URL do LinkedIn', active: true },
+    { label: 'Número do WhatsApp', active: true },
+    { label: 'Frequência', active: true },
+    { label: 'Objetivos', active: true },
+    { label: 'Pilares', active: false },
+    { label: 'Formato', active: false },
+    { label: 'Conhecimento', active: false },
   ];
-
-  // Check if form is valid
-  const canContinue = form.watch('profileUrl')?.trim() && form.formState.isValid;
 
   return (
     <div style={pageContainerStyles}>
+      {/* Custom scrollbar styles */}
+      <style>{`
+        .pillars-content-container::-webkit-scrollbar {
+          width: 6px;
+        }
+        .pillars-content-container::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .pillars-content-container::-webkit-scrollbar-thumb {
+          background-color: ${colors.border.default};
+          border-radius: 3px;
+        }
+        .pillars-content-container::-webkit-scrollbar-thumb:hover {
+          background-color: ${colors.border.darker};
+        }
+      `}</style>
+
       {/* TopNav Bar - Stuck to the top */}
       <div style={{ position: 'sticky', top: 0, zIndex: 100 }}>
         <TopNav />
@@ -330,29 +355,66 @@ const FirstThingsFirst = () => {
           {/* Main container (left side) */}
           <div style={mainContainerStyles}>
             {/* Content container */}
-            <div style={contentContainerStyles}>
+            <div className="pillars-content-container" style={contentContainerStyles}>
               {/* Text container */}
               <div style={textContainerStyles}>
-                <h1 style={titleStyles}>Seu LinkedIn</h1>
+                <h1 style={titleStyles}>Seus Pilares</h1>
                 <p style={subtitleStyles}>
-                  Nos diga qual é a sua URL do LinkedIn, para que possamos escrever posts que tenham a sua cara.
+                  Conte-nos quais tipos de conteúdo e temas você quer abordar
                 </p>
               </div>
 
-              {/* Input with add-on prefix */}
-              <Input
-                style="add-on"
-                size="lg"
-                label="Seu Perfil do LinkedIn"
-                addOnPrefix="https://"
-                placeholder="linkedin.com/in/seuperfil"
-                value={linkedInUrl}
-                onChange={(e) => handleInputChange(e.target.value)}
-                required
-                disabled={saving}
-                failed={!!form.formState.errors.profileUrl}
-                caption={form.formState.errors.profileUrl?.message}
-              />
+              {/* Content types section */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[12] }}>
+                <p style={sectionTitleStyles}>Tipos de conteúdo que você quer criar</p>
+                <div style={chipsContainerStyles}>
+                  {contentTypesOptions.map((type) => (
+                    <Chips
+                      key={type}
+                      label={type}
+                      size="lg"
+                      style="default"
+                      selected={selectedContentTypes.includes(type)}
+                      onClick={() => toggleContentType(type)}
+                      disabled={saving}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Themes section */}
+              <div style={themesSectionStyles}>
+                <p style={sectionTitleStyles}>Temas sobre os quais você quer falar</p>
+                
+                {/* Theme inputs */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[8] }}>
+                  {themes.map((theme, index) => (
+                    <Input
+                      key={index}
+                      style="tail-action"
+                      size="lg"
+                      placeholder={`Tema ${index + 1}`}
+                      value={theme}
+                      onChange={(e) => handleThemeChange(index, e.target.value)}
+                      disabled={saving}
+                      tailAction={{
+                        icon: <Trash2 size={16} />,
+                        onClick: () => handleDeleteTheme(index),
+                      }}
+                    />
+                  ))}
+                  
+                  {/* Add Theme button */}
+                  <Button
+                    style="secondary"
+                    size="sm"
+                    label="Adicionar Tema"
+                    leadIcon={<Plus size={16} />}
+                    onClick={handleAddTheme}
+                    disabled={saving}
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Button container */}
@@ -371,11 +433,11 @@ const FirstThingsFirst = () => {
                 <Button
                   style="primary"
                   size="sm"
-                  label={saving ? "Analisando..." : "Continuar"}
+                  label={saving ? "Salvando..." : "Continuar"}
                   leadIcon={saving ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : undefined}
                   tailIcon={!saving ? <ArrowRight size={16} /> : undefined}
                   onClick={handleContinue}
-                  disabled={!canContinue || saving}
+                  disabled={saving}
                   fullWidth
                 />
               </div>
@@ -386,15 +448,15 @@ const FirstThingsFirst = () => {
           <div style={accuracyBarStyles}>
             {/* Bar container */}
             <div style={barContainerStyles}>
-              <p style={labelTextStyles}>Precisão dos resultados</p>
+              <p style={labelTextStyles}>Precisão do Resultado</p>
               <div style={{ marginTop: spacing.spacing[8] }}>
                 <div style={linesBarContainerStyles}>
                   {[...Array(27)].map((_, index) => (
-                    <div key={index} style={lineBarStyles} />
+                    <div key={index} style={getLineBarStyles(index)} />
                   ))}
                 </div>
               </div>
-              <p style={{ ...infoTextStyles, marginTop: spacing.spacing[4] }}>0% Concluído</p>
+              <p style={{ ...infoTextStyles, marginTop: spacing.spacing[4] }}>35% Completo</p>
               <div style={{ ...dividerStyles, marginTop: spacing.spacing[8] }} />
               <p style={{ ...infoTextStyles, marginTop: spacing.spacing[8] }}>
                 Quanto mais informações você fornecer sobre si mesmo, melhores serão os resultados.
@@ -405,10 +467,10 @@ const FirstThingsFirst = () => {
             <div style={stepsContainerStyles}>
               <div style={dividerStyles} />
               {steps.map((step) => (
-                <React.Fragment key={step}>
+                <React.Fragment key={step.label}>
                   <div style={stepItemStyles}>
-                    <Badge variant="dot" size="sm" color="neutral" />
-                    <p style={stepTextStyles}>{step}</p>
+                    <Badge variant="dot" size="sm" color={step.active ? "green" : "neutral"} />
+                    <p style={stepTextStyles}>{step.label}</p>
                   </div>
                   <div style={dividerStyles} />
                 </React.Fragment>
@@ -421,4 +483,5 @@ const FirstThingsFirst = () => {
   );
 };
 
-export default FirstThingsFirst;
+export default Pillars;
+

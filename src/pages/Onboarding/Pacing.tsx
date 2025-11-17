@@ -2,101 +2,88 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/api/useAuth';
 import { useTheme } from '@/services/theme-context';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/design-system/components/Toast';
+import { supabase } from '@/integrations/supabase/client';
 import { PacingService } from '@/services/pacingService';
-
-// Design System Components
-import TopNav from '@/design-system/components/TopNav';
-import Button from '@/design-system/components/Button';
-import ButtonGroup from '@/design-system/components/ButtonGroup';
-import Checkbox from '@/design-system/components/Checkbox';
-import ProgressBar from '@/design-system/components/ProgressBar';
-import OnboardingProgressIndicator from '@/design-system/components/OnboardingProgressIndicator';
-import Bichaurinho from '@/design-system/components/Bichaurinho';
-import DropdownButton from '@/design-system/components/DropdownButton';
-import InlineTip from '@/design-system/components/InlineTip';
-
-// Design System Tokens
 import { spacing } from '@/design-system/tokens/spacing';
 import { cornerRadius } from '@/design-system/tokens/corner-radius';
-import { getShadow } from '@/design-system/tokens/shadows';
 import { typography } from '@/design-system/tokens/typography';
 import { textStyles } from '@/design-system/styles/typography/typography-styles';
-
-// Icons
-import { ArrowLeft, ArrowRight, Clock, Calendar, MessageSquare } from 'lucide-react';
+import { getShadow } from '@/design-system/tokens/shadows';
+import { stroke } from '@/design-system/tokens/stroke';
+import { colors as primitiveColors } from '@/design-system/tokens/primitive-colors';
+import TopNav from '@/design-system/components/TopNav';
+import Button from '@/design-system/components/Button';
+import Checkbox from '@/design-system/components/Checkbox';
+import Badge from '@/design-system/components/Badge';
+import { ArrowRight, Loader2 } from 'lucide-react';
 
 const Pacing = () => {
+  const { colors } = useTheme();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { colors } = useTheme();
   const { toast } = useToast();
-  const isMobile = useIsMobile();
-  const [isLoading, setIsLoading] = useState(false);
+  const [selectedDays, setSelectedDays] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
 
-  // State for pace selection
-  const [selectedPace, setSelectedPace] = useState('moderate');
-  
-  // State for weekday selection
-  const [selectedDays, setSelectedDays] = useState<string[]>(['monday', 'wednesday', 'friday']);
-  
-  // State for dropdowns
-  const [dailySummaryTime, setDailySummaryTime] = useState('6:00 PM');
-  const [recommendationsTime, setRecommendationsTime] = useState('Morning (8-10 AM)');
-
-  const weekdays = [
-    { id: 'monday', label: 'M', day: 'Monday' },
-    { id: 'tuesday', label: 'T', day: 'Tuesday' },
-    { id: 'wednesday', label: 'W', day: 'Wednesday' },
-    { id: 'thursday', label: 'T', day: 'Thursday' },
-    { id: 'friday', label: 'F', day: 'Friday' },
-    { id: 'saturday', label: 'S', day: 'Saturday' },
-    { id: 'sunday', label: 'S', day: 'Sunday' }
+  // Days of the week
+  const daysOfWeek = [
+    { id: 'mon', label: 'S', fullName: 'Segunda' },
+    { id: 'tue', label: 'T', fullName: 'Terça' },
+    { id: 'wed', label: 'Q', fullName: 'Quarta' },
+    { id: 'thu', label: 'Q', fullName: 'Quinta' },
+    { id: 'fri', label: 'S', fullName: 'Sexta' },
+    { id: 'sat', label: 'S', fullName: 'Sábado' },
+    { id: 'sun', label: 'D', fullName: 'Domingo' },
   ];
 
-  const timeOptions = [
-    '9:00 AM',
-    '2:00 PM', 
-    '6:00 PM'
-  ];
-
-
-
-
-
-  const paceOptions = [
-    { id: 'light', label: 'Light' },
-    { id: 'moderate', label: 'Moderate' },
-    { id: 'hardcore', label: 'Hard Core' }
-  ];
-
-  const handleGoBack = () => {
-    navigate('/onboarding/content-pillars');
+  // Handle day selection
+  const toggleDay = (dayId: string) => {
+    setSelectedDays((prev) =>
+      prev.includes(dayId)
+        ? prev.filter((id) => id !== dayId)
+        : [...prev, dayId]
+    );
   };
 
-  const toggleDay = (dayId: string) => {
-    setSelectedDays(prev => {
-      if (prev.includes(dayId)) {
-        return prev.filter(d => d !== dayId);
-      } else {
-        return [...prev, dayId];
-      }
-    });
+  // Handle button clicks
+  const handleGoBack = () => {
+    navigate('/onboarding/whatsapp');
   };
 
   const handleContinue = async () => {
-    if (!user) return;
-    
-    setIsLoading(true);
-    
+    if (!user) {
+      toast.error('Por favor, faça login para continuar');
+      return;
+    }
+
+    if (selectedDays.length === 0) {
+      toast.error('Por favor, selecione pelo menos um dia da semana');
+      return;
+    }
+
+    setSaving(true);
+
     try {
+      // Map day IDs to full day names for backend
+      const dayMapping: { [key: string]: string } = {
+        'mon': 'monday',
+        'tue': 'tuesday',
+        'wed': 'wednesday',
+        'thu': 'thursday',
+        'fri': 'friday',
+        'sat': 'saturday',
+        'sun': 'sunday'
+      };
+
+      const frequencyDays = selectedDays.map(dayId => dayMapping[dayId] || dayId);
+
+      // Save pacing preferences to profile
       const pacingData = {
-        pace: selectedPace,
-        frequency: selectedDays,
-        daily_summary_time: dailySummaryTime,
-        recommendations_time: recommendationsTime
+        pace: 'moderate', // Default pace
+        frequency: frequencyDays,
+        daily_summary_time: '6:00 PM', // Default time
+        recommendations_time: 'Morning (8-10 AM)' // Default time
       };
 
       // Save pacing preferences to profile
@@ -118,380 +105,365 @@ const Pacing = () => {
         console.log('Pacing schedule created successfully');
       }
 
-      navigate('/onboarding/contact');
-    } catch (error) {
+      toast.success('Preferências de frequência salvas!');
+      navigate('/onboarding/goals');
+    } catch (error: any) {
       console.error('Error saving pacing preferences:', error);
-      toast.error('Failed to save pacing preferences. Please try again.');
+      toast.error('Falha ao salvar preferências. Por favor, tente novamente.');
     } finally {
-      setIsLoading(false);
+      setSaving(false);
     }
   };
 
+  // Page container styles
+  const pageContainerStyles = {
+    minHeight: '100vh',
+    backgroundColor: colors.bg.muted,
+    display: 'flex',
+    flexDirection: 'column' as const,
+  };
+
+  // Main content container styles (below TopNav)
+  const mainContentStyles = {
+    flex: 1,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.spacing[24],
+  };
+
+  // Main card container styles
+  const mainCardStyles = {
+    width: '580px',
+    height: '480px',
+    backgroundColor: 'transparent',
+    borderRadius: cornerRadius.borderRadius.lg,
+    border: `${stroke.DEFAULT} solid ${colors.border.default}`,
+    boxShadow: getShadow('regular.card', colors, { withBorder: false }),
+    display: 'flex',
+    flexDirection: 'row' as const,
+    overflow: 'hidden',
+  };
+
+  // Main container (left side) styles
+  const mainContainerStyles = {
+    flex: 1,
+    backgroundColor: colors.bg.card.default,
+    borderRight: `${stroke.DEFAULT} solid ${colors.border.default}`,
+    display: 'flex',
+    flexDirection: 'column' as const,
+    justifyContent: 'space-between',
+  };
+
+  // Content container styles (top part of main container)
+  const contentContainerStyles = {
+    flex: 1,
+    borderBottom: `${stroke.DEFAULT} solid ${colors.border.default}`,
+    paddingTop: spacing.spacing[36],
+    paddingBottom: spacing.spacing[24],
+    paddingLeft: spacing.spacing[36],
+    paddingRight: spacing.spacing[36],
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: spacing.spacing[16],
+  };
+
+  // Text container styles
+  const textContainerStyles = {
+    flex: 1,
+    width: '100%',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: spacing.spacing[8],
+  };
+
+  // Title styles using Awesome Serif (corrigido de instrument-serif)
+  const titleStyles = {
+    fontFamily: typography.fontFamily['awesome-serif'],
+    fontSize: typography.desktop.size['4xl'],
+    fontWeight: typography.desktop.weight.semibold,
+    lineHeight: typography.desktop.lineHeight.leading7,
+    letterSpacing: typography.desktop.letterSpacing.normal,
+    color: colors.text.default,
+    margin: 0,
+  };
+
+  // Subtitle styles
+  const subtitleStyles = {
+    ...textStyles.sm.normal,
+    color: colors.text.muted,
+    margin: 0,
+  };
+
+  // Frequency card styles
+  const frequencyCardStyles = {
+    border: `${stroke.DEFAULT} solid ${colors.border.default}`,
+    borderRadius: cornerRadius.borderRadius.lg,
+    padding: spacing.spacing[20],
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: spacing.spacing[16],
+  };
+
+  // Card title styles
+  const cardTitleStyles = {
+    ...textStyles.sm.medium,
+    color: colors.text.default,
+    margin: 0,
+  };
+
+  // Card subtitle styles
+  const cardSubtitleStyles = {
+    ...textStyles.xs.normal,
+    color: colors.text.subtle,
+    margin: 0,
+  };
+
+  // Days row container styles
+  const daysRowStyles = {
+    display: 'flex',
+    flexDirection: 'row' as const,
+    gap: spacing.spacing[8],
+    justifyContent: 'space-between',
+  };
+
+  // Day checkbox container styles
+  const dayCheckboxContainerStyles = {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    alignItems: 'center',
+    gap: spacing.spacing[6],
+  };
+
+  // Day label styles
+  const dayLabelStyles = {
+    ...textStyles.xs.medium,
+    color: colors.text.default,
+    margin: 0,
+  };
+
+  // Button container styles (bottom part of main container)
+  const buttonContainerStyles = {
+    paddingTop: spacing.spacing[20],
+    paddingBottom: spacing.spacing[20],
+    paddingLeft: spacing.spacing[36],
+    paddingRight: spacing.spacing[36],
+    display: 'flex',
+    flexDirection: 'row' as const,
+    gap: spacing.spacing[4],
+  };
+
+  // Accuracy bar (right side) styles
+  const accuracyBarStyles = {
+    width: '200px',
+    backgroundColor: colors.bg.subtle,
+    paddingTop: spacing.spacing[16],
+    paddingBottom: spacing.spacing[16],
+    paddingLeft: spacing.spacing[16],
+    paddingRight: spacing.spacing[16],
+    display: 'flex',
+    flexDirection: 'column' as const,
+    justifyContent: 'space-between',
+  };
+
+  // Bar container styles
+  const barContainerStyles = {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    alignItems: 'stretch',
+    width: '100%',
+  };
+
+  // Lines bar container styles
+  const linesBarContainerStyles = {
+    width: '100%',
+    display: 'flex',
+    flexDirection: 'row' as const,
+    gap: '2px',
+  };
+
+  // Individual line bar styles (with red accent for first 4 lines, orange for next 4)
+  const getLineBarStyles = (index: number) => ({
+    flex: '1 1 0',
+    minWidth: '2px',
+    height: '18px',
+    backgroundColor: 
+      index < 4 
+        ? primitiveColors.red[500] 
+        : index < 8 
+        ? primitiveColors.orange[500] 
+        : primitiveColors.transparentDark[10],
+    borderRadius: cornerRadius.borderRadius['2xs'],
+  });
+
+  // Divider styles
+  const dividerStyles = {
+    width: '100%',
+    height: '1px',
+    backgroundColor: colors.border.default,
+  };
+
+  // Steps container styles
+  const stepsContainerStyles = {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: spacing.spacing[6],
+  };
+
+  // Step item styles
+  const stepItemStyles = {
+    display: 'flex',
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    gap: spacing.spacing[8],
+  };
+
+  // Step text styles
+  const stepTextStyles = {
+    ...textStyles.xs.normal,
+    color: colors.text.muted,
+    margin: 0,
+    flex: 1,
+  };
+
+  // Label text styles
+  const labelTextStyles = {
+    ...textStyles.xs.semibold,
+    color: colors.text.muted,
+    margin: 0,
+  };
+
+  // Info text styles
+  const infoTextStyles = {
+    ...textStyles.xs.normal,
+    color: colors.text.muted,
+    margin: 0,
+  };
+
+  // Steps list
+  const steps = [
+    { label: 'URL do LinkedIn', active: true },
+    { label: 'Número do WhatsApp', active: true },
+    { label: 'Frequência', active: false },
+    { label: 'Objetivos', active: false },
+    { label: 'Pilares', active: false },
+    { label: 'Formato', active: false },
+    { label: 'Conhecimento', active: false },
+  ];
+
   const canContinue = selectedDays.length > 0;
 
-  const InnerSection = ({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) => (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: spacing.spacing[12],
-        padding: spacing.spacing[16],
-        border: `1px solid ${colors.border.default}`,
-        borderRadius: cornerRadius.borderRadius.lg,
-      }}
-    >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[4] }}>
-        <h3
-          style={{
-            fontFamily: typography.fontFamily.body,
-            fontSize: typography.desktop.size.sm,
-            fontWeight: typography.desktop.weight.semibold,
-            color: colors.text.default,
-            margin: 0,
-          }}
-        >
-          {title}
-        </h3>
-        <p
-          style={{
-            fontFamily: typography.fontFamily.body,
-            fontSize: typography.desktop.size.xs,
-            fontWeight: typography.desktop.weight.normal,
-            color: colors.text.subtle,
-            margin: 0,
-          }}
-        >
-          {subtitle}
-        </p>
-      </div>
-      {children}
-    </div>
-  );
-
-
-
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        backgroundColor: colors.bg.default,
-        display: 'flex',
-        flexDirection: 'column',
-      }}
-    >
-      {/* Top Navigation */}
-      <TopNav />
+    <div style={pageContainerStyles}>
+      {/* TopNav Bar - Stuck to the top */}
+      <div style={{ position: 'sticky', top: 0, zIndex: 100 }}>
+        <TopNav />
+      </div>
 
-      {/* Content Container with gradient background */}
-      <div
-        style={{
-          flex: 1,
-          position: 'relative',
-          backgroundColor: colors.bg.default,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: isMobile ? spacing.spacing[24] : spacing.spacing[40],
-          paddingBottom: isMobile ? '140px' : '160px', // Account for button container height
-        }}
-      >
-        {/* Gradient background with 5% opacity */}
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundImage: 'url(/src/assets/images/gradient-bg.svg)',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-            opacity: 0.05,
-            zIndex: 0,
-          }}
-        />
-
-        {/* Content Column */}
-        <div style={{
-          position: 'relative',
-          zIndex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: spacing.spacing[24],
-          alignItems: 'center',
-        }}>
-          {/* Back Button */}
-          <div style={{ 
-            alignSelf: 'flex-start', 
-            width: isMobile ? '100%' : '400px',
-            maxWidth: isMobile ? '320px' : '400px'
-          }}>
-            <Button
-              label="Go Back"
-              style="dashed"
-              size="xs"
-              leadIcon={<ArrowLeft size={12} />}
-              onClick={handleGoBack}
-            />
-          </div>
-
-          {/* Progress Indicator */}
-          <div style={{ 
-            width: isMobile ? '100%' : '400px',
-            maxWidth: isMobile ? '320px' : '400px'
-          }}>
-            <OnboardingProgressIndicator 
-              currentStep={6}
-              compact={true}
-            />
-          </div>
-
-          {/* Main Card */}
-          <div
-            style={{
-              backgroundColor: colors.bg.card.default,
-              borderRadius: cornerRadius.borderRadius.lg,
-              border: `1px solid ${colors.border.darker}`,
-              boxShadow: getShadow('regular.card', colors, { withBorder: true }),
-              width: isMobile ? '100%' : '400px',
-              maxWidth: isMobile ? '320px' : '400px',
-              overflow: 'hidden',
-            }}
-          >
-            {/* Main Container */}
-            <div
-              style={{
-                padding: isMobile ? spacing.spacing[24] : spacing.spacing[36],
-                backgroundColor: colors.bg.card.default,
-                borderBottom: `1px solid ${colors.border.default}`,
-                display: 'flex',
-                flexDirection: 'column',
-              }}
-            >
-              {/* Heading Container */}
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'flex-start',
-                  gap: spacing.spacing[16],
-                  marginBottom: spacing.spacing[8],
-                }}
-              >
-                {/* Bichaurinho */}
-                <div>
-                  <Bichaurinho variant={25} size={48} />
-                </div>
-
-                {/* Title and Subtitle Container */}
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: spacing.spacing[12],
-                    alignItems: 'flex-start',
-                  }}
-                >
-                  {/* Title */}
-                  <h1
-                    style={{
-                      fontFamily: typography.fontFamily['awesome-serif'],
-                      fontSize: typography.desktop.size['5xl'],
-                      fontWeight: typography.desktop.weight.semibold,
-                      lineHeight: '0.9',
-                      color: colors.text.default,
-                      margin: 0,
-                      textAlign: 'left',
-                    }}
-                  >
-                    Your Pacing
-                  </h1>
-
-                  {/* Subtitle */}
-                  <p
-                    style={{
-                      fontFamily: typography.fontFamily.body,
-                      fontSize: typography.desktop.size.sm,
-                      fontWeight: typography.desktop.weight.normal,
-                      lineHeight: typography.desktop.lineHeight.sm,
-                      color: colors.text.muted,
-                      margin: 0,
-                      textAlign: 'left',
-                    }}
-                  >
-                    Set your ideal posting frequency and schedule. We'll deliver personalized content suggestions at the perfect times based on your preferences.
-                  </p>
-                </div>
+      {/* Main content container */}
+      <div style={mainContentStyles}>
+        {/* Main card container */}
+        <div style={mainCardStyles}>
+          {/* Main container (left side) */}
+          <div style={mainContainerStyles}>
+            {/* Content container */}
+            <div style={contentContainerStyles}>
+              {/* Text container */}
+              <div style={textContainerStyles}>
+                <h1 style={titleStyles}>Seu Ritmo</h1>
+                <p style={subtitleStyles}>
+                  Nos diga com que frequência você quer que mantenhamos seu ritmo
+                </p>
               </div>
 
+              {/* Frequency card */}
+              <div style={frequencyCardStyles}>
+                <div>
+                  <p style={cardTitleStyles}>Frequência</p>
+                  <p style={{ ...cardSubtitleStyles, marginTop: spacing.spacing[4] }}>
+                    Defina quando você quer postar
+                  </p>
+                </div>
 
-
-              {/* Pace Selection */}
-              <ButtonGroup
-                buttons={paceOptions.map(option => ({
-                  id: option.id,
-                  label: option.label,
-                  selected: selectedPace === option.id,
-                  onClick: () => setSelectedPace(option.id)
-                }))}
-              />
-
-              <div style={{ height: spacing.spacing[16] }} />
-
-              {/* Weekday Selection */}
-              <InnerSection
-                title="Which Days?"
-                subtitle="Select the days you prefer to post"
-              >
-                <div
-                  style={{
-                    display: 'flex',
-                    gap: spacing.spacing[8],
-                    justifyContent: 'flex-start',
-                  }}
-                >
-                  {weekdays.map((weekday) => (
+                {/* Days of the week row */}
+                <div style={daysRowStyles}>
+                  {daysOfWeek.map((day) => (
                     <div
-                      key={weekday.id}
-                      style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: spacing.spacing[4],
-                      }}
+                      key={day.id}
+                      style={dayCheckboxContainerStyles}
                     >
                       <Checkbox
-                        checked={selectedDays.includes(weekday.id)}
-                        onChange={() => toggleDay(weekday.id)}
+                        checked={selectedDays.includes(day.id)}
+                        onChange={() => toggleDay(day.id)}
+                        disabled={saving}
                       />
-                      <span
-                        style={{
-                          fontFamily: typography.fontFamily.body,
-                          fontSize: typography.desktop.size.xs,
-                          fontWeight: typography.desktop.weight.normal,
-                          color: colors.text.muted,
-                        }}
-                      >
-                        {weekday.label}
-                      </span>
+                      <p style={dayLabelStyles}>{day.label}</p>
                     </div>
                   ))}
                 </div>
-              </InnerSection>
-
-              <div style={{ height: spacing.spacing[16] }} />
-
-              {/* Time Preferences */}
-              {/* Commented out for PCL-117
-              <InnerSection
-                title="Daily Summary"
-                subtitle="When should we send you a daily summary?"
-              >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[12] }}>
-                  <InlineTip style={{ fontSize: typography.desktop.size.xs }}>
-                    We'll ask about how your day went and give you the opportunity to add more context about what happened. This helps us focus on what matters when creating your content.
-                  </InlineTip>
-                  
-                  <DropdownButton
-                    label={dailySummaryTime}
-                    size="sm"
-                    items={timeOptions.map(option => ({
-                      label: option,
-                      onClick: () => setDailySummaryTime(option)
-                    }))}
-                  />
-                </div>
-              </InnerSection>
-
-              <div style={{ height: spacing.spacing[12] }} />
-
-              <InnerSection
-                title="Content Recommendations"
-                subtitle="When should we suggest new content ideas?"
-              >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[12] }}>
-                  <InlineTip style={{ fontSize: typography.desktop.size.xs }}>
-                    We'll send you personalized content suggestions based on your goals, interests, and recent activities to help spark your next post ideas.
-                  </InlineTip>
-                  
-                  <DropdownButton
-                    label={recommendationsTime}
-                    size="sm"
-                    items={timeOptions.map(option => ({
-                      label: option,
-                      onClick: () => setRecommendationsTime(option)
-                    }))}
-                  />
-                </div>
-              </InnerSection>
-              */}
-
-
+              </div>
             </div>
 
-            {/* Text Container */}
-            <div
-              style={{
-                padding: `${spacing.spacing[24]} ${spacing.spacing[36]}`,
-                backgroundColor: colors.bg.card.subtle,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: spacing.spacing[4],
-              }}
-            >
-              <p
-                style={{
-                  fontFamily: typography.fontFamily.body,
-                  fontSize: typography.desktop.size.sm,
-                  fontWeight: typography.desktop.weight.normal,
-                  lineHeight: typography.desktop.lineHeight.sm,
-                  color: colors.text.muted,
-                  margin: 0,
-                  textAlign: 'center',
-                }}
-              >
-                {!canContinue 
-                  ? "Please select at least one day to continue."
-                  : `${selectedDays.length} day${selectedDays.length === 1 ? '' : 's'} selected.`
-                }
-              </p>
+            {/* Button container */}
+            <div style={buttonContainerStyles}>
+              <div style={{ flex: 1 }}>
+                <Button
+                  style="secondary"
+                  size="sm"
+                  label="Voltar"
+                  onClick={handleGoBack}
+                  disabled={saving}
+                  fullWidth
+                />
+              </div>
+              <div style={{ flex: 1 }}>
+                <Button
+                  style="primary"
+                  size="sm"
+                  label={saving ? "Salvando..." : "Continuar"}
+                  leadIcon={saving ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : undefined}
+                  tailIcon={!saving ? <ArrowRight size={16} /> : undefined}
+                  onClick={handleContinue}
+                  disabled={!canContinue || saving}
+                  fullWidth
+                />
+              </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Button Container - Fixed overlay at bottom */}
-      <div
-        style={{
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: '80px',
-          backgroundColor: colors.bg.default,
-          borderTop: `1px solid ${colors.border.default}`,
-          padding: spacing.spacing[40],
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 10,
-        }}
-      >
-        <div style={{ 
-          width: '280px',
-          display: 'flex',
-          justifyContent: 'center'
-        }}>
-          <Button
-            label={isLoading ? "Saving..." : "Continue"}
-            style="primary"
-            size="lg"
-            tailIcon={!isLoading ? <ArrowRight size={16} /> : undefined}
-            onClick={handleContinue}
-            disabled={!canContinue || isLoading}
-            fullWidth={true}
-          />
+          {/* Accuracy bar (right side) */}
+          <div style={accuracyBarStyles}>
+            {/* Bar container */}
+            <div style={barContainerStyles}>
+              <p style={labelTextStyles}>Precisão dos resultados</p>
+              <div style={{ marginTop: spacing.spacing[8] }}>
+                <div style={linesBarContainerStyles}>
+                  {[...Array(27)].map((_, index) => (
+                    <div key={index} style={getLineBarStyles(index)} />
+                  ))}
+                </div>
+              </div>
+              <p style={{ ...infoTextStyles, marginTop: spacing.spacing[4] }}>20% Concluído</p>
+              <div style={{ ...dividerStyles, marginTop: spacing.spacing[8] }} />
+              <p style={{ ...infoTextStyles, marginTop: spacing.spacing[8] }}>
+                Quanto mais informações você fornecer sobre si mesmo, melhores serão os resultados.
+              </p>
+            </div>
+
+            {/* Steps container */}
+            <div style={stepsContainerStyles}>
+              <div style={dividerStyles} />
+              {steps.map((step) => (
+                <React.Fragment key={step.label}>
+                  <div style={stepItemStyles}>
+                    <Badge variant="dot" size="sm" color={step.active ? "green" : "neutral"} />
+                    <p style={stepTextStyles}>{step.label}</p>
+                  </div>
+                  <div style={dividerStyles} />
+                </React.Fragment>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>

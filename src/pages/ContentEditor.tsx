@@ -1825,9 +1825,6 @@ const ContentEditor = () => {
             }}>
               <FileUpload
                 onFileSelect={handleFileSelect}
-                onUrlSubmit={handleUrlSubmit}
-                urlValue={urlInput}
-                onUrlChange={setUrlInput}
                 uploading={uploading}
                 disabled={uploading}
                 maxFiles={10}
