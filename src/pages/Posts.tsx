@@ -6,6 +6,7 @@ import { useTheme } from '@/services/theme-context';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { SavedDraft, ContentSuggestion } from '@/types/content';
 import { useToast } from '@/design-system/components/Toast';
+import { useTranslation } from '@/services/i18n-context';
 
 // Design System Components (sidebar provided by MainAppChrome)
 import ContentCard from '@/design-system/components/ContentCard';
@@ -35,6 +36,7 @@ const Posts = () => {
   const { colors } = useTheme();
   const isMobile = useIsMobile();
   const { toast } = useToast();
+  const { t } = useTranslation('pages');
   
   // ========== CLEAN CONTENT STATE MANAGEMENT ==========
   const {
@@ -87,58 +89,65 @@ const Posts = () => {
 
   // Filter tabs configuration
   const filterTabs = [
-    { id: 'all', label: 'All' },
-    { id: 'draft', label: 'Drafts' },
-    { id: 'published', label: 'Published' },
-    { id: 'archived', label: 'Archived' },
+    { id: 'all', label: t('posts.filters.all') },
+    { id: 'draft', label: t('posts.filters.draft') },
+    { id: 'published', label: t('posts.filters.published') },
+    { id: 'archived', label: t('posts.filters.archived') },
   ];
 
   // Sort dropdown options
   const sortOptions = [
-    { label: 'Last Edited', onClick: () => setSortBy('lastEdited') },
-    { label: 'Newest First', onClick: () => setSortBy('newest') },
-    { label: 'Oldest First', onClick: () => setSortBy('oldest') },
-    { label: 'A-Z', onClick: () => setSortBy('nameAsc') },
-    { label: 'Z-A', onClick: () => setSortBy('nameDesc') },
+    { label: t('posts.sort.lastEdited'), onClick: () => setSortBy('lastEdited') },
+    { label: t('posts.sort.newest'), onClick: () => setSortBy('newest') },
+    { label: t('posts.sort.oldest'), onClick: () => setSortBy('oldest') },
+    { label: t('posts.sort.nameAsc'), onClick: () => setSortBy('nameAsc') },
+    { label: t('posts.sort.nameDesc'), onClick: () => setSortBy('nameDesc') },
   ];
 
   // Get current sort label
   const getCurrentSortLabel = () => {
     const option = sortOptions.find(opt => 
-      (sortBy === 'lastEdited' && opt.label === 'Last Edited') ||
-      (sortBy === 'newest' && opt.label === 'Newest First') ||
-      (sortBy === 'oldest' && opt.label === 'Oldest First') ||
-      (sortBy === 'nameAsc' && opt.label === 'A-Z') ||
-      (sortBy === 'nameDesc' && opt.label === 'Z-A')
+      (sortBy === 'lastEdited' && opt.label === t('posts.sort.lastEdited')) ||
+      (sortBy === 'newest' && opt.label === t('posts.sort.newest')) ||
+      (sortBy === 'oldest' && opt.label === t('posts.sort.oldest')) ||
+      (sortBy === 'nameAsc' && opt.label === t('posts.sort.nameAsc')) ||
+      (sortBy === 'nameDesc' && opt.label === t('posts.sort.nameDesc'))
     );
-    return option?.label || 'Last Edited';
+    return option?.label || t('posts.sort.lastEdited');
   };
 
   // Get all content items (drafts + suggestions)
   const getAllContentItems = () => {
-    const draftItems = savedDrafts.map(draft => ({
-      id: draft.id,
-      title: draft.title || 'Untitled',
-      subtitle: `Last edited ${new Date(draft.updated_at).toLocaleDateString()}`,
-      content: draft.content.substring(0, 200) + (draft.content.length > 200 ? '...' : ''),
-      variant: 'gradient',
-      status: draft.status,
-      type: 'draft',
-      originalData: draft,
-      updatedAt: new Date(draft.updated_at),
-    }));
+    const draftItems = savedDrafts.map(draft => {
+      const dateStr = new Date(draft.updated_at).toLocaleDateString();
+      const subtitleStr = t('posts.itemSubtitle.lastEdited', { date: dateStr });
+      return {
+        id: draft.id,
+        title: draft.title || 'Untitled',
+        subtitle: typeof subtitleStr === 'string' ? subtitleStr : `Última edição ${dateStr}`,
+        content: draft.content.substring(0, 200) + (draft.content.length > 200 ? '...' : ''),
+        variant: 'gradient',
+        status: draft.status,
+        type: 'draft',
+        originalData: draft,
+        updatedAt: new Date(draft.updated_at),
+      };
+    });
 
-    const suggestionItems = contentSuggestions.map(suggestion => ({
-      id: suggestion.id,
-      title: suggestion.title,
-      subtitle: 'Content suggestion',
-      content: suggestion.description || suggestion.suggested_outline?.substring(0, 200) || 'No description available',
-      variant: 'image',
-      status: 'suggestion',
-      type: 'suggestion',
-      originalData: suggestion,
-      updatedAt: new Date(suggestion.created_at || Date.now()),
-    }));
+    const suggestionItems = contentSuggestions.map(suggestion => {
+      const subtitleStr = t('posts.itemSubtitle.suggestion');
+      return {
+        id: suggestion.id,
+        title: suggestion.title,
+        subtitle: typeof subtitleStr === 'string' ? subtitleStr : 'Sugestão de conteúdo',
+        content: suggestion.description || suggestion.suggested_outline?.substring(0, 200) || 'No description available',
+        variant: 'image',
+        status: 'suggestion',
+        type: 'suggestion',
+        originalData: suggestion,
+        updatedAt: new Date(suggestion.created_at || Date.now()),
+      };
+    });
 
     return [...draftItems, ...suggestionItems];
   };
@@ -210,9 +219,9 @@ const Posts = () => {
         return;
       }
       
-      toast.success('Draft deleted successfully');
+      toast.success(t('posts.toasts.draftDeleted'));
     } catch (error: any) {
-      toast.error(error.message || 'Failed to delete draft');
+      toast.error(error.message || t('posts.toasts.deleteError'));
     }
   };
 
@@ -233,10 +242,10 @@ const Posts = () => {
         return;
       }
       
-      const statusLabel = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
-      toast.success(`Post marked as ${statusLabel}`);
+      const statusLabel = t(`posts.status.${newStatus}`);
+      toast.success(t('posts.toasts.statusUpdated', { status: statusLabel }));
     } catch (error: any) {
-      toast.error(error.message || 'Failed to update post status');
+      toast.error(error.message || t('posts.toasts.statusUpdateError'));
     }
   };
 
@@ -363,9 +372,9 @@ const Posts = () => {
     <div style={containerStyles}>
           {/* Header Section */}
           <div>
-            <h1 style={titleStyle}>Posts</h1>
+            <h1 style={titleStyle}>{t('posts.title')}</h1>
             <p style={subtitleStyle}>
-              Manage your saved drafts and content suggestions
+              {t('posts.subtitle')}
             </p>
           </div>
 
@@ -387,7 +396,7 @@ const Posts = () => {
                 <Input
                   size="lg"
                   style="default"
-                  placeholder="Search posts..."
+                  placeholder={t('posts.search.placeholder')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   leadIcon={<Search size={16} />}
@@ -421,7 +430,7 @@ const Posts = () => {
                  style={viewMode === 'grid' ? 'soft' : 'ghost'}
                  size="sm"
                  leadIcon={<LayoutGrid size={16} />}
-                 label="Grid"
+                 label={t('posts.view.grid')}
                  onClick={() => setViewMode('grid')}
                />
                <Button
@@ -429,7 +438,7 @@ const Posts = () => {
                  style={viewMode === 'line' ? 'soft' : 'ghost'}
                  size="sm"
                  leadIcon={<AlignJustify size={16} />}
-                 label="List"
+                 label={t('posts.view.list')}
                  onClick={() => setViewMode('line')}
                />
             </div>
@@ -443,7 +452,7 @@ const Posts = () => {
               padding: spacing.spacing[48],
             }}>
               <SubtleLoadingSpinner 
-                title="Loading your posts..."
+                title={t('posts.search.loading')}
                 size={16}
               />
             </div>
@@ -454,12 +463,12 @@ const Posts = () => {
             <>
               {contentItems.length === 0 ? (
                 <EmptyState
-                  title="No content found"
+                  title={t('posts.empty.title')}
                   subtitle={selectedFilter === 'all' 
-                    ? "Start writing to create your first post or wait for content suggestions!"
-                    : `No ${selectedFilter} content found. Try changing the filter or search terms.`
+                    ? t('posts.empty.subtitleAll')
+                    : t('posts.empty.subtitleFiltered', { filter: t(`posts.filters.${selectedFilter}`) })
                   }
-                  buttonLabel="Create New Post"
+                  buttonLabel={t('posts.empty.button')}
                   onButtonClick={handleCreateNewClick}
                 />
               ) : (

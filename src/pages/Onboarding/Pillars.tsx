@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/api/useAuth';
 import { useTheme } from '@/services/theme-context';
 import { useToast } from '@/design-system/components/Toast';
+import { useTranslation } from '@/services/i18n-context';
 import { supabase } from '@/integrations/supabase/client';
 import { spacing } from '@/design-system/tokens/spacing';
 import { cornerRadius } from '@/design-system/tokens/corner-radius';
@@ -23,22 +24,14 @@ const Pillars = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useTranslation('onboarding');
   const [selectedContentTypes, setSelectedContentTypes] = useState<string[]>([]);
   const [themes, setThemes] = useState<string[]>(['', '']);
   const [saving, setSaving] = useState(false);
 
   // Content types options
   // Note: These names must match Profile.tsx contentTypesOptions exactly
-  const contentTypesOptions = [
-    'Como Fazer',
-    'Notícias e Opiniões',
-    'Histórias Pessoais',
-    'Lições de Carreira',
-    'Bastidores',
-    'Histórias de Clientes',
-    'Educacional',
-    'Memes e Humor',
-  ];
+  const contentTypesOptions = t('pillars.contentTypesList', { returnObjects: true }) as string[];
 
   // Handle content type selection
   const toggleContentType = (type: string) => {
@@ -74,7 +67,7 @@ const Pillars = () => {
 
   const handleContinue = async () => {
     if (!user) {
-      toast.error('Por favor, faça login para continuar');
+      toast.error(t('pillars.messages.loginRequired'));
       return;
     }
 
@@ -100,11 +93,11 @@ const Pillars = () => {
 
       if (error) throw error;
 
-      toast.success('Pilares de conteúdo salvos!');
+      toast.success(t('pillars.messages.saveSuccess'));
       navigate('/onboarding/format');
     } catch (error: any) {
       console.error('Error saving content pillars:', error);
-      toast.error('Falha ao salvar pilares de conteúdo. Por favor, tente novamente.');
+      toast.error(t('pillars.messages.saveError'));
     } finally {
       setSaving(false);
     }
@@ -315,13 +308,13 @@ const Pillars = () => {
 
   // Steps list
   const steps = [
-    { label: 'URL do LinkedIn', active: true },
-    { label: 'Número do WhatsApp', active: true },
-    { label: 'Frequência', active: true },
-    { label: 'Objetivos', active: true },
-    { label: 'Pilares', active: false },
-    { label: 'Formato', active: false },
-    { label: 'Conhecimento', active: false },
+    { label: t('pillars.steps.linkedin'), active: true },
+    { label: t('pillars.steps.whatsapp'), active: true },
+    { label: t('pillars.steps.frequency'), active: true },
+    { label: t('pillars.steps.goals'), active: true },
+    { label: t('pillars.steps.pillars'), active: false },
+    { label: t('pillars.steps.format'), active: false },
+    { label: t('pillars.steps.knowledge'), active: false },
   ];
 
   return (
@@ -358,15 +351,15 @@ const Pillars = () => {
             <div className="pillars-content-container" style={contentContainerStyles}>
               {/* Text container */}
               <div style={textContainerStyles}>
-                <h1 style={titleStyles}>Seus Pilares</h1>
+                <h1 style={titleStyles}>{t('pillars.title')}</h1>
                 <p style={subtitleStyles}>
-                  Conte-nos quais tipos de conteúdo e temas você quer abordar
+                  {t('pillars.subtitle')}
                 </p>
               </div>
 
               {/* Content types section */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[12] }}>
-                <p style={sectionTitleStyles}>Tipos de conteúdo que você quer criar</p>
+                <p style={sectionTitleStyles}>{t('pillars.contentTypesQuestion')}</p>
                 <div style={chipsContainerStyles}>
                   {contentTypesOptions.map((type) => (
                     <Chips
@@ -384,7 +377,7 @@ const Pillars = () => {
 
               {/* Themes section */}
               <div style={themesSectionStyles}>
-                <p style={sectionTitleStyles}>Temas sobre os quais você quer falar</p>
+                <p style={sectionTitleStyles}>{t('pillars.themesQuestion')}</p>
                 
                 {/* Theme inputs */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[8] }}>
@@ -393,7 +386,7 @@ const Pillars = () => {
                       key={index}
                       style="tail-action"
                       size="lg"
-                      placeholder={`Tema ${index + 1}`}
+                      placeholder={t('pillars.themePlaceholder', { index: index + 1 })}
                       value={theme}
                       onChange={(e) => handleThemeChange(index, e.target.value)}
                       disabled={saving}
@@ -408,7 +401,7 @@ const Pillars = () => {
                   <Button
                     style="secondary"
                     size="sm"
-                    label="Adicionar Tema"
+                    label={t('pillars.addTheme')}
                     leadIcon={<Plus size={16} />}
                     onClick={handleAddTheme}
                     disabled={saving}
@@ -423,7 +416,7 @@ const Pillars = () => {
                 <Button
                   style="secondary"
                   size="sm"
-                  label="Voltar"
+                  label={t('pillars.backButton')}
                   onClick={handleGoBack}
                   disabled={saving}
                   fullWidth
@@ -433,7 +426,7 @@ const Pillars = () => {
                 <Button
                   style="primary"
                   size="sm"
-                  label={saving ? "Salvando..." : "Continuar"}
+                  label={saving ? t('pillars.savingButton') : t('pillars.continueButton')}
                   leadIcon={saving ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : undefined}
                   tailIcon={!saving ? <ArrowRight size={16} /> : undefined}
                   onClick={handleContinue}
@@ -448,7 +441,7 @@ const Pillars = () => {
           <div style={accuracyBarStyles}>
             {/* Bar container */}
             <div style={barContainerStyles}>
-              <p style={labelTextStyles}>Precisão do Resultado</p>
+              <p style={labelTextStyles}>{t('pillars.accuracyLabel')}</p>
               <div style={{ marginTop: spacing.spacing[8] }}>
                 <div style={linesBarContainerStyles}>
                   {[...Array(27)].map((_, index) => (
@@ -456,10 +449,10 @@ const Pillars = () => {
                   ))}
                 </div>
               </div>
-              <p style={{ ...infoTextStyles, marginTop: spacing.spacing[4] }}>35% Completo</p>
+              <p style={{ ...infoTextStyles, marginTop: spacing.spacing[4] }}>{t('pillars.completed')}</p>
               <div style={{ ...dividerStyles, marginTop: spacing.spacing[8] }} />
               <p style={{ ...infoTextStyles, marginTop: spacing.spacing[8] }}>
-                Quanto mais informações você fornecer sobre si mesmo, melhores serão os resultados.
+                {t('pillars.infoText')}
               </p>
             </div>
 

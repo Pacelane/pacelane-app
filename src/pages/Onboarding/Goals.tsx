@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/api/useAuth';
 import { useTheme } from '@/services/theme-context';
 import { useToast } from '@/design-system/components/Toast';
+import { useTranslation } from '@/services/i18n-context';
 import { supabase } from '@/integrations/supabase/client';
 import { spacing } from '@/design-system/tokens/spacing';
 import { cornerRadius } from '@/design-system/tokens/corner-radius';
@@ -23,19 +24,13 @@ const Goals = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useTranslation('onboarding');
   const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
   const [targetAudiences, setTargetAudiences] = useState<string[]>(['', '']);
   const [saving, setSaving] = useState(false);
 
   // Goals options
-  const goalsOptions = [
-    'Reconhecimento de Marca',
-    'Geração de Leads',
-    'Recrutamento',
-    'Liderança de Pensamento',
-    'Atrair Oportunidades',
-    'Manter-se Relevante',
-  ];
+  const goalsOptions = t('goals.goalsList', { returnObjects: true }) as string[];
 
   // Handle goal selection
   const toggleGoal = (goal: string) => {
@@ -71,7 +66,7 @@ const Goals = () => {
 
   const handleContinue = async () => {
     if (!user) {
-      toast.error('Por favor, faça login para continuar');
+      toast.error(t('goals.messages.loginRequired'));
       return;
     }
 
@@ -97,11 +92,11 @@ const Goals = () => {
 
       if (error) throw error;
 
-      toast.success('Objetivos e públicos-alvo salvos!');
+      toast.success(t('goals.messages.saveSuccess'));
       navigate('/onboarding/pillars');
     } catch (error: any) {
       console.error('Error saving goals:', error);
-      toast.error('Falha ao salvar objetivos. Por favor, tente novamente.');
+      toast.error(t('goals.messages.saveError'));
     } finally {
       setSaving(false);
     }
@@ -312,13 +307,13 @@ const Goals = () => {
 
   // Steps list
   const steps = [
-    { label: 'URL do LinkedIn', active: true },
-    { label: 'Número do WhatsApp', active: true },
-    { label: 'Frequência', active: true },
-    { label: 'Objetivos', active: false },
-    { label: 'Pilares', active: false },
-    { label: 'Formato', active: false },
-    { label: 'Conhecimento', active: false },
+    { label: t('goals.steps.linkedin'), active: true },
+    { label: t('goals.steps.whatsapp'), active: true },
+    { label: t('goals.steps.frequency'), active: true },
+    { label: t('goals.steps.goals'), active: false },
+    { label: t('goals.steps.pillars'), active: false },
+    { label: t('goals.steps.format'), active: false },
+    { label: t('goals.steps.knowledge'), active: false },
   ];
 
   return (
@@ -355,15 +350,15 @@ const Goals = () => {
             <div className="goals-content-container" style={contentContainerStyles}>
               {/* Text container */}
               <div style={textContainerStyles}>
-                <h1 style={titleStyles}>Seus Objetivos</h1>
+                <h1 style={titleStyles}>{t('goals.title')}</h1>
                 <p style={subtitleStyles}>
-                  Conte-nos quais são seus objetivos e os públicos-alvo que você quer alcançar
+                  {t('goals.subtitle')}
                 </p>
               </div>
 
               {/* Goals section */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[12] }}>
-                <p style={sectionTitleStyles}>Quais são seus objetivos?</p>
+                <p style={sectionTitleStyles}>{t('goals.objectivesQuestion')}</p>
                 <div style={chipsContainerStyles}>
                   {goalsOptions.map((goal) => (
                     <Chips
@@ -381,7 +376,7 @@ const Goals = () => {
 
               {/* Target audiences section */}
               <div style={audiencesSectionStyles}>
-                <p style={sectionTitleStyles}>Quais são seus públicos-alvo?</p>
+                <p style={sectionTitleStyles}>{t('goals.targetAudienceQuestion')}</p>
                 
                 {/* Target audience inputs */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[8] }}>
@@ -390,7 +385,7 @@ const Goals = () => {
                       key={index}
                       style="tail-action"
                       size="lg"
-                      placeholder={`Público-Alvo ${index + 1}`}
+                      placeholder={t('goals.targetAudiencePlaceholder', { index: index + 1 })}
                       value={audience}
                       onChange={(e) => handleAudienceChange(index, e.target.value)}
                       disabled={saving}
@@ -405,7 +400,7 @@ const Goals = () => {
                   <Button
                     style="secondary"
                     size="sm"
-                    label="Adicionar Público-Alvo"
+                    label={t('goals.addTargetAudience')}
                     leadIcon={<Plus size={16} />}
                     onClick={handleAddAudience}
                     disabled={saving}
@@ -420,7 +415,7 @@ const Goals = () => {
                 <Button
                   style="secondary"
                   size="sm"
-                  label="Voltar"
+                  label={t('goals.backButton')}
                   onClick={handleGoBack}
                   disabled={saving}
                   fullWidth
@@ -430,7 +425,7 @@ const Goals = () => {
                 <Button
                   style="primary"
                   size="sm"
-                  label={saving ? "Salvando..." : "Continuar"}
+                  label={saving ? t('goals.savingButton') : t('goals.continueButton')}
                   leadIcon={saving ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : undefined}
                   tailIcon={!saving ? <ArrowRight size={16} /> : undefined}
                   onClick={handleContinue}
@@ -445,7 +440,7 @@ const Goals = () => {
           <div style={accuracyBarStyles}>
             {/* Bar container */}
             <div style={barContainerStyles}>
-              <p style={labelTextStyles}>Precisão do Resultado</p>
+              <p style={labelTextStyles}>{t('goals.accuracyLabel')}</p>
               <div style={{ marginTop: spacing.spacing[8] }}>
                 <div style={linesBarContainerStyles}>
                   {[...Array(27)].map((_, index) => (
@@ -453,10 +448,10 @@ const Goals = () => {
                   ))}
                 </div>
               </div>
-              <p style={{ ...infoTextStyles, marginTop: spacing.spacing[4] }}>25% Completo</p>
+              <p style={{ ...infoTextStyles, marginTop: spacing.spacing[4] }}>{t('goals.completed')}</p>
               <div style={{ ...dividerStyles, marginTop: spacing.spacing[8] }} />
               <p style={{ ...infoTextStyles, marginTop: spacing.spacing[8] }}>
-                Quanto mais informações você fornecer sobre si mesmo, melhores serão os resultados.
+                {t('goals.infoText')}
               </p>
             </div>
 

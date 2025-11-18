@@ -5,6 +5,7 @@ import { useContent } from '@/hooks/api/useContent';
 import { useTheme } from '@/services/theme-context';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useToast } from '@/design-system/components/Toast';
+import { useTranslation } from '@/services/i18n-context';
 import TranscriptService from '@/services/transcriptService';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -42,6 +43,7 @@ const KnowledgeBase = () => {
   const { colors } = useTheme();
   const isMobile = useIsMobile();
   const { toast, removeToast } = useToast();
+  const { t } = useTranslation('pages');
   
   console.log('KnowledgeBase: Component rendered, user:', user?.id, 'profile:', profile?.id);
   
@@ -130,23 +132,23 @@ const KnowledgeBase = () => {
 
   // Sort dropdown options
   const sortOptions = [
-    { label: 'Last Added', onClick: () => setSortBy('lastAdded') },
-    { label: 'Name A-Z', onClick: () => setSortBy('nameAsc') },
-    { label: 'Name Z-A', onClick: () => setSortBy('nameDesc') },
-    { label: 'Size (Largest)', onClick: () => setSortBy('sizeLarge') },
-    { label: 'Size (Smallest)', onClick: () => setSortBy('sizeSmall') },
+    { label: t('knowledgeBase.sort.lastAdded'), onClick: () => setSortBy('lastAdded') },
+    { label: t('knowledgeBase.sort.nameAsc'), onClick: () => setSortBy('nameAsc') },
+    { label: t('knowledgeBase.sort.nameDesc'), onClick: () => setSortBy('nameDesc') },
+    { label: t('knowledgeBase.sort.sizeLarge'), onClick: () => setSortBy('sizeLarge') },
+    { label: t('knowledgeBase.sort.sizeSmall'), onClick: () => setSortBy('sizeSmall') },
   ];
 
   // Get current sort label
   const getCurrentSortLabel = () => {
     const option = sortOptions.find(opt => 
-      (sortBy === 'lastAdded' && opt.label === 'Last Added') ||
-      (sortBy === 'nameAsc' && opt.label === 'Name A-Z') ||
-      (sortBy === 'nameDesc' && opt.label === 'Name Z-A') ||
-      (sortBy === 'sizeLarge' && opt.label === 'Size (Largest)') ||
-      (sortBy === 'sizeSmall' && opt.label === 'Size (Smallest)')
+      (sortBy === 'lastAdded' && opt.label === t('knowledgeBase.sort.lastAdded')) ||
+      (sortBy === 'nameAsc' && opt.label === t('knowledgeBase.sort.nameAsc')) ||
+      (sortBy === 'nameDesc' && opt.label === t('knowledgeBase.sort.nameDesc')) ||
+      (sortBy === 'sizeLarge' && opt.label === t('knowledgeBase.sort.sizeLarge')) ||
+      (sortBy === 'sizeSmall' && opt.label === t('knowledgeBase.sort.sizeSmall'))
     );
-    return option?.label || 'Last Added';
+    return option?.label || t('knowledgeBase.sort.lastAdded');
   };
 
   // Transform knowledge files to FileCard format - memoized to prevent unnecessary recalculations
@@ -207,16 +209,16 @@ const KnowledgeBase = () => {
         const transcriptionStatus = item.extraction_metadata?.transcription_status || 'unknown';
         const hasTranscription = item.extracted_content && item.extracted_content.length > 0;
         
-        subtitle = `${item.size ? `${(item.size / 1024).toFixed(1)} KB` : ''} • ${item.created_at ? new Date(item.created_at).toLocaleDateString() : 'Unknown Date'}`;
+        subtitle = `${item.size ? `${(item.size / 1024).toFixed(1)} KB` : ''} • ${item.created_at ? new Date(item.created_at).toLocaleDateString() : t('knowledgeBase.fileStatus.unknownDate')}`;
         
         if (hasTranscription) {
-          subtitle += ` • Transcribed`;
+          subtitle += ` • ${t('knowledgeBase.fileStatus.transcribed')}`;
         } else if (transcriptionStatus === 'error') {
-          subtitle += ` • Transcription failed`;
+          subtitle += ` • ${t('knowledgeBase.fileStatus.transcriptionFailed')}`;
         } else if (transcriptionStatus === 'completed') {
-          subtitle += ` • Transcription ready`;
+          subtitle += ` • ${t('knowledgeBase.fileStatus.transcriptionReady')}`;
         } else {
-          subtitle += ` • Transcription pending`;
+          subtitle += ` • ${t('knowledgeBase.fileStatus.transcriptionPending')}`;
         }
         
         // Add source info if available
@@ -224,7 +226,7 @@ const KnowledgeBase = () => {
           subtitle += ` • WhatsApp`;
         }
       } else {
-        subtitle = `${item.size ? `${(item.size / 1024).toFixed(1)} KB` : ''} • ${item.created_at ? new Date(item.created_at).toLocaleDateString() : 'Unknown Date'}`;
+        subtitle = `${item.size ? `${(item.size / 1024).toFixed(1)} KB` : ''} • ${item.created_at ? new Date(item.created_at).toLocaleDateString() : t('knowledgeBase.fileStatus.unknownDate')}`;
       }
 
       return {
@@ -337,7 +339,7 @@ const KnowledgeBase = () => {
         : `${validationErrors.length} files have issues:\n${validationErrors.join('\n')}`;
       
       toast.error(errorMessage, {
-        title: 'File Validation Failed',
+        title: t('knowledgeBase.toasts.upload.validationTitle'),
         duration: 8000 // Longer duration for validation errors
       });
       
@@ -346,16 +348,22 @@ const KnowledgeBase = () => {
       
       // Show info about proceeding with valid files
       if (validFiles.length < fileArray.length) {
-        toast.info(`Proceeding with ${validFiles.length} valid file${validFiles.length === 1 ? '' : 's'}`, {
+        const proceedingMessage = validFiles.length === 1
+          ? t('knowledgeBase.toasts.upload.proceeding', { count: validFiles.length })
+          : t('knowledgeBase.toasts.upload.proceedingPlural', { count: validFiles.length });
+        toast.info(proceedingMessage, {
           duration: 4000
         });
       }
     }
 
     // Show loading toast for upload
+    const uploadMessage = validFiles.length === 1
+      ? t('knowledgeBase.toasts.upload.loadingSingle')
+      : t('knowledgeBase.toasts.upload.loadingMultiple', { count: validFiles.length });
     const loadingToastId = toast.loading(
-      `Uploading ${validFiles.length} file${validFiles.length === 1 ? '' : 's'}...`,
-      { title: 'Upload in Progress' }
+      uploadMessage,
+      { title: t('knowledgeBase.toasts.upload.title') }
     );
 
     try {
@@ -370,7 +378,7 @@ const KnowledgeBase = () => {
         // Provide user-friendly error messages
         const userFriendlyError = getUserFriendlyUploadError(result.error);
         toast.error(userFriendlyError, {
-          title: 'Upload Failed',
+          title: t('knowledgeBase.toasts.upload.errorTitle'),
           duration: 6000
         });
         return;
@@ -380,11 +388,11 @@ const KnowledgeBase = () => {
       
       // Show success message with file count
       const successMessage = validFiles.length === 1 
-        ? 'File uploaded successfully'
-        : `${validFiles.length} files uploaded successfully`;
+        ? t('knowledgeBase.toasts.upload.successSingle')
+        : t('knowledgeBase.toasts.upload.successMultiple', { count: validFiles.length });
         
       toast.success(successMessage, {
-        title: 'Upload Complete',
+        title: t('knowledgeBase.toasts.upload.completeTitle'),
         duration: 4000
       });
       
@@ -395,9 +403,9 @@ const KnowledgeBase = () => {
       removeToast(loadingToastId);
       
       console.error('KnowledgeBase: Upload exception:', error);
-      const userFriendlyError = getUserFriendlyUploadError(error.message || 'Upload failed');
+      const userFriendlyError = getUserFriendlyUploadError(error.message || t('knowledgeBase.errors.upload.default'));
       toast.error(userFriendlyError, {
-        title: 'Upload Error',
+        title: t('knowledgeBase.toasts.upload.errorTitleGeneric'),
         duration: 6000
       });
     }
@@ -409,16 +417,16 @@ const KnowledgeBase = () => {
     // Basic URL validation
     const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
     if (!urlPattern.test(url.trim())) {
-      toast.error('Please enter a valid website URL (e.g., example.com or https://example.com)', {
-        title: 'Invalid URL',
+      toast.error(t('knowledgeBase.toasts.link.invalidUrl'), {
+        title: t('knowledgeBase.toasts.link.invalidUrlTitle'),
         duration: 5000
       });
       return;
     }
 
     // Show loading toast
-    const loadingToastId = toast.loading('Adding link to your knowledge base...', {
-      title: 'Processing Link'
+    const loadingToastId = toast.loading(t('knowledgeBase.toasts.link.loading'), {
+      title: t('knowledgeBase.toasts.link.title')
     });
 
     try {
@@ -430,14 +438,14 @@ const KnowledgeBase = () => {
       if (result.error) {
         const userFriendlyError = getUserFriendlyLinkError(result.error);
         toast.error(userFriendlyError, {
-          title: 'Failed to Add Link',
+          title: t('knowledgeBase.toasts.link.errorTitle'),
           duration: 6000
         });
         return;
       }
       
-      toast.success('Link added successfully to your knowledge base', {
-        title: 'Link Added',
+      toast.success(t('knowledgeBase.toasts.link.success'), {
+        title: t('knowledgeBase.toasts.link.successTitle'),
         duration: 4000
       });
       setUrlInput('');
@@ -445,13 +453,13 @@ const KnowledgeBase = () => {
       // Remove loading toast
       removeToast(loadingToastId);
       
-      const userFriendlyError = getUserFriendlyLinkError(error.message || 'Failed to add link');
+      const userFriendlyError = getUserFriendlyLinkError(error.message || t('knowledgeBase.errors.link.default'));
       toast.error(userFriendlyError, {
-        title: 'Link Error',
+        title: t('knowledgeBase.toasts.link.errorTitleGeneric'),
         duration: 6000
       });
     }
-  }, [addLink, toast, removeToast, setUrlInput]);
+  }, [addLink, toast, removeToast, setUrlInput, t]);
 
   const handleFileAction = useCallback(async (action, fileId) => {
     if (action === 'delete') {
@@ -460,8 +468,8 @@ const KnowledgeBase = () => {
       const fileName = file?.name || 'file';
       
       // Show loading toast
-      const loadingToastId = toast.loading(`Deleting ${fileName}...`, {
-        title: 'Deleting File'
+      const loadingToastId = toast.loading(t('knowledgeBase.toasts.delete.loading', { fileName }), {
+        title: t('knowledgeBase.toasts.delete.title')
       });
       
       try {
@@ -473,28 +481,28 @@ const KnowledgeBase = () => {
         if (result.error) {
           const userFriendlyError = getUserFriendlyDeleteError(result.error);
           toast.error(userFriendlyError, {
-            title: 'Failed to Delete File',
+            title: t('knowledgeBase.toasts.delete.errorTitle'),
             duration: 6000
           });
           return;
         }
         
-        toast.success(`${fileName} deleted successfully`, {
-          title: 'File Deleted',
+        toast.success(t('knowledgeBase.toasts.delete.success', { fileName }), {
+          title: t('knowledgeBase.toasts.delete.successTitle'),
           duration: 4000
         });
       } catch (error: any) {
         // Remove loading toast
         toast.removeToast(loadingToastId);
         
-        const userFriendlyError = getUserFriendlyDeleteError(error.message || 'Failed to delete file');
+        const userFriendlyError = getUserFriendlyDeleteError(error.message || t('knowledgeBase.errors.delete.default'));
         toast.error(userFriendlyError, {
-          title: 'Delete Error',
+          title: t('knowledgeBase.toasts.delete.errorTitleGeneric'),
           duration: 6000
         });
       }
     }
-  }, [knowledgeFiles, deleteKnowledgeFile, toast, removeToast]);
+  }, [knowledgeFiles, deleteKnowledgeFile, toast, removeToast, t]);
 
   const handleFileClick = useCallback((file) => {
     // For audio files with transcription, show the existing audio modal
@@ -520,8 +528,8 @@ const KnowledgeBase = () => {
       // Validate the transcript
       const validation = TranscriptService.validateTranscript(transcriptData.transcript);
       if (!validation.isValid) {
-        toast.error(validation.errors[0] || 'Invalid transcript format', {
-          title: 'Validation Error',
+        toast.error(validation.errors[0] || t('knowledgeBase.toasts.transcript.error'), {
+          title: t('knowledgeBase.toasts.transcript.validationTitle'),
           duration: 6000
         });
         return;
@@ -531,8 +539,8 @@ const KnowledgeBase = () => {
       const parsedTranscript = TranscriptService.parseTranscript(transcriptData.transcript);
 
       // Show loading toast
-      const loadingToastId = toast.loading(`Processing transcript "${transcriptData.title}"...`, {
-        title: 'Processing Transcript'
+      const loadingToastId = toast.loading(t('knowledgeBase.toasts.transcript.processing', { title: transcriptData.title }), {
+        title: t('knowledgeBase.toasts.transcript.title')
       });
 
       // Get the user's session token
@@ -570,9 +578,9 @@ const KnowledgeBase = () => {
 
       if (result.success) {
         setShowTranscriptModal(false);
-        toast.success(`Meeting transcript "${transcriptData.title}" processed and saved successfully!`, {
-          title: 'Transcript Saved',
-          description: `Added to meetings table and knowledge base with ${result.data.participants} participants`,
+        toast.success(t('knowledgeBase.toasts.transcript.success', { title: transcriptData.title }), {
+          title: t('knowledgeBase.toasts.transcript.successTitle'),
+          description: t('knowledgeBase.toasts.transcript.successDescription', { participants: result.data.participants }),
           duration: 6000
         });
 
@@ -584,8 +592,8 @@ const KnowledgeBase = () => {
 
     } catch (error: any) {
       console.error('Error processing transcript:', error);
-      toast.error(error.message || 'Failed to process meeting transcript', {
-        title: 'Processing Error',
+      toast.error(error.message || t('knowledgeBase.toasts.transcript.error'), {
+        title: t('knowledgeBase.toasts.transcript.errorTitle'),
         duration: 6000
       });
     } finally {
@@ -628,59 +636,59 @@ const KnowledgeBase = () => {
   // Helper function to convert technical errors to user-friendly messages
   const getUserFriendlyUploadError = (error: string) => {
     if (error.includes('file too large') || error.includes('size limit')) {
-      return 'File is too large. Please choose files smaller than 10MB each.';
+      return t('knowledgeBase.errors.upload.fileTooLarge');
     }
     if (error.includes('unsupported file type') || error.includes('file type')) {
-      return 'File type not supported. Please upload documents, images, audio files, or videos.';
+      return t('knowledgeBase.errors.upload.unsupportedType');
     }
     if (error.includes('authentication') || error.includes('unauthorized')) {
-      return 'Session expired. Please refresh the page and try again.';
+      return t('knowledgeBase.errors.upload.authentication');
     }
     if (error.includes('network') || error.includes('connection')) {
-      return 'Network error. Please check your connection and try again.';
+      return t('knowledgeBase.errors.upload.network');
     }
     if (error.includes('storage') || error.includes('quota')) {
-      return 'Storage limit reached. Please delete some files and try again.';
+      return t('knowledgeBase.errors.upload.storage');
     }
     if (error.includes('duplicate') || error.includes('already exists')) {
-      return 'A file with this name already exists. Please rename the file and try again.';
+      return t('knowledgeBase.errors.upload.duplicate');
     }
     
     // Default fallback for unknown errors
-    return 'Upload failed. Please try again or contact support if the problem continues.';
+    return t('knowledgeBase.errors.upload.default');
   };
 
   const getUserFriendlyLinkError = (error: string) => {
     if (error.includes('invalid url') || error.includes('malformed')) {
-      return 'Please enter a valid website URL (e.g., example.com or https://example.com).';
+      return t('knowledgeBase.errors.link.invalidUrl');
     }
     if (error.includes('not accessible') || error.includes('unreachable')) {
-      return 'Website is not accessible. Please check the URL and try again.';
+      return t('knowledgeBase.errors.link.notAccessible');
     }
     if (error.includes('timeout')) {
-      return 'Website took too long to respond. Please try again later.';
+      return t('knowledgeBase.errors.link.timeout');
     }
     if (error.includes('duplicate') || error.includes('already exists')) {
-      return 'This link has already been added to your knowledge base.';
+      return t('knowledgeBase.errors.link.duplicate');
     }
     
     // Default fallback
-    return 'Failed to add link. Please check the URL and try again.';
+    return t('knowledgeBase.errors.link.default');
   };
 
   const getUserFriendlyDeleteError = (error: string) => {
     if (error.includes('not found') || error.includes('does not exist')) {
-      return 'File no longer exists. It may have already been deleted.';
+      return t('knowledgeBase.errors.delete.notFound');
     }
     if (error.includes('permission') || error.includes('unauthorized')) {
-      return 'You do not have permission to delete this file.';
+      return t('knowledgeBase.errors.delete.permission');
     }
     if (error.includes('in use') || error.includes('locked')) {
-      return 'File is currently being used and cannot be deleted. Please try again later.';
+      return t('knowledgeBase.errors.delete.inUse');
     }
     
     // Default fallback
-    return 'Failed to delete file. Please try again or contact support.';
+    return t('knowledgeBase.errors.delete.default');
   };
 
   // Get user display info
@@ -728,9 +736,9 @@ const KnowledgeBase = () => {
     <div style={containerStyles}>
           {/* Header Section */}
           <div>
-            <h1 style={titleStyle}>Knowledge Base</h1>
+            <h1 style={titleStyle}>{t('knowledgeBase.title')}</h1>
             <p style={subtitleStyle}>
-              Organize and access all your project files, documents, and resources in one place
+              {t('knowledgeBase.subtitle')}
             </p>
           </div>
 
@@ -767,14 +775,14 @@ const KnowledgeBase = () => {
                 margin: 0,
                 marginBottom: spacing.spacing[4],
               }}>
-                Paste Your Meeting Transcripts
+                {t('knowledgeBase.transcript.title')}
               </h3>
               <p style={{
                 ...textStyles.sm.normal,
                 color: colors.text.subtle,
                 margin: 0,
               }}>
-                Transcripts will be saved as searchable knowledge files for future content creation
+                {t('knowledgeBase.transcript.subtitle')}
               </p>
             </div>
             <div style={{ 
@@ -782,7 +790,7 @@ const KnowledgeBase = () => {
               alignSelf: isMobile ? 'flex-start' : 'center',
             }}>
               <Button
-                label="Paste Transcript"
+                label={t('knowledgeBase.transcript.button')}
                 style="secondary"
                 size="md"
                 leadIcon={<FileText size={16} />}
@@ -811,7 +819,7 @@ const KnowledgeBase = () => {
                 <Input
                   size="lg"
                   style="default"
-                  placeholder="Search files..."
+                  placeholder={t('knowledgeBase.search.placeholder')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   leadIcon={<Search size={16} />}
@@ -840,9 +848,9 @@ const KnowledgeBase = () => {
             }}>
               <SubtleLoadingSpinner 
                 title={
-                  loadingCount ? "Loading file count..." :
-                  loading ? "Loading your files..." : 
-                  "Uploading files..."
+                  loadingCount ? t('knowledgeBase.search.loadingCount') :
+                  loading ? t('knowledgeBase.search.loading') : 
+                  t('knowledgeBase.search.uploading')
                 }
                 size={16}
               />
@@ -856,9 +864,9 @@ const KnowledgeBase = () => {
             if (totalFiles === 0) {
               return (
                 <EmptyState
-                  title="No files found"
-                  subtitle={searchQuery ? 'Try adjusting your search query' : 'Upload some files to get started'}
-                  buttonLabel={!searchQuery ? 'Upload Files' : undefined}
+                  title={t('knowledgeBase.empty.title')}
+                  subtitle={searchQuery ? t('knowledgeBase.empty.subtitleSearch') : t('knowledgeBase.empty.subtitleNoSearch')}
+                  buttonLabel={!searchQuery ? t('knowledgeBase.empty.button') : undefined}
                   onButtonClick={!searchQuery ? () => {
                     // Trigger file selection dialog
                     if (fileUploadRef.current?.triggerFileSelect) {
@@ -920,7 +928,11 @@ const KnowledgeBase = () => {
                     ...textStyles.sm.normal,
                     color: colors.text.muted,
                   }}>
-                    Showing {((hookCurrentPage - 1) * hookItemsPerPage) + 1} to {Math.min(hookCurrentPage * hookItemsPerPage, totalFiles)} of {totalFiles} files
+                    {t('knowledgeBase.results.showing', {
+                      start: ((hookCurrentPage - 1) * hookItemsPerPage) + 1,
+                      end: Math.min(hookCurrentPage * hookItemsPerPage, totalFiles),
+                      total: totalFiles
+                    })}
                   </span>
                 </div>
               </>
@@ -964,7 +976,7 @@ const KnowledgeBase = () => {
                     color: colors.text.default,
                     margin: 0,
                   }}>
-                    Audio Transcription
+                    {t('knowledgeBase.transcript.modalTitle')}
                   </h2>
                   <button
                     onClick={() => setShowAudioModal(false)}
@@ -1013,7 +1025,7 @@ const KnowledgeBase = () => {
                     margin: 0,
                     marginBottom: spacing.spacing[12],
                   }}>
-                    Transcription
+                    {t('knowledgeBase.transcript.transcriptionLabel')}
                   </h3>
                   <div style={{
                     padding: spacing.spacing[16],
@@ -1030,7 +1042,7 @@ const KnowledgeBase = () => {
                       lineHeight: '1.6',
                       whiteSpace: 'pre-wrap',
                     }}>
-                      {selectedAudioFile.metadata?.transcription || 'No transcription available'}
+                      {selectedAudioFile.metadata?.transcription || t('knowledgeBase.transcript.noTranscription')}
                     </p>
                   </div>
                 </div>

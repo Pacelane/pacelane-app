@@ -5,6 +5,7 @@ import { useTheme } from '@/services/theme-context';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/design-system/components/Toast';
+import { useTranslation } from '@/services/i18n-context';
 
 // Design System Components
 import TopNav from '@/design-system/components/TopNav';
@@ -47,6 +48,7 @@ const LinkedInSummary = () => {
   const { user } = useAuth();
   const { colors } = useTheme();
   const { toast } = useToast();
+  const { t } = useTranslation('onboarding');
   const isMobile = useIsMobile();
 
   const [profile, setProfile] = useState<LinkedInProfile | null>(null);
@@ -65,7 +67,7 @@ const LinkedInSummary = () => {
 
         if (error) {
           console.error('Error fetching LinkedIn profile:', error);
-          toast.error('Falha ao carregar dados do perfil');
+          toast.error(t('linkedInSummary.loadError'));
           return;
         }
 
@@ -159,7 +161,7 @@ const LinkedInSummary = () => {
         }
       } catch (error) {
         console.error('Error loading LinkedIn profile:', error);
-        toast.error('Failed to load profile data');
+        toast.error(t('linkedInSummary.loadError'));
       } finally {
         setIsLoading(false);
       }
@@ -190,7 +192,7 @@ const LinkedInSummary = () => {
         <div style={{ textAlign: 'center' }}>
           <Bichaurinho variant={12} size={64} />
           <p style={{ ...textStyles.md.normal, color: colors.text.muted, marginTop: spacing.spacing[16] }}>
-            Carregando seu perfil...
+            {t('linkedInSummary.loading')}
           </p>
         </div>
       </div>
@@ -255,7 +257,7 @@ const LinkedInSummary = () => {
             maxWidth: isMobile ? '100%' : '700px'
           }}>
             <Button
-              label="Voltar"
+              label={t('linkedInSummary.backButton')}
               style="dashed"
               size="xs"
               leadIcon={<ArrowLeft size={12} />}
@@ -327,7 +329,7 @@ const LinkedInSummary = () => {
                       textAlign: 'left',
                     }}
                   >
-                    Resumo do Perfil
+                    {t('linkedInSummary.title')}
                   </h1>
 
                   {/* Subtitle */}
@@ -342,7 +344,7 @@ const LinkedInSummary = () => {
                       textAlign: 'left',
                     }}
                   >
-                    Aqui está o que encontramos no seu perfil do LinkedIn. Essas informações nos ajudarão a personalizar sua estratégia de conteúdo.
+                    {t('linkedInSummary.subtitle')}
                   </p>
                 </div>
               </div>
@@ -370,7 +372,7 @@ const LinkedInSummary = () => {
                       margin: 0,
                     }}
                   >
-                    {profile?.name || 'Nome não disponível'}
+                    {profile?.name || t('linkedInSummary.fallbacks.name')}
                   </h3>
                   
                   <p
@@ -380,7 +382,7 @@ const LinkedInSummary = () => {
                       margin: 0,
                     }}
                   >
-                    {profile?.headline || 'Cargo não disponível'}
+                    {profile?.headline || t('linkedInSummary.fallbacks.headline')}
                   </p>
 
                   {/* Location and Company */}
@@ -431,7 +433,7 @@ const LinkedInSummary = () => {
                         marginBottom: spacing.spacing[12],
                       }}
                     >
-                      Sobre
+                      {t('linkedInSummary.sections.about')}
                     </h4>
                     <p
                       style={{
@@ -457,7 +459,7 @@ const LinkedInSummary = () => {
                         marginBottom: spacing.spacing[8],
                       }}
                     >
-                      Principais Habilidades
+                      {t('linkedInSummary.sections.skills')}
                     </h4>
                     <div
                       style={{
@@ -496,7 +498,7 @@ const LinkedInSummary = () => {
                         marginBottom: spacing.spacing[8],
                       }}
                     >
-                      Experiência Recente
+                      {t('linkedInSummary.sections.experience')}
                     </h4>
                     <div
                       style={{
@@ -542,7 +544,7 @@ const LinkedInSummary = () => {
                         marginBottom: spacing.spacing[8],
                       }}
                     >
-                      Educação
+                      {t('linkedInSummary.sections.education')}
                     </h4>
                     <div
                       style={{
@@ -602,7 +604,7 @@ const LinkedInSummary = () => {
                   textAlign: 'center',
                 }}
               >
-                Essas informações nos ajudarão a criar conteúdo personalizado que corresponda ao seu histórico profissional e expertise.
+                {t('linkedInSummary.infoText')}
               </p>
             </div>
           </div>
@@ -632,7 +634,7 @@ const LinkedInSummary = () => {
           justifyContent: 'center'
         }}>
           <Button
-            label="Continuar"
+            label={t('linkedInSummary.continueButton')}
             style="primary"
             size="lg"
             tailIcon={<ArrowRight size={16} />}

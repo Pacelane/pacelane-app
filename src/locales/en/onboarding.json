@@ -1,0 +1,311 @@
+{
+  "welcome": {
+    "title": "Welcome!",
+    "subtitle": "We want to help you show up consistently on LinkedIn with content that feels like you.",
+    "bottomText": "We'll ask a few questions to tailor your strategy.",
+    "startButton": "Let's Get Started"
+  },
+  "firstThingsFirst": {
+    "title": "Your LinkedIn",
+    "subtitle": "Tell us your LinkedIn URL so we can write posts that feel like you.",
+    "label": "Your LinkedIn Profile",
+    "placeholder": "linkedin.com/in/yourprofile",
+    "backButton": "Back",
+    "continueButton": "Continue",
+    "analyzingButton": "Analyzing...",
+    "accuracyLabel": "Result Accuracy",
+    "completed": "0% Complete",
+    "infoText": "The more information you provide about yourself, the better the results will be.",
+    "steps": {
+      "linkedin": "LinkedIn URL",
+      "whatsapp": "WhatsApp Number",
+      "frequency": "Frequency",
+      "goals": "Goals",
+      "pillars": "Pillars",
+      "format": "Format",
+      "knowledge": "Knowledge"
+    },
+    "errors": {
+      "required": "LinkedIn profile is required",
+      "invalid": "Please enter a valid LinkedIn username or URL"
+    },
+    "messages": {
+      "extracted": "LinkedIn username extracted: {{username}}",
+      "loginRequired": "Please log in to continue",
+      "saveSuccess": "LinkedIn profile saved! We'll try to collect more details in the background.",
+      "setupSuccess": "Profile setup completed!",
+      "saveError": "Failed to complete setup"
+    }
+  },
+  "linkedInSummary": {
+    "title": "Profile Summary",
+    "subtitle": "Here's what we found on your LinkedIn profile. This information will help us personalize your content strategy.",
+    "backButton": "Back",
+    "continueButton": "Continue",
+    "loading": "Loading your profile...",
+    "loadError": "Failed to load profile data",
+    "sections": {
+      "about": "About",
+      "skills": "Top Skills",
+      "experience": "Recent Experience",
+      "education": "Education"
+    },
+    "fallbacks": {
+      "name": "Name not available",
+      "headline": "Title not available",
+      "location": "Location not available",
+      "company": "Company not available",
+      "website": "Website not available"
+    },
+    "infoText": "This information will help us create personalized content that matches your professional background and expertise."
+  },
+  "whatsappInput": {
+    "title": "Staying in Touch",
+    "subtitle": "Tell us how we can stay in touch",
+    "whatsappLabel": "WhatsApp",
+    "label": "Your WhatsApp number",
+    "placeholder": "(555) 123-4567",
+    "utilityText": "We'll send messages with drafts and content suggestions based on your Content Plan",
+    "backButton": "Back",
+    "continueButton": "Continue",
+    "savingButton": "Saving...",
+    "syncButton": "Sync WhatsApp",
+    "syncOpened": "✓ WhatsApp Opened",
+    "accuracyLabel": "Result Accuracy",
+    "completed": "12% Complete",
+    "infoText": "The more information you provide about yourself, the better the results will be.",
+    "steps": {
+      "linkedin": "LinkedIn URL",
+      "whatsapp": "WhatsApp Number",
+      "frequency": "Frequency",
+      "goals": "Goals",
+      "pillars": "Pillars",
+      "format": "Format",
+      "knowledge": "Knowledge"
+    },
+    "messages": {
+      "loginRequired": "Please log in to continue",
+      "invalidNumber": "Please enter a valid WhatsApp number",
+      "saveSuccess": "WhatsApp number saved!",
+      "saveError": "Failed to save WhatsApp number. Please try again."
+    }
+  },
+  "pacing": {
+    "title": "Your Pace",
+    "subtitle": "Tell us how often you want us to maintain your pace",
+    "frequencyTitle": "Frequency",
+    "frequencySubtitle": "Set when you want to post",
+    "backButton": "Back",
+    "continueButton": "Continue",
+    "savingButton": "Saving...",
+    "days": {
+      "mon": "M",
+      "tue": "T",
+      "wed": "W",
+      "thu": "T",
+      "fri": "F",
+      "sat": "S",
+      "sun": "S"
+    },
+    "fullDays": {
+      "mon": "Monday",
+      "tue": "Tuesday",
+      "wed": "Wednesday",
+      "thu": "Thursday",
+      "fri": "Friday",
+      "sat": "Saturday",
+      "sun": "Sunday"
+    },
+    "accuracyLabel": "Result Accuracy",
+    "completed": "25% Complete",
+    "infoText": "The more information you provide about yourself, the better the results will be.",
+    "steps": {
+      "linkedin": "LinkedIn URL",
+      "whatsapp": "WhatsApp Number",
+      "frequency": "Frequency",
+      "goals": "Goals",
+      "pillars": "Pillars",
+      "format": "Format",
+      "knowledge": "Knowledge"
+    },
+    "messages": {
+      "loginRequired": "Please log in to continue",
+      "selectDay": "Please select at least one day of the week",
+      "saveSuccess": "Frequency preferences saved!",
+      "saveError": "Failed to save preferences. Please try again."
+    }
+  },
+  "goals": {
+    "title": "Your Goals",
+    "subtitle": "Tell us what your goals are and the target audiences you want to reach",
+    "objectivesQuestion": "What are your goals?",
+    "targetAudienceQuestion": "What are your target audiences?",
+    "backButton": "Back",
+    "continueButton": "Continue",
+    "savingButton": "Saving...",
+    "targetAudienceLabel": "Target Audience",
+    "addTargetAudience": "Add Target Audience",
+    "targetAudiencePlaceholder": "Target Audience {{index}}",
+    "goals": {
+      "brandRecognition": "Brand Recognition",
+      "leadGeneration": "Lead Generation",
+      "recruitment": "Recruitment",
+      "thoughtLeadership": "Thought Leadership",
+      "attractOpportunities": "Attract Opportunities",
+      "stayRelevant": "Stay Relevant"
+    },
+    "goalsList": [
+      "Brand Recognition",
+      "Lead Generation",
+      "Recruitment",
+      "Thought Leadership",
+      "Attract Opportunities",
+      "Stay Relevant"
+    ],
+    "accuracyLabel": "Result Accuracy",
+    "completed": "37% Complete",
+    "infoText": "The more information you provide about yourself, the better the results will be.",
+    "steps": {
+      "linkedin": "LinkedIn URL",
+      "whatsapp": "WhatsApp Number",
+      "frequency": "Frequency",
+      "goals": "Goals",
+      "pillars": "Pillars",
+      "format": "Format",
+      "knowledge": "Knowledge"
+    },
+    "messages": {
+      "loginRequired": "Please log in to continue",
+      "saveSuccess": "Goals and target audiences saved!",
+      "saveError": "Failed to save goals. Please try again."
+    }
+  },
+  "pillars": {
+    "title": "Your Pillars",
+    "subtitle": "Tell us what types of content and themes you want to address",
+    "contentTypesQuestion": "Content types you want to create",
+    "themesQuestion": "Themes you want to talk about",
+    "backButton": "Back",
+    "continueButton": "Continue",
+    "savingButton": "Saving...",
+    "addTheme": "Add Theme",
+    "themePlaceholder": "Theme {{index}}",
+    "contentTypes": {
+      "howTo": "How-To",
+      "newsOpinions": "News & Opinions",
+      "personalStories": "Personal Stories",
+      "careerLessons": "Career Lessons",
+      "behindScenes": "Behind the Scenes",
+      "clientStories": "Client Stories",
+      "educational": "Educational",
+      "memesHumor": "Memes & Humor"
+    },
+    "contentTypesList": [
+      "How-To",
+      "News & Opinions",
+      "Personal Stories",
+      "Career Lessons",
+      "Behind the Scenes",
+      "Client Stories",
+      "Educational",
+      "Memes & Humor"
+    ],
+    "accuracyLabel": "Result Accuracy",
+    "completed": "50% Complete",
+    "infoText": "The more information you provide about yourself, the better the results will be.",
+    "steps": {
+      "linkedin": "LinkedIn URL",
+      "whatsapp": "WhatsApp Number",
+      "frequency": "Frequency",
+      "goals": "Goals",
+      "pillars": "Pillars",
+      "format": "Format",
+      "knowledge": "Knowledge"
+    },
+    "messages": {
+      "loginRequired": "Please log in to continue",
+      "saveSuccess": "Content pillars saved!",
+      "saveError": "Failed to save content pillars. Please try again."
+    }
+  },
+  "format": {
+    "title": "Your Writing Format",
+    "subtitle": "Tell us what writing format you prefer for your LinkedIn posts",
+    "backButton": "Back",
+    "continueButton": "Continue",
+    "savingButton": "Saving...",
+    "formats": {
+      "standard": "Standard",
+      "formatted": "Formatted",
+      "short": "Short",
+      "emojis": "Emojis"
+    },
+    "formatsList": [
+      "Standard",
+      "Formatted",
+      "Short",
+      "Emojis"
+    ],
+    "accuracyLabel": "Result Accuracy",
+    "completed": "62% Complete",
+    "infoText": "The more information you provide about yourself, the better the results will be.",
+    "steps": {
+      "linkedin": "LinkedIn URL",
+      "whatsapp": "WhatsApp Number",
+      "frequency": "Frequency",
+      "goals": "Goals",
+      "pillars": "Pillars",
+      "format": "Format",
+      "knowledge": "Knowledge"
+    },
+    "messages": {
+      "loginRequired": "Please log in to continue",
+      "saveSuccess": "Content format saved!",
+      "saveError": "Failed to save format. Please try again."
+    }
+  },
+  "knowledge": {
+    "title": "Your Knowledge",
+    "subtitle": "Add books, meeting transcripts or videos, URLs or any material that can create deeper knowledge about your work and the things you want to say.",
+    "addLinkTitle": "Add a website link",
+    "backButton": "Back",
+    "continueButton": "Continue",
+    "savingButton": "Saving...",
+    "addButton": "Add",
+    "placeholder": "example.com",
+    "uploadSectionTitle": "Or upload files",
+    "accuracyLabel": "Result Accuracy",
+    "completed": "75% Complete",
+    "infoText": "The more information you provide about yourself, the better the results will be.",
+    "steps": {
+      "linkedin": "LinkedIn URL",
+      "whatsapp": "WhatsApp Number",
+      "frequency": "Frequency",
+      "goals": "Goals",
+      "pillars": "Pillars",
+      "format": "Format",
+      "knowledge": "Knowledge"
+    },
+    "messages": {
+      "loginRequired": "Please log in to continue",
+      "invalidUrl": "Please enter a valid URL",
+      "saveSuccess": "Knowledge base saved!",
+      "saveError": "Failed to save knowledge base. Please try again.",
+      "uploadSuccess": "{{count}} file{{plural}} uploaded successfully",
+      "uploadError": "Failed to upload files. Please try again.",
+      "linkSaveError": "Failed to save link. Please try again."
+    }
+  },
+  "ready": {
+    "title": "Ready to<br />Start?",
+    "subtitle": "Perfect! We have everything we need to create your personalized content strategy.",
+    "backButton": "Back",
+    "startButton": "Let's Go!",
+    "configuringButton": "Setting up your strategy...",
+    "infoText": "Your content strategy will be generated and ready to use!",
+    "messages": {
+      "welcome": "Welcome to Pacelane! Your content strategy is ready.",
+      "error": "Failed to complete setup. Please try again."
+    }
+  }
+}
