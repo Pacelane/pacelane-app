@@ -77,8 +77,27 @@ const TermsOfService: React.FC = () => {
           <p style={subStyle}>Última atualização: 14/08/2025</p>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[16], marginTop: spacing.spacing[16] }}>
+            <h3 style={sectionTitle}>Informações da Empresa</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[8] }}>
+              <p style={paragraph}>
+                <strong>Razão Social:</strong> NOFLOP TECNOLOGIA LTDA
+              </p>
+              <p style={paragraph}>
+                <strong>Nome de Fantasia:</strong> NOFLOP
+              </p>
+              <p style={paragraph}>
+                <strong>CNPJ:</strong> 61.747.808/0001-21
+              </p>
+              <p style={paragraph}>
+                <strong>Endereço:</strong> Emiliano Perneta, 822, Sala 803 Cond Workspace Brigadeiro, CEP 80420-080, Centro, Curitiba - PR
+              </p>
+              <p style={paragraph}>
+                <strong>Telefone:</strong> (41) 98130-414
+              </p>
+            </div>
+
             <p style={paragraph}>
-              Estes Termos de Serviço (“Termos”) regulam o uso da plataforma Pacelane – CNPJ 61.747.808/0001-21. Ao criar uma conta ou utilizar o Pacelane, você concorda com estes Termos.
+              Estes Termos de Serviço ("Termos") regulam o uso da plataforma Pacelane – CNPJ 61.747.808/0001-21. Ao criar uma conta ou utilizar o Pacelane, você concorda com estes Termos.
             </p>
 
             <h3 style={sectionTitle}>ÍNDICE</h3>
