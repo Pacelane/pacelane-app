@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/api/useAuth';
 import { useTheme } from '@/services/theme-context';
 import { useToast } from '@/design-system/components/Toast';
+import { useTranslation } from '@/services/i18n-context';
 import { useContent } from '@/hooks/api/useContent';
 import { supabase } from '@/integrations/supabase/client';
 import { ProfileService } from '@/services/profileService';
@@ -25,6 +26,7 @@ const Knowledge = () => {
   const navigate = useNavigate();
   const { user, refreshProfile } = useAuth();
   const { toast } = useToast();
+  const { t } = useTranslation('onboarding');
   const { uploadFiles, addLink, knowledgeFiles, uploading, loadKnowledgeFiles, deleteKnowledgeFile } = useContent();
   const [urlInput, setUrlInput] = useState('');
   const [saving, setSaving] = useState(false);
@@ -33,7 +35,7 @@ const Knowledge = () => {
   // Handle file selection
   const handleFileSelect = async (files: File[]) => {
     if (!user) {
-      toast.error('Por favor, faça login para continuar');
+      toast.error(t('knowledge.messages.loginRequired'));
       return;
     }
 
@@ -42,24 +44,25 @@ const Knowledge = () => {
       if (result.error) {
         toast.error(result.error);
       } else {
-        toast.success(`${files.length} arquivo${files.length > 1 ? 's' : ''} enviado${files.length > 1 ? 's' : ''} com sucesso`);
+        const plural = files.length > 1 ? 's' : '';
+        toast.success(t('knowledge.messages.uploadSuccess', { count: files.length, plural }));
       }
     } catch (error: any) {
       console.error('Error uploading files:', error);
-      toast.error('Falha ao enviar arquivos. Por favor, tente novamente.');
+      toast.error(t('knowledge.messages.uploadError'));
     }
   };
 
   // Handle URL submit - Save directly to Supabase
   const handleUrlSubmit = async () => {
     if (!user) {
-      toast.error('Por favor, faça login para continuar');
+      toast.error(t('knowledge.messages.loginRequired'));
       return;
     }
 
     const urlToSave = urlInput.trim();
     if (!urlToSave) {
-      toast.error('Por favor, insira uma URL válida');
+      toast.error(t('knowledge.messages.invalidUrl'));
       return;
     }
 
@@ -74,7 +77,7 @@ const Knowledge = () => {
       try {
         new URL(validUrl);
       } catch {
-        toast.error('Por favor, insira uma URL válida');
+        toast.error(t('knowledge.messages.invalidUrl'));
         return;
       }
 
@@ -94,7 +97,7 @@ const Knowledge = () => {
 
       if (error) {
         console.error('Error saving link:', error);
-        toast.error('Falha ao salvar link. Por favor, tente novamente.');
+        toast.error(t('knowledge.messages.linkSaveError'));
         return;
       }
 
@@ -103,17 +106,17 @@ const Knowledge = () => {
       
       // Clear input (will be handled by FileUpload component)
       setUrlInput('');
-      toast.success('Link adicionado com sucesso');
+      toast.success(t('knowledge.messages.saveSuccess'));
     } catch (error: any) {
       console.error('Error saving link:', error);
-      toast.error('Falha ao salvar link. Por favor, tente novamente.');
+      toast.error(t('knowledge.messages.linkSaveError'));
     }
   };
 
   // Handle file deletion
   const handleFileDelete = async (fileId: string) => {
     if (!user) {
-      toast.error('Por favor, faça login para continuar');
+      toast.error(t('knowledge.messages.loginRequired'));
       return;
     }
 
@@ -122,11 +125,11 @@ const Knowledge = () => {
       if (result.error) {
         toast.error(result.error);
       } else {
-        toast.success('Arquivo removido com sucesso');
+        toast.success(t('knowledge.messages.saveSuccess'));
       }
     } catch (error: any) {
       console.error('Error deleting file:', error);
-      toast.error('Falha ao excluir arquivo. Por favor, tente novamente.');
+      toast.error(t('knowledge.messages.saveError'));
     }
   };
 
@@ -137,7 +140,7 @@ const Knowledge = () => {
 
   const handleContinue = async () => {
     if (!user) {
-      toast.error('Por favor, faça login para continuar');
+      toast.error(t('knowledge.messages.loginRequired'));
       return;
     }
 
@@ -475,13 +478,13 @@ const Knowledge = () => {
 
   // Steps list
   const steps = [
-    { label: 'URL do LinkedIn', active: true },
-    { label: 'Número do WhatsApp', active: true },
-    { label: 'Frequência', active: true },
-    { label: 'Objetivos', active: true },
-    { label: 'Pilares', active: true },
-    { label: 'Formato', active: true },
-    { label: 'Conhecimento', active: false },
+    { label: t('knowledge.steps.linkedin'), active: true },
+    { label: t('knowledge.steps.whatsapp'), active: true },
+    { label: t('knowledge.steps.frequency'), active: true },
+    { label: t('knowledge.steps.goals'), active: true },
+    { label: t('knowledge.steps.pillars'), active: true },
+    { label: t('knowledge.steps.format'), active: true },
+    { label: t('knowledge.steps.knowledge'), active: false },
   ];
 
   // Get file type from file name
@@ -556,9 +559,9 @@ const Knowledge = () => {
             <div className="knowledge-content-container" style={contentContainerStyles}>
               {/* Text container */}
               <div style={textContainerStyles}>
-                <h1 style={titleStyles}>Seu Conhecimento</h1>
+                <h1 style={titleStyles}>{t('knowledge.title')}</h1>
                 <p style={subtitleStyles}>
-                  Adicione livros, transcrições de reuniões ou vídeos, URLs ou qualquer material que possa criar um conhecimento mais profundo sobre seu trabalho e as coisas que você quer dizer.
+                  {t('knowledge.subtitle')}
                 </p>
               </div>
 
@@ -584,7 +587,7 @@ const Knowledge = () => {
                   color: colors.text.default,
                   margin: 0,
                 }}>
-                  Adicione um link de um site
+                  {t('knowledge.addLinkTitle')}
                 </p>
                 <div style={{
                   display: 'flex',
@@ -598,7 +601,7 @@ const Knowledge = () => {
                       style="default"
                       value={urlInput}
                       onChange={(e) => setUrlInput(e.target.value)}
-                      placeholder="exemplo.com"
+                      placeholder={t('knowledge.placeholder')}
                       disabled={saving}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
@@ -612,7 +615,7 @@ const Knowledge = () => {
                     <Button
                       style="primary"
                       size="md"
-                      label="Adicionar"
+                      label={t('knowledge.addButton')}
                       onClick={handleUrlSubmit}
                       disabled={!urlInput.trim() || saving}
                     />
@@ -701,7 +704,7 @@ const Knowledge = () => {
                 <Button
                   style="secondary"
                   size="sm"
-                  label="Voltar"
+                  label={t('knowledge.backButton')}
                   onClick={handleGoBack}
                   fullWidth
                   disabled={saving}
@@ -711,7 +714,7 @@ const Knowledge = () => {
                 <Button
                   style="primary"
                   size="sm"
-                  label={saving ? "Salvando..." : "Continuar"}
+                  label={saving ? t('knowledge.savingButton') : t('knowledge.continueButton')}
                   leadIcon={saving ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : undefined}
                   tailIcon={!saving ? <ArrowRight size={16} /> : undefined}
                   onClick={handleContinue}
@@ -726,7 +729,7 @@ const Knowledge = () => {
           <div style={accuracyBarStyles}>
             {/* Bar container */}
             <div style={barContainerStyles}>
-              <p style={labelTextStyles}>Precisão do Resultado</p>
+              <p style={labelTextStyles}>{t('knowledge.accuracyLabel')}</p>
               <div style={{ marginTop: spacing.spacing[8] }}>
                 <div style={linesBarContainerStyles}>
                   {[...Array(27)].map((_, index) => (
@@ -734,10 +737,10 @@ const Knowledge = () => {
                   ))}
                 </div>
               </div>
-              <p style={{ ...infoTextStyles, marginTop: spacing.spacing[4] }}>70% Completo</p>
+              <p style={{ ...infoTextStyles, marginTop: spacing.spacing[4] }}>{t('knowledge.completed')}</p>
               <div style={{ ...dividerStyles, marginTop: spacing.spacing[8] }} />
               <p style={{ ...infoTextStyles, marginTop: spacing.spacing[8] }}>
-                Quanto mais informações você fornecer sobre si mesmo, melhores serão os resultados.
+                {t('knowledge.infoText')}
               </p>
             </div>
 

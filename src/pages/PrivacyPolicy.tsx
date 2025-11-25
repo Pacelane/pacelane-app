@@ -77,6 +77,25 @@ const PrivacyPolicy: React.FC = () => {
           <p style={subStyle}>14/08/2025</p>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[16], marginTop: spacing.spacing[16] }}>
+            <h3 style={sectionTitle}>Informações da Empresa</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[8] }}>
+              <p style={paragraph}>
+                <strong>Razão Social:</strong> NOFLOP TECNOLOGIA LTDA
+              </p>
+              <p style={paragraph}>
+                <strong>Nome de Fantasia:</strong> NOFLOP
+              </p>
+              <p style={paragraph}>
+                <strong>CNPJ:</strong> 61.747.808/0001-21
+              </p>
+              <p style={paragraph}>
+                <strong>Endereço:</strong> Emiliano Perneta, 822, Sala 803 Cond Workspace Brigadeiro, CEP 80420-080, Centro, Curitiba - PR
+              </p>
+              <p style={paragraph}>
+                <strong>Telefone:</strong> (41) 98130-414
+              </p>
+            </div>
+
             <p style={paragraph}>Pacelane</p>
             <p style={paragraph}>privacidade@pacelane.ai</p>
 

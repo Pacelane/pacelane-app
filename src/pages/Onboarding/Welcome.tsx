@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/services/theme-context';
 import { useAuth } from '@/hooks/api/useAuth';
+import { useTranslation } from '@/services/i18n-context';
 
 // Design System Components
 import TopNav from '@/design-system/components/TopNav';
@@ -23,6 +24,8 @@ const Welcome = () => {
   const { colors } = useTheme();
   const navigate = useNavigate();
   const { user, profile, loading } = useAuth();
+  const { t } = useTranslation('onboarding');
+  const { t: tCommon } = useTranslation('common');
 
   // Check onboarding status and redirect accordingly
   useEffect(() => {
@@ -63,7 +66,7 @@ const Welcome = () => {
           color: colors.text.muted,
           margin: 0
         }}>
-          Carregando...
+          {tCommon('messages.loading')}
         </p>
       </div>
     );
@@ -178,9 +181,9 @@ const Welcome = () => {
           <div style={topContainerStyles}>
             {/* Text container */}
             <div style={textContainerStyles}>
-              <h1 style={titleStyles}>Bem-Vindo!</h1>
+              <h1 style={titleStyles}>{t('welcome.title')}</h1>
               <p style={subtitleStyles}>
-                Queremos te ajudar a aparecer de forma consistente no LinkedIn com conteúdos que tenham a sua cara.
+                {t('welcome.subtitle')}
               </p>
             </div>
 
@@ -188,7 +191,7 @@ const Welcome = () => {
             <Button
               style="primary"
               size="lg"
-              label="Começar"
+              label={t('welcome.startButton')}
               tailIcon={<ArrowRight size={16} />}
               onClick={handleStartClick}
               fullWidth
@@ -198,7 +201,7 @@ const Welcome = () => {
           {/* Bottom container */}
           <div style={bottomContainerStyles}>
             <p style={bottomTextStyles}>
-              Faremos algumas perguntas para personalizar a sua estratégia.
+              {t('welcome.bottomText')}
             </p>
           </div>
         </div>

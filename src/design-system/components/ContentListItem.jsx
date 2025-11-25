@@ -7,6 +7,7 @@ import { spacing } from '../tokens/spacing.js';
 import { cornerRadius } from '../tokens/corner-radius.js';
 import { textStyles } from '../styles/typography/typography-styles.js';
 import { shadows, getShadow } from '../tokens/shadows.js';
+import { useTranslation } from '@/services/i18n-context';
 import Button from './Button.jsx';
 import Badge from './Badge.jsx';
 import DropdownMenu from './DropdownMenu.jsx';
@@ -33,6 +34,7 @@ const ContentListItem = ({
 }) => {
   const { colors } = useTheme();
   const isMobile = useIsMobile();
+  const { t } = useTranslation('pages');
   const [isHovered, setIsHovered] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
@@ -43,21 +45,21 @@ const ContentListItem = ({
   // Status dropdown items (for the Badge dropdown)
   const statusDropdownItems = [
     {
-      label: 'Draft',
+      label: t('posts.status.draft'),
       onClick: () => {
         onMenuAction?.('mark-draft');
         setShowStatusDropdown(false);
       }
     },
     {
-      label: 'Published',
+      label: t('posts.status.published'),
       onClick: () => {
         onMenuAction?.('mark-published');
         setShowStatusDropdown(false);
       }
     },
     {
-      label: 'Archived',
+      label: t('posts.status.archived'),
       onClick: () => {
         onMenuAction?.('mark-archived');
         setShowStatusDropdown(false);
@@ -70,21 +72,21 @@ const ContentListItem = ({
   
   if (status !== 'draft') {
     dropdownItems.push({
-      label: 'Mark as Draft',
+      label: t('posts.menu.markAsDraft'),
       onClick: () => onMenuAction?.('mark-draft')
     });
   }
   
   if (status !== 'published') {
     dropdownItems.push({
-      label: 'Mark as Published',
+      label: t('posts.menu.markAsPublished'),
       onClick: () => onMenuAction?.('mark-published')
     });
   }
   
   if (status !== 'archived') {
     dropdownItems.push({
-      label: 'Mark as Archived',
+      label: t('posts.menu.markAsArchived'),
       onClick: () => onMenuAction?.('mark-archived')
     });
   }
@@ -96,7 +98,7 @@ const ContentListItem = ({
   
   // Add delete option
   dropdownItems.push({
-    label: 'Delete',
+    label: t('posts.menu.delete'),
     type: 'destructive',
     onClick: () => onMenuAction?.('delete')
   });
@@ -105,12 +107,12 @@ const ContentListItem = ({
   const getStatusLabel = (status) => {
     switch (status) {
       case 'published':
-        return 'Published';
+        return t('posts.status.published');
       case 'archived':
-        return 'Archived';
+        return t('posts.status.archived');
       case 'draft':
       default:
-        return 'Draft';
+        return t('posts.status.draft');
     }
   };
 

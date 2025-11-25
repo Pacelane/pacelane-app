@@ -5,6 +5,7 @@ import { useTheme } from '@/services/theme-context';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/design-system/components/Toast';
+import { useTranslation } from '@/services/i18n-context';
 
 // Design System Components
 import TopNav from '@/design-system/components/TopNav';
@@ -48,6 +49,7 @@ const Ready = () => {
   const { user, refreshProfile } = useAuth();
   const { colors } = useTheme();
   const { toast } = useToast();
+  const { t } = useTranslation('onboarding');
   const isMobile = useIsMobile();
   const [isLoading, setIsLoading] = useState(false);
   const [confettiPieces, setConfettiPieces] = useState([]);
@@ -200,12 +202,12 @@ const Ready = () => {
       console.log('Ready: Setting is_onboarded to true for user:', user.id);
       
       // Navigate directly - no complex verification
-      toast.success('Bem-vindo ao Pacelane! Sua estratégia de conteúdo está pronta.');
+      toast.success(t('ready.messages.welcome'));
       navigate('/product-home');
       
     } catch (error) {
       console.error('Error starting:', error);
-      toast.error('Falha ao concluir a configuração. Por favor, tente novamente.');
+      toast.error(t('ready.messages.error'));
     } finally {
       setIsLoading(false);
     }
@@ -310,7 +312,7 @@ const Ready = () => {
             maxWidth: isMobile ? '320px' : '400px'
           }}>
             <Button
-              label="Voltar"
+              label={t('ready.backButton')}
               style="dashed"
               size="xs"
               leadIcon={<ArrowLeft size={12} />}
@@ -386,7 +388,7 @@ const Ready = () => {
                       textAlign: 'left',
                     }}
                   >
-                    Pronto para<br />Começar?
+                    <span dangerouslySetInnerHTML={{ __html: t('ready.title') }} />
                   </h1>
 
                   {/* Subtitle */}
@@ -401,7 +403,7 @@ const Ready = () => {
                       textAlign: 'left',
                     }}
                   >
-                    Perfeito! Temos tudo que precisamos para criar sua estratégia de conteúdo personalizada.
+                    {t('ready.subtitle')}
                   </p>
                 </div>
               </div>
@@ -430,7 +432,7 @@ const Ready = () => {
                   textAlign: 'center',
                 }}
               >
-                Sua estratégia de conteúdo será gerada e estará pronta para uso!
+                {t('ready.infoText')}
               </p>
             </div>
           </div>
@@ -460,7 +462,7 @@ const Ready = () => {
           justifyContent: 'center'
         }}>
           <Button 
-            label={isLoading ? "Configurando sua estratégia..." : "Vamos Lá!"}
+            label={isLoading ? t('ready.configuringButton') : t('ready.startButton')}
             style="primary"
             size="lg"
             leadIcon={!isLoading ? <Sparkles size={16} /> : undefined}

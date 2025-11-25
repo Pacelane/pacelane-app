@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/api/useAuth';
 import { useTheme } from '@/services/theme-context';
+import { useTranslation } from '@/services/i18n-context';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { templateData } from '@/data/templateData';
 import { supabase } from '@/integrations/supabase/client';
@@ -32,6 +33,7 @@ const InitialHome = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { colors } = useTheme();
+  const { t } = useTranslation('pages');
   const isMobile = useIsMobile();
   const { toast } = useToast();
   
@@ -143,10 +145,10 @@ const InitialHome = () => {
         if (user?.id) authUrl.searchParams.set('state', user.id);
         window.location.href = authUrl.toString();
       } else {
-        toast.error(result.error || 'Failed to start Google Calendar connection');
+        toast.error(result.error || t('productHome.errors.calendarConnection'));
       }
     } catch (e) {
-      toast.error('Failed to start Google Calendar connection');
+      toast.error(t('productHome.errors.calendarConnection'));
     }
   };
 
@@ -199,9 +201,9 @@ const InitialHome = () => {
     <div style={contentContainerStyles}>
       {/* Header Section */}
       <div>
-        <h1 style={welcomeHeadingStyle}>Welcome to Pacelane!</h1>
+        <h1 style={welcomeHeadingStyle}>{t('productHome.title')}</h1>
         <p style={subtitleStyle}>
-          Let's get you set up with the tools you need to create amazing content
+          {t('productHome.subtitle')}
         </p>
       </div>
 
@@ -212,7 +214,7 @@ const InitialHome = () => {
           color: colors.text.subtle,
           marginBottom: spacing.spacing[16]
         }}>
-          Connect your tools
+          {t('productHome.connectTools')}
         </h2>
 
         <div style={{ 
@@ -221,11 +223,11 @@ const InitialHome = () => {
           gap: spacing.spacing[16] 
         }}>
           <IntegrationCard
-            name="WhatsApp"
-            description="Add files to your knowledge base from WhatsApp and create content directly from messages"
-            icon={<img src={whatsappLogo} alt="WhatsApp" style={{ width: 24, height: 24 }} />}
+            name={t('productHome.integrations.whatsapp.name')}
+            description={t('productHome.integrations.whatsapp.description')}
+            icon={<img src={whatsappLogo} alt={t('productHome.integrations.whatsapp.name')} style={{ width: 24, height: 24 }} />}
             iconColor="#25D366"
-            features={['Knowledge base integration', 'Content creation', 'File management']}
+            features={t('productHome.integrations.whatsapp.features', { returnObjects: true }) as string[]}
             connected={integrations.whatsapp.connected}
             enabled={integrations.whatsapp.enabled}
             onToggle={(newValue) => {
@@ -239,11 +241,11 @@ const InitialHome = () => {
           />
           
           <IntegrationCard
-            name="Read.ai"
-            description="Add meeting transcripts to your knowledge base for enhanced content creation"
-            icon={<img src={readaiLogo} alt="Read.ai" style={{ width: 24, height: 24 }} />}
+            name={t('productHome.integrations.readai.name')}
+            description={t('productHome.integrations.readai.description')}
+            icon={<img src={readaiLogo} alt={t('productHome.integrations.readai.name')} style={{ width: 24, height: 24 }} />}
             iconColor="#6366F1"
-            features={['Meeting transcription', 'Knowledge base sync', 'Content insights']}
+            features={t('productHome.integrations.readai.features', { returnObjects: true }) as string[]}
             connected={integrations.readai.connected}
             enabled={integrations.readai.enabled}
             onToggle={(newValue) => {
@@ -257,11 +259,11 @@ const InitialHome = () => {
           />
           
           <IntegrationCard
-            name="Calendar Integration"
-            description="Sync your calendar via Recall.ai to understand your routines and create more relevant content"
-            icon={<img src={googleCalendarLogo} alt="Calendar Integration" style={{ width: 24, height: 24 }} />}
+            name={t('productHome.integrations.calendar.name')}
+            description={t('productHome.integrations.calendar.description')}
+            icon={<img src={googleCalendarLogo} alt={t('productHome.integrations.calendar.name')} style={{ width: 24, height: 24 }} />}
             iconColor="#4285F4"
-            features={['Calendar sync', 'Meeting recording', 'Context-aware content']}
+            features={t('productHome.integrations.calendar.features', { returnObjects: true }) as string[]}
             connected={integrations.calendar.connected}
             enabled={integrations.calendar.enabled}
             onToggle={(newValue) => {
@@ -278,8 +280,8 @@ const InitialHome = () => {
 
       {/* Knowledge Base Prompt Card */}
       <KnowledgeBasePromptCard
-        title="Give Us Context"
-        subtitle="With more files, videos, and URLs, your content will be better and more personalized"
+        title={t('productHome.knowledgeBase.title')}
+        subtitle={t('productHome.knowledgeBase.subtitle')}
         onAddFiles={handleAddFiles}
         onAddVideos={handleAddVideos}
         onAddUrls={handleAddUrls}
@@ -292,7 +294,7 @@ const InitialHome = () => {
             ...textStyles.md.semibold, 
             color: colors.text.subtle
           }}>
-            Start from templates
+            {t('productHome.templates.title')}
           </h2>
           <button
             style={{
@@ -307,7 +309,7 @@ const InitialHome = () => {
             }}
             onClick={() => navigate('/templates')}
           >
-            see all templates
+            {t('productHome.templates.seeAll')}
             <ChevronRight size={12} />
           </button>
         </div>

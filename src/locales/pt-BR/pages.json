@@ -1,0 +1,469 @@
+{
+  "productHome": {
+    "title": "Bem-vindo ao Pacelane!",
+    "subtitle": "Vamos configurar as ferramentas que você precisa para criar conteúdo incrível",
+    "connectTools": "Conecte suas ferramentas",
+    "integrations": {
+      "whatsapp": {
+        "name": "WhatsApp",
+        "description": "Adicione arquivos à sua base de conhecimento do WhatsApp e crie conteúdo diretamente das mensagens",
+        "features": [
+          "Integração com base de conhecimento",
+          "Criação de conteúdo",
+          "Gerenciamento de arquivos"
+        ]
+      },
+      "readai": {
+        "name": "Read.ai",
+        "description": "Adicione transcrições de reuniões à sua base de conhecimento para melhorar a criação de conteúdo",
+        "features": [
+          "Transcrição de reuniões",
+          "Sincronização com base de conhecimento",
+          "Insights de conteúdo"
+        ]
+      },
+      "calendar": {
+        "name": "Integração com Calendário",
+        "description": "Sincronize seu calendário via Recall.ai para entender suas rotinas e criar conteúdo mais relevante",
+        "features": [
+          "Sincronização de calendário",
+          "Gravação de reuniões",
+          "Conteúdo contextual"
+        ]
+      }
+    },
+    "knowledgeBase": {
+      "title": "Nos Dê Contexto",
+      "subtitle": "Com mais arquivos, vídeos e URLs, seu conteúdo será melhor e mais personalizado"
+    },
+    "templates": {
+      "title": "Comece com modelos",
+      "seeAll": "ver todos os modelos"
+    },
+    "stats": {
+      "title": "Suas Estatísticas",
+      "projects": "Projetos",
+      "knowledge": "Conhecimento",
+      "ideas": "Ideias"
+    },
+    "loading": {
+      "dashboard": "Carregando seu painel...",
+      "creatingOrder": "Criando ordem de conteúdo...",
+      "buildingBrief": "Construindo brief de conteúdo...",
+      "processing": "Processando pipeline de agentes...",
+      "finalizing": "Finalizando conteúdo...",
+      "done": "Pronto! Conteúdo criado em rascunhos."
+    },
+    "contentSuggestion": {
+      "preview": "Sugestão de conteúdo gerada por IA - clique para começar a criar"
+    },
+    "errors": {
+      "calendarConnection": "Falha ao iniciar conexão com Google Calendar"
+    }
+  },
+  "sidebar": {
+    "menu": {
+      "home": "Home",
+      "profile": "Perfil",
+      "knowledge": "Conhecimento",
+      "history": "Posts",
+      "pacing": "Ritmo",
+      "integrations": "Integrações",
+      "notifications": "Notificações",
+      "planBilling": "Plano e Cobrança"
+    },
+    "actions": {
+      "createNew": "Criar Novo",
+      "help": "Ajuda",
+      "profileSettings": "Configurações do Perfil",
+      "signOut": "Sair"
+    },
+    "aria": {
+      "expandSidebar": "Expandir barra lateral",
+      "collapseSidebar": "Recolher barra lateral",
+      "userMenu": "Menu do usuário",
+      "viewProfile": "Ver perfil de {{name}}"
+    },
+    "theme": {
+      "light": "Claro",
+      "dark": "Escuro",
+      "system": "Sistema",
+      "switchToDark": "Alternar para tema escuro",
+      "switchToLight": "Alternar para tema claro"
+    }
+  },
+  "profile": {
+    "title": "Configurações do Perfil",
+    "subtitle": "Gerencie suas informações pessoais, detalhes da empresa e preferências de conteúdo",
+    "signOut": "Sair",
+    "sections": {
+      "personal": "Informações Pessoais",
+      "goals": "Objetivos e Públicos",
+      "pillars": "Pilares de Conteúdo",
+      "format": "Formato de Escrita"
+    },
+    "personal": {
+      "name": "Nome Completo",
+      "profession": "Título Profissional",
+      "linkedinUrl": "URL do LinkedIn",
+      "bio": "Bio",
+      "bioPlaceholder": "Conte-nos sobre você...",
+      "yourName": "Seu Nome",
+      "yourProfession": "Sua Profissão",
+      "save": "Salvar",
+      "saved": "Salvo!"
+    },
+    "goals": {
+      "title": "Seus Objetivos",
+      "subtitle": "O que você quer alcançar com seu conteúdo?",
+      "targetAudiences": "Seus Públicos-Alvo",
+      "addTargetAudience": "Adicionar Público-Alvo",
+      "targetAudiencePlaceholder": "Público-Alvo {{index}}",
+      "save": "Salvar",
+      "saved": "Salvo!",
+      "options": {
+        "brandRecognition": "Reconhecimento de Marca",
+        "leadGeneration": "Geração de Leads",
+        "recruitment": "Recrutamento",
+        "thoughtLeadership": "Liderança de Pensamento",
+        "attractOpportunities": "Atrair Oportunidades",
+        "stayRelevant": "Manter-se Relevante"
+      }
+    },
+    "guides": {
+      "title": "Tom de Voz",
+      "subtitle": "Defina a personalidade e o estilo que devem aparecer no seu conteúdo",
+      "placeholder": "Digite um elemento de tom de voz (ex: Profissional, Amigável, Autoritário)...",
+      "emptyTitle": "Nenhum elemento de tom de voz definido ainda",
+      "giveIdeas": "Me dê algumas ideias",
+      "save": "Salvar",
+      "saved": "Salvo!"
+    },
+    "pillars": {
+      "title": "Tipos de Conteúdo",
+      "subtitle": "Que tipos de conteúdo você quer criar?",
+      "themes": "Temas sobre os quais você quer falar",
+      "addTheme": "Adicionar Tema",
+      "themePlaceholder": "Tema {{index}}",
+      "save": "Salvar",
+      "saved": "Salvo!",
+      "contentTypes": {
+        "howTo": "Como Fazer",
+        "newsOpinions": "Notícias e Opiniões",
+        "personalStories": "Histórias Pessoais",
+        "careerLessons": "Lições de Carreira",
+        "behindScenes": "Bastidores",
+        "customerStories": "Histórias de Clientes",
+        "educational": "Educacional",
+        "memesHumor": "Memes e Humor"
+      }
+    },
+    "format": {
+      "title": "Formato de Escrita",
+      "subtitle": "Escolha o formato que melhor se adapta ao seu estilo de escrita",
+      "save": "Salvar",
+      "saved": "Salvo!",
+      "options": {
+        "standard": "Padrão",
+        "formatted": "Formatado",
+        "short": "Curto",
+        "emojis": "Emojis"
+      },
+      "descriptions": {
+        "standard": "Posts padrão são escritos em parágrafos contínuos, ideais para narrativas e reflexões mais longas.",
+        "formatted": "Posts formatados usam listas, quebras de linha e estrutura clara para facilitar a leitura.",
+        "short": "Posts curtos são diretos e objetivos, perfeitos para mensagens rápidas e impactantes.",
+        "emojis": "Posts com emojis adicionam personalidade e tornam o conteúdo mais visual e envolvente.",
+        "default": "Escolha o formato que melhor se adapta ao seu estilo de escrita. Este será o padrão para seus posts no LinkedIn."
+      },
+      "examples": {
+        "standard": "Hoje quero compartilhar uma reflexão importante sobre design de produtos.\n\nNos últimos meses, tenho trabalhado em projetos desafiadores que me ensinaram uma lição valiosa: simplicidade é a sofisticação máxima.\n\nQuando começamos a projetar, é tentador adicionar recursos e detalhes. Mas os melhores produtos são aqueles que resolvem problemas complexos de forma simples.\n\nO que você acha? Como você aplica esse princípio no seu trabalho?",
+        "formatted": "Hoje quero compartilhar 3 lições importantes sobre design de produtos:\n\n→ Simplicidade é a sofisticação máxima\n→ Menos recursos, mais valor\n→ Foque no problema, não na solução\n\nNos últimos meses, aprendi que os melhores produtos resolvem problemas complexos de forma simples.\n\nQual dessas lições ressoa mais com você?",
+        "short": "Simplicidade é a sofisticação máxima.\n\nNos últimos meses aprendi que os melhores produtos resolvem problemas complexos de forma simples.\n\nMenos é mais.",
+        "emojis": "💡 Hoje quero compartilhar uma reflexão importante sobre design de produtos.\n\n✨ Nos últimos meses, tenho trabalhado em projetos desafiadores que me ensinaram uma lição valiosa: simplicidade é a sofisticação máxima.\n\n🎯 Quando começamos a projetar, é tentador adicionar recursos e detalhes. Mas os melhores produtos resolvem problemas complexos de forma simples.\n\n🚀 Menos é mais!"
+      }
+    }
+  },
+  "integrations": {
+    "title": "Integrações",
+    "subtitle": "Conecte suas ferramentas favoritas para otimizar seu fluxo de trabalho de criação de conteúdo",
+    "whatsapp": {
+      "name": "WhatsApp",
+      "description": "Adicione arquivos à sua base de conhecimento do WhatsApp e crie conteúdo diretamente das mensagens",
+      "features": [
+        "Integração com base de conhecimento",
+        "Criação de conteúdo",
+        "Gerenciamento de arquivos"
+      ]
+    },
+    "linkedin": {
+      "name": "LinkedIn",
+      "description": "Analise seus posts do LinkedIn para entender seu estilo de escrita e criar conteúdo personalizado",
+      "features": [
+        "Análise de estilo de escrita",
+        "Coleta de posts",
+        "Personalização de conteúdo"
+      ]
+    },
+    "readai": {
+      "name": "Read.ai",
+      "description": "Adicione transcrições de reuniões à sua base de conhecimento para melhorar a criação de conteúdo",
+      "features": [
+        "Transcrição de reuniões",
+        "Sincronização com base de conhecimento",
+        "Insights de conteúdo"
+      ]
+    },
+    "googleCalendar": {
+      "name": "Google Calendar",
+      "description": "Sincronize seu calendário para entender suas rotinas e criar conteúdo mais relevante",
+      "features": [
+        "Sincronização de calendário",
+        "Análise de rotinas",
+        "Conteúdo contextual"
+      ]
+    },
+    "toasts": {
+      "whatsappSaved": "Número do WhatsApp salvo com sucesso!",
+      "whatsappRemoved": "Número do WhatsApp removido com sucesso!",
+      "whatsappSaveError": "Falha ao salvar número do WhatsApp. Por favor, tente novamente.",
+      "readaiConfigured": "Integração Read.ai configurada com sucesso!",
+      "linkedinConfigured": "Integração LinkedIn configurada com sucesso!",
+      "calendarConnectionError": "Falha ao iniciar conexão com Calendário",
+      "calendarConnectionFailed": "Falha ao iniciar conexão com Calendário"
+    }
+  },
+  "pacing": {
+    "title": "Configurações de Ritmo",
+    "subtitle": "Personalize quando e com que frequência interagimos com você para máxima produtividade",
+    "frequency": {
+      "title": "Frequência",
+      "subtitle": "Defina quando você quer postar",
+      "save": "Salvar",
+      "saved": "Salvo!"
+    },
+    "weekdays": {
+      "monday": "S",
+      "tuesday": "T",
+      "wednesday": "Q",
+      "thursday": "Q",
+      "friday": "S",
+      "saturday": "S",
+      "sunday": "D"
+    }
+  },
+  "posts": {
+    "title": "Posts",
+    "subtitle": "Gerencie seus rascunhos salvos e sugestões de conteúdo",
+    "filters": {
+      "all": "Todos",
+      "draft": "Rascunhos",
+      "published": "Publicados",
+      "archived": "Arquivados"
+    },
+    "sort": {
+      "lastEdited": "Última Edição",
+      "newest": "Mais Recentes",
+      "oldest": "Mais Antigos",
+      "nameAsc": "A-Z",
+      "nameDesc": "Z-A"
+    },
+    "search": {
+      "placeholder": "Buscar posts...",
+      "loading": "Carregando seus posts..."
+    },
+    "view": {
+      "grid": "Grade",
+      "list": "Lista"
+    },
+    "empty": {
+      "title": "Nenhum conteúdo encontrado",
+      "subtitleAll": "Comece a escrever para criar seu primeiro post ou aguarde sugestões de conteúdo!",
+      "subtitleFiltered": "Nenhum conteúdo {{filter}} encontrado. Tente alterar o filtro ou os termos de busca.",
+      "button": "Criar Novo Post"
+    },
+    "itemSubtitle": {
+      "lastEdited": "Última edição {{date}}",
+      "suggestion": "Sugestão de conteúdo"
+    },
+    "toasts": {
+      "draftDeleted": "Rascunho excluído com sucesso",
+      "deleteError": "Falha ao excluir rascunho",
+      "statusUpdated": "Post marcado como {{status}}",
+      "statusUpdateError": "Falha ao atualizar status do post"
+    },
+    "status": {
+      "draft": "Rascunho",
+      "published": "Publicado",
+      "archived": "Arquivado"
+    },
+    "menu": {
+      "markAsDraft": "Marcar como Rascunho",
+      "markAsPublished": "Marcar como Publicado",
+      "markAsArchived": "Marcar como Arquivado",
+      "delete": "Excluir"
+    }
+  },
+  "knowledgeBase": {
+    "title": "Base de Conhecimento",
+    "subtitle": "Organize e acesse todos os arquivos, documentos e recursos do seu projeto em um só lugar",
+    "sort": {
+      "lastAdded": "Últimos Adicionados",
+      "nameAsc": "Nome A-Z",
+      "nameDesc": "Nome Z-A",
+      "sizeLarge": "Tamanho (Maior)",
+      "sizeSmall": "Tamanho (Menor)"
+    },
+    "search": {
+      "placeholder": "Buscar arquivos...",
+      "loading": "Carregando seus arquivos...",
+      "loadingCount": "Carregando contagem de arquivos...",
+      "uploading": "Enviando arquivos..."
+    },
+    "transcript": {
+      "title": "Cole Suas Transcrições de Reuniões",
+      "subtitle": "As transcrições serão salvas como arquivos de conhecimento pesquisáveis para criação de conteúdo futura",
+      "button": "Colar Transcrição",
+      "modalTitle": "Transcrição de Áudio",
+      "transcriptionLabel": "Transcrição",
+      "noTranscription": "Nenhuma transcrição disponível"
+    },
+    "empty": {
+      "title": "Nenhum arquivo encontrado",
+      "subtitleSearch": "Tente ajustar sua busca",
+      "subtitleNoSearch": "Envie alguns arquivos para começar",
+      "button": "Enviar Arquivos"
+    },
+    "results": {
+      "showing": "Mostrando {{start}} a {{end}} de {{total}} arquivos"
+    },
+    "toasts": {
+      "upload": {
+        "title": "Envio em Andamento",
+        "loadingSingle": "Enviando 1 arquivo...",
+        "loadingMultiple": "Enviando {{count}} arquivos...",
+        "successSingle": "Arquivo enviado com sucesso",
+        "successMultiple": "{{count}} arquivos enviados com sucesso",
+        "completeTitle": "Envio Concluído",
+        "errorTitle": "Falha no Envio",
+        "errorTitleGeneric": "Erro no Envio",
+        "validationTitle": "Falha na Validação de Arquivo",
+        "proceeding": "Prosseguindo com {{count}} arquivo válido",
+        "proceedingPlural": "Prosseguindo com {{count}} arquivos válidos"
+      },
+      "link": {
+        "loading": "Adicionando link à sua base de conhecimento...",
+        "title": "Processando Link",
+        "success": "Link adicionado com sucesso à sua base de conhecimento",
+        "successTitle": "Link Adicionado",
+        "errorTitle": "Falha ao Adicionar Link",
+        "errorTitleGeneric": "Erro no Link",
+        "invalidUrl": "Por favor, insira uma URL válida (ex: example.com ou https://example.com)",
+        "invalidUrlTitle": "URL Inválida"
+      },
+      "delete": {
+        "loading": "Excluindo {{fileName}}...",
+        "title": "Excluindo Arquivo",
+        "success": "{{fileName}} excluído com sucesso",
+        "successTitle": "Arquivo Excluído",
+        "errorTitle": "Falha ao Excluir Arquivo",
+        "errorTitleGeneric": "Erro ao Excluir"
+      },
+      "transcript": {
+        "processing": "Processando transcrição \"{{title}}\"...",
+        "title": "Processando Transcrição",
+        "success": "Transcrição de reunião \"{{title}}\" processada e salva com sucesso!",
+        "successTitle": "Transcrição Salva",
+        "successDescription": "Adicionada à tabela de reuniões e base de conhecimento com {{participants}} participantes",
+        "errorTitle": "Erro no Processamento",
+        "error": "Falha ao processar transcrição de reunião",
+        "validationTitle": "Erro de Validação"
+      }
+    },
+    "errors": {
+      "upload": {
+        "fileTooLarge": "Arquivo muito grande. Por favor, escolha arquivos menores que 10MB cada.",
+        "unsupportedType": "Tipo de arquivo não suportado. Por favor, envie documentos, imagens, arquivos de áudio ou vídeos.",
+        "authentication": "Sessão expirada. Por favor, atualize a página e tente novamente.",
+        "network": "Erro de rede. Por favor, verifique sua conexão e tente novamente.",
+        "storage": "Limite de armazenamento atingido. Por favor, exclua alguns arquivos e tente novamente.",
+        "duplicate": "Um arquivo com este nome já existe. Por favor, renomeie o arquivo e tente novamente.",
+        "default": "Falha no envio. Por favor, tente novamente ou entre em contato com o suporte se o problema continuar."
+      },
+      "link": {
+        "invalidUrl": "Por favor, insira uma URL válida (ex: example.com ou https://example.com).",
+        "notAccessible": "Site não acessível. Por favor, verifique a URL e tente novamente.",
+        "timeout": "Site demorou muito para responder. Por favor, tente novamente mais tarde.",
+        "duplicate": "Este link já foi adicionado à sua base de conhecimento.",
+        "default": "Falha ao adicionar link. Por favor, verifique a URL e tente novamente."
+      },
+      "delete": {
+        "notFound": "Arquivo não existe mais. Pode ter sido excluído.",
+        "permission": "Você não tem permissão para excluir este arquivo.",
+        "inUse": "Arquivo está sendo usado e não pode ser excluído. Por favor, tente novamente mais tarde.",
+        "default": "Falha ao excluir arquivo. Por favor, tente novamente ou entre em contato com o suporte."
+      }
+    },
+    "fileStatus": {
+      "transcribed": "Transcrito",
+      "transcriptionFailed": "Transcrição falhou",
+      "transcriptionReady": "Transcrição pronta",
+      "transcriptionPending": "Transcrição pendente",
+      "unknownDate": "Data Desconhecida"
+    }
+  },
+  "contentEditor": {
+    "defaultTitle": "Novo Post",
+    "defaultContent": "# Novo Post\n\nComece a escrever seu conteúdo aqui...",
+    "untitled": "Sem Título",
+    "untitledConversation": "Conversa Sem Título",
+    "currentChat": "Chat Atual",
+    "newConversation": "Nova Conversa",
+    "today": "Hoje",
+    "yesterday": "Ontem",
+    "buttons": {
+      "viewAllPosts": "Ver todos os posts",
+      "help": "Ajuda",
+      "sendMessage": "Enviar Mensagem",
+      "reject": "Rejeitar",
+      "apply": "Aplicar"
+    },
+    "placeholders": {
+      "editor": "Sobre o que você quer falar?",
+      "chat": "Pergunte à IA qualquer coisa sobre seu conteúdo..."
+    },
+    "labels": {
+      "you": "Você",
+      "assistant": "Assistente",
+      "aiAssistant": "Assistente de IA",
+      "quickActions": "Ações Rápidas",
+      "knowledgeBase": "Base de Conhecimento",
+      "knowledgeFiles": "Arquivos de Conhecimento",
+      "selected": "selecionado",
+      "selectedPlural": "selecionados",
+      "hook": "Gancho"
+    },
+    "quickActions": {
+      "professional": "Profissional",
+      "bulletPoints": "Pontos de Destaque",
+      "betterHook": "Gancho Melhor",
+      "addHashtags": "Adicionar Hashtags",
+      "makeShorter": "Tornar Mais Curto",
+      "makeLonger": "Tornar Mais Longo",
+      "addStory": "Adicionar História",
+      "makeActionable": "Tornar Acionável"
+    },
+    "modals": {
+      "addFiles": "Adicionar Arquivos à Base de Conhecimento"
+    },
+    "empty": {
+      "noFiles": "Nenhum arquivo encontrado. Envie arquivos na Base de Conhecimento."
+    },
+    "messages": {
+      "welcomeTitle": "👋 Olá! Eu sou seu assistente de conteúdo com IA.",
+      "welcomeSubtitle": "Pergunte-me qualquer coisa sobre seu conteúdo, dicas de escrita ou ideias!",
+      "aiEditRejected": "Edição da IA rejeitada",
+      "changesRejected": "Alterações rejeitadas"
+    }
+  }
+}

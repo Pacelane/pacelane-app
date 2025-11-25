@@ -1,0 +1,45 @@
+{
+  "buttons": {
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "delete": "Excluir",
+    "edit": "Editar",
+    "close": "Fechar",
+    "confirm": "Confirmar",
+    "start": "Começar",
+    "continue": "Continuar",
+    "back": "Voltar",
+    "next": "Próximo",
+    "finish": "Finalizar",
+    "skip": "Pular",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "reset": "Redefinir",
+    "apply": "Aplicar",
+    "submit": "Enviar",
+    "loading": "Carregando...",
+    "retry": "Tentar novamente"
+  },
+  "placeholders": {
+    "search": "Buscar...",
+    "email": "seu@email.com",
+    "password": "Sua senha",
+    "name": "Seu nome",
+    "select": "Selecione uma opção"
+  },
+  "labels": {
+    "email": "E-mail",
+    "password": "Senha",
+    "name": "Nome",
+    "optional": "Opcional",
+    "required": "Obrigatório"
+  },
+  "messages": {
+    "loading": "Carregando...",
+    "error": "Ocorreu um erro",
+    "success": "Sucesso",
+    "noResults": "Nenhum resultado encontrado",
+    "empty": "Vazio"
+  }
+}
+

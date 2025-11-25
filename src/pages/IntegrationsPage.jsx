@@ -7,6 +7,7 @@ import { textStyles } from '@/design-system/styles/typography/typography-styles'
 import { typography } from '@/design-system/tokens/typography';
 import { useToast } from '@/design-system/components/Toast';
 import { CalendarService } from '@/services/calendarService';
+import { useTranslation } from '@/services/i18n-context';
 
 // Design System Components
 import IntegrationCard from '@/design-system/components/IntegrationCard';
@@ -30,6 +31,7 @@ const IntegrationsPage = () => {
   const { colors } = useTheme();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useTranslation('pages');
 
   // Modal states
   const [whatsappModalOpen, setWhatsappModalOpen] = useState(false);
@@ -118,13 +120,13 @@ const IntegrationsPage = () => {
       setWhatsappModalOpen(false);
       
       if (hasNumber) {
-        toast.success('WhatsApp number saved successfully!');
+        toast.success(t('integrations.toasts.whatsappSaved'));
       } else {
-        toast.success('WhatsApp number removed successfully!');
+        toast.success(t('integrations.toasts.whatsappRemoved'));
       }
     } catch (error) {
       console.error('Error saving WhatsApp number:', error);
-      toast.error('Failed to save WhatsApp number. Please try again.');
+      toast.error(t('integrations.toasts.whatsappSaveError'));
     } finally {
       setSavingWhatsapp(false);
     }
@@ -134,35 +136,35 @@ const IntegrationsPage = () => {
   const integrationConfig = [
     {
       key: 'whatsapp',
-      name: 'WhatsApp',
-      description: 'Add files to your knowledge base from WhatsApp and create content directly from messages',
+      name: t('integrations.whatsapp.name'),
+      description: t('integrations.whatsapp.description'),
       icon: <img src={whatsappLogo} alt="WhatsApp" style={{ width: 24, height: 24 }} />,
       iconColor: '#25D366',
-      features: ['Knowledge base integration', 'Content creation', 'File management'],
+      features: t('integrations.whatsapp.features', { returnObjects: true }),
     },
     {
       key: 'linkedin',
-      name: 'LinkedIn',
-      description: 'Analyze your LinkedIn posts to understand your writing style and create personalized content',
+      name: t('integrations.linkedin.name'),
+      description: t('integrations.linkedin.description'),
       icon: <Linkedin size={24} color="#0A66C2" />,
       iconColor: '#0A66C2',
-      features: ['Writing style analysis', 'Post scraping', 'Content personalization'],
+      features: t('integrations.linkedin.features', { returnObjects: true }),
     },
     {
       key: 'readai',
-      name: 'Read.ai',
-      description: 'Add meeting transcripts to your knowledge base for enhanced content creation',
+      name: t('integrations.readai.name'),
+      description: t('integrations.readai.description'),
       icon: <img src={readaiLogo} alt="Read.ai" style={{ width: 24, height: 24 }} />,
       iconColor: '#6366F1',
-      features: ['Meeting transcription', 'Knowledge base sync', 'Content insights'],
+      features: t('integrations.readai.features', { returnObjects: true }),
     },
     {
       key: 'googleCalendar',
-      name: 'Google Calendar',
-      description: 'Sync your calendar to understand your routines and create more relevant content',
+      name: t('integrations.googleCalendar.name'),
+      description: t('integrations.googleCalendar.description'),
       icon: <img src={googleCalendarLogo} alt="Google Calendar" style={{ width: 24, height: 24 }} />,
       iconColor: '#4285F4',
-      features: ['Calendar sync', 'Routine analysis', 'Context-aware content'],
+      features: t('integrations.googleCalendar.features', { returnObjects: true }),
     },
   ];
 
@@ -223,10 +225,10 @@ const IntegrationsPage = () => {
           if (user?.id) authUrl.searchParams.set('state', user.id);
           window.location.href = authUrl.toString();
         } else {
-          toast.error(result.error || 'Failed to start Calendar connection');
+          toast.error(result.error || t('integrations.toasts.calendarConnectionError'));
         }
       } catch (e) {
-        toast.error('Failed to start Calendar connection');
+        toast.error(t('integrations.toasts.calendarConnectionFailed'));
       }
       return;
     }
@@ -256,7 +258,7 @@ const IntegrationsPage = () => {
       }
     }));
     
-    toast.success('Read.ai integration configured successfully!');
+    toast.success(t('integrations.toasts.readaiConfigured'));
   };
 
   // Handle LinkedIn setup completion
@@ -270,16 +272,16 @@ const IntegrationsPage = () => {
       }
     }));
     
-    toast.success('LinkedIn integration configured successfully!');
+    toast.success(t('integrations.toasts.linkedinConfigured'));
   };
 
   return (
     <div style={containerStyles}>
       {/* Header Section */}
       <div>
-        <h1 style={titleStyle}>Integrations</h1>
+        <h1 style={titleStyle}>{t('integrations.title')}</h1>
         <p style={subtitleStyle}>
-          Connect your favorite tools to streamline your content creation workflow
+          {t('integrations.subtitle')}
         </p>
       </div>
 

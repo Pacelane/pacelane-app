@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/services/theme-context';
 import { useAuth } from '@/hooks/api/useAuth';
 import { useToast } from '@/design-system/components/Toast';
+import { useTranslation } from '@/services/i18n-context';
 import { supabase } from '@/integrations/supabase/client';
 import { spacing } from '@/design-system/tokens/spacing';
 import { cornerRadius } from '@/design-system/tokens/corner-radius';
@@ -25,6 +26,7 @@ const WhatsAppInput = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useTranslation('onboarding');
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [cleanWhatsAppNumber, setCleanWhatsAppNumber] = useState('');
   const [saving, setSaving] = useState(false);
@@ -62,12 +64,12 @@ const WhatsAppInput = () => {
 
   const handleContinue = async () => {
     if (!user) {
-      toast.error('Por favor, faça login para continuar');
+      toast.error(t('whatsappInput.messages.loginRequired'));
       return;
     }
 
     if (!cleanWhatsAppNumber.trim()) {
-      toast.error('Por favor, insira um número de WhatsApp válido');
+      toast.error(t('whatsappInput.messages.invalidNumber'));
       return;
     }
 
@@ -84,11 +86,11 @@ const WhatsAppInput = () => {
 
       if (error) throw error;
 
-      toast.success('Número do WhatsApp salvo!');
+      toast.success(t('whatsappInput.messages.saveSuccess'));
       navigate('/onboarding/pacing');
     } catch (error: any) {
       console.error('Error saving WhatsApp number:', error);
-      toast.error('Falha ao salvar número do WhatsApp. Por favor, tente novamente.');
+      toast.error(t('whatsappInput.messages.saveError'));
     } finally {
       setSaving(false);
     }
@@ -283,13 +285,13 @@ const WhatsAppInput = () => {
 
   // Steps list
   const steps = [
-    { label: 'URL do LinkedIn', active: true },
-    { label: 'Número do WhatsApp', active: false },
-    { label: 'Frequência', active: false },
-    { label: 'Objetivos', active: false },
-    { label: 'Pilares', active: false },
-    { label: 'Formato', active: false },
-    { label: 'Conhecimento', active: false },
+    { label: t('whatsappInput.steps.linkedin'), active: true },
+    { label: t('whatsappInput.steps.whatsapp'), active: false },
+    { label: t('whatsappInput.steps.frequency'), active: false },
+    { label: t('whatsappInput.steps.goals'), active: false },
+    { label: t('whatsappInput.steps.pillars'), active: false },
+    { label: t('whatsappInput.steps.format'), active: false },
+    { label: t('whatsappInput.steps.knowledge'), active: false },
   ];
 
   const canContinue = cleanWhatsAppNumber.trim().length > 0;
@@ -311,27 +313,27 @@ const WhatsAppInput = () => {
             <div style={contentContainerStyles}>
               {/* Text container */}
               <div style={textContainerStyles}>
-                <h1 style={titleStyles}>Mantendo Contato</h1>
+                <h1 style={titleStyles}>{t('whatsappInput.title')}</h1>
                 <p style={subtitleStyles}>
-                  Nos diga como podemos manter contato
+                  {t('whatsappInput.subtitle')}
                 </p>
               </div>
 
               {/* WhatsApp input section */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[8] }}>
-                <p style={whatsappTitleStyles}>WhatsApp</p>
+                <p style={whatsappTitleStyles}>{t('whatsappInput.whatsappLabel')}</p>
                 <PhoneInput
                   value={whatsappNumber}
                   onChange={setWhatsappNumber}
                   onCleanNumberChange={setCleanWhatsAppNumber}
                   defaultCountry="BR"
                   size="lg"
-                  label="Seu número do WhatsApp"
-                  placeholder="(11) 99999-9999"
+                  label={t('whatsappInput.label')}
+                  placeholder={t('whatsappInput.placeholder')}
                   required
                 />
                 <p style={utilityTextStyles}>
-                  Enviaremos mensagens com rascunhos e sugestões de conteúdo baseadas no seu Plano de Conteúdo
+                  {t('whatsappInput.utilityText')}
                 </p>
               </div>
             </div>
@@ -342,7 +344,7 @@ const WhatsAppInput = () => {
                 <Button
                   style="secondary"
                   size="sm"
-                  label="Voltar"
+                  label={t('whatsappInput.backButton')}
                   onClick={handleGoBack}
                   disabled={saving}
                   fullWidth
@@ -352,7 +354,7 @@ const WhatsAppInput = () => {
                 <Button
                   style="primary"
                   size="sm"
-                  label={saving ? "Salvando..." : "Continuar"}
+                  label={saving ? t('whatsappInput.savingButton') : t('whatsappInput.continueButton')}
                   leadIcon={saving ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : undefined}
                   tailIcon={!saving ? <ArrowRight size={16} /> : undefined}
                   onClick={handleContinue}
@@ -370,7 +372,7 @@ const WhatsAppInput = () => {
               paddingRight: spacing.spacing[36],
             }}>
               <Button
-                label={hasOpenedWhatsApp ? "✓ WhatsApp Aberto" : "Sincronizar WhatsApp"}
+                label={hasOpenedWhatsApp ? t('whatsappInput.syncOpened') : t('whatsappInput.syncButton')}
                 style={hasOpenedWhatsApp ? "soft" : "primary"}
                 size="sm"
                 leadIcon={hasOpenedWhatsApp ? undefined : <MessageSquare size={16} />}
@@ -385,7 +387,7 @@ const WhatsAppInput = () => {
           <div style={accuracyBarStyles}>
             {/* Bar container */}
             <div style={barContainerStyles}>
-              <p style={labelTextStyles}>Precisão dos resultados</p>
+              <p style={labelTextStyles}>{t('whatsappInput.accuracyLabel')}</p>
               <div style={{ marginTop: spacing.spacing[8] }}>
                 <div style={linesBarContainerStyles}>
                   {[...Array(27)].map((_, index) => (
@@ -393,10 +395,10 @@ const WhatsAppInput = () => {
                   ))}
                 </div>
               </div>
-              <p style={{ ...infoTextStyles, marginTop: spacing.spacing[4] }}>12% Concluído</p>
+              <p style={{ ...infoTextStyles, marginTop: spacing.spacing[4] }}>{t('whatsappInput.completed')}</p>
               <div style={{ ...dividerStyles, marginTop: spacing.spacing[8] }} />
               <p style={{ ...infoTextStyles, marginTop: spacing.spacing[8] }}>
-                Quanto mais informações você fornecer sobre si mesmo, melhores serão os resultados.
+                {t('whatsappInput.infoText')}
               </p>
             </div>
 
