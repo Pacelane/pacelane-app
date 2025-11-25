@@ -125,9 +125,10 @@ export const isValidLinkedInUsername = (username) => {
   // LinkedIn username rules:
   // - 3-100 characters
   // - Letters, numbers, hyphens, underscores
-  // - Cannot start or end with hyphen or underscore
+  // - Must start with alphanumeric
+  // - Can end with hyphen, underscore, or alphanumeric
   // - Cannot have consecutive hyphens or underscores
-  const linkedinUsernameRegex = /^[a-zA-Z0-9]([a-zA-Z0-9\-_]*[a-zA-Z0-9])?$/;
+  const linkedinUsernameRegex = /^[a-zA-Z0-9][a-zA-Z0-9\-_]*$/;
   
   return (
     trimmed.length >= 3 &&
@@ -187,18 +188,19 @@ export const testLinkedInParser = () => {
     'john-doe',
     'jane_smith',
     'user123',
+    'andre-nunes-', // username ending with hyphen
     
     // Valid URLs
     'https://www.linkedin.com/in/samueldevyver?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=ios_app',
     'https://linkedin.com/in/john-doe/',
     'www.linkedin.com/in/jane_smith',
     'linkedin.com/in/user123',
+    'https://www.linkedin.com/in/andre-nunes-/', // URL with username ending in hyphen
     
     // Invalid cases
     '',
     'ab', // too short
     '-invalid', // starts with hyphen
-    'invalid-', // ends with hyphen
     'invalid--user', // consecutive hyphens
     'https://facebook.com/user', // wrong domain
   ];
