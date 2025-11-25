@@ -1,11 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-// CORS headers
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { corsHeaders } from '../_shared/cors.ts';
+import { updateRelationStatus } from './updateRelationStatus.ts';
 
 // Types
 interface CreatePageRequest {
@@ -108,26 +104,28 @@ serve(async (req) => {
       );
     }
 
-    // Create Supabase client
+    console.log('Auth header start:', authHeader.substring(0, 20));
+
+    // Extract JWT token from "Bearer <token>"
+    const token = authHeader.replace('Bearer ', '');
+
+    // Create Supabase client with service role key
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: authHeader },
-        },
-      }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Verify user is authenticated
+    // Verify user is authenticated by passing the JWT to getUser
     const {
       data: { user },
       error: userError,
-    } = await supabase.auth.getUser();
+    } = await supabase.auth.getUser(token);
 
     if (userError || !user) {
+      console.error('Auth error:', userError);
+      console.log('Auth header present:', !!authHeader);
       return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
+        JSON.stringify({ error: 'Unauthorized', details: userError?.message }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -165,6 +163,9 @@ serve(async (req) => {
         break;
       case 'get-graph-data':
         result = await getGraphData(supabase, { ...body, userId: user.id } as GetGraphDataRequest);
+        break;
+      case 'update-relation-status':
+        result = await updateRelationStatus(supabase, { ...body, userId: user.id } as UpdateRelationStatusRequest);
         break;
       default:
         return new Response(

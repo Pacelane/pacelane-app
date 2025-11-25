@@ -14,6 +14,7 @@ import ProductHome from "./pages/ProductHome";
 import Templates from "./pages/Templates";
 
 import KnowledgeBase from "./pages/KnowledgeBase";
+import KnowledgeGraph from "./pages/KnowledgeGraph";
 import SignIn from "./pages/SignIn";
 import Profile from "./pages/Profile";
 import ContentEditor from "./pages/ContentEditor";
@@ -94,6 +95,16 @@ const App = () => {
             <Route path="/plan-billing" element={<PlanBillingPage />} />
             <Route path="/loading" element={<LoadingPage />} />
           </Route>
+
+          {/* Full-screen Knowledge Graph (outside MainAppChrome) */}
+          <Route
+            path="/knowledge-graph"
+            element={
+              <ProtectedRoute>
+                <KnowledgeGraph />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Catch-all */}
           <Route path="*" element={<NotFound />} />

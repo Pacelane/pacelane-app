@@ -3,6 +3,9 @@ import { useTheme } from '@/services/theme-context';
 import { useToast } from '@/design-system/components/Toast';
 import Button from '@/design-system/components/Button';
 import SubtleLoadingSpinner from '@/design-system/components/SubtleLoadingSpinner';
+import BlockEditor from '@/design-system/components/BlockEditor';
+import BacklinksPanel from '@/design-system/components/BacklinksPanel';
+import { knowledgeGraphApi } from '@/api/knowledgeGraphApi';
 
 // Design System Tokens
 import { spacing } from '@/design-system/tokens/spacing';
@@ -29,6 +32,13 @@ const FilePreviewModal = ({
   const [previewData, setPreviewData] = useState(null);
   const [previewType, setPreviewType] = useState('unsupported');
   const [error, setError] = useState(null);
+  
+  // Graph Data State
+  const [graphData, setGraphData] = useState({
+    backlinks: [],
+    suggestedLinks: []
+  });
+  const [loadingGraph, setLoadingGraph] = useState(false);
 
   // Determine preview type based on file name and type
   const getPreviewType = (fileName, fileType) => {
@@ -159,6 +169,23 @@ const FilePreviewModal = ({
     } finally {
       setLoading(false);
     }
+
+    // Load Graph Data (Backlinks & Suggestions)
+    if (file?.id) {
+      setLoadingGraph(true);
+      try {
+        const pageData = await knowledgeGraphApi.getPage(file.id);
+        setGraphData({
+          backlinks: pageData.backlinks || [],
+          suggestedLinks: pageData.suggested_links || []
+        });
+      } catch (err) {
+        console.error('Error loading graph data:', err);
+        // Don't block preview if graph data fails
+      } finally {
+        setLoadingGraph(false);
+      }
+    }
   };
 
   // Handle file download
@@ -204,6 +231,43 @@ const FilePreviewModal = ({
         title: 'Download Error',
         duration: 5000
       });
+    }
+  };
+
+  // Handle suggestion actions
+  const handleAcceptSuggestion = async (relationId) => {
+    try {
+      await knowledgeGraphApi.updateRelationStatus(relationId, 'accepted');
+      toast.success('Suggestion accepted');
+      // Refresh graph data
+      if (file?.id) {
+        const pageData = await knowledgeGraphApi.getPage(file.id);
+        setGraphData({
+          backlinks: pageData.backlinks || [],
+          suggestedLinks: pageData.suggested_links || []
+        });
+      }
+    } catch (err) {
+      console.error('Error accepting suggestion:', err);
+      toast.error('Failed to accept suggestion');
+    }
+  };
+
+  const handleRejectSuggestion = async (relationId) => {
+    try {
+      await knowledgeGraphApi.updateRelationStatus(relationId, 'rejected');
+      toast.success('Suggestion rejected');
+      // Refresh graph data
+      if (file?.id) {
+        const pageData = await knowledgeGraphApi.getPage(file.id);
+        setGraphData({
+          backlinks: pageData.backlinks || [],
+          suggestedLinks: pageData.suggested_links || []
+        });
+      }
+    } catch (err) {
+      console.error('Error rejecting suggestion:', err);
+      toast.error('Failed to reject suggestion');
     }
   };
 
@@ -363,17 +427,34 @@ const FilePreviewModal = ({
 
     if (previewType === 'text' && previewData?.content) {
       return (
-        <div style={{ width: '100%' }}>
-          <h3 style={{
-            ...textStyles.md.medium,
-            color: colors.text.default,
-            margin: 0,
-            marginBottom: spacing.spacing[12],
-          }}>
-            File Content
-          </h3>
-          <div style={textPreviewStyles}>
-            {previewData.content}
+        <div style={{ width: '100%', display: 'flex', gap: spacing.spacing[24], height: '600px' }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <h3 style={{
+              ...textStyles.md.medium,
+              color: colors.text.default,
+              margin: 0,
+              marginBottom: spacing.spacing[12],
+            }}>
+              File Content
+            </h3>
+            <div style={{ flex: 1, overflow: 'auto' }}>
+              <BlockEditor 
+                initialContent={previewData.content}
+                readOnly={true} // For now, read-only in preview
+              />
+            </div>
+          </div>
+          
+          {/* Backlinks & Suggestions Sidebar */}
+          <div style={{ width: '300px', flexShrink: 0, height: '100%' }}>
+             <BacklinksPanel 
+               backlinks={graphData.backlinks}
+               suggestedLinks={graphData.suggestedLinks}
+               onBacklinkClick={(id) => console.log('Navigate to', id)} // TODO: Implement navigation
+               onAcceptSuggestion={handleAcceptSuggestion}
+               onRejectSuggestion={handleRejectSuggestion}
+               loading={loadingGraph}
+             />
           </div>
         </div>
       );

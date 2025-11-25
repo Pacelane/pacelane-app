@@ -240,9 +240,23 @@ export interface ListPagesResponse {
   per_page: number;
 }
 
+export interface SuggestedLink {
+  id: string;
+  source_page_id: string;
+  target_page_id: string;
+  relation_type: string;
+  relation_strength: number;
+  relation_description: string;
+  status: 'suggested' | 'accepted' | 'rejected';
+  source_page?: KnowledgePage;
+  target_page?: KnowledgePage;
+}
+
 export interface GetPageResponse {
   page: KnowledgePage;
+  content: string;
   backlinks: LinkWithPage[];
+  suggested_links: SuggestedLink[];
   attachments: KnowledgeAttachment[];
 }
 

@@ -107,5 +107,9 @@ export const knowledgeGraphApi = {
     const result = await callEdgeFunction('get-graph-data', { filters });
     return result.data;
   },
+
+  async updateRelationStatus(relationId: string, status: 'accepted' | 'rejected'): Promise<void> {
+    await callEdgeFunction('update-relation-status', { relationId, status });
+  },
 };
 

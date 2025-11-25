@@ -799,39 +799,23 @@ const KnowledgeBase = () => {
 
           {/* Controls Row - Search and Sort */}
           <div style={controlRowStyles}>
-            {/* COMMENTED OUT: Filter Tabs - Can be re-enabled later */}
-            {/* <Tabs
-              style="segmented"
-              type="default"
-              tabs={filterTabs}
-              activeTab={activeTab}
-              onTabChange={setActiveTab}
-            /> */}
-
-            {/* Right: Search and Sort */}
-            <div style={{ ...rightSectionStyles, width: '100%', justifyContent: 'flex-end' }}>
-              {/* Search Input */}
-              <div style={{ flex: isMobile ? 1 : 'none', width: isMobile ? 'auto' : '280px' }}>
-                <Input
-                  size="lg"
-                  style="default"
-                  placeholder="Search files..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  leadIcon={<Search size={16} />}
-                />
-              </div>
-
-              {/* Sort Dropdown */}
-              <div style={{ flexShrink: 0 }}>
-                <DropdownButton
-                  label={getCurrentSortLabel()}
-                  items={sortOptions}
-                  size="lg"
-                  position="bottom-right"
-                  minWidth="160px"
-                />
-              </div>
+            <div style={{ flex: 1, maxWidth: isMobile ? '100%' : '400px' }}>
+              <Input
+                placeholder="Search files..."
+                leadIcon={<Search size={16} />}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                size="lg"
+                fullWidth
+              />
+            </div>
+            
+            <div style={rightSectionStyles}>
+              <DropdownButton
+                label={getCurrentSortLabel()}
+                items={sortOptions}
+                size="md"
+              />
             </div>
           </div>
 
@@ -853,9 +837,9 @@ const KnowledgeBase = () => {
             </div>
           )}
 
-          {/* File Listing */}
+          {/* File Listing or Graph View */}
           {!loading && !uploading && !loadingCount && (() => {
-            const { files, totalFiles, totalPages } = getDisplayFiles;
+            const { files, totalFiles } = getDisplayFiles;
             
             if (totalFiles === 0) {
               return (
@@ -875,9 +859,9 @@ const KnowledgeBase = () => {
 
             return (
               <>
-                {/* Files Display */}
+                {/* Content Area - Grid View */}
                 <div style={gridStyles}>
-                  {files.map((file) => (
+                  {getDisplayFiles.files.map((file) => (
                     <FileCard
                       key={file.id}
                       variant="gradient"
@@ -898,35 +882,34 @@ const KnowledgeBase = () => {
                 </div>
 
                 {/* Pagination */}
-                {totalPages > 1 && (
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    marginTop: spacing.spacing[32],
-                  }}>
-                    <Pagination
-                      currentPage={hookCurrentPage}
-                      totalPages={totalPages}
-                      onPageChange={handlePageChange}
-                      showLabels={!isMobile}
-                      size={isMobile ? 'sm' : 'md'}
-                    />
-                  </div>
+                {!loading && getDisplayFiles.totalFiles > 0 && (
+                  <>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'center',
+                      marginTop: spacing.spacing[16],
+                    }}>
+                      <Pagination
+                        currentPage={hookCurrentPage}
+                        totalPages={getDisplayFiles.totalPages}
+                        onPageChange={handlePageChange}
+                      />
+                    </div>
+                    
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'center',
+                      marginTop: spacing.spacing[8],
+                    }}>
+                      <span style={{
+                        ...textStyles.sm.normal,
+                        color: colors.text.muted,
+                      }}>
+                        Showing {((hookCurrentPage - 1) * hookItemsPerPage) + 1} to {Math.min(hookCurrentPage * hookItemsPerPage, totalFiles)} of {totalFiles} files
+                      </span>
+                    </div>
+                  </>
                 )}
-
-                {/* Results Summary */}
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'center',
-                  marginTop: spacing.spacing[16],
-                }}>
-                  <span style={{
-                    ...textStyles.sm.normal,
-                    color: colors.text.muted,
-                  }}>
-                    Showing {((hookCurrentPage - 1) * hookItemsPerPage) + 1} to {Math.min(hookCurrentPage * hookItemsPerPage, totalFiles)} of {totalFiles} files
-                  </span>
-                </div>
               </>
             );
           })()}
