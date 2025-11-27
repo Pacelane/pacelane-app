@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/api/useAuth';
 import { useTheme } from '@/services/theme-context';
 import { useToast } from '@/design-system/components/Toast';
+import { useTranslation } from '@/services/i18n-context';
 import { supabase } from '@/integrations/supabase/client';
 import { PacingService } from '@/services/pacingService';
 import { spacing } from '@/design-system/tokens/spacing';
@@ -23,18 +24,19 @@ const Pacing = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useTranslation('onboarding');
   const [selectedDays, setSelectedDays] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
   // Days of the week
   const daysOfWeek = [
-    { id: 'mon', label: 'S', fullName: 'Segunda' },
-    { id: 'tue', label: 'T', fullName: 'Terça' },
-    { id: 'wed', label: 'Q', fullName: 'Quarta' },
-    { id: 'thu', label: 'Q', fullName: 'Quinta' },
-    { id: 'fri', label: 'S', fullName: 'Sexta' },
-    { id: 'sat', label: 'S', fullName: 'Sábado' },
-    { id: 'sun', label: 'D', fullName: 'Domingo' },
+    { id: 'mon', label: t('pacing.days.mon'), fullName: t('pacing.fullDays.mon') },
+    { id: 'tue', label: t('pacing.days.tue'), fullName: t('pacing.fullDays.tue') },
+    { id: 'wed', label: t('pacing.days.wed'), fullName: t('pacing.fullDays.wed') },
+    { id: 'thu', label: t('pacing.days.thu'), fullName: t('pacing.fullDays.thu') },
+    { id: 'fri', label: t('pacing.days.fri'), fullName: t('pacing.fullDays.fri') },
+    { id: 'sat', label: t('pacing.days.sat'), fullName: t('pacing.fullDays.sat') },
+    { id: 'sun', label: t('pacing.days.sun'), fullName: t('pacing.fullDays.sun') },
   ];
 
   // Handle day selection
@@ -53,12 +55,12 @@ const Pacing = () => {
 
   const handleContinue = async () => {
     if (!user) {
-      toast.error('Por favor, faça login para continuar');
+      toast.error(t('pacing.messages.loginRequired'));
       return;
     }
 
     if (selectedDays.length === 0) {
-      toast.error('Por favor, selecione pelo menos um dia da semana');
+      toast.error(t('pacing.messages.selectDay'));
       return;
     }
 
@@ -105,11 +107,11 @@ const Pacing = () => {
         console.log('Pacing schedule created successfully');
       }
 
-      toast.success('Preferências de frequência salvas!');
+      toast.success(t('pacing.messages.saveSuccess'));
       navigate('/onboarding/goals');
     } catch (error: any) {
       console.error('Error saving pacing preferences:', error);
-      toast.error('Falha ao salvar preferências. Por favor, tente novamente.');
+      toast.error(t('pacing.messages.saveError'));
     } finally {
       setSaving(false);
     }
@@ -342,13 +344,13 @@ const Pacing = () => {
 
   // Steps list
   const steps = [
-    { label: 'URL do LinkedIn', active: true },
-    { label: 'Número do WhatsApp', active: true },
-    { label: 'Frequência', active: false },
-    { label: 'Objetivos', active: false },
-    { label: 'Pilares', active: false },
-    { label: 'Formato', active: false },
-    { label: 'Conhecimento', active: false },
+    { label: t('pacing.steps.linkedin'), active: true },
+    { label: t('pacing.steps.whatsapp'), active: true },
+    { label: t('pacing.steps.frequency'), active: false },
+    { label: t('pacing.steps.goals'), active: false },
+    { label: t('pacing.steps.pillars'), active: false },
+    { label: t('pacing.steps.format'), active: false },
+    { label: t('pacing.steps.knowledge'), active: false },
   ];
 
   const canContinue = selectedDays.length > 0;
@@ -370,18 +372,18 @@ const Pacing = () => {
             <div style={contentContainerStyles}>
               {/* Text container */}
               <div style={textContainerStyles}>
-                <h1 style={titleStyles}>Seu Ritmo</h1>
+                <h1 style={titleStyles}>{t('pacing.title')}</h1>
                 <p style={subtitleStyles}>
-                  Nos diga com que frequência você quer que mantenhamos seu ritmo
+                  {t('pacing.subtitle')}
                 </p>
               </div>
 
               {/* Frequency card */}
               <div style={frequencyCardStyles}>
                 <div>
-                  <p style={cardTitleStyles}>Frequência</p>
+                  <p style={cardTitleStyles}>{t('pacing.frequencyTitle')}</p>
                   <p style={{ ...cardSubtitleStyles, marginTop: spacing.spacing[4] }}>
-                    Defina quando você quer postar
+                    {t('pacing.frequencySubtitle')}
                   </p>
                 </div>
 
@@ -410,7 +412,7 @@ const Pacing = () => {
                 <Button
                   style="secondary"
                   size="sm"
-                  label="Voltar"
+                  label={t('pacing.backButton')}
                   onClick={handleGoBack}
                   disabled={saving}
                   fullWidth
@@ -420,7 +422,7 @@ const Pacing = () => {
                 <Button
                   style="primary"
                   size="sm"
-                  label={saving ? "Salvando..." : "Continuar"}
+                  label={saving ? t('pacing.savingButton') : t('pacing.continueButton')}
                   leadIcon={saving ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : undefined}
                   tailIcon={!saving ? <ArrowRight size={16} /> : undefined}
                   onClick={handleContinue}
@@ -435,7 +437,7 @@ const Pacing = () => {
           <div style={accuracyBarStyles}>
             {/* Bar container */}
             <div style={barContainerStyles}>
-              <p style={labelTextStyles}>Precisão dos resultados</p>
+              <p style={labelTextStyles}>{t('pacing.accuracyLabel')}</p>
               <div style={{ marginTop: spacing.spacing[8] }}>
                 <div style={linesBarContainerStyles}>
                   {[...Array(27)].map((_, index) => (
@@ -443,10 +445,10 @@ const Pacing = () => {
                   ))}
                 </div>
               </div>
-              <p style={{ ...infoTextStyles, marginTop: spacing.spacing[4] }}>20% Concluído</p>
+              <p style={{ ...infoTextStyles, marginTop: spacing.spacing[4] }}>{t('pacing.completed')}</p>
               <div style={{ ...dividerStyles, marginTop: spacing.spacing[8] }} />
               <p style={{ ...infoTextStyles, marginTop: spacing.spacing[8] }}>
-                Quanto mais informações você fornecer sobre si mesmo, melhores serão os resultados.
+                {t('pacing.infoText')}
               </p>
             </div>
 

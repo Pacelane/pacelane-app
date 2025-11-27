@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/api/useAuth';
 import { useTheme } from '@/services/theme-context';
 import { useToast } from '@/design-system/components/Toast';
+import { useTranslation } from '@/services/i18n-context';
 import { supabase } from '@/integrations/supabase/client';
 import { spacing } from '@/design-system/tokens/spacing';
 import { cornerRadius } from '@/design-system/tokens/corner-radius';
@@ -30,6 +31,7 @@ const Format = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useTranslation('onboarding');
   const [selectedFormat, setSelectedFormat] = useState<WritingFormat>('standard');
   const [saving, setSaving] = useState(false);
 
@@ -37,22 +39,22 @@ const Format = () => {
   const formatOptions: FormatOption[] = [
     {
       id: 'standard',
-      label: 'Padrão',
+      label: t('format.formats.standard'),
       icon: <AlignJustify size={20} />
     },
     {
       id: 'formatted',
-      label: 'Formatado',
+      label: t('format.formats.formatted'),
       icon: <List size={20} />
     },
     {
       id: 'short',
-      label: 'Curto',
+      label: t('format.formats.short'),
       icon: <MessageSquare size={20} />
     },
     {
       id: 'emojis',
-      label: 'Emojis',
+      label: t('format.formats.emojis'),
       icon: <Smile size={20} />
     }
   ];
@@ -151,11 +153,11 @@ const Format = () => {
 
       if (error) throw error;
 
-      toast.success('Formato de escrita salvo!');
+      toast.success(t('format.messages.saveSuccess'));
       navigate('/onboarding/knowledge');
     } catch (error: any) {
       console.error('Error saving writing format:', error);
-      toast.error('Falha ao salvar formato de escrita. Por favor, tente novamente.');
+      toast.error(t('format.messages.saveError'));
     } finally {
       setSaving(false);
     }
@@ -427,13 +429,13 @@ const Format = () => {
 
   // Steps list
   const steps = [
-    { label: 'URL do LinkedIn', active: true },
-    { label: 'Número do WhatsApp', active: true },
-    { label: 'Frequência', active: true },
-    { label: 'Objetivos', active: true },
-    { label: 'Pilares', active: true },
-    { label: 'Formato', active: false },
-    { label: 'Conhecimento', active: false },
+    { label: t('format.steps.linkedin'), active: true },
+    { label: t('format.steps.whatsapp'), active: true },
+    { label: t('format.steps.frequency'), active: true },
+    { label: t('format.steps.goals'), active: true },
+    { label: t('format.steps.pillars'), active: true },
+    { label: t('format.steps.format'), active: false },
+    { label: t('format.steps.knowledge'), active: false },
   ];
 
   return (
@@ -470,9 +472,9 @@ const Format = () => {
             <div className="format-content-container" style={contentContainerStyles}>
               {/* Text container */}
               <div style={textContainerStyles}>
-                <h1 style={titleStyles}>Seu Formato de Escrita</h1>
+                <h1 style={titleStyles}>{t('format.title')}</h1>
                 <p style={subtitleStyles}>
-                  Conte-nos qual formato de escrita você prefere para seus posts no LinkedIn
+                  {t('format.subtitle')}
                 </p>
               </div>
 
@@ -544,7 +546,7 @@ const Format = () => {
                 <Button
                   style="secondary"
                   size="sm"
-                  label="Voltar"
+                  label={t('format.backButton')}
                   onClick={handleGoBack}
                   fullWidth
                   disabled={saving}
@@ -554,7 +556,7 @@ const Format = () => {
                 <Button
                   style="primary"
                   size="sm"
-                  label={saving ? "Salvando..." : "Continuar"}
+                  label={saving ? t('format.savingButton') : t('format.continueButton')}
                   leadIcon={saving ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : undefined}
                   tailIcon={!saving ? <ArrowRight size={16} /> : undefined}
                   onClick={handleContinue}
@@ -569,7 +571,7 @@ const Format = () => {
           <div style={accuracyBarStyles}>
             {/* Bar container */}
             <div style={barContainerStyles}>
-              <p style={labelTextStyles}>Precisão do Resultado</p>
+              <p style={labelTextStyles}>{t('format.accuracyLabel')}</p>
               <div style={{ marginTop: spacing.spacing[8] }}>
                 <div style={linesBarContainerStyles}>
                   {[...Array(27)].map((_, index) => (
@@ -577,10 +579,10 @@ const Format = () => {
                   ))}
                 </div>
               </div>
-              <p style={{ ...infoTextStyles, marginTop: spacing.spacing[4] }}>60% Completo</p>
+              <p style={{ ...infoTextStyles, marginTop: spacing.spacing[4] }}>{t('format.completed')}</p>
               <div style={{ ...dividerStyles, marginTop: spacing.spacing[8] }} />
               <p style={{ ...infoTextStyles, marginTop: spacing.spacing[8] }}>
-                Quanto mais informações você fornecer sobre si mesmo, melhores serão os resultados.
+                {t('format.infoText')}
               </p>
             </div>
 

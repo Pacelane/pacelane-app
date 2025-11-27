@@ -1,0 +1,45 @@
+{
+  "buttons": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "confirm": "Confirm",
+    "start": "Start",
+    "continue": "Continue",
+    "back": "Back",
+    "next": "Next",
+    "finish": "Finish",
+    "skip": "Skip",
+    "search": "Search",
+    "filter": "Filter",
+    "reset": "Reset",
+    "apply": "Apply",
+    "submit": "Submit",
+    "loading": "Loading...",
+    "retry": "Retry"
+  },
+  "placeholders": {
+    "search": "Search...",
+    "email": "your@email.com",
+    "password": "Your password",
+    "name": "Your name",
+    "select": "Select an option"
+  },
+  "labels": {
+    "email": "Email",
+    "password": "Password",
+    "name": "Name",
+    "optional": "Optional",
+    "required": "Required"
+  },
+  "messages": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "success": "Success",
+    "noResults": "No results found",
+    "empty": "Empty"
+  }
+}
+

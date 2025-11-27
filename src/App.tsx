@@ -5,6 +5,7 @@ import { Outlet } from "react-router-dom";
 
 import { ThemeProvider } from "@/services/theme-context";
 import { HelpProvider } from "./services/help-context";
+import { I18nProvider } from "./services/i18n-context";
 import ProtectedRoute from "./design-system/components/ProtectedRoute";
 import MainAppChrome from "./design-system/components/MainAppChrome";
 import HelpModal from "./design-system/components/HelpModal";
@@ -52,10 +53,11 @@ const App = () => {
 
   return (
   <QueryClientProvider client={queryClient}>
-    <ThemeProvider>
-      <HelpProvider>
-        <ToastProvider>
-          <BrowserRouter>
+    <I18nProvider>
+      <ThemeProvider>
+        <HelpProvider>
+          <ToastProvider>
+            <BrowserRouter>
         <Routes>
           {/* Public routes */}
           <Route path="/" element={<SignIn />} />
@@ -123,6 +125,7 @@ const App = () => {
       </ToastProvider>
       </HelpProvider>
     </ThemeProvider>
+    </I18nProvider>
   </QueryClientProvider>
   );
 };

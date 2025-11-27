@@ -1,0 +1,469 @@
+{
+  "productHome": {
+    "title": "Welcome to Pacelane!",
+    "subtitle": "Let's get you set up with the tools you need to create amazing content",
+    "connectTools": "Connect your tools",
+    "integrations": {
+      "whatsapp": {
+        "name": "WhatsApp",
+        "description": "Add files to your knowledge base from WhatsApp and create content directly from messages",
+        "features": [
+          "Knowledge base integration",
+          "Content creation",
+          "File management"
+        ]
+      },
+      "readai": {
+        "name": "Read.ai",
+        "description": "Add meeting transcripts to your knowledge base for enhanced content creation",
+        "features": [
+          "Meeting transcription",
+          "Knowledge base sync",
+          "Content insights"
+        ]
+      },
+      "calendar": {
+        "name": "Calendar Integration",
+        "description": "Sync your calendar via Recall.ai to understand your routines and create more relevant content",
+        "features": [
+          "Calendar sync",
+          "Meeting recording",
+          "Context-aware content"
+        ]
+      }
+    },
+    "knowledgeBase": {
+      "title": "Give Us Context",
+      "subtitle": "With more files, videos, and URLs, your content will be better and more personalized"
+    },
+    "templates": {
+      "title": "Start from templates",
+      "seeAll": "see all templates"
+    },
+    "stats": {
+      "title": "Your Stats",
+      "projects": "Projects",
+      "knowledge": "Knowledge",
+      "ideas": "Ideas"
+    },
+    "loading": {
+      "dashboard": "Loading your dashboard...",
+      "creatingOrder": "Creating content order...",
+      "buildingBrief": "Building content brief...",
+      "processing": "Agent pipeline processing...",
+      "finalizing": "Finalizing content...",
+      "done": "Done! Content created in drafts."
+    },
+    "contentSuggestion": {
+      "preview": "AI-generated content suggestion - click to start creating"
+    },
+    "errors": {
+      "calendarConnection": "Failed to start Google Calendar connection"
+    }
+  },
+  "sidebar": {
+    "menu": {
+      "home": "Home",
+      "profile": "Profile",
+      "knowledge": "Knowledge",
+      "history": "Posts",
+      "pacing": "Pacing",
+      "integrations": "Integrations",
+      "notifications": "Notifications",
+      "planBilling": "Plan & Billing"
+    },
+    "actions": {
+      "createNew": "Create New",
+      "help": "Help",
+      "profileSettings": "Profile Settings",
+      "signOut": "Sign Out"
+    },
+    "aria": {
+      "expandSidebar": "Expand sidebar",
+      "collapseSidebar": "Collapse sidebar",
+      "userMenu": "User menu",
+      "viewProfile": "View {{name}}'s profile"
+    },
+    "theme": {
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System",
+      "switchToDark": "Switch to dark theme",
+      "switchToLight": "Switch to light theme"
+    }
+  },
+  "profile": {
+    "title": "Profile Settings",
+    "subtitle": "Manage your personal information, company details, and content preferences",
+    "signOut": "Sign Out",
+    "sections": {
+      "personal": "Personal Information",
+      "goals": "Goals & Audiences",
+      "pillars": "Content Pillars",
+      "format": "Writing Format"
+    },
+    "personal": {
+      "name": "Full Name",
+      "profession": "Professional Title",
+      "linkedinUrl": "LinkedIn URL",
+      "bio": "Bio",
+      "bioPlaceholder": "Tell us about yourself...",
+      "yourName": "Your Name",
+      "yourProfession": "Your Profession",
+      "save": "Save",
+      "saved": "Saved!"
+    },
+    "goals": {
+      "title": "Your Goals",
+      "subtitle": "What do you want to achieve with your content?",
+      "targetAudiences": "Your Target Audiences",
+      "addTargetAudience": "Add Target Audience",
+      "targetAudiencePlaceholder": "Target Audience {{index}}",
+      "save": "Save",
+      "saved": "Saved!",
+      "options": {
+        "brandRecognition": "Brand Recognition",
+        "leadGeneration": "Lead Generation",
+        "recruitment": "Recruitment",
+        "thoughtLeadership": "Thought Leadership",
+        "attractOpportunities": "Attract Opportunities",
+        "stayRelevant": "Stay Relevant"
+      }
+    },
+    "guides": {
+      "title": "Tone of Voice",
+      "subtitle": "Define the personality and style that should come through in your content",
+      "placeholder": "Enter a tone of voice element (e.g., Professional, Friendly, Authoritative)...",
+      "emptyTitle": "No tone of voice elements defined yet",
+      "giveIdeas": "Give me some ideas",
+      "save": "Save",
+      "saved": "Saved!"
+    },
+    "pillars": {
+      "title": "Content Types",
+      "subtitle": "What types of content do you want to create?",
+      "themes": "Themes You Want to Talk About",
+      "addTheme": "Add Theme",
+      "themePlaceholder": "Theme {{index}}",
+      "save": "Save",
+      "saved": "Saved!",
+      "contentTypes": {
+        "howTo": "How To",
+        "newsOpinions": "News & Opinions",
+        "personalStories": "Personal Stories",
+        "careerLessons": "Career Lessons",
+        "behindScenes": "Behind The Scenes",
+        "customerStories": "Customer Stories",
+        "educational": "Educational",
+        "memesHumor": "Memes & Humor"
+      }
+    },
+    "format": {
+      "title": "Writing Format",
+      "subtitle": "Choose the format that best fits your writing style",
+      "save": "Save",
+      "saved": "Saved!",
+      "options": {
+        "standard": "Standard",
+        "formatted": "Formatted",
+        "short": "Short",
+        "emojis": "Emojis"
+      },
+      "descriptions": {
+        "standard": "Standard posts are written in continuous paragraphs, ideal for longer narratives and reflections.",
+        "formatted": "Formatted posts use lists, line breaks, and clear structure to make reading easier.",
+        "short": "Short posts are direct and objective, perfect for quick and impactful messages.",
+        "emojis": "Posts with emojis add personality and make content more visual and engaging.",
+        "default": "Choose the format that best fits your writing style. This will be the default for your LinkedIn posts."
+      },
+      "examples": {
+        "standard": "Today I want to share an important reflection on product design.\n\nIn recent months, I've been working on challenging projects that taught me a valuable lesson: simplicity is the ultimate sophistication.\n\nWhen we start designing, it's tempting to add features and details. But the best products are those that solve complex problems simply.\n\nWhat do you think? How do you apply this principle in your work?",
+        "formatted": "Today I want to share 3 important lessons about product design:\n\n→ Simplicity is the ultimate sophistication\n→ Fewer features, more value\n→ Focus on the problem, not the solution\n\nIn recent months, I learned that the best products solve complex problems simply.\n\nWhich of these lessons resonates most with you?",
+        "short": "Simplicity is the ultimate sophistication.\n\nIn recent months I learned that the best products solve complex problems simply.\n\nLess is more.",
+        "emojis": "💡 Today I want to share an important reflection on product design.\n\n✨ In recent months, I've been working on challenging projects that taught me a valuable lesson: simplicity is the ultimate sophistication.\n\n🎯 When we start designing, it's tempting to add features and details. But the best products solve complex problems simply.\n\n🚀 Less is more!"
+      }
+    }
+  },
+  "integrations": {
+    "title": "Integrations",
+    "subtitle": "Connect your favorite tools to streamline your content creation workflow",
+    "whatsapp": {
+      "name": "WhatsApp",
+      "description": "Add files to your knowledge base from WhatsApp and create content directly from messages",
+      "features": [
+        "Knowledge base integration",
+        "Content creation",
+        "File management"
+      ]
+    },
+    "linkedin": {
+      "name": "LinkedIn",
+      "description": "Analyze your LinkedIn posts to understand your writing style and create personalized content",
+      "features": [
+        "Writing style analysis",
+        "Post scraping",
+        "Content personalization"
+      ]
+    },
+    "readai": {
+      "name": "Read.ai",
+      "description": "Add meeting transcripts to your knowledge base for enhanced content creation",
+      "features": [
+        "Meeting transcription",
+        "Knowledge base sync",
+        "Content insights"
+      ]
+    },
+    "googleCalendar": {
+      "name": "Google Calendar",
+      "description": "Sync your calendar to understand your routines and create more relevant content",
+      "features": [
+        "Calendar sync",
+        "Routine analysis",
+        "Context-aware content"
+      ]
+    },
+    "toasts": {
+      "whatsappSaved": "WhatsApp number saved successfully!",
+      "whatsappRemoved": "WhatsApp number removed successfully!",
+      "whatsappSaveError": "Failed to save WhatsApp number. Please try again.",
+      "readaiConfigured": "Read.ai integration configured successfully!",
+      "linkedinConfigured": "LinkedIn integration configured successfully!",
+      "calendarConnectionError": "Failed to start Calendar connection",
+      "calendarConnectionFailed": "Failed to start Calendar connection"
+    }
+  },
+  "pacing": {
+    "title": "Pacing Settings",
+    "subtitle": "Customize when and how often we engage with you for optimal productivity",
+    "frequency": {
+      "title": "Frequency",
+      "subtitle": "Define when you want to post",
+      "save": "Save",
+      "saved": "Saved!"
+    },
+    "weekdays": {
+      "monday": "M",
+      "tuesday": "T",
+      "wednesday": "W",
+      "thursday": "T",
+      "friday": "F",
+      "saturday": "S",
+      "sunday": "S"
+    }
+  },
+  "posts": {
+    "title": "Posts",
+    "subtitle": "Manage your saved drafts and content suggestions",
+    "filters": {
+      "all": "All",
+      "draft": "Drafts",
+      "published": "Published",
+      "archived": "Archived"
+    },
+    "sort": {
+      "lastEdited": "Last Edited",
+      "newest": "Newest First",
+      "oldest": "Oldest First",
+      "nameAsc": "A-Z",
+      "nameDesc": "Z-A"
+    },
+    "search": {
+      "placeholder": "Search posts...",
+      "loading": "Loading your posts..."
+    },
+    "view": {
+      "grid": "Grid",
+      "list": "List"
+    },
+    "empty": {
+      "title": "No content found",
+      "subtitleAll": "Start writing to create your first post or wait for content suggestions!",
+      "subtitleFiltered": "No {{filter}} content found. Try changing the filter or search terms.",
+      "button": "Create New Post"
+    },
+    "itemSubtitle": {
+      "lastEdited": "Last edited {{date}}",
+      "suggestion": "Content suggestion"
+    },
+    "toasts": {
+      "draftDeleted": "Draft deleted successfully",
+      "deleteError": "Failed to delete draft",
+      "statusUpdated": "Post marked as {{status}}",
+      "statusUpdateError": "Failed to update post status"
+    },
+    "status": {
+      "draft": "Draft",
+      "published": "Published",
+      "archived": "Archived"
+    },
+    "menu": {
+      "markAsDraft": "Mark as Draft",
+      "markAsPublished": "Mark as Published",
+      "markAsArchived": "Mark as Archived",
+      "delete": "Delete"
+    }
+  },
+  "knowledgeBase": {
+    "title": "Knowledge Base",
+    "subtitle": "Organize and access all your project files, documents, and resources in one place",
+    "sort": {
+      "lastAdded": "Last Added",
+      "nameAsc": "Name A-Z",
+      "nameDesc": "Name Z-A",
+      "sizeLarge": "Size (Largest)",
+      "sizeSmall": "Size (Smallest)"
+    },
+    "search": {
+      "placeholder": "Search files...",
+      "loading": "Loading your files...",
+      "loadingCount": "Loading file count...",
+      "uploading": "Uploading files..."
+    },
+    "transcript": {
+      "title": "Paste Your Meeting Transcripts",
+      "subtitle": "Transcripts will be saved as searchable knowledge files for future content creation",
+      "button": "Paste Transcript",
+      "modalTitle": "Audio Transcription",
+      "transcriptionLabel": "Transcription",
+      "noTranscription": "No transcription available"
+    },
+    "empty": {
+      "title": "No files found",
+      "subtitleSearch": "Try adjusting your search query",
+      "subtitleNoSearch": "Upload some files to get started",
+      "button": "Upload Files"
+    },
+    "results": {
+      "showing": "Showing {{start}} to {{end}} of {{total}} files"
+    },
+    "toasts": {
+      "upload": {
+        "title": "Upload in Progress",
+        "loadingSingle": "Uploading 1 file...",
+        "loadingMultiple": "Uploading {{count}} files...",
+        "successSingle": "File uploaded successfully",
+        "successMultiple": "{{count}} files uploaded successfully",
+        "completeTitle": "Upload Complete",
+        "errorTitle": "Upload Failed",
+        "errorTitleGeneric": "Upload Error",
+        "validationTitle": "File Validation Failed",
+        "proceeding": "Proceeding with {{count}} valid file",
+        "proceedingPlural": "Proceeding with {{count}} valid files"
+      },
+      "link": {
+        "loading": "Adding link to your knowledge base...",
+        "title": "Processing Link",
+        "success": "Link added successfully to your knowledge base",
+        "successTitle": "Link Added",
+        "errorTitle": "Failed to Add Link",
+        "errorTitleGeneric": "Link Error",
+        "invalidUrl": "Please enter a valid website URL (e.g., example.com or https://example.com)",
+        "invalidUrlTitle": "Invalid URL"
+      },
+      "delete": {
+        "loading": "Deleting {{fileName}}...",
+        "title": "Deleting File",
+        "success": "{{fileName}} deleted successfully",
+        "successTitle": "File Deleted",
+        "errorTitle": "Failed to Delete File",
+        "errorTitleGeneric": "Delete Error"
+      },
+      "transcript": {
+        "processing": "Processing transcript \"{{title}}\"...",
+        "title": "Processing Transcript",
+        "success": "Meeting transcript \"{{title}}\" processed and saved successfully!",
+        "successTitle": "Transcript Saved",
+        "successDescription": "Added to meetings table and knowledge base with {{participants}} participants",
+        "errorTitle": "Processing Error",
+        "error": "Failed to process meeting transcript",
+        "validationTitle": "Validation Error"
+      }
+    },
+    "errors": {
+      "upload": {
+        "fileTooLarge": "File is too large. Please choose files smaller than 10MB each.",
+        "unsupportedType": "File type not supported. Please upload documents, images, audio files, or videos.",
+        "authentication": "Session expired. Please refresh the page and try again.",
+        "network": "Network error. Please check your connection and try again.",
+        "storage": "Storage limit reached. Please delete some files and try again.",
+        "duplicate": "A file with this name already exists. Please rename the file and try again.",
+        "default": "Upload failed. Please try again or contact support if the problem continues."
+      },
+      "link": {
+        "invalidUrl": "Please enter a valid website URL (e.g., example.com or https://example.com).",
+        "notAccessible": "Website is not accessible. Please check the URL and try again.",
+        "timeout": "Website took too long to respond. Please try again later.",
+        "duplicate": "This link has already been added to your knowledge base.",
+        "default": "Failed to add link. Please check the URL and try again."
+      },
+      "delete": {
+        "notFound": "File no longer exists. It may have already been deleted.",
+        "permission": "You do not have permission to delete this file.",
+        "inUse": "File is currently being used and cannot be deleted. Please try again later.",
+        "default": "Failed to delete file. Please try again or contact support."
+      }
+    },
+    "fileStatus": {
+      "transcribed": "Transcribed",
+      "transcriptionFailed": "Transcription failed",
+      "transcriptionReady": "Transcription ready",
+      "transcriptionPending": "Transcription pending",
+      "unknownDate": "Unknown Date"
+    }
+  },
+  "contentEditor": {
+    "defaultTitle": "New Post",
+    "defaultContent": "# New Post\n\nStart writing your content here...",
+    "untitled": "Untitled",
+    "untitledConversation": "Untitled Conversation",
+    "currentChat": "Current Chat",
+    "newConversation": "New Conversation",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "buttons": {
+      "viewAllPosts": "View all posts",
+      "help": "Help",
+      "sendMessage": "Send Message",
+      "reject": "Reject",
+      "apply": "Apply"
+    },
+    "placeholders": {
+      "editor": "What do you want to talk about?",
+      "chat": "Ask AI anything about your content..."
+    },
+    "labels": {
+      "you": "You",
+      "assistant": "Assistant",
+      "aiAssistant": "AI Assistant",
+      "quickActions": "Quick Actions",
+      "knowledgeBase": "Knowledge Base",
+      "knowledgeFiles": "Knowledge Files",
+      "selected": "selected",
+      "selectedPlural": "selected",
+      "hook": "Hook"
+    },
+    "quickActions": {
+      "professional": "Professional",
+      "bulletPoints": "Bullet Points",
+      "betterHook": "Better Hook",
+      "addHashtags": "Add Hashtags",
+      "makeShorter": "Make Shorter",
+      "makeLonger": "Make Longer",
+      "addStory": "Add Story",
+      "makeActionable": "Make Actionable"
+    },
+    "modals": {
+      "addFiles": "Add Files to Knowledge Base"
+    },
+    "empty": {
+      "noFiles": "No files found. Upload files in Knowledge Base."
+    },
+    "messages": {
+      "welcomeTitle": "👋 Hello! I'm your AI content assistant.",
+      "welcomeSubtitle": "Ask me anything about your content, writing tips, or ideas!",
+      "aiEditRejected": "AI edit rejected",
+      "changesRejected": "Changes rejected"
+    }
+  }
+}
