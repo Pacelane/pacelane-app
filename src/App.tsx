@@ -41,6 +41,9 @@ import NotFound from "./pages/NotFound";
 import GoogleCalendarCallback from "./pages/GoogleCalendarCallback";
 import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import LinkedInAnalyzer from "./pages/LinkedInAnalyzer";
+import LinkedInWrapped from "./pages/LinkedInWrapped";
+import ThankYou from "./pages/ThankYou";
 
 const queryClient = new QueryClient();
 
@@ -74,6 +77,11 @@ const App = () => {
           {/* Public legal pages */}
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
+          
+          {/* Public Lead Magnet Tools */}
+          <Route path="/linkedin-analyzer" element={<LinkedInAnalyzer />} />
+          <Route path="/linkedin-wrapped" element={<LinkedInWrapped />} />
+          <Route path="/thank-you" element={<ThankYou />} />
           
           {/* OAuth callbacks */}
           <Route path="/auth/google/callback" element={<GoogleCalendarCallback />} />
