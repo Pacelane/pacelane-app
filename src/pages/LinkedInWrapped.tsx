@@ -29,6 +29,7 @@ import {
   Lightbulb,
   PartyPopper
 } from 'lucide-react';
+import { PDFExportModal } from '../components/PDFExportModal';
 import type { LinkedInWrappedFormData } from '@/types/leads';
 
 // Posts-based Wrapped data interface
@@ -116,6 +117,7 @@ const LinkedInWrapped: React.FC = () => {
   
   // UI state
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [wrappedData, setWrappedData] = useState<PostsWrappedData | null>(null);
   const [error, setError] = useState('');
 
@@ -137,25 +139,25 @@ const LinkedInWrapped: React.FC = () => {
 
     // Name validation
     if (!name.trim()) {
-      newErrors.name = 'Name is required';
+      newErrors.name = 'Nome é obrigatório';
       isValid = false;
     }
 
     // Email validation
     if (!email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = 'E-mail é obrigatório';
       isValid = false;
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      newErrors.email = 'Please enter a valid email address';
+      newErrors.email = 'Por favor, insira um endereço de e-mail válido';
       isValid = false;
     }
 
     // LinkedIn URL validation
     if (!linkedinUrl.trim()) {
-      newErrors.linkedinUrl = 'LinkedIn profile URL is required';
+      newErrors.linkedinUrl = 'URL do perfil do LinkedIn é obrigatória';
       isValid = false;
     } else if (!linkedinUrl.includes('linkedin.com/in/')) {
-      newErrors.linkedinUrl = 'Please enter a valid LinkedIn profile URL (e.g., https://linkedin.com/in/username)';
+      newErrors.linkedinUrl = 'Por favor, insira uma URL válida do LinkedIn (ex: https://linkedin.com/in/usuario)';
       isValid = false;
     }
 
@@ -182,7 +184,7 @@ const LinkedInWrapped: React.FC = () => {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "https://plbgeabtrkdhbrnjonje.supabase.co";
       const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
       
-      // Call the lead-specific edge function
+      // STEP 1: Call the posts scraping function (fast, returns immediately)
       const response = await fetch(`${supabaseUrl}/functions/v1/scrape-lead-linkedin-posts`, {
         method: 'POST',
         headers: {
@@ -199,18 +201,46 @@ const LinkedInWrapped: React.FC = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to generate wrapped');
+        throw new Error(data.error || 'Falha ao gerar o wrapped');
       }
 
       if (data.success && data.data) {
         setWrappedData(data.data);
+        
+        // STEP 2: Start reactions scraping in the background (async, non-blocking)
+        // This runs separately and won't block the UI
+        /* 
+        if (data.leadId) {
+          console.log('Starting background reactions scraping...');
+          fetch(`${supabaseUrl}/functions/v1/scrape-lead-linkedin-reactions`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${supabaseAnonKey}`,
+            },
+            body: JSON.stringify({
+              leadId: data.leadId,
+              linkedinUrl: linkedinUrl.trim()
+            })
+          }).then(reactionsResponse => reactionsResponse.json())
+            .then(reactionsData => {
+              console.log('Reactions scraping completed:', reactionsData);
+              // Optionally: refresh the wrapped data to show reactions
+              // For now, reactions will be available on next load
+            })
+            .catch(err => {
+              console.warn('Reactions scraping failed (non-fatal):', err);
+              // Reactions are optional, don't show error to user
+            });
+        }
+        */
       } else {
-        throw new Error('No wrapped data received');
+        throw new Error('Nenhum dado recebido');
       }
 
     } catch (err: any) {
       console.error('Wrapped generation error:', err);
-      setError(err.message || 'Failed to generate your LinkedIn Wrapped. Please try again.');
+      setError(err.message || 'Falha ao gerar seu LinkedIn Wrapped. Por favor, tente novamente.');
     } finally {
       setIsProcessing(false);
     }
@@ -352,8 +382,8 @@ const LinkedInWrapped: React.FC = () => {
         backgroundColor: colors.bg.muted,
       }}>
         <SubtleLoadingSpinner 
-          title="Generating your LinkedIn Wrapped..."
-          subtitle="Analyzing your posts from this year"
+          title="Gerando seu LinkedIn Wrapped..."
+          subtitle="Analisando suas publicações deste ano"
           size={16}
         />
       </div>
@@ -376,12 +406,12 @@ const LinkedInWrapped: React.FC = () => {
               ...titleStyle,
               fontSize: typography.desktop.size['4xl'],
             }}>
-              Your {currentYear} LinkedIn Wrapped
+              Seu LinkedIn Wrapped {currentYear}
             </h2>
             <Sparkles size={28} color={colors.icon.default} />
           </div>
           <p style={subtitleStyle}>
-            Here's a look back at your content journey this year
+            Uma retrospectiva da sua jornada de conteúdo este ano
           </p>
         </div>
 
@@ -395,22 +425,22 @@ const LinkedInWrapped: React.FC = () => {
           <div style={statCardStyles}>
             <FileText size={24} color={colors.icon.default} />
             <p style={statNumberStyle}>{wrappedData.totalPosts}</p>
-            <p style={statLabelStyle}>Posts Published</p>
+            <p style={statLabelStyle}>Posts Publicados</p>
           </div>
           <div style={statCardStyles}>
             <TrendingUp size={24} color={colors.icon.default} />
             <p style={statNumberStyle}>{wrappedData.totalEngagement.toLocaleString()}</p>
-            <p style={statLabelStyle}>Total Engagement</p>
+            <p style={statLabelStyle}>Engajamento Total</p>
           </div>
           <div style={statCardStyles}>
             <Heart size={24} color={colors.icon.default} />
             <p style={statNumberStyle}>{wrappedData.engagementStats?.totalLikes?.toLocaleString() || 0}</p>
-            <p style={statLabelStyle}>Likes Received</p>
+            <p style={statLabelStyle}>Curtidas Recebidas</p>
           </div>
           <div style={statCardStyles}>
             <MessageCircle size={24} color={colors.icon.default} />
             <p style={statNumberStyle}>{wrappedData.engagementStats?.totalComments?.toLocaleString() || 0}</p>
-            <p style={statLabelStyle}>Comments Received</p>
+            <p style={statLabelStyle}>Comentários Recebidos</p>
           </div>
         </div>
 
@@ -421,7 +451,7 @@ const LinkedInWrapped: React.FC = () => {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: spacing.spacing[8], marginBottom: spacing.spacing[16] }}>
             <BarChart3 size={20} color={colors.icon.default} />
-            <h3 style={sectionTitleStyle}>Average Per Post</h3>
+            <h3 style={sectionTitleStyle}>Média Por Post</h3>
           </div>
           <div style={{
             display: 'grid',
@@ -432,19 +462,19 @@ const LinkedInWrapped: React.FC = () => {
               <p style={{ ...statNumberStyle, fontSize: typography.desktop.size['2xl'] }}>
                 {wrappedData.engagementStats?.avgLikesPerPost || 0}
               </p>
-              <p style={statLabelStyle}>Likes</p>
+              <p style={statLabelStyle}>Curtidas</p>
             </div>
             <div style={{ textAlign: 'center' }}>
               <p style={{ ...statNumberStyle, fontSize: typography.desktop.size['2xl'] }}>
                 {wrappedData.engagementStats?.avgCommentsPerPost || 0}
               </p>
-              <p style={statLabelStyle}>Comments</p>
+              <p style={statLabelStyle}>Comentários</p>
             </div>
             <div style={{ textAlign: 'center' }}>
               <p style={{ ...statNumberStyle, fontSize: typography.desktop.size['2xl'] }}>
                 {wrappedData.engagementStats?.avgSharesPerPost || 0}
               </p>
-              <p style={statLabelStyle}>Shares</p>
+              <p style={statLabelStyle}>Compartilhamentos</p>
             </div>
           </div>
         </div>
@@ -457,18 +487,18 @@ const LinkedInWrapped: React.FC = () => {
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: spacing.spacing[8], marginBottom: spacing.spacing[16] }}>
               <Calendar size={20} color={colors.icon.default} />
-              <h3 style={sectionTitleStyle}>Posting Insights</h3>
+              <h3 style={sectionTitleStyle}>Insights de Publicação</h3>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[12] }}>
               <p style={{ ...textStyles.md.normal, color: colors.text.default, margin: 0 }}>
-                📊 You posted an average of <strong>{wrappedData.postingFrequency.postsPerMonth}</strong> posts per month
+                📊 Você publicou uma média de <strong>{wrappedData.postingFrequency.postsPerMonth}</strong> posts por mês
               </p>
               <p style={{ ...textStyles.md.normal, color: colors.text.default, margin: 0 }}>
-                🔥 Your most active month was <strong>{wrappedData.postingFrequency.mostActiveMonth}</strong>
+                🔥 Seu mês mais ativo foi <strong>{wrappedData.postingFrequency.mostActiveMonth}</strong>
               </p>
               {wrappedData.postingFrequency.leastActiveMonth && (
                 <p style={{ ...textStyles.md.normal, color: colors.text.default, margin: 0 }}>
-                  😴 Your quietest month was <strong>{wrappedData.postingFrequency.leastActiveMonth}</strong>
+                  😴 Seu mês mais tranquilo foi <strong>{wrappedData.postingFrequency.leastActiveMonth}</strong>
                 </p>
               )}
             </div>
@@ -483,7 +513,7 @@ const LinkedInWrapped: React.FC = () => {
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: spacing.spacing[8], marginBottom: spacing.spacing[16] }}>
               <Hash size={20} color={colors.icon.default} />
-              <h3 style={sectionTitleStyle}>Your Top Hashtags</h3>
+              <h3 style={sectionTitleStyle}>Suas Principais Hashtags</h3>
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: spacing.spacing[8] }}>
               {wrappedData.contentInsights.mostUsedHashtags.slice(0, 8).map((tag, index) => (
@@ -512,7 +542,7 @@ const LinkedInWrapped: React.FC = () => {
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: spacing.spacing[8], marginBottom: spacing.spacing[16] }}>
               <Trophy size={20} color={colors.icon.default} />
-              <h3 style={sectionTitleStyle}>Your Top Performing Posts</h3>
+              <h3 style={sectionTitleStyle}>Seus Posts com Mais Curtidas</h3>
             </div>
             {wrappedData.topPosts.slice(0, 3).map((post, index: number) => (
               <div key={post.id || index} style={topPostCardStyles}>
@@ -539,7 +569,7 @@ const LinkedInWrapped: React.FC = () => {
                       } catch {
                         return '';
                       }
-                    })() : 'No date'}
+                    })() : 'Sem data'}
                   </span>
                 </div>
                 <p style={postContentStyle}>{post.content}</p>
@@ -563,13 +593,14 @@ const LinkedInWrapped: React.FC = () => {
         {wrappedData.reactionsData && wrappedData.reactionsData.totalReactions > 0 && (
           <>
             {/* Total Reactions */}
+            {/* Reactions Stats - COMMENTED OUT FOR NOW
             <div style={{
               ...cardStyles,
               padding: spacing.spacing[24],
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: spacing.spacing[8], marginBottom: spacing.spacing[16] }}>
                 <Heart size={20} color={colors.icon.default} />
-                <h3 style={sectionTitleStyle}>Your Reactions</h3>
+                <h3 style={sectionTitleStyle}>Suas Reações</h3>
               </div>
               <div style={{
                 display: 'grid',
@@ -579,17 +610,18 @@ const LinkedInWrapped: React.FC = () => {
                 <div style={statCardStyles}>
                   <Heart size={24} color={colors.icon.default} />
                   <p style={statNumberStyle}>{wrappedData.reactionsData.totalReactions}</p>
-                  <p style={statLabelStyle}>Total Reactions</p>
+                  <p style={statLabelStyle}>Reações Totais</p>
                 </div>
                 <div style={statCardStyles}>
                   <Users size={24} color={colors.icon.default} />
                   <p style={statNumberStyle}>{wrappedData.reactionsData.topAuthors.length}</p>
-                  <p style={statLabelStyle}>People You Reacted To</p>
+                  <p style={statLabelStyle}>Pessoas que Você Reagiu</p>
                 </div>
               </div>
             </div>
+            */}
 
-            {/* Reaction Types */}
+            {/* Reaction Types - COMMENTED OUT FOR NOW
             {Object.values(wrappedData.reactionsData.reactionTypes).some(v => v > 0) && (
               <div style={{
                 ...cardStyles,
@@ -597,7 +629,7 @@ const LinkedInWrapped: React.FC = () => {
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: spacing.spacing[8], marginBottom: spacing.spacing[16] }}>
                   <BarChart3 size={20} color={colors.icon.default} />
-                  <h3 style={sectionTitleStyle}>Your Reaction Types</h3>
+                  <h3 style={sectionTitleStyle}>Seus Tipos de Reação</h3>
                 </div>
                 <div style={{
                   display: 'grid',
@@ -608,49 +640,50 @@ const LinkedInWrapped: React.FC = () => {
                     <div style={{ textAlign: 'center', padding: spacing.spacing[12], backgroundColor: colors.bg.muted, borderRadius: cornerRadius.borderRadius.md }}>
                       <ThumbsUp size={20} color={colors.icon.default} style={{ margin: '0 auto', marginBottom: spacing.spacing[4] }} />
                       <p style={{ ...statNumberStyle, fontSize: typography.desktop.size.xl }}>{wrappedData.reactionsData.reactionTypes.like}</p>
-                      <p style={statLabelStyle}>Likes</p>
+                      <p style={statLabelStyle}>Curtidas</p>
                     </div>
                   )}
                   {wrappedData.reactionsData.reactionTypes.love > 0 && (
                     <div style={{ textAlign: 'center', padding: spacing.spacing[12], backgroundColor: colors.bg.muted, borderRadius: cornerRadius.borderRadius.md }}>
                       <Heart size={20} color={colors.icon.default} style={{ margin: '0 auto', marginBottom: spacing.spacing[4] }} />
                       <p style={{ ...statNumberStyle, fontSize: typography.desktop.size.xl }}>{wrappedData.reactionsData.reactionTypes.love}</p>
-                      <p style={statLabelStyle}>Love</p>
+                      <p style={statLabelStyle}>Amei</p>
                     </div>
                   )}
                   {wrappedData.reactionsData.reactionTypes.celebrate > 0 && (
                     <div style={{ textAlign: 'center', padding: spacing.spacing[12], backgroundColor: colors.bg.muted, borderRadius: cornerRadius.borderRadius.md }}>
                       <PartyPopper size={20} color={colors.icon.default} style={{ margin: '0 auto', marginBottom: spacing.spacing[4] }} />
                       <p style={{ ...statNumberStyle, fontSize: typography.desktop.size.xl }}>{wrappedData.reactionsData.reactionTypes.celebrate}</p>
-                      <p style={statLabelStyle}>Celebrate</p>
+                      <p style={statLabelStyle}>Parabéns</p>
                     </div>
                   )}
                   {wrappedData.reactionsData.reactionTypes.insight > 0 && (
                     <div style={{ textAlign: 'center', padding: spacing.spacing[12], backgroundColor: colors.bg.muted, borderRadius: cornerRadius.borderRadius.md }}>
                       <Lightbulb size={20} color={colors.icon.default} style={{ margin: '0 auto', marginBottom: spacing.spacing[4] }} />
                       <p style={{ ...statNumberStyle, fontSize: typography.desktop.size.xl }}>{wrappedData.reactionsData.reactionTypes.insight}</p>
-                      <p style={statLabelStyle}>Insightful</p>
+                      <p style={statLabelStyle}>Interessante</p>
                     </div>
                   )}
                   {wrappedData.reactionsData.reactionTypes.support > 0 && (
                     <div style={{ textAlign: 'center', padding: spacing.spacing[12], backgroundColor: colors.bg.muted, borderRadius: cornerRadius.borderRadius.md }}>
                       <Heart size={20} color={colors.icon.default} style={{ margin: '0 auto', marginBottom: spacing.spacing[4] }} />
                       <p style={{ ...statNumberStyle, fontSize: typography.desktop.size.xl }}>{wrappedData.reactionsData.reactionTypes.support}</p>
-                      <p style={statLabelStyle}>Support</p>
+                      <p style={statLabelStyle}>Apoio</p>
                     </div>
                   )}
                   {wrappedData.reactionsData.reactionTypes.funny > 0 && (
                     <div style={{ textAlign: 'center', padding: spacing.spacing[12], backgroundColor: colors.bg.muted, borderRadius: cornerRadius.borderRadius.md }}>
                       <Smile size={20} color={colors.icon.default} style={{ margin: '0 auto', marginBottom: spacing.spacing[4] }} />
                       <p style={{ ...statNumberStyle, fontSize: typography.desktop.size.xl }}>{wrappedData.reactionsData.reactionTypes.funny}</p>
-                      <p style={statLabelStyle}>Funny</p>
+                      <p style={statLabelStyle}>Engraçado</p>
                     </div>
                   )}
                 </div>
               </div>
             )}
+            */}
 
-            {/* Top Authors You Reacted To */}
+            {/* Top Authors You Reacted To - COMMENTED OUT FOR NOW
             {wrappedData.reactionsData.topAuthors && wrappedData.reactionsData.topAuthors.length > 0 && (
               <div style={{
                 ...cardStyles,
@@ -658,7 +691,7 @@ const LinkedInWrapped: React.FC = () => {
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: spacing.spacing[8], marginBottom: spacing.spacing[16] }}>
                   <Users size={20} color={colors.icon.default} />
-                  <h3 style={sectionTitleStyle}>People You Reacted To Most</h3>
+                  <h3 style={sectionTitleStyle}>Pessoas que Você Mais Reagiu</h3>
                 </div>
                 {wrappedData.reactionsData.topAuthors.slice(0, 5).map((author, index) => (
                   <div key={index} style={{
@@ -684,12 +717,13 @@ const LinkedInWrapped: React.FC = () => {
                       borderRadius: cornerRadius.borderRadius.full,
                       ...textStyles.sm.bold,
                     }}>
-                      {author.reactionCount} reactions
+                      {author.reactionCount} reações
                     </div>
                   </div>
                 ))}
               </div>
             )}
+            */}
 
             {/* Top Posts You Reacted To */}
             {wrappedData.reactionsData.topReactedPosts && wrappedData.reactionsData.topReactedPosts.length > 0 && (
@@ -699,7 +733,7 @@ const LinkedInWrapped: React.FC = () => {
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: spacing.spacing[8], marginBottom: spacing.spacing[16] }}>
                   <Trophy size={20} color={colors.icon.default} />
-                  <h3 style={sectionTitleStyle}>Posts You Reacted To Most</h3>
+                  <h3 style={sectionTitleStyle}>Posts que Você Mais Reagiu</h3>
                 </div>
                 {wrappedData.reactionsData.topReactedPosts.slice(0, 3).map((post, index) => (
                   <div key={index} style={topPostCardStyles}>
@@ -718,13 +752,13 @@ const LinkedInWrapped: React.FC = () => {
                         {index + 1}
                       </span>
                       <span style={{ ...textStyles.xs.medium, color: colors.text.muted }}>
-                        by {post.postAuthor}
+                        por {post.postAuthor}
                       </span>
                     </div>
                     <p style={postContentStyle}>{post.postContent}</p>
                     <div style={engagementRowStyle}>
                       <span style={engagementItemStyle}>
-                        <Heart size={14} /> {post.reactionCount} reactions
+                        <Heart size={14} /> {post.reactionCount} reações
                       </span>
                     </div>
                   </div>
@@ -742,7 +776,7 @@ const LinkedInWrapped: React.FC = () => {
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: spacing.spacing[8], marginBottom: spacing.spacing[16] }}>
               <Calendar size={20} color={colors.icon.default} />
-              <h3 style={sectionTitleStyle}>Your Posting Timeline</h3>
+              <h3 style={sectionTitleStyle}>Sua Linha do Tempo de Publicações</h3>
             </div>
             <div style={{
               display: 'flex',
@@ -789,13 +823,19 @@ const LinkedInWrapped: React.FC = () => {
         {/* Action Buttons */}
         <div style={{ display: 'flex', gap: spacing.spacing[12], flexWrap: 'wrap', marginTop: spacing.spacing[32] }}>
           <Button
-            label="Create Another Wrapped"
+            label="Exportar PDF"
+            style="secondary"
+            size="md"
+            onClick={() => setIsExportModalOpen(true)}
+          />
+          <Button
+            label="Criar Outro Wrapped"
             style="secondary"
             size="md"
             onClick={handleCreateAnother}
           />
           <Button
-            label="Done"
+            label="Concluir"
             style="primary"
             size="md"
             onClick={handleGoToThankYou}
@@ -919,6 +959,16 @@ const LinkedInWrapped: React.FC = () => {
           </p>
         </div>
       </div>
+
+      {wrappedData && (
+        <PDFExportModal
+          isOpen={isExportModalOpen}
+          onClose={() => setIsExportModalOpen(false)}
+          wrappedData={wrappedData}
+          userName={name}
+          userImage={wrappedData.profileImage} 
+        />
+      )}
     </div>
   );
 };

@@ -17,6 +17,11 @@ interface LinkedInPost {
     shares: number;
   };
   url: string;
+  author?: {
+    name: string;
+    profileUrl: string;
+    imageUrl: string;
+  };
 }
 
 interface LinkedInReaction {
@@ -95,6 +100,7 @@ interface WrappedData {
     }>;
   };
   reactionsData?: ReactionsData;
+  profileImage?: string;
 }
 
 /**
@@ -255,9 +261,9 @@ function processWrappedData(posts: LinkedInPost[], reactionsData?: ReactionsData
   const yearPosts = posts.filter(post => {
     if (post.publishedAt) {
       const postYear = new Date(post.publishedAt).getFullYear();
-      return postYear >= currentYear - 1; // Include last year too
+      return postYear === currentYear; // Only current year
     }
-    return true; // Include if no date
+    return false; // Exclude if no date to be safe
   });
 
   console.log(`[processWrappedData] Posts after year filter: ${yearPosts.length}`);
@@ -300,25 +306,21 @@ function processWrappedData(posts: LinkedInPost[], reactionsData?: ReactionsData
 
   console.log(`[processWrappedData] Engagement totals: likes=${totalLikes}, comments=${totalComments}, shares=${totalShares}`);
 
-  // Sort posts by engagement for top posts
-  const sortedByEngagement = [...yearPosts].sort((a, b) => {
-    const engA = (a.engagement?.likes || 0) + (a.engagement?.comments || 0) + (a.engagement?.shares || 0);
-    const engB = (b.engagement?.likes || 0) + (b.engagement?.comments || 0) + (b.engagement?.shares || 0);
-    // If engagement is equal, sort by date (newest first)
-    if (engA === engB) {
+  // Sort posts by likes for top posts
+  const sortedByEngagement = [...yearPosts].sort((a, b) =>{
+    const likesA = a.engagement?.likes || 0;
+    const likesB = b.engagement?.likes || 0;
+    // If likes are equal, sort by date (newest first)
+    if (likesA === likesB) {
       const dateA = a.publishedAt ? new Date(a.publishedAt).getTime() : 0;
       const dateB = b.publishedAt ? new Date(b.publishedAt).getTime() : 0;
       return dateB - dateA;
     }
-    return engB - engA;
+    return likesB - likesA; // Sort by likes descending
   });
 
-  // Get top 5 posts and sort them by date (newest first) for display
-  const topPosts = sortedByEngagement.slice(0, 5).sort((a, b) => {
-    const dateA = a.publishedAt ? new Date(a.publishedAt).getTime() : 0;
-    const dateB = b.publishedAt ? new Date(b.publishedAt).getTime() : 0;
-    return dateB - dateA; // Newest first
-  });
+  // Get top 5 posts (already sorted by likes descending)
+  const topPosts = sortedByEngagement.slice(0, 5);
 
   // Log top posts for debugging
   console.log(`[processWrappedData] Top 5 posts:`, topPosts.map((p, i) => ({
@@ -358,34 +360,41 @@ function processWrappedData(posts: LinkedInPost[], reactionsData?: ReactionsData
   const monthsWithPosts = monthlyBreakdown.filter(m => m.posts > 0).length;
   const postsPerMonth = monthsWithPosts > 0 ? totalPosts / monthsWithPosts : 0;
 
+  // Extract profile image from the first post if available
+  const profileImage = posts.length > 0 && posts[0].author ? posts[0].author.imageUrl : undefined;
+
   const result: WrappedData = {
     totalPosts,
     totalEngagement,
     averageEngagementPerPost: totalPosts > 0 ? Math.round(totalEngagement / totalPosts) : 0,
     topPosts,
     postingFrequency: {
-      postsPerMonth: Math.round(postsPerMonth * 10) / 10,
-      mostActiveMonth,
-      leastActiveMonth: leastActiveMonth !== mostActiveMonth ? leastActiveMonth : undefined
+      postsPerMonth: Math.round(totalPosts / 12 * 10) / 10,
+      mostActiveMonth: Object.entries(monthlyData).sort((a, b) => b[1].posts - a[1].posts)[0]?.[0],
+      leastActiveMonth: Object.entries(monthlyData).sort((a, b) => a[1].posts - b[1].posts)[0]?.[0]
     },
     engagementStats: {
       totalLikes,
       totalComments,
       totalShares,
       avgLikesPerPost: totalPosts > 0 ? Math.round(totalLikes / totalPosts) : 0,
-      avgCommentsPerPost: totalPosts > 0 ? Math.round(totalComments / totalPosts * 10) / 10 : 0,
-      avgSharesPerPost: totalPosts > 0 ? Math.round(totalShares / totalPosts * 10) / 10 : 0
+      avgCommentsPerPost: totalPosts > 0 ? Math.round(totalComments / totalPosts) : 0,
+      avgSharesPerPost: totalPosts > 0 ? Math.round(totalShares / totalPosts) : 0
     },
     contentInsights: {
       averagePostLength: totalPosts > 0 ? Math.round(totalLength / totalPosts) : 0,
-      mostUsedHashtags: sortedHashtags,
-      topTopics: [] // Would need AI analysis for topics
+      mostUsedHashtags: Object.entries(hashtagCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([tag]) => tag),
+      topTopics: [] // Placeholder for now
     },
     yearInReview: {
       year: currentYear,
       monthlyBreakdown
     },
-    reactionsData: reactionsData
+    reactionsData: reactionsData,
+    profileImage
   };
   
   console.log(`[processWrappedData] Final result:`, {
@@ -487,18 +496,20 @@ serve(async (req) => {
     const username = usernameMatch ? usernameMatch[1] : linkedinUrl;
     console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Extracted username: ${username}`);
 
-    // Prepare Actor input for LinkedIn Posts scraper (Actor ID: LQQIXN9Othf8f7R5n)
+    // Prepare Actor input for LinkedIn Posts scraper (Actor ID: Wpp1BZ6yGWjySadk3)
     const input = {
-      "username": username,
-      "usernames": [username],
-      "limit": 100 // Get up to 100 posts for wrapped
+      deepScrape: true,
+      limitPerSource: 1000,
+      rawData: false,
+      scrapeUntil: `${new Date().getFullYear()}-01-01`, // Scrape only from start of current year
+      urls: [linkedinUrl]
     };
 
     console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Actor input:`, JSON.stringify(input, null, 2));
 
     // Run the Actor (LinkedIn Posts scraper)
     console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Starting Apify actor...`);
-    const runResponse = await fetch(`https://api.apify.com/v2/acts/LQQIXN9Othf8f7R5n/runs`, {
+    const runResponse = await fetch(`https://api.apify.com/v2/acts/Wpp1BZ6yGWjySadk3/runs`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apifyApiKey}`,
@@ -681,65 +692,47 @@ serve(async (req) => {
     }
 
     const posts: LinkedInPost[] = postsData.map((item: any, index: number) => {
-      // Extract engagement from stats object (the actual structure from the actor)
-      const stats = item.stats || {};
-      const likes = stats.like || stats.total_reactions || 0;
-      const comments = stats.comments || 0;
-      const shares = stats.reposts || 0;
+      // Extract engagement directly from root properties (new actor schema)
+      const likes = item.numLikes || 0;
+      const comments = item.numComments || 0;
+      const shares = item.numShares || 0;
 
-      // Extract date from posted_at object
+      // Extract date
       let publishedDate = '';
-      if (item.posted_at) {
-        // Use timestamp if available (more reliable)
-        if (item.posted_at.timestamp && typeof item.posted_at.timestamp === 'number') {
-          publishedDate = new Date(item.posted_at.timestamp).toISOString();
-        } 
-        // Fallback to date string
-        else if (item.posted_at.date) {
-          // Convert "2025-11-10 03:44:02" to ISO format
-          publishedDate = new Date(item.posted_at.date.replace(' ', 'T')).toISOString();
-        }
-      }
-      
-      // Fallback to other date fields if posted_at doesn't exist
-      if (!publishedDate) {
-        if (item.publishedAt) {
-          publishedDate = new Date(item.publishedAt).toISOString();
-        } else if (item.date) {
-          publishedDate = new Date(item.date).toISOString();
-        } else {
-          publishedDate = new Date().toISOString(); // Default to now if no date
-        }
+      if (item.postedAtISO) {
+        publishedDate = item.postedAtISO;
+      } else if (item.postedAtTimestamp) {
+        publishedDate = new Date(item.postedAtTimestamp).toISOString();
+      } else {
+        publishedDate = new Date().toISOString(); // Default to now if no date
       }
 
-      // Extract content - prefer text field, but handle reposts that might not have text
-      let content = item.text || item.content || '';
+      // Extract content
+      let content = item.text || '';
       
-      // For reposts, use the reshared_post text if available
-      if (!content && item.post_type === 'repost' && item.reshared_post?.text) {
-        content = item.reshared_post.text;
+      // For reposts without text, try to find description
+      if (!content && item.activityDescription) {
+        content = item.activityDescription;
       }
 
-      // Extract ID from URN
-      const postId = item.full_urn || 
-                     item.urn?.activity_urn || 
-                     item.urn?.ugcPost_urn ||
-                     item.id || 
-                     `post_${Date.now()}_${index}`;
+      // Extract ID
+      const postId = item.urn || item.id || `post_${Date.now()}_${index}`;
 
       // Extract URL
-      const postUrl = item.url || `https://linkedin.com/posts/${username}-${index}`;
+      const postUrl = item.url || `https://linkedin.com/feed/update/${postId}`;
+
+      // Extract Author
+      const authorName = item.author ? `${item.author.firstName} ${item.author.lastName}`.trim() : '';
+      const authorUrl = item.authorProfileUrl || '';
 
       // Log first 3 items for debugging
       if (index < 3) {
         console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Item ${index} mapped:`, {
-          stats: item.stats,
-          posted_at: item.posted_at,
-          text: item.text ? item.text.substring(0, 50) + '...' : 'no text',
-          mappedLikes: likes,
-          mappedComments: comments,
-          mappedShares: shares,
-          mappedDate: publishedDate
+          text: content.substring(0, 50) + '...',
+          likes,
+          comments,
+          shares,
+          date: publishedDate
         });
       }
       
@@ -752,7 +745,12 @@ serve(async (req) => {
           comments,
           shares
         },
-        url: postUrl
+        url: postUrl,
+        author: {
+          name: authorName,
+          profileUrl: authorUrl,
+          imageUrl: item.authorProfilePicture || ''
+        }
       };
     }).filter((post: LinkedInPost) => {
       // Filter out posts without content (but allow reposts that have reshared content)
@@ -774,114 +772,11 @@ serve(async (req) => {
     const totalShares = posts.reduce((sum, p) => sum + p.engagement.shares, 0);
     console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Total engagement - Likes: ${totalLikes}, Comments: ${totalComments}, Shares: ${totalShares}`);
 
-    // STEP 2.5: Scrape LinkedIn reactions (optional - runs in parallel)
-    console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Starting LinkedIn reactions scraping...`);
-    let reactionsData: ReactionsData | undefined = undefined;
-    let reactions: LinkedInReaction[] = [];
-
-    try {
-      // Prepare Actor input for LinkedIn Reactions scraper (Actor ID: VMwB47uSx3g2wCcBK)
-      const reactionsInput = {
-        linkedinProfileUrls: [linkedinUrl],
-        maxItems: 1000 // Get up to 1000 reactions
-      };
-
-      console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Reactions actor input:`, JSON.stringify(reactionsInput, null, 2));
-
-      // Run the Reactions Actor
-      const reactionsRunResponse = await fetch(`https://api.apify.com/v2/acts/VMwB47uSx3g2wCcBK/runs`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apifyApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(reactionsInput),
-      });
-
-      console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Reactions actor response status: ${reactionsRunResponse.status}`);
-
-      if (reactionsRunResponse.ok) {
-        const reactionsRunData = await reactionsRunResponse.json();
-        const reactionsRunId = reactionsRunData.data?.id;
-
-        if (reactionsRunId) {
-          console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Reactions actor run started with ID: ${reactionsRunId}`);
-
-          // Wait for reactions run to complete (shorter timeout since it's optional)
-          let reactionsAttempts = 0;
-          const maxReactionsAttempts = 20; // 100 seconds max
-
-          while (reactionsAttempts < maxReactionsAttempts) {
-            const reactionsStatusResponse = await fetch(`https://api.apify.com/v2/actor-runs/${reactionsRunId}`, {
-              headers: {
-                'Authorization': `Bearer ${apifyApiKey}`,
-              },
-            });
-
-            if (reactionsStatusResponse.ok) {
-              const reactionsStatusData = await reactionsStatusResponse.json();
-              const reactionsStatus = reactionsStatusData.data?.status;
-
-              if (reactionsStatus === 'SUCCEEDED') {
-                // Fetch reactions results
-                const reactionsDatasetResponse = await fetch(`https://api.apify.com/v2/actor-runs/${reactionsRunId}/dataset/items`, {
-                  headers: {
-                    'Authorization': `Bearer ${apifyApiKey}`,
-                  },
-                });
-
-                if (reactionsDatasetResponse.ok) {
-                  const reactionsResults = await reactionsDatasetResponse.json();
-                  console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Reactions scraping completed, items found: ${reactionsResults.length}`);
-
-                  // Transform reactions to our format
-                  reactions = reactionsResults.map((item: any) => {
-                    const post = item.post || {};
-                    const postAuthor = post.author || {};
-                    const postedAt = post.postedAt || {};
-
-                    return {
-                      id: item.id || `reaction_${Date.now()}_${Math.random()}`,
-                      action: item.action || '',
-                      postId: item.postId || post.id || '',
-                      postContent: post.content || '',
-                      postUrl: post.linkedinUrl || item.linkedinUrl || '',
-                      postAuthor: {
-                        name: postAuthor.name || '',
-                        linkedinUrl: postAuthor.linkedinUrl || '',
-                        info: postAuthor.info || ''
-                      },
-                      reactionType: item.action?.toLowerCase() || 'like',
-                      timestamp: postedAt.timestamp || (postedAt.date ? new Date(postedAt.date).getTime() : Date.now()),
-                      date: postedAt.date || new Date().toISOString()
-                    };
-                  });
-
-                  // Process reactions data
-                  reactionsData = processReactionsData(reactions);
-                  console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Reactions data processed successfully`);
-                }
-                break;
-              } else if (reactionsStatus === 'FAILED') {
-                console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Reactions scraping failed, continuing without reactions data`);
-                break;
-              } else {
-                await new Promise(resolve => setTimeout(resolve, 5000));
-                reactionsAttempts++;
-              }
-            } else {
-              console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Error checking reactions status, continuing without reactions data`);
-              break;
-            }
-          }
-        }
-      } else {
-        console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Failed to start reactions actor, continuing without reactions data`);
-      }
-    } catch (error) {
-      console.error(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Error scraping reactions (non-fatal):`, error);
-      // Continue without reactions data - it's optional
-    }
+    // STEP 2.5: Reactions are now scraped by a separate edge function
+    // This prevents timeout issues with large datasets
+    // console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Reactions will be scraped separately`);
+    const reactionsData: ReactionsData | undefined = undefined;
+    const reactions: LinkedInReaction[] = [];
 
     // STEP 3: Generate wrapped data
     console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Generating wrapped data...`);
@@ -899,6 +794,7 @@ serve(async (req) => {
       .from('leads')
       .update({
         status: 'completed',
+        reactions_data: reactions.length > 0 ? reactions : null,
         scraped_data: {
           posts,
           reactions: reactions.length > 0 ? reactions : undefined,
@@ -920,7 +816,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true,
-        leadId,
+        // leadId, // Commented out as reactions scraping is disabled
         data: wrappedData,
         message: 'LinkedIn Wrapped generated successfully'
       }),
