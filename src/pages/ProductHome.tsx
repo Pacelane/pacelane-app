@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/api/useAuth';
 import { useContent } from '../hooks/api/useContent';
 import { useAnalytics } from '../hooks/api/useAnalytics';
 import { useTheme } from '../services/theme-context';
+import { useTranslation } from '@/services/i18n-context';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { templateData } from '@/data/templateData';
 import { supabase } from '../integrations/supabase/client';
@@ -46,6 +47,7 @@ const ProductHome = () => {
   const { savedDrafts, contentSuggestions, knowledgeFiles, loadSavedDrafts, loadContentSuggestions, loadingDrafts, loadingSuggestions, error, createUIContentOrder } = useContent();
   const { streak, stats, weekActivity, loading: analyticsLoading, trackActivity } = useAnalytics();
   const { colors } = useTheme();
+  const { t } = useTranslation('pages');
   const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState('');
   const [hasLoadedInitialData, setHasLoadedInitialData] = useState(false);
@@ -125,7 +127,7 @@ const ProductHome = () => {
     // Start progress tracking
     setGenerationProgress({
       isGenerating: true,
-      currentStep: 'Creating content order...',
+      currentStep: t('productHome.loading.creatingOrder'),
       progress: 10
     });
     
@@ -135,7 +137,7 @@ const ProductHome = () => {
       // Update progress
       setGenerationProgress(prev => ({
         ...prev,
-        currentStep: 'Building content brief...',
+        currentStep: t('productHome.loading.buildingBrief'),
         progress: 20
       }));
 
@@ -157,7 +159,7 @@ const ProductHome = () => {
       // Update progress
       setGenerationProgress(prev => ({
         ...prev,
-        currentStep: 'Agent pipeline processing...',
+        currentStep: t('productHome.loading.processing'),
         progress: 50
       }));
 
@@ -166,14 +168,14 @@ const ProductHome = () => {
       // Update progress
       setGenerationProgress(prev => ({
         ...prev,
-        currentStep: 'Finalizing content...',
+        currentStep: t('productHome.loading.finalizing'),
         progress: 80
       }));
 
       // Complete progress
       setGenerationProgress(prev => ({
         ...prev,
-        currentStep: 'Done! Content created in drafts.',
+        currentStep: t('productHome.loading.done'),
         progress: 100
       }));
 
@@ -262,21 +264,21 @@ const ProductHome = () => {
   const getStatsSummaryProps = () => {
     if (!stats) {
       return {
-        title: "Your Stats",
+        title: t('productHome.stats.title'),
         stats: [
-          { label: "Projects", value: "0" },
-          { label: "Knowledge", value: "0" },
-          { label: "Ideas", value: "0" }
+          { label: t('productHome.stats.projects'), value: "0" },
+          { label: t('productHome.stats.knowledge'), value: "0" },
+          { label: t('productHome.stats.ideas'), value: "0" }
         ]
       };
     }
 
     return {
-      title: "Your Stats",
+      title: t('productHome.stats.title'),
       stats: [
-        { label: "Projects", value: stats.projects.toString() },
-        { label: "Knowledge", value: stats.knowledge_files.toString() },
-        { label: "Ideas", value: stats.ideas.toString() }
+        { label: t('productHome.stats.projects'), value: stats.projects.toString() },
+        { label: t('productHome.stats.knowledge'), value: stats.knowledge_files.toString() },
+        { label: t('productHome.stats.ideas'), value: stats.ideas.toString() }
       ]
     };
   };
@@ -368,7 +370,7 @@ const ProductHome = () => {
     let content = suggestion.suggested_outline || suggestion.description || '';
     
     if (!content) {
-      return 'AI-generated content suggestion - click to start creating';
+      return t('productHome.contentSuggestion.preview');
     }
     
     // Get the first paragraph or first 200 characters
@@ -400,7 +402,7 @@ const ProductHome = () => {
         backgroundColor: 'transparent'
       }}>
         <SubtleLoadingSpinner 
-          title="Loading your dashboard..."
+          title={t('productHome.loading.dashboard')}
           size={20}
         />
       </div>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTheme } from '@/services/theme-context';
 import { useHelp } from '@/services/help-context';
+import { useTranslation } from '@/services/i18n-context';
 import { spacing } from '../tokens/spacing.js';
 import { textStyles } from '../styles/typography/typography-styles.js';
 import { stroke } from '../tokens/stroke.js';
@@ -74,6 +75,7 @@ const HomeSidebar = ({
 }) => {
   const { colors, themePreference, setTheme } = useTheme();
   const { openHelp } = useHelp();
+  const { t } = useTranslation('pages');
   const [isAvatarHovered, setIsAvatarHovered] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
 
@@ -110,14 +112,14 @@ const HomeSidebar = ({
   // User dropdown menu items
   const userDropdownItems = [
     {
-      label: 'Profile Settings',
+      label: t('sidebar.actions.profileSettings'),
       onClick: () => {
         setIsUserDropdownOpen(false);
         onAvatarClick?.();
       }
     },
     {
-      label: 'Sign Out',
+      label: t('sidebar.actions.signOut'),
       type: 'destructive',
       onClick: () => {
         setIsUserDropdownOpen(false);
@@ -128,12 +130,12 @@ const HomeSidebar = ({
 
   // Menu items configuration
   const mainMenuItems = [
-    { id: 'home', label: 'Home', icon: <Home />, section: 'main' },
-    { id: 'profile', label: 'Profile', icon: <User />, section: 'main' },
-    { id: 'knowledge', label: 'Knowledge', icon: <BookOpen />, section: 'main' },
-    { id: 'history', label: 'Posts', icon: <FileText />, section: 'main' },
-    { id: 'pacing', label: 'Pacing', icon: <Gauge />, section: 'main' },
-    { id: 'integrations', label: 'Integrations', icon: <Plug />, section: 'main' },
+    { id: 'home', label: t('sidebar.menu.home'), icon: <Home />, section: 'main' },
+    { id: 'profile', label: t('sidebar.menu.profile'), icon: <User />, section: 'main' },
+    { id: 'knowledge', label: t('sidebar.menu.knowledge'), icon: <BookOpen />, section: 'main' },
+    { id: 'history', label: t('sidebar.menu.history'), icon: <FileText />, section: 'main' },
+    { id: 'pacing', label: t('sidebar.menu.pacing'), icon: <Gauge />, section: 'main' },
+    { id: 'integrations', label: t('sidebar.menu.integrations'), icon: <Plug />, section: 'main' },
   ];
 
   const secondaryMenuItems = [
@@ -277,7 +279,7 @@ const HomeSidebar = ({
       <button
         style={floatingToggleStyles}
         onClick={onToggleCollapsed}
-        aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        aria-label={isCollapsed ? t('sidebar.aria.expandSidebar') : t('sidebar.aria.collapseSidebar')}
         type="button"
       >
         {isCollapsed ? <ChevronRight size={16} color={colors.icon.default} /> : <ChevronLeft size={16} color={colors.icon.default} />}
@@ -289,7 +291,7 @@ const HomeSidebar = ({
         onClick={handleAvatarClick}
         onMouseEnter={() => setIsAvatarHovered(true)}
         onMouseLeave={() => setIsAvatarHovered(false)}
-        aria-label={isCollapsed ? `View ${userName}'s profile` : `User menu`}
+        aria-label={isCollapsed ? t('sidebar.aria.viewProfile', { name: userName }) : t('sidebar.aria.userMenu')}
         type="button"
       >
         <img
@@ -340,13 +342,13 @@ const HomeSidebar = ({
       {/* Button Container - Create New */}
       <div style={buttonContainerStyles}>
         <Button
-          label={isCollapsed ? undefined : "Create New"}
+          label={isCollapsed ? undefined : t('sidebar.actions.createNew')}
           variant={isCollapsed ? "iconOnly" : "default"}
           style="secondary"
           size="sm"
           leadIcon={<Plus size={16} />}
           onClick={onCreateNewClick}
-          aria-label={isCollapsed ? "Create New" : undefined}
+          aria-label={isCollapsed ? t('sidebar.actions.createNew') : undefined}
         />
       </div>
 
@@ -394,7 +396,7 @@ const HomeSidebar = ({
             size="xs"
             leadIcon={themePreference === 'light' ? <Moon size={12} /> : <Sun size={12} />}
             onClick={handleThemeToggle}
-            aria-label={themePreference === 'light' ? 'Switch to dark theme' : 'Switch to light theme'}
+            aria-label={themePreference === 'light' ? t('sidebar.theme.switchToDark') : t('sidebar.theme.switchToLight')}
           />
         ) : (
           <ButtonGroup
@@ -407,7 +409,7 @@ const HomeSidebar = ({
         {/* Help Button - Only show when expanded */}
         {!isCollapsed && (
           <Button
-            label="Help"
+            label={t('sidebar.actions.help')}
             style="dashed"
             size="xs"
             leadIcon={<HelpCircle size={12} />}

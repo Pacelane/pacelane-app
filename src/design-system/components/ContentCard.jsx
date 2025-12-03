@@ -6,6 +6,7 @@ import { spacing } from '../tokens/spacing.js';
 import { cornerRadius } from '../tokens/corner-radius.js';
 import { textStyles } from '../styles/typography/typography-styles.js';
 import { shadows, getShadow } from '../tokens/shadows.js';
+import { useTranslation } from '@/services/i18n-context';
 import Button from './Button.jsx';
 import DropdownMenu from './DropdownMenu.jsx';
 
@@ -46,6 +47,7 @@ const ContentCard = ({
   ...rest
 }) => {
   const { colors } = useTheme();
+  const { t } = useTranslation('pages');
   const [isHovered, setIsHovered] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
 
@@ -60,21 +62,21 @@ const ContentCard = ({
   // Add status change options (only show options that differ from current status)
   if (status !== 'draft') {
     dropdownItems.push({
-      label: 'Mark as Draft',
+      label: t('posts.menu.markAsDraft'),
       onClick: () => onMenuAction?.('mark-draft')
     });
   }
   
   if (status !== 'published') {
     dropdownItems.push({
-      label: 'Mark as Published',
+      label: t('posts.menu.markAsPublished'),
       onClick: () => onMenuAction?.('mark-published')
     });
   }
   
   if (status !== 'archived') {
     dropdownItems.push({
-      label: 'Mark as Archived',
+      label: t('posts.menu.markAsArchived'),
       onClick: () => onMenuAction?.('mark-archived')
     });
   }
@@ -86,7 +88,7 @@ const ContentCard = ({
   
   // Add delete option
   dropdownItems.push({
-    label: 'Delete',
+    label: t('posts.menu.delete'),
     type: 'destructive',
     onClick: () => onMenuAction?.('delete')
   });

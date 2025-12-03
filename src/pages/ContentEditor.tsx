@@ -7,6 +7,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useHelp } from '../services/help-context';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/design-system/components/Toast';
+import { useTranslation, useI18n } from '@/services/i18n-context';
 
 import { getTemplateById } from '@/data/templateData';
 
@@ -83,6 +84,8 @@ const ContentEditor = () => {
   const { openHelp } = useHelp();
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const { t } = useTranslation('pages');
+  const { currentLanguage } = useI18n();
   
   console.log('ContentEditor: Location state:', location.state);
   
@@ -121,9 +124,9 @@ const ContentEditor = () => {
   // ========== LOCAL COMPONENT STATE ==========
   const [chatInput, setChatInput] = useState('');
   const [draftId, setDraftId] = useState<string | null>(null);
-  const [draftTitle, setDraftTitle] = useState('New Post');
+  const [draftTitle, setDraftTitle] = useState(() => t('contentEditor.defaultTitle'));
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  const [editorContent, setEditorContent] = useState('# New Post\n\nStart writing your content here...');
+  const [editorContent, setEditorContent] = useState(() => t('contentEditor.defaultContent'));
   const [sidebarSplit, setSidebarSplit] = useState(60); // Percentage for knowledge base section
   const [showConversationDropdown, setShowConversationDropdown] = useState(false);
   const [conversations, setConversations] = useState<any[]>([]);
@@ -161,15 +164,24 @@ const ContentEditor = () => {
   const [activeMobileTab, setActiveMobileTab] = useState<'editor' | 'knowledge' | 'chat'>('editor');
 
 
-  const [fileStructure, setFileStructure] = useState<FileItem[]>([
+  const [fileStructure, setFileStructure] = useState<FileItem[]>(() => [
     {
       id: 'knowledge-base',
-      name: 'Knowledge Base',
+      name: t('contentEditor.labels.knowledgeBase'),
       type: 'folder',
       isOpen: true,
       children: []
     }
   ]);
+
+  // Update fileStructure when language changes
+  useEffect(() => {
+    setFileStructure(prev => prev.map(item => 
+      item.id === 'knowledge-base' 
+        ? { ...item, name: t('contentEditor.labels.knowledgeBase') }
+        : item
+    ));
+  }, [currentLanguage, t]);
 
   // Load conversations on mount
   useEffect(() => {
@@ -219,7 +231,7 @@ const ContentEditor = () => {
   };
 
   const formatTitle = (title: string) => {
-    if (!title || title.trim() === '') return 'Untitled Conversation';
+    if (!title || title.trim() === '') return t('contentEditor.untitledConversation');
     return title.length > 30 ? `${title.substring(0, 30)}...` : title;
   };
 
@@ -229,9 +241,9 @@ const ContentEditor = () => {
     const diffInHours = Math.abs(now.getTime() - date.getTime()) / (1000 * 60 * 60);
     
     if (diffInHours < 24) {
-      return 'Today';
+      return t('contentEditor.today');
     } else if (diffInHours < 48) {
-      return 'Yesterday';
+      return t('contentEditor.yesterday');
     } else {
       return date.toLocaleDateString();
     }
@@ -266,7 +278,7 @@ const ContentEditor = () => {
       // Load existing draft
       const { draftId, title, content } = location.state;
       setDraftId(draftId);
-      setDraftTitle(title || 'Untitled');
+      setDraftTitle(title || t('contentEditor.untitled'));
       setEditorContent(content || '');
       
       // Clear the state to prevent re-applying on navigation
@@ -345,8 +357,8 @@ const ContentEditor = () => {
         }
         
         // Set default content to prevent empty editor
-        setDraftTitle('New Post');
-        setEditorContent('# New Post\n\nStart writing your content here...');
+        setDraftTitle(t('contentEditor.defaultTitle'));
+        setEditorContent(t('contentEditor.defaultContent'));
       }
     } catch (error) {
       console.error('ContentEditor: Error loading template:', error);
@@ -357,8 +369,8 @@ const ContentEditor = () => {
       }
       
       // Set default content to prevent empty editor
-      setDraftTitle('New Post');
-      setEditorContent('# New Post\n\nStart writing your content here...');
+      setDraftTitle(t('contentEditor.defaultTitle'));
+      setEditorContent(t('contentEditor.defaultContent'));
     }
   };
 
@@ -543,7 +555,7 @@ const ContentEditor = () => {
 
   const handleRejectAIEdit = () => {
     setAiEditSuggestion(null);
-    toast.info('AI edit rejected');
+    toast.info(t('contentEditor.messages.aiEditRejected'));
   };
 
 
@@ -766,7 +778,7 @@ const ContentEditor = () => {
   const handleRejectInlineDiff = () => {
     setInlineDiff(null);
     setTextSelection(null);
-    toast.info('Changes rejected');
+    toast.info(t('contentEditor.messages.changesRejected'));
   };
 
   const toggleFolder = (folderId: string) => {
@@ -1057,7 +1069,7 @@ const ContentEditor = () => {
                   color: colors.text.default,
                   margin: 0 
                 }}>
-                  Knowledge Base
+                  {t('contentEditor.labels.knowledgeBase')}
                 </h3>
                 <Button
                   size="2xs"
@@ -1086,13 +1098,13 @@ const ContentEditor = () => {
                       color: colors.text.default,
                       margin: 0 
                     }}>
-                      Knowledge Files
+                      {t('contentEditor.labels.knowledgeFiles')}
                     </h4>
                     <span style={{ 
                       ...textStyles.xs.normal, 
                       color: colors.text.muted 
                     }}>
-                    {getSelectedFiles().length} selected
+                    {getSelectedFiles().length} {getSelectedFiles().length === 1 ? t('contentEditor.labels.selected') : t('contentEditor.labels.selectedPlural')}
                   </span>
                 </div>
                 {loadingFiles ? (
@@ -1108,7 +1120,7 @@ const ContentEditor = () => {
                         textAlign: 'center',
                         padding: spacing.spacing[8]
                       }}>
-                        No files found. Upload files in Knowledge Base.
+                        {t('contentEditor.empty.noFiles')}
                       </p>
                     );
                   }
@@ -1228,7 +1240,7 @@ const ContentEditor = () => {
                          textOverflow: 'ellipsis',
                          whiteSpace: 'nowrap'
                        }}>
-                       {draft.title || 'Untitled'}
+                       {draft.title || t('contentEditor.untitled')}
                      </div>
                        <div style={{ 
                          ...textStyles.xs.normal, 
@@ -1243,7 +1255,7 @@ const ContentEditor = () => {
              )}
               <div style={{ marginTop: spacing.spacing[8] }}>
                 <Button
-                  label="View all posts"
+                  label={t('contentEditor.buttons.viewAllPosts')}
                   style="dashed"
                   size="xs"
                   onClick={() => navigate('/posts')}
@@ -1260,7 +1272,7 @@ const ContentEditor = () => {
               items={themeItems}
             />
             <Button
-              label="Help"
+              label={t('contentEditor.buttons.help')}
               style="dashed"
               size="xs"
               leadIcon={<HelpCircle size={12} />}
@@ -1290,7 +1302,7 @@ const ContentEditor = () => {
             <LinkedInPostEditor
               value={editorContent}
               onChange={(e) => setEditorContent(e.target.value)}
-              placeholder="What do you want to talk about?"
+              placeholder={t('contentEditor.placeholders.editor')}
               user={user}
               profile={profile}
             />
@@ -1350,13 +1362,13 @@ const ContentEditor = () => {
                 color: colors.text.default,
                 margin: 0 
               }}>
-                AI Assistant
+                {t('contentEditor.labels.aiAssistant')}
               </h3>
               <div style={{ position: 'relative' }}>
                 <Button
                   label={currentConversationId 
-                    ? formatTitle(conversations.find(c => c.id === currentConversationId)?.title || 'Current Chat')
-                    : 'New Conversation'
+                    ? formatTitle(conversations.find(c => c.id === currentConversationId)?.title || t('contentEditor.currentChat'))
+                    : t('contentEditor.newConversation')
                   }
                   style="secondary"
                   size="xs"
@@ -1401,7 +1413,7 @@ const ContentEditor = () => {
                       <div style={{ display: 'flex', alignItems: 'center', gap: spacing.spacing[8] }}>
                         <Plus size={14} style={{ color: colors.icon.highlight }} />
                         <span style={{ ...textStyles.sm.medium, color: colors.text.default }}>
-                          New Conversation
+                          {t('contentEditor.newConversation')}
                         </span>
                       </div>
                     </div>
@@ -1482,10 +1494,10 @@ const ContentEditor = () => {
           {chatMessages.length === 0 ? (
               <div style={{ textAlign: 'center', color: colors.text.muted, marginTop: spacing.spacing[32] }}>
                 <p style={{ ...textStyles.sm.medium, margin: 0, marginBottom: spacing.spacing[8] }}>
-                  👋 Hello! I'm your AI content assistant.
+                  {t('contentEditor.messages.welcomeTitle')}
                 </p>
                 <p style={{ ...textStyles.xs.normal, margin: 0 }}>
-                  Ask me anything about your content, writing tips, or ideas!
+                  {t('contentEditor.messages.welcomeSubtitle')}
                 </p>
             </div>
           ) : (
@@ -1504,7 +1516,7 @@ const ContentEditor = () => {
                       ...textStyles.xs.semibold, 
                       color: colors.text.default 
                     }}>
-                      {message.role === 'user' ? 'You' : 'Assistant'}
+                      {message.role === 'user' ? t('contentEditor.labels.you') : t('contentEditor.labels.assistant')}
                     </span>
                   </div>
 
@@ -1559,7 +1571,7 @@ const ContentEditor = () => {
                             ...textStyles.sm.semibold, 
                             color: colors.text.default 
                           }}>
-                            {profile?.display_name || profile?.linkedin_name || 'You'}
+                            {profile?.display_name || profile?.linkedin_name || t('contentEditor.labels.you')}
                           </div>
                           {profile?.linkedin_headline && (
                             <div style={{ 
@@ -1583,7 +1595,7 @@ const ContentEditor = () => {
                             textTransform: 'uppercase',
                             letterSpacing: '0.5px',
                           }}>
-                            Hook
+                            {t('contentEditor.labels.hook')}
                           </div>
                           <div style={{
                             ...textStyles.sm.normal,
@@ -1627,13 +1639,13 @@ const ContentEditor = () => {
                         justifyContent: 'flex-end',
                       }}>
                         <Button
-                          label="Reject"
+                          label={t('contentEditor.buttons.reject')}
                           style="secondary"
                           size="xs"
                           onClick={handleRejectAIEdit}
                         />
                         <Button
-                          label="Apply"
+                          label={t('contentEditor.buttons.apply')}
                           style="primary"
                           size="xs"
                           onClick={handleApplyAIEdit}
@@ -1654,7 +1666,7 @@ const ContentEditor = () => {
                     ...textStyles.xs.semibold, 
                     color: colors.text.default 
                   }}>
-                    Assistant
+                    {t('contentEditor.labels.assistant')}
                   </span>
                 </div>
                 <div style={botMessageStyles}>
@@ -1709,7 +1721,7 @@ const ContentEditor = () => {
             marginBottom: spacing.spacing[8],
           }}>
             <span style={{ ...textStyles.xs.semibold, color: colors.text.muted }}>
-              Quick Actions
+              {t('contentEditor.labels.quickActions')}
             </span>
             <Button
               label=""
@@ -1727,56 +1739,56 @@ const ContentEditor = () => {
               gap: spacing.spacing[6],
             }}>
               <Button
-                label="Professional"
+                label={t('contentEditor.quickActions.professional')}
                 style="secondary"
                 size="xs"
                 onClick={() => handleQuickAction('professional')}
                 disabled={aiLoading}
               />
               <Button
-                label="Bullet Points"
+                label={t('contentEditor.quickActions.bulletPoints')}
                 style="secondary"
                 size="xs"
                 onClick={() => handleQuickAction('bullet_points')}
                 disabled={aiLoading}
               />
               <Button
-                label="Better Hook"
+                label={t('contentEditor.quickActions.betterHook')}
                 style="secondary"
                 size="xs"
                 onClick={() => handleQuickAction('improve_hook')}
                 disabled={aiLoading}
               />
               <Button
-                label="Add Hashtags"
+                label={t('contentEditor.quickActions.addHashtags')}
                 style="secondary"
                 size="xs"
                 onClick={() => handleQuickAction('add_hashtags')}
                 disabled={aiLoading}
               />
               <Button
-                label="Make Shorter"
+                label={t('contentEditor.quickActions.makeShorter')}
                 style="secondary"
                 size="xs"
                 onClick={() => handleQuickAction('shorter')}
                 disabled={aiLoading}
               />
               <Button
-                label="Make Longer"
+                label={t('contentEditor.quickActions.makeLonger')}
                 style="secondary"
                 size="xs"
                 onClick={() => handleQuickAction('longer')}
                 disabled={aiLoading}
               />
               <Button
-                label="Add Story"
+                label={t('contentEditor.quickActions.addStory')}
                 style="secondary"
                 size="xs"
                 onClick={() => handleQuickAction('storytelling')}
                 disabled={aiLoading}
               />
               <Button
-                label="Make Actionable"
+                label={t('contentEditor.quickActions.makeActionable')}
                 style="secondary"
                 size="xs"
                 onClick={() => handleQuickAction('actionable')}
@@ -1790,7 +1802,7 @@ const ContentEditor = () => {
           <div style={chatInputAreaStyles}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[8] }}>
               <TextArea
-                placeholder="Ask AI anything about your content..."
+                placeholder={t('contentEditor.placeholders.chat')}
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
                 onKeyDown={handleChatKeyPress}
@@ -1798,7 +1810,7 @@ const ContentEditor = () => {
                 disabled={aiLoading}
               />
               <Button
-                label="Send Message"
+                label={t('contentEditor.buttons.sendMessage')}
                 style="primary"
                 size="sm"
                 leadIcon={<Send size={16} />}
@@ -1815,7 +1827,7 @@ const ContentEditor = () => {
           <Modal
             isOpen={showFileUploadModal}
             onClose={handleUploadModalClose}
-            title="Add Files to Knowledge Base"
+            title={t('contentEditor.modals.addFiles')}
             size="md"
           >
             <div style={{

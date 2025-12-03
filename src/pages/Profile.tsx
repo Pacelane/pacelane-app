@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/api/useAuth';
 import { useProfile } from '@/hooks/api/useProfile';
 import { useTheme } from '@/services/theme-context';
+import { useTranslation } from '@/services/i18n-context';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -43,6 +44,7 @@ const Profile = () => {
   const { user, signOut, refreshProfile } = useAuth();
   const { profile, saving, updateBasicProfile } = useProfile();
   const { colors } = useTheme();
+  const { t } = useTranslation('pages');
   const isMobile = useIsMobile();
   
   // Sidebar state
@@ -369,12 +371,12 @@ const Profile = () => {
 
   // Goals & Audiences state
   const goalsOptions = [
-    'Brand Recognition',
-    'Lead Generation',
-    'Recruitment',
-    'Thought Leadership',
-    'Attract Opportunities',
-    'Stay Relevant'
+    t('profile.goals.options.brandRecognition'),
+    t('profile.goals.options.leadGeneration'),
+    t('profile.goals.options.recruitment'),
+    t('profile.goals.options.thoughtLeadership'),
+    t('profile.goals.options.attractOpportunities'),
+    t('profile.goals.options.stayRelevant')
   ];
   
   const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
@@ -382,14 +384,14 @@ const Profile = () => {
 
   // Content Pillars state
   const contentTypesOptions = [
-    'How To',
-    'News & Opinions',
-    'Personal Stories',
-    'Career Lessons',
-    'Behind The Scenes',
-    'Customer Stories',
-    'Educational',
-    'Memes & Humor'
+    t('profile.pillars.contentTypes.howTo'),
+    t('profile.pillars.contentTypes.newsOpinions'),
+    t('profile.pillars.contentTypes.personalStories'),
+    t('profile.pillars.contentTypes.careerLessons'),
+    t('profile.pillars.contentTypes.behindScenes'),
+    t('profile.pillars.contentTypes.customerStories'),
+    t('profile.pillars.contentTypes.educational'),
+    t('profile.pillars.contentTypes.memesHumor')
   ];
   
   const [selectedContentTypes, setSelectedContentTypes] = useState<string[]>([]);
@@ -397,10 +399,10 @@ const Profile = () => {
 
   // Writing Format state
   const formatOptions = [
-    { id: 'standard', label: 'Standard', icon: TextAlignLeft },
-    { id: 'formatted', label: 'Formatted', icon: ListBullets },
-    { id: 'short', label: 'Short', icon: Article },
-    { id: 'emojis', label: 'Emojis', icon: Smiley },
+    { id: 'standard', label: t('profile.format.options.standard'), icon: TextAlignLeft },
+    { id: 'formatted', label: t('profile.format.options.formatted'), icon: ListBullets },
+    { id: 'short', label: t('profile.format.options.short'), icon: Article },
+    { id: 'emojis', label: t('profile.format.options.emojis'), icon: Smiley },
   ];
   
   const [selectedFormat, setSelectedFormat] = useState<string>('standard'); // Default to 'standard' format
@@ -440,10 +442,10 @@ const Profile = () => {
 
   // Side menu items
   const menuItems = [
-    { id: 'personal', label: 'Personal Information' },
-    { id: 'goals', label: 'Goals & Audiences' },
-    { id: 'pillars', label: 'Content Pillars' },
-    { id: 'format', label: 'Writing Format' }
+    { id: 'personal', label: t('profile.sections.personal') },
+    { id: 'goals', label: t('profile.sections.goals') },
+    { id: 'pillars', label: t('profile.sections.pillars') },
+    { id: 'format', label: t('profile.sections.format') }
   ];
 
   // Generic functions for managing dynamic lists
@@ -784,10 +786,10 @@ const Profile = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[16] }}>
             <div>
               <h3 style={{ ...textStyles.sm.semibold, color: colors.text.default, margin: 0 }}>
-                Your Goals
+                {t('profile.goals.title')}
               </h3>
               <p style={{ ...textStyles.xs.normal, color: colors.text.subtle, margin: 0 }}>
-                What do you want to achieve with your content?
+                {t('profile.goals.subtitle')}
               </p>
             </div>
 
@@ -818,7 +820,7 @@ const Profile = () => {
               marginTop: spacing.spacing[16] 
             }}>
               <p style={{ ...textStyles.sm.medium, color: colors.text.default, margin: 0 }}>
-                Your Target Audiences
+                {t('profile.goals.targetAudiences')}
               </p>
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[8] }}>
@@ -827,7 +829,7 @@ const Profile = () => {
                     key={index}
                     style="tail-action"
                     size="lg"
-                    placeholder={`Target Audience ${index + 1}`}
+                    placeholder={t('profile.goals.targetAudiencePlaceholder', { index: index + 1 })}
                     value={audience}
                     onChange={(e) => handleAudienceChange(index, e.target.value)}
                     tailAction={{
@@ -840,7 +842,7 @@ const Profile = () => {
                 <Button
                   style="secondary"
                   size="sm"
-                  label="Add Target Audience"
+                  label={t('profile.goals.addTargetAudience')}
                   leadIcon={<Plus size={16} />}
                   onClick={handleAddAudience}
                 />
@@ -849,7 +851,7 @@ const Profile = () => {
 
             <div style={{ alignSelf: 'flex-start' }}>
               <Button
-                label={savedStates.goals ? "Saved!" : "Save"}
+                label={savedStates.goals ? t('profile.goals.saved') : t('profile.goals.save')}
                 style="primary"
                 size="sm"
                 leadIcon={savedStates.goals ? <Check size={16} /> : undefined}
@@ -865,10 +867,10 @@ const Profile = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[16] }}>
             <div>
               <h3 style={{ ...textStyles.sm.semibold, color: colors.text.default, margin: 0 }}>
-                Tone of Voice
+                {t('profile.guides.title')}
               </h3>
               <p style={{ ...textStyles.xs.normal, color: colors.text.subtle, margin: 0 }}>
-                Define the personality and style that should come through in your content
+                {t('profile.guides.subtitle')}
               </p>
             </div>
 
@@ -892,14 +894,14 @@ const Profile = () => {
               ))}
               {guides.filter(guide => guide.value.trim()).length === 0 && (
                 <EmptyState
-                  title="No tone of voice elements defined yet"
+                  title={t('profile.guides.emptyTitle')}
                   fullSpace={true}
                 />
               )}
             </div>
 
             <Input
-              placeholder="Enter a tone of voice element (e.g., Professional, Friendly, Authoritative)..."
+              placeholder={t('profile.guides.placeholder')}
               value={newGuide}
               onChange={(e) => setNewGuide(e.target.value)}
               onKeyPress={handleGuideKeyPress}
@@ -920,7 +922,7 @@ const Profile = () => {
 
             {/* Give me some ideas button */}
             <Button
-              label="Give me some ideas"
+              label={t('profile.guides.giveIdeas')}
               style="dashed"
               size="md"
               leadIcon={<Sparkles size={16} />}
@@ -930,7 +932,7 @@ const Profile = () => {
 
             <div style={{ alignSelf: 'flex-start' }}>
               <Button
-                label={savedStates.guides ? "Saved!" : "Save"}
+                label={savedStates.guides ? t('profile.guides.saved') : t('profile.guides.save')}
                 style="primary"
                 size="sm"
                 leadIcon={savedStates.guides ? <Check size={16} /> : undefined}
@@ -946,10 +948,10 @@ const Profile = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[16] }}>
             <div>
               <h3 style={{ ...textStyles.sm.semibold, color: colors.text.default, margin: 0 }}>
-                Content Types
+                {t('profile.pillars.title')}
               </h3>
               <p style={{ ...textStyles.xs.normal, color: colors.text.subtle, margin: 0 }}>
-                What types of content do you want to create?
+                {t('profile.pillars.subtitle')}
               </p>
             </div>
 
@@ -980,7 +982,7 @@ const Profile = () => {
               marginTop: spacing.spacing[16] 
             }}>
               <p style={{ ...textStyles.sm.medium, color: colors.text.default, margin: 0 }}>
-                Themes You Want to Talk About
+                {t('profile.pillars.themes')}
               </p>
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[8] }}>
@@ -989,7 +991,7 @@ const Profile = () => {
                     key={index}
                     style="tail-action"
                     size="lg"
-                    placeholder={`Theme ${index + 1}`}
+                    placeholder={t('profile.pillars.themePlaceholder', { index: index + 1 })}
                     value={theme}
                     onChange={(e) => handleThemeChange(index, e.target.value)}
                     tailAction={{
@@ -1002,7 +1004,7 @@ const Profile = () => {
                 <Button
                   style="secondary"
                   size="sm"
-                  label="Add Theme"
+                  label={t('profile.pillars.addTheme')}
                   leadIcon={<Plus size={16} />}
                   onClick={handleAddTheme}
                 />
@@ -1011,7 +1013,7 @@ const Profile = () => {
 
             <div style={{ alignSelf: 'flex-start' }}>
               <Button
-                label={savedStates.pillars ? "Saved!" : "Save"}
+                label={savedStates.pillars ? t('profile.pillars.saved') : t('profile.pillars.save')}
                 style="primary"
                 size="sm"
                 leadIcon={savedStates.pillars ? <Check size={16} /> : undefined}
@@ -1027,15 +1029,15 @@ const Profile = () => {
         const getUtilityText = () => {
           switch (selectedFormat) {
             case 'standard':
-              return 'Standard posts are written in continuous paragraphs, ideal for longer narratives and reflections.';
+              return t('profile.format.descriptions.standard');
             case 'formatted':
-              return 'Formatted posts use lists, line breaks, and clear structure to make reading easier.';
+              return t('profile.format.descriptions.formatted');
             case 'short':
-              return 'Short posts are direct and objective, perfect for quick and impactful messages.';
+              return t('profile.format.descriptions.short');
             case 'emojis':
-              return 'Posts with emojis add personality and make content more visual and engaging.';
+              return t('profile.format.descriptions.emojis');
             default:
-              return 'Choose the format that best fits your writing style. This will be the default for your LinkedIn posts.';
+              return t('profile.format.descriptions.default');
           }
         };
 
@@ -1043,15 +1045,15 @@ const Profile = () => {
         const getPostContent = () => {
           switch (selectedFormat) {
             case 'standard':
-              return 'Today I want to share an important reflection on product design.\n\nIn recent months, I\'ve been working on challenging projects that taught me a valuable lesson: simplicity is the ultimate sophistication.\n\nWhen we start designing, it\'s tempting to add features and details. But the best products are those that solve complex problems simply.\n\nWhat do you think? How do you apply this principle in your work?';
+              return t('profile.format.examples.standard');
             case 'formatted':
-              return 'Today I want to share 3 important lessons about product design:\n\n→ Simplicity is the ultimate sophistication\n→ Fewer features, more value\n→ Focus on the problem, not the solution\n\nIn recent months, I learned that the best products solve complex problems simply.\n\nWhich of these lessons resonates most with you?';
+              return t('profile.format.examples.formatted');
             case 'short':
-              return 'Simplicity is the ultimate sophistication.\n\nIn recent months I learned that the best products solve complex problems simply.\n\nLess is more.';
+              return t('profile.format.examples.short');
             case 'emojis':
-              return '💡 Today I want to share an important reflection on product design.\n\n✨ In recent months, I\'ve been working on challenging projects that taught me a valuable lesson: simplicity is the ultimate sophistication.\n\n🎯 When we start designing, it\'s tempting to add features and details. But the best products solve complex problems simply.\n\n🚀 Less is more!';
+              return t('profile.format.examples.emojis');
             default:
-              return 'Today I want to share an important reflection on product design.\n\nIn recent months, I\'ve been working on challenging projects that taught me a valuable lesson: simplicity is the ultimate sophistication.\n\nWhen we start designing, it\'s tempting to add features and details. But the best products are those that solve complex problems simply.';
+              return t('profile.format.examples.standard');
           }
         };
 
@@ -1059,10 +1061,10 @@ const Profile = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[16] }}>
             <div>
               <h3 style={{ ...textStyles.sm.semibold, color: colors.text.default, margin: 0 }}>
-                Writing Format
+                {t('profile.format.title')}
               </h3>
               <p style={{ ...textStyles.xs.normal, color: colors.text.subtle, margin: 0 }}>
-                Choose the format that best fits your writing style
+                {t('profile.format.subtitle')}
               </p>
             </div>
 
@@ -1164,14 +1166,14 @@ const Profile = () => {
                     color: colors.text.default, 
                     margin: 0 
                   }}>
-                    {personalInfo.name || 'Your Name'}
+                    {personalInfo.name || t('profile.personal.yourName')}
                   </p>
                   <p style={{ 
                     ...textStyles.xs.normal, 
                     color: colors.text.subtle, 
                     margin: 0 
                   }}>
-                    {personalInfo.profession || 'Your Profession'}
+                    {personalInfo.profession || t('profile.personal.yourProfession')}
                   </p>
                 </div>
               </div>
@@ -1190,7 +1192,7 @@ const Profile = () => {
 
             <div style={{ alignSelf: 'flex-start' }}>
               <Button
-                label={savedStates.format ? "Saved!" : "Save"}
+                label={savedStates.format ? t('profile.format.saved') : t('profile.format.save')}
                 style="primary"
                 size="sm"
                 leadIcon={savedStates.format ? <Check size={16} /> : undefined}
@@ -1217,9 +1219,9 @@ const Profile = () => {
             gap: isMobile ? spacing.spacing[16] : 0
           }}>
             <div>
-              <h1 style={titleStyle}>Profile Settings</h1>
+              <h1 style={titleStyle}>{t('profile.title')}</h1>
               <p style={subtitleStyle}>
-                Manage your personal information, company details, and content preferences
+                {t('profile.subtitle')}
               </p>
             </div>
             <div style={{ 
@@ -1227,7 +1229,7 @@ const Profile = () => {
               flexShrink: 0
             }}>
               <Button
-                label="Sign Out"
+                label={t('profile.signOut')}
                 style="secondary"
                 size="sm"
                 leadIcon={<LogOut size={16} />}
@@ -1303,7 +1305,7 @@ const Profile = () => {
                             color: colors.text.default,
                             margin: 0,
                           }}>
-                            {personalInfo.name || 'Your Name'}
+                            {personalInfo.name || t('profile.personal.yourName')}
                           </h2>
                           <p style={{
                             ...textStyles.sm.normal,
@@ -1311,24 +1313,24 @@ const Profile = () => {
                             margin: 0,
                             marginTop: spacing.spacing[4],
                           }}>
-                            {personalInfo.profession || 'Your Profession'}
+                            {personalInfo.profession || t('profile.personal.yourProfession')}
                           </p>
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[8] }}>
                           <Input
-                            placeholder="Full Name"
+                            placeholder={t('profile.personal.name')}
                             value={personalInfo.name}
                             onChange={(e) => handlePersonalInfoChange('name', e.target.value)}
                             style="default"
                           />
                           <Input 
-                            placeholder="Professional Title"
+                            placeholder={t('profile.personal.profession')}
                             value={personalInfo.profession}
                             onChange={(e) => handlePersonalInfoChange('profession', e.target.value)}
                             style="default"
                           />
                           <Input 
-                            placeholder="LinkedIn URL"
+                            placeholder={t('profile.personal.linkedinUrl')}
                             value={personalInfo.linkedinUrl}
                             onChange={(e) => handlePersonalInfoChange('linkedinUrl', e.target.value)}
                             style="default"
@@ -1338,7 +1340,7 @@ const Profile = () => {
                     </div>
                     <div style={{ alignSelf: 'flex-start' }}>
                       <Button
-                        label={savedStates.profile ? "Saved!" : "Save"}
+                        label={savedStates.profile ? t('profile.personal.saved') : t('profile.personal.save')}
                         style="primary"
                         size="sm"
                         leadIcon={savedStates.profile ? <Check size={16} /> : undefined}
@@ -1362,10 +1364,10 @@ const Profile = () => {
                     gap: spacing.spacing[12],
                   }}>
                     <h4 style={{ ...textStyles.sm.semibold, color: colors.text.default, margin: 0 }}>
-                      Bio
+                      {t('profile.personal.bio')}
                     </h4>
                     <TextArea
-                      placeholder="Tell us about yourself..."
+                      placeholder={t('profile.personal.bioPlaceholder')}
                       value={personalInfo.bio}
                       onChange={(e) => handlePersonalInfoChange('bio', e.target.value)}
                       rows={3}
@@ -1375,7 +1377,7 @@ const Profile = () => {
                     />
                     <div style={{ alignSelf: 'flex-start' }}>
                       <Button
-                        label={savedStates.bio ? "Saved!" : "Save"}
+                        label={savedStates.bio ? t('profile.personal.saved') : t('profile.personal.save')}
                         style="primary"
                         size="sm"
                         leadIcon={savedStates.bio ? <Check size={16} /> : undefined}

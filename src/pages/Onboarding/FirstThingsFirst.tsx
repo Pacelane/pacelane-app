@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/api/useAuth';
 import { useProfile } from '@/hooks/api/useProfile';
 import { useTheme } from '@/services/theme-context';
 import { useToast } from '@/design-system/components/Toast';
+import { useTranslation } from '@/services/i18n-context';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -11,17 +12,7 @@ import { z } from 'zod';
 // LinkedIn URL parsing utilities
 import { parseLinkedInInput, isLinkedInUrl } from '@/utils/linkedinParser';
 
-// Updated schema that accepts both URLs and usernames
-const linkedInUsernameSchema = z.object({
-  profileUrl: z.string()
-    .min(1, 'Perfil do LinkedIn é obrigatório')
-    .refine((value) => {
-      const parsed = parseLinkedInInput(value);
-      return parsed.isValid;
-    }, 'Por favor, insira um nome de usuário ou URL válida do LinkedIn')
-});
-
-type LinkedInUsernameFormData = z.infer<typeof linkedInUsernameSchema>;
+// Schema and type will be created inside component to access translations
 
 // Design System Components
 import TopNav from '@/design-system/components/TopNav';
@@ -47,7 +38,20 @@ const FirstThingsFirst = () => {
   const { user } = useAuth();
   const { setupLinkedInProfile, saving } = useProfile();
   const { toast } = useToast();
+  const { t } = useTranslation('onboarding');
   const [linkedInUrl, setLinkedInUrl] = useState('');
+
+  // Create schema with translations
+  const linkedInUsernameSchema = z.object({
+    profileUrl: z.string()
+      .min(1, t('firstThingsFirst.errors.required'))
+      .refine((value) => {
+        const parsed = parseLinkedInInput(value);
+        return parsed.isValid;
+      }, t('firstThingsFirst.errors.invalid'))
+  });
+
+  type LinkedInUsernameFormData = z.infer<typeof linkedInUsernameSchema>;
 
   const form = useForm<LinkedInUsernameFormData>({
     resolver: zodResolver(linkedInUsernameSchema),
@@ -66,7 +70,7 @@ const FirstThingsFirst = () => {
       if (parsed.isValid && parsed.username) {
         // Automatically set the extracted username
         form.setValue('profileUrl', parsed.username, { shouldValidate: true });
-        toast.success(`Nome de usuário do LinkedIn extraído: ${parsed.username}`);
+        toast.success(t('firstThingsFirst.messages.extracted', { username: parsed.username }));
         return;
       }
     }
@@ -82,7 +86,7 @@ const FirstThingsFirst = () => {
 
   const handleContinue = async () => {
     if (!user) {
-      toast.error('Por favor, faça login para continuar');
+      toast.error(t('firstThingsFirst.messages.loginRequired'));
       return;
     }
 
@@ -97,7 +101,7 @@ const FirstThingsFirst = () => {
       const parsed = parseLinkedInInput(formData.profileUrl);
       
       if (!parsed.isValid) {
-        throw new Error('Por favor, insira um nome de usuário ou URL válida do LinkedIn');
+        throw new Error(t('firstThingsFirst.errors.invalid'));
       }
 
       // Construct the full LinkedIn URL from the extracted username
@@ -117,15 +121,15 @@ const FirstThingsFirst = () => {
       // The scraping can fail but the URL should still be saved in the database
       if (result.error) {
         // Scraping failed but URL was saved - show informative message
-        toast.success('Perfil do LinkedIn salvo! Vamos tentar coletar mais detalhes em segundo plano.');
+        toast.success(t('firstThingsFirst.messages.saveSuccess'));
       } else {
         // Complete success
-        toast.success('Configuração do perfil concluída!');
+        toast.success(t('firstThingsFirst.messages.setupSuccess'));
       }
       
       navigate('/onboarding/linkedin-summary');
     } catch (error: any) {
-      toast.error(error.message || 'Falha ao concluir a configuração');
+      toast.error(error.message || t('firstThingsFirst.messages.saveError'));
     }
   };
 
@@ -304,13 +308,13 @@ const FirstThingsFirst = () => {
 
   // Steps list
   const steps = [
-    'URL do LinkedIn',
-    'Número do WhatsApp',
-    'Frequência',
-    'Objetivos',
-    'Pilares',
-    'Formato',
-    'Conhecimento',
+    t('firstThingsFirst.steps.linkedin'),
+    t('firstThingsFirst.steps.whatsapp'),
+    t('firstThingsFirst.steps.frequency'),
+    t('firstThingsFirst.steps.goals'),
+    t('firstThingsFirst.steps.pillars'),
+    t('firstThingsFirst.steps.format'),
+    t('firstThingsFirst.steps.knowledge'),
   ];
 
   // Check if form is valid
@@ -333,9 +337,9 @@ const FirstThingsFirst = () => {
             <div style={contentContainerStyles}>
               {/* Text container */}
               <div style={textContainerStyles}>
-                <h1 style={titleStyles}>Seu LinkedIn</h1>
+                <h1 style={titleStyles}>{t('firstThingsFirst.title')}</h1>
                 <p style={subtitleStyles}>
-                  Nos diga qual é a sua URL do LinkedIn, para que possamos escrever posts que tenham a sua cara.
+                  {t('firstThingsFirst.subtitle')}
                 </p>
               </div>
 
@@ -343,9 +347,9 @@ const FirstThingsFirst = () => {
               <Input
                 style="add-on"
                 size="lg"
-                label="Seu Perfil do LinkedIn"
+                label={t('firstThingsFirst.label')}
                 addOnPrefix="https://"
-                placeholder="linkedin.com/in/seuperfil"
+                placeholder={t('firstThingsFirst.placeholder')}
                 value={linkedInUrl}
                 onChange={(e) => handleInputChange(e.target.value)}
                 required
@@ -361,7 +365,7 @@ const FirstThingsFirst = () => {
                 <Button
                   style="secondary"
                   size="sm"
-                  label="Voltar"
+                  label={t('firstThingsFirst.backButton')}
                   onClick={handleGoBack}
                   disabled={saving}
                   fullWidth
@@ -371,7 +375,7 @@ const FirstThingsFirst = () => {
                 <Button
                   style="primary"
                   size="sm"
-                  label={saving ? "Analisando..." : "Continuar"}
+                  label={saving ? t('firstThingsFirst.analyzingButton') : t('firstThingsFirst.continueButton')}
                   leadIcon={saving ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : undefined}
                   tailIcon={!saving ? <ArrowRight size={16} /> : undefined}
                   onClick={handleContinue}
@@ -386,7 +390,7 @@ const FirstThingsFirst = () => {
           <div style={accuracyBarStyles}>
             {/* Bar container */}
             <div style={barContainerStyles}>
-              <p style={labelTextStyles}>Precisão dos resultados</p>
+              <p style={labelTextStyles}>{t('firstThingsFirst.accuracyLabel')}</p>
               <div style={{ marginTop: spacing.spacing[8] }}>
                 <div style={linesBarContainerStyles}>
                   {[...Array(27)].map((_, index) => (
@@ -394,10 +398,10 @@ const FirstThingsFirst = () => {
                   ))}
                 </div>
               </div>
-              <p style={{ ...infoTextStyles, marginTop: spacing.spacing[4] }}>0% Concluído</p>
+              <p style={{ ...infoTextStyles, marginTop: spacing.spacing[4] }}>{t('firstThingsFirst.completed')}</p>
               <div style={{ ...dividerStyles, marginTop: spacing.spacing[8] }} />
               <p style={{ ...infoTextStyles, marginTop: spacing.spacing[8] }}>
-                Quanto mais informações você fornecer sobre si mesmo, melhores serão os resultados.
+                {t('firstThingsFirst.infoText')}
               </p>
             </div>
 

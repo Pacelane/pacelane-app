@@ -1,0 +1,311 @@
+{
+  "welcome": {
+    "title": "Bem-Vindo!",
+    "subtitle": "Queremos te ajudar a aparecer de forma consistente no LinkedIn com conteúdos que tenham a sua cara.",
+    "bottomText": "Faremos algumas perguntas para personalizar a sua estratégia.",
+    "startButton": "Começar"
+  },
+  "firstThingsFirst": {
+    "title": "Seu LinkedIn",
+    "subtitle": "Nos diga qual é a sua URL do LinkedIn, para que possamos escrever posts que tenham a sua cara.",
+    "label": "Seu Perfil do LinkedIn",
+    "placeholder": "linkedin.com/in/seuperfil",
+    "backButton": "Voltar",
+    "continueButton": "Continuar",
+    "analyzingButton": "Analisando...",
+    "accuracyLabel": "Precisão dos resultados",
+    "completed": "0% Concluído",
+    "infoText": "Quanto mais informações você fornecer sobre si mesmo, melhores serão os resultados.",
+    "steps": {
+      "linkedin": "URL do LinkedIn",
+      "whatsapp": "Número do WhatsApp",
+      "frequency": "Frequência",
+      "goals": "Objetivos",
+      "pillars": "Pilares",
+      "format": "Formato",
+      "knowledge": "Conhecimento"
+    },
+    "errors": {
+      "required": "Perfil do LinkedIn é obrigatório",
+      "invalid": "Por favor, insira um nome de usuário ou URL válida do LinkedIn"
+    },
+    "messages": {
+      "extracted": "Nome de usuário do LinkedIn extraído: {{username}}",
+      "loginRequired": "Por favor, faça login para continuar",
+      "saveSuccess": "Perfil do LinkedIn salvo! Vamos tentar coletar mais detalhes em segundo plano.",
+      "setupSuccess": "Configuração do perfil concluída!",
+      "saveError": "Falha ao concluir a configuração"
+    }
+  },
+  "linkedInSummary": {
+    "title": "Resumo do Perfil",
+    "subtitle": "Aqui está o que encontramos no seu perfil do LinkedIn. Essas informações nos ajudarão a personalizar sua estratégia de conteúdo.",
+    "backButton": "Voltar",
+    "continueButton": "Continuar",
+    "loading": "Carregando seu perfil...",
+    "loadError": "Falha ao carregar dados do perfil",
+    "sections": {
+      "about": "Sobre",
+      "skills": "Principais Habilidades",
+      "experience": "Experiência Recente",
+      "education": "Educação"
+    },
+    "fallbacks": {
+      "name": "Nome não disponível",
+      "headline": "Cargo não disponível",
+      "location": "Localização não disponível",
+      "company": "Empresa não disponível",
+      "website": "Site não disponível"
+    },
+    "infoText": "Essas informações nos ajudarão a criar conteúdo personalizado que corresponda ao seu histórico profissional e expertise."
+  },
+  "whatsappInput": {
+    "title": "Mantendo Contato",
+    "subtitle": "Nos diga como podemos manter contato",
+    "whatsappLabel": "WhatsApp",
+    "label": "Seu número do WhatsApp",
+    "placeholder": "(11) 99999-9999",
+    "utilityText": "Enviaremos mensagens com rascunhos e sugestões de conteúdo baseadas no seu Plano de Conteúdo",
+    "backButton": "Voltar",
+    "continueButton": "Continuar",
+    "savingButton": "Salvando...",
+    "syncButton": "Sincronizar WhatsApp",
+    "syncOpened": "✓ WhatsApp Aberto",
+    "accuracyLabel": "Precisão dos resultados",
+    "completed": "12% Concluído",
+    "infoText": "Quanto mais informações você fornecer sobre si mesmo, melhores serão os resultados.",
+    "steps": {
+      "linkedin": "URL do LinkedIn",
+      "whatsapp": "Número do WhatsApp",
+      "frequency": "Frequência",
+      "goals": "Objetivos",
+      "pillars": "Pilares",
+      "format": "Formato",
+      "knowledge": "Conhecimento"
+    },
+    "messages": {
+      "loginRequired": "Por favor, faça login para continuar",
+      "invalidNumber": "Por favor, insira um número de WhatsApp válido",
+      "saveSuccess": "Número do WhatsApp salvo!",
+      "saveError": "Falha ao salvar número do WhatsApp. Por favor, tente novamente."
+    }
+  },
+  "pacing": {
+    "title": "Seu Ritmo",
+    "subtitle": "Nos diga com que frequência você quer que mantenhamos seu ritmo",
+    "frequencyTitle": "Frequência",
+    "frequencySubtitle": "Defina quando você quer postar",
+    "backButton": "Voltar",
+    "continueButton": "Continuar",
+    "savingButton": "Salvando...",
+    "days": {
+      "mon": "S",
+      "tue": "T",
+      "wed": "Q",
+      "thu": "Q",
+      "fri": "S",
+      "sat": "S",
+      "sun": "D"
+    },
+    "fullDays": {
+      "mon": "Segunda",
+      "tue": "Terça",
+      "wed": "Quarta",
+      "thu": "Quinta",
+      "fri": "Sexta",
+      "sat": "Sábado",
+      "sun": "Domingo"
+    },
+    "accuracyLabel": "Precisão dos resultados",
+    "completed": "25% Concluído",
+    "infoText": "Quanto mais informações você fornecer sobre si mesmo, melhores serão os resultados.",
+    "steps": {
+      "linkedin": "URL do LinkedIn",
+      "whatsapp": "Número do WhatsApp",
+      "frequency": "Frequência",
+      "goals": "Objetivos",
+      "pillars": "Pilares",
+      "format": "Formato",
+      "knowledge": "Conhecimento"
+    },
+    "messages": {
+      "loginRequired": "Por favor, faça login para continuar",
+      "selectDay": "Por favor, selecione pelo menos um dia da semana",
+      "saveSuccess": "Preferências de frequência salvas!",
+      "saveError": "Falha ao salvar preferências. Por favor, tente novamente."
+    }
+  },
+  "goals": {
+    "title": "Seus Objetivos",
+    "subtitle": "Conte-nos quais são seus objetivos e os públicos-alvo que você quer alcançar",
+    "objectivesQuestion": "Quais são seus objetivos?",
+    "targetAudienceQuestion": "Quais são seus públicos-alvo?",
+    "backButton": "Voltar",
+    "continueButton": "Continuar",
+    "savingButton": "Salvando...",
+    "targetAudienceLabel": "Público-Alvo",
+    "addTargetAudience": "Adicionar Público-Alvo",
+    "targetAudiencePlaceholder": "Público-Alvo {{index}}",
+    "goals": {
+      "brandRecognition": "Reconhecimento de Marca",
+      "leadGeneration": "Geração de Leads",
+      "recruitment": "Recrutamento",
+      "thoughtLeadership": "Liderança de Pensamento",
+      "attractOpportunities": "Atrair Oportunidades",
+      "stayRelevant": "Manter-se Relevante"
+    },
+    "goalsList": [
+      "Reconhecimento de Marca",
+      "Geração de Leads",
+      "Recrutamento",
+      "Liderança de Pensamento",
+      "Atrair Oportunidades",
+      "Manter-se Relevante"
+    ],
+    "accuracyLabel": "Precisão do Resultado",
+    "completed": "37% Concluído",
+    "infoText": "Quanto mais informações você fornecer sobre si mesmo, melhores serão os resultados.",
+    "steps": {
+      "linkedin": "URL do LinkedIn",
+      "whatsapp": "Número do WhatsApp",
+      "frequency": "Frequência",
+      "goals": "Objetivos",
+      "pillars": "Pilares",
+      "format": "Formato",
+      "knowledge": "Conhecimento"
+    },
+    "messages": {
+      "loginRequired": "Por favor, faça login para continuar",
+      "saveSuccess": "Objetivos e públicos-alvo salvos!",
+      "saveError": "Falha ao salvar objetivos. Por favor, tente novamente."
+    }
+  },
+  "pillars": {
+    "title": "Seus Pilares",
+    "subtitle": "Conte-nos quais tipos de conteúdo e temas você quer abordar",
+    "contentTypesQuestion": "Tipos de conteúdo que você quer criar",
+    "themesQuestion": "Temas sobre os quais você quer falar",
+    "backButton": "Voltar",
+    "continueButton": "Continuar",
+    "savingButton": "Salvando...",
+    "addTheme": "Adicionar Tema",
+    "themePlaceholder": "Tema {{index}}",
+    "contentTypes": {
+      "howTo": "Como Fazer",
+      "newsOpinions": "Notícias e Opiniões",
+      "personalStories": "Histórias Pessoais",
+      "careerLessons": "Lições de Carreira",
+      "behindScenes": "Bastidores",
+      "clientStories": "Histórias de Clientes",
+      "educational": "Educacional",
+      "memesHumor": "Memes e Humor"
+    },
+    "contentTypesList": [
+      "Como Fazer",
+      "Notícias e Opiniões",
+      "Histórias Pessoais",
+      "Lições de Carreira",
+      "Bastidores",
+      "Histórias de Clientes",
+      "Educacional",
+      "Memes e Humor"
+    ],
+    "accuracyLabel": "Precisão dos resultados",
+    "completed": "50% Concluído",
+    "infoText": "Quanto mais informações você fornecer sobre si mesmo, melhores serão os resultados.",
+    "steps": {
+      "linkedin": "URL do LinkedIn",
+      "whatsapp": "Número do WhatsApp",
+      "frequency": "Frequência",
+      "goals": "Objetivos",
+      "pillars": "Pilares",
+      "format": "Formato",
+      "knowledge": "Conhecimento"
+    },
+    "messages": {
+      "loginRequired": "Por favor, faça login para continuar",
+      "saveSuccess": "Pilares de conteúdo salvos!",
+      "saveError": "Falha ao salvar pilares de conteúdo. Por favor, tente novamente."
+    }
+  },
+  "format": {
+    "title": "Seu Formato de Escrita",
+    "subtitle": "Conte-nos qual formato de escrita você prefere para seus posts no LinkedIn",
+    "backButton": "Voltar",
+    "continueButton": "Continuar",
+    "savingButton": "Salvando...",
+    "formats": {
+      "standard": "Padrão",
+      "formatted": "Formatado",
+      "short": "Curto",
+      "emojis": "Emojis"
+    },
+    "formatsList": [
+      "Padrão",
+      "Formatado",
+      "Curto",
+      "Emojis"
+    ],
+    "accuracyLabel": "Precisão dos resultados",
+    "completed": "62% Concluído",
+    "infoText": "Quanto mais informações você fornecer sobre si mesmo, melhores serão os resultados.",
+    "steps": {
+      "linkedin": "URL do LinkedIn",
+      "whatsapp": "Número do WhatsApp",
+      "frequency": "Frequência",
+      "goals": "Objetivos",
+      "pillars": "Pilares",
+      "format": "Formato",
+      "knowledge": "Conhecimento"
+    },
+    "messages": {
+      "loginRequired": "Por favor, faça login para continuar",
+      "saveSuccess": "Formato de conteúdo salvo!",
+      "saveError": "Falha ao salvar formato. Por favor, tente novamente."
+    }
+  },
+  "knowledge": {
+    "title": "Seu Conhecimento",
+    "subtitle": "Adicione livros, transcrições de reuniões ou vídeos, URLs ou qualquer material que possa criar um conhecimento mais profundo sobre seu trabalho e as coisas que você quer dizer.",
+    "addLinkTitle": "Adicione um link de um site",
+    "backButton": "Voltar",
+    "continueButton": "Continuar",
+    "savingButton": "Salvando...",
+    "addButton": "Adicionar",
+    "placeholder": "exemplo.com",
+    "uploadSectionTitle": "Ou faça upload de arquivos",
+    "accuracyLabel": "Precisão dos resultados",
+    "completed": "75% Concluído",
+    "infoText": "Quanto mais informações você fornecer sobre si mesmo, melhores serão os resultados.",
+    "steps": {
+      "linkedin": "URL do LinkedIn",
+      "whatsapp": "Número do WhatsApp",
+      "frequency": "Frequência",
+      "goals": "Objetivos",
+      "pillars": "Pilares",
+      "format": "Formato",
+      "knowledge": "Conhecimento"
+    },
+    "messages": {
+      "loginRequired": "Por favor, faça login para continuar",
+      "invalidUrl": "Por favor, insira uma URL válida",
+      "saveSuccess": "Base de conhecimento salva!",
+      "saveError": "Falha ao salvar base de conhecimento. Por favor, tente novamente.",
+      "uploadSuccess": "{{count}} arquivo{{plural}} enviado{{plural}} com sucesso",
+      "uploadError": "Falha ao enviar arquivos. Por favor, tente novamente.",
+      "linkSaveError": "Falha ao salvar link. Por favor, tente novamente."
+    }
+  },
+  "ready": {
+    "title": "Pronto para<br />Começar?",
+    "subtitle": "Perfeito! Temos tudo que precisamos para criar sua estratégia de conteúdo personalizada.",
+    "backButton": "Voltar",
+    "startButton": "Vamos Lá!",
+    "configuringButton": "Configurando sua estratégia...",
+    "infoText": "Sua estratégia de conteúdo será gerada e estará pronta para uso!",
+    "messages": {
+      "welcome": "Bem-vindo ao Pacelane! Sua estratégia de conteúdo está pronta.",
+      "error": "Falha ao concluir a configuração. Por favor, tente novamente."
+    }
+  }
+}
