@@ -488,37 +488,48 @@ serve(async (req) => {
     const leadId = leadRecord.id;
     console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Lead record created with ID: ${leadId}`);
 
-    // STEP 1: Scrape LinkedIn posts with Apify
+    // STEP 1: Scrape LinkedIn posts with Apify (apimaestro scraper)
     console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Starting LinkedIn posts scraping for: ${linkedinUrl}`);
 
-    // Extract username from LinkedIn URL
-    const usernameMatch = linkedinUrl.match(/linkedin\.com\/in\/([^\/\?]+)/);
-    const username = usernameMatch ? usernameMatch[1] : linkedinUrl;
-    console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Extracted username: ${username}`);
-
-    // Prepare Actor input for LinkedIn Posts scraper (Actor ID: Wpp1BZ6yGWjySadk3)
+    // Prepare Actor input for LinkedIn Posts scraper (Actor ID: LQQIXN9Othf8f7R5n)
     const input = {
-      deepScrape: true,
-      limitPerSource: 1000,
-      rawData: false,
-      scrapeUntil: `${new Date().getFullYear()}-01-01`, // Scrape only from start of current year
-      urls: [linkedinUrl]
+      username: linkedinUrl
     };
 
     console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Actor input:`, JSON.stringify(input, null, 2));
 
-    // Run the Actor (LinkedIn Posts scraper)
-    console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Starting Apify actor...`);
-    const runResponse = await fetch(`https://api.apify.com/v2/acts/Wpp1BZ6yGWjySadk3/runs`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apifyApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(input),
-    });
+    // Pagination loop: fetch pages until we find posts from 2024 or earlier
+    const currentYear = new Date().getFullYear();
+    let allPostsData: any[] = [];
+    let paginationToken: string | null = null;
+    let pageNumber = 1;
+    const maxPages = 10; // Safety limit: 1000 posts max
+    
+    console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Starting pagination loop (max ${maxPages} pages)`);
+    
+    while (pageNumber <= maxPages) {
+      console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Fetching page ${pageNumber}...`);
+      
+      // Prepare input for this page
+      const pageInput: any = { ...input };
+      if (paginationToken) {
+        pageInput.pagination_token = paginationToken;
+        pageInput.page_number = pageNumber;
+      } else {
+        pageInput.page_number = pageNumber;
+      }
+      
+      // Run the Actor (LinkedIn Posts scraper - apimaestro)
+      const runResponse = await fetch(`https://api.apify.com/v2/acts/LQQIXN9Othf8f7R5n/runs`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apifyApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(pageInput),
+      });
 
-    console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Apify actor response status: ${runResponse.status}`);
+      console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Apify actor response status: ${runResponse.status}`);
 
     if (!runResponse.ok) {
       const errorText = await runResponse.text();
@@ -538,89 +549,56 @@ serve(async (req) => {
       );
     }
 
-    const runData = await runResponse.json();
-    console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Full runData response:`, JSON.stringify(runData, null, 2));
-    
-    if (!runData.data || !runData.data.id) {
-      console.error(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: ERROR - Invalid response from Apify API:`, runData);
+      const runData = await runResponse.json();
+      console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Full runData response:`, JSON.stringify(runData, null, 2));
       
-      await supabase.from('leads').update({ 
-        status: 'failed', 
-        error_message: 'Invalid API response from scraper' 
-      }).eq('id', leadId);
-      
-      return new Response(
-        JSON.stringify({ error: 'Failed to start LinkedIn posts scraping - invalid API response', leadId }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
-    
-    const runId = runData.data.id;
-    console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Actor run started with ID: ${runId}`);
-
-    // Wait for the run to complete
-    let attempts = 0;
-    const maxAttempts = 24; // 2 minutes max
-    console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Starting polling loop with max ${maxAttempts} attempts`);
-    
-    let postsData: any[] = [];
-    
-    while (attempts < maxAttempts) {
-      console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Polling attempt ${attempts + 1}/${maxAttempts}`);
-      
-      const statusResponse = await fetch(`https://api.apify.com/v2/actor-runs/${runId}`, {
-        headers: {
-          'Authorization': `Bearer ${apifyApiKey}`,
-        },
-      });
-
-      if (!statusResponse.ok) {
-        console.error(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: ERROR checking run status:`, statusResponse.status);
+      if (!runData.data || !runData.data.id) {
+        console.error(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: ERROR - Invalid response from Apify API:`, runData);
         
         await supabase.from('leads').update({ 
           status: 'failed', 
-          error_message: 'Failed to check scraping status' 
+          error_message: 'Invalid API response from scraper' 
         }).eq('id', leadId);
         
         return new Response(
-          JSON.stringify({ error: 'Failed to check scraping status', leadId }),
+          JSON.stringify({ error: 'Failed to start LinkedIn posts scraping - invalid API response', leadId }),
           { 
             status: 500, 
             headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
           }
         );
       }
+      
+      const runId = runData.data.id;
+      console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Actor run started with ID: ${runId}`);
 
-      const statusData = await statusResponse.json();
-      const runStatus = statusData.data?.status;
-      console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Run status (attempt ${attempts + 1}): ${runStatus}`);
-
-      if (runStatus === 'SUCCEEDED') {
-        console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: SUCCESS - Actor run completed successfully`);
+      // Wait for the run to complete
+      let attempts = 0;
+      const maxAttempts = 24; // 2 minutes max
+      console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Starting polling loop with max ${maxAttempts} attempts`);
+      
+      let pagePostsData: any[] = [];
+      let pagePaginationToken: string | null = null;
+      
+      while (attempts < maxAttempts) {
+        console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Polling attempt ${attempts + 1}/${maxAttempts}`);
         
-        // Fetch results from the dataset
-        console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Fetching results from dataset...`);
-        const datasetResponse = await fetch(`https://api.apify.com/v2/actor-runs/${runId}/dataset/items`, {
+        const statusResponse = await fetch(`https://api.apify.com/v2/actor-runs/${runId}`, {
           headers: {
             'Authorization': `Bearer ${apifyApiKey}`,
           },
         });
 
-        console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Dataset response status: ${datasetResponse.status}`);
-
-        if (!datasetResponse.ok) {
-          console.error(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: ERROR fetching dataset results:`, datasetResponse.status);
+        if (!statusResponse.ok) {
+          console.error(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: ERROR checking run status:`, statusResponse.status);
           
           await supabase.from('leads').update({ 
             status: 'failed', 
-            error_message: 'Failed to fetch scraping results' 
+            error_message: 'Failed to check scraping status' 
           }).eq('id', leadId);
           
           return new Response(
-            JSON.stringify({ error: 'Failed to fetch scraping results', leadId }),
+            JSON.stringify({ error: 'Failed to check scraping status', leadId }),
             { 
               status: 500, 
               headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -628,59 +606,172 @@ serve(async (req) => {
           );
         }
 
-        const results = await datasetResponse.json();
-        console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Scraping completed successfully, items found: ${results.length}`);
-        
-        // Log first item structure for debugging
-        if (results.length > 0) {
-          console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: First item structure:`, JSON.stringify(results[0], null, 2));
-        }
-        
-        postsData = results;
-        break;
-        
-      } else if (runStatus === 'FAILED') {
-        console.error(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: ERROR - Actor run failed`);
-        
-        await supabase.from('leads').update({ 
-          status: 'failed', 
-          error_message: 'LinkedIn posts scraping failed' 
-        }).eq('id', leadId);
-        
-        return new Response(
-          JSON.stringify({ error: 'LinkedIn posts scraping failed', leadId }),
-          { 
-            status: 500, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        const statusData = await statusResponse.json();
+        const runStatus = statusData.data?.status;
+        console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Run status (attempt ${attempts + 1}): ${runStatus}`);
+
+        if (runStatus === 'SUCCEEDED') {
+          console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: SUCCESS - Actor run completed successfully`);
+          
+          // Fetch results from the dataset
+          console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Fetching results from dataset...`);
+          const datasetResponse = await fetch(`https://api.apify.com/v2/actor-runs/${runId}/dataset/items`, {
+            headers: {
+              'Authorization': `Bearer ${apifyApiKey}`,
+            },
+          });
+
+          console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Dataset response status: ${datasetResponse.status}`);
+
+          if (!datasetResponse.ok) {
+            console.error(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: ERROR fetching dataset results:`, datasetResponse.status);
+            
+            await supabase.from('leads').update({ 
+              status: 'failed', 
+              error_message: 'Failed to fetch scraping results' 
+            }).eq('id', leadId);
+            
+            return new Response(
+              JSON.stringify({ error: 'Failed to fetch scraping results', leadId }),
+              { 
+                status: 500, 
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+              }
+            );
           }
-        );
-      } else if (runStatus === 'RUNNING') {
-        console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Still running, waiting 5 seconds...`);
-        await new Promise(resolve => setTimeout(resolve, 5000));
-        attempts++;
-      } else {
-        console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Waiting for status: ${runStatus}, waiting 3 seconds...`);
-        await new Promise(resolve => setTimeout(resolve, 3000));
-        attempts++;
+
+          const results = await datasetResponse.json();
+          console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Page ${pageNumber} completed`);
+          
+          // Check if results have the expected structure (apimaestro format)
+          if (results.data && results.data.posts) {
+            // New format: { success, message, data: { posts, pagination_token } }
+            pagePostsData = results.data.posts || [];
+            pagePaginationToken = results.data.pagination_token || null;
+          } else if (Array.isArray(results)) {
+            // Fallback: direct array
+            pagePostsData = results;
+            pagePaginationToken = null;
+          } else {
+            console.error(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Unexpected result format:`, JSON.stringify(results, null, 2));
+            pagePostsData = [];
+            pagePaginationToken = null;
+          }
+          
+          // Log first item structure for debugging
+          if (pagePostsData.length > 0) {
+            console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: First item structure:`, JSON.stringify(pagePostsData[0], null, 2));
+          }
+          
+          break;
+          
+        } else if (runStatus === 'FAILED') {
+          console.error(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: ERROR - Actor run failed`);
+          
+          await supabase.from('leads').update({ 
+            status: 'failed', 
+            error_message: 'LinkedIn posts scraping failed' 
+          }).eq('id', leadId);
+          
+          return new Response(
+            JSON.stringify({ error: 'LinkedIn posts scraping failed', leadId }),
+            { 
+              status: 500, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          );
+        } else if (runStatus === 'RUNNING') {
+          console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Still running, waiting 5 seconds...`);
+          await new Promise(resolve => setTimeout(resolve, 5000));
+          attempts++;
+        } else {
+          console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Waiting for status: ${runStatus}, waiting 3 seconds...`);
+          await new Promise(resolve => setTimeout(resolve, 3000));
+          attempts++;
+        }
       }
+
+      if (pagePostsData.length === 0) {
+        console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: No posts found on page ${pageNumber}, stopping pagination`);
+        break;
+      }
+
+      // Filter posts from current year and add to collection
+      const yearPosts = pagePostsData.filter((post: any) => {
+        if (post.posted_at && post.posted_at.date) {
+          const postDate = new Date(post.posted_at.date);
+          const postYear = postDate.getFullYear();
+          return postYear === currentYear;
+        } else if (post.posted_at && post.posted_at.timestamp) {
+          const postDate = new Date(post.posted_at.timestamp);
+          const postYear = postDate.getFullYear();
+          return postYear === currentYear;
+        }
+        return false;
+      });
+      
+      allPostsData = [...allPostsData, ...yearPosts];
+      console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Page ${pageNumber}: ${yearPosts.length} posts from ${currentYear} (${pagePostsData.length} total on page)`);
+      
+      // Check if we should continue pagination
+      // Find the oldest post in this page
+      let oldestPostYear = currentYear;
+      for (const post of pagePostsData) {
+        if (post.posted_at && post.posted_at.date) {
+          const postDate = new Date(post.posted_at.date);
+          const postYear = postDate.getFullYear();
+          if (postYear < oldestPostYear) {
+            oldestPostYear = postYear;
+          }
+        } else if (post.posted_at && post.posted_at.timestamp) {
+          const postDate = new Date(post.posted_at.timestamp);
+          const postYear = postDate.getFullYear();
+          if (postYear < oldestPostYear) {
+            oldestPostYear = postYear;
+          }
+        }
+      }
+      
+      // If oldest post is from 2024 or earlier, stop pagination
+      if (oldestPostYear < currentYear) {
+        console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Found posts from ${oldestPostYear}, stopping pagination`);
+        break;
+      }
+      
+      // If no pagination token, stop
+      if (!pagePaginationToken) {
+        console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: No pagination token, stopping pagination`);
+        break;
+      }
+      
+      // Continue to next page
+      paginationToken = pagePaginationToken;
+      pageNumber++;
+      
+      // Small delay between pages to respect rate limits
+      await new Promise(resolve => setTimeout(resolve, 2000));
     }
 
+    const postsData = allPostsData;
+    
     if (postsData.length === 0) {
-      console.error(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: ERROR - No posts found or timed out`);
+      console.error(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: ERROR - No posts from ${currentYear} found`);
       
       await supabase.from('leads').update({ 
         status: 'failed', 
-        error_message: 'No LinkedIn posts found or scraping timed out' 
+        error_message: `No LinkedIn posts from ${currentYear} found` 
       }).eq('id', leadId);
       
       return new Response(
-        JSON.stringify({ error: 'No LinkedIn posts found. Make sure your profile has public posts.', leadId }),
+        JSON.stringify({ error: `No LinkedIn posts from ${currentYear} found. Make sure your profile has public posts from this year.`, leadId }),
         { 
           status: 404, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
     }
+    
+    console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Total posts from ${currentYear} collected: ${postsData.length}`);
 
     // STEP 2: Transform Apify results to our format
     console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Processing ${postsData.length} posts...`);
@@ -691,39 +782,56 @@ serve(async (req) => {
       console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: COMPLETE first item:`, JSON.stringify(postsData[0], null, 2));
     }
 
-    const posts: LinkedInPost[] = postsData.map((item: any, index: number) => {
-      // Extract engagement directly from root properties (new actor schema)
-      const likes = item.numLikes || 0;
-      const comments = item.numComments || 0;
-      const shares = item.numShares || 0;
+    // Aggregate reaction breakdown from all posts
+    const aggregatedReactions = {
+      like: 0,
+      support: 0,
+      love: 0,
+      insight: 0,
+      celebrate: 0,
+      funny: 0
+    };
 
-      // Extract date
+    const posts: LinkedInPost[] = postsData.map((item: any, index: number) => {
+      // Extract engagement from stats object (apimaestro format)
+      const stats = item.stats || {};
+      const likes = stats.like || 0;
+      const comments = stats.comments || 0;
+      const shares = stats.reposts || 0; // reposts = shares in apimaestro
+
+      // Aggregate reaction breakdown
+      aggregatedReactions.like += stats.like || 0;
+      aggregatedReactions.support += stats.support || 0;
+      aggregatedReactions.love += stats.love || 0;
+      aggregatedReactions.insight += stats.insight || 0;
+      aggregatedReactions.celebrate += stats.celebrate || 0;
+      aggregatedReactions.funny += stats.funny || 0;
+
+      // Extract date from posted_at object (apimaestro format)
       let publishedDate = '';
-      if (item.postedAtISO) {
-        publishedDate = item.postedAtISO;
-      } else if (item.postedAtTimestamp) {
-        publishedDate = new Date(item.postedAtTimestamp).toISOString();
+      if (item.posted_at && item.posted_at.date) {
+        publishedDate = new Date(item.posted_at.date).toISOString();
+      } else if (item.posted_at && item.posted_at.timestamp) {
+        publishedDate = new Date(item.posted_at.timestamp).toISOString();
       } else {
         publishedDate = new Date().toISOString(); // Default to now if no date
       }
 
       // Extract content
       let content = item.text || '';
-      
-      // For reposts without text, try to find description
-      if (!content && item.activityDescription) {
-        content = item.activityDescription;
-      }
 
       // Extract ID
-      const postId = item.urn || item.id || `post_${Date.now()}_${index}`;
+      const postId = item.urn || item.full_urn || item.id || `post_${Date.now()}_${index}`;
 
       // Extract URL
       const postUrl = item.url || `https://linkedin.com/feed/update/${postId}`;
 
-      // Extract Author
-      const authorName = item.author ? `${item.author.firstName} ${item.author.lastName}`.trim() : '';
-      const authorUrl = item.authorProfileUrl || '';
+      // Extract Author (apimaestro format)
+      const author = item.author || {};
+      const authorName = author.first_name && author.last_name 
+        ? `${author.first_name} ${author.last_name}`.trim() 
+        : '';
+      const authorUrl = author.profile_url || '';
 
       // Log first 3 items for debugging
       if (index < 3) {
@@ -732,7 +840,15 @@ serve(async (req) => {
           likes,
           comments,
           shares,
-          date: publishedDate
+          date: publishedDate,
+          reactions: {
+            like: stats.like || 0,
+            support: stats.support || 0,
+            love: stats.love || 0,
+            insight: stats.insight || 0,
+            celebrate: stats.celebrate || 0,
+            funny: stats.funny || 0
+          }
         });
       }
       
@@ -749,7 +865,7 @@ serve(async (req) => {
         author: {
           name: authorName,
           profileUrl: authorUrl,
-          imageUrl: item.authorProfilePicture || ''
+          imageUrl: author.profile_picture || ''
         }
       };
     }).filter((post: LinkedInPost) => {
@@ -771,11 +887,30 @@ serve(async (req) => {
     const totalComments = posts.reduce((sum, p) => sum + p.engagement.comments, 0);
     const totalShares = posts.reduce((sum, p) => sum + p.engagement.shares, 0);
     console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Total engagement - Likes: ${totalLikes}, Comments: ${totalComments}, Shares: ${totalShares}`);
+    
+    // Log aggregated reactions breakdown
+    console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Aggregated reactions breakdown:`, aggregatedReactions);
 
-    // STEP 2.5: Reactions are now scraped by a separate edge function
-    // This prevents timeout issues with large datasets
-    // console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Reactions will be scraped separately`);
-    const reactionsData: ReactionsData | undefined = undefined;
+    // STEP 2.5: Create ReactionsData from aggregated reactions
+    const totalReactions = aggregatedReactions.like + aggregatedReactions.support + 
+                          aggregatedReactions.love + aggregatedReactions.insight + 
+                          aggregatedReactions.celebrate + aggregatedReactions.funny;
+    
+    const reactionsData: ReactionsData = {
+      totalReactions,
+      topAuthors: [], // Not available from posts data
+      reactionTypes: {
+        like: aggregatedReactions.like,
+        support: aggregatedReactions.support,
+        love: aggregatedReactions.love,
+        insight: aggregatedReactions.insight,
+        celebrate: aggregatedReactions.celebrate,
+        funny: aggregatedReactions.funny
+      },
+      monthlyReactions: [], // Can be calculated from posts if needed
+      topReactedPosts: [] // Can be calculated from posts if needed
+    };
+    
     const reactions: LinkedInReaction[] = [];
 
     // STEP 3: Generate wrapped data

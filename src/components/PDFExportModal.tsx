@@ -27,14 +27,30 @@ export const PDFExportModal: React.FC<PDFExportModalProps> = ({
   userImage
 }) => {
   const [isGenerating, setIsGenerating] = useState(false);
-  const [selectedSlides, setSelectedSlides] = useState<string[]>(['intro', 'summary', 'top-post', 'posting-habits', 'outro']);
+  const [selectedSlides, setSelectedSlides] = useState<string[]>(['intro', 'pace', 'reactions', 'friends', 'formats', 'summary', 'top-post', 'posting-habits', 'outro']);
   const hiddenContainerRef = useRef<HTMLDivElement>(null);
 
   if (!isOpen) return null;
 
   // Define available slides based on data
   const slides: SlideConfig[] = [
-    { id: 'intro', type: 'intro', label: 'Capa' },
+    { id: 'intro', type: 'intro', label: 'Capa', data: wrappedData },
+    { id: 'pace', type: 'pace', label: 'Seu Pace', data: wrappedData },
+    { id: 'reactions', type: 'reactions', label: 'Reações', data: wrappedData },
+    // Only show friends slide if we have top commenters data
+    ...(wrappedData.topCommenters && wrappedData.topCommenters.length > 0 ? [{
+      id: 'friends',
+      type: 'friends' as SlideType,
+      label: 'Amigos',
+      data: wrappedData
+    }] : []),
+    // Formats slide - shows content type breakdown
+    { 
+      id: 'formats', 
+      type: 'formats' as SlideType, 
+      label: 'Formatos', 
+      data: wrappedData 
+    },
     { id: 'summary', type: 'summary', label: 'Resumo', data: wrappedData },
     // Only show top post if available
     ...(wrappedData.topPosts && wrappedData.topPosts.length > 0 ? [{
@@ -43,7 +59,15 @@ export const PDFExportModal: React.FC<PDFExportModalProps> = ({
       label: 'Top Post',
       data: wrappedData.topPosts[0]
     }] : []),
-    { id: 'posting-habits', type: 'posting-habits', label: 'Hábitos', data: wrappedData.postingHabits },
+    { 
+      id: 'posting-habits', 
+      type: 'posting-habits', 
+      label: 'Hábitos', 
+      data: {
+        postingFrequency: wrappedData.postingFrequency,
+        contentInsights: wrappedData.contentInsights
+      }
+    },
     { id: 'outro', type: 'outro', label: 'Encerramento' }
   ];
 
@@ -78,12 +102,26 @@ export const PDFExportModal: React.FC<PDFExportModalProps> = ({
         const element = container.querySelector(`[data-slide-id="${slideConfig.id}"]`) as HTMLElement;
         
         if (element) {
-          // Wait a bit for images to load/render if needed
-          await new Promise(resolve => setTimeout(resolve, 100));
+          // Wait for images to load before capturing
+          const images = element.querySelectorAll('img');
+          await Promise.all(
+            Array.from(images).map((img) => {
+              if (img.complete) return Promise.resolve();
+              return new Promise((resolve, reject) => {
+                img.onload = resolve;
+                img.onerror = resolve; // Continue even if image fails
+                setTimeout(resolve, 2000); // Timeout after 2s
+              });
+            })
+          );
+          
+          // Additional small delay to ensure rendering is complete
+          await new Promise(resolve => setTimeout(resolve, 200));
 
           const canvas = await html2canvas(element, {
             scale: 2, // Higher quality
             useCORS: true, // Allow loading cross-origin images (like profile pic)
+            allowTaint: true, // Allow images from different origins
             logging: false,
             width: 1080,
             height: 1350,
@@ -102,7 +140,8 @@ export const PDFExportModal: React.FC<PDFExportModalProps> = ({
         }
       }
 
-      pdf.save(`linkedin-wrapped-2025-${userName.replace(/\s+/g, '-').toLowerCase()}.pdf`);
+      const year = wrappedData?.yearInReview?.year || new Date().getFullYear();
+      pdf.save(`linkedin-wrapped-${year}-${userName.replace(/\s+/g, '-').toLowerCase()}.pdf`);
       onClose();
     } catch (error) {
       console.error('PDF Generation failed:', error);
@@ -295,16 +334,13 @@ export const PDFExportModal: React.FC<PDFExportModalProps> = ({
           // We don't set height here, let it flow, but each slide has fixed height
         }}
       >
-        {slides.map((slide, index) => {
+        {slides.map((slide) => {
           // Calculate the index relative to selected slides for the footer "X / Y"
           const selectedIndex = selectedSlides.indexOf(slide.id);
           const isSelected = selectedIndex !== -1;
           
-          // We render ALL slides but only capture selected ones. 
-          // Actually, better to only render selected ones to save resources?
-          // But if we toggle, we might want them ready.
-          // Let's render all but only process selected.
-          
+          // Render all slides so they're ready when toggled
+          // Performance impact is minimal since they're hidden off-screen
           return (
             <div key={slide.id} data-slide-id={slide.id} style={{ marginBottom: '50px' }}>
               <CarouselSlide
@@ -314,6 +350,7 @@ export const PDFExportModal: React.FC<PDFExportModalProps> = ({
                 totalSlides={selectedSlides.length}
                 userName={userName}
                 userImage={userImage}
+                year={wrappedData?.yearInReview?.year || new Date().getFullYear()}
               />
             </div>
           );

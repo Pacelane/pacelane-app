@@ -44,7 +44,9 @@ import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import LinkedInAnalyzer from "./pages/LinkedInAnalyzer";
 import LinkedInWrapped from "./pages/LinkedInWrapped";
+import MyWrapped from "./pages/MyWrapped";
 import ThankYou from "./pages/ThankYou";
+import WrappedProtectedRoute from "./design-system/components/WrappedProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -84,6 +86,16 @@ const App = () => {
           <Route path="/linkedin-analyzer" element={<LinkedInAnalyzer />} />
           <Route path="/linkedin-wrapped" element={<LinkedInWrapped />} />
           <Route path="/thank-you" element={<ThankYou />} />
+          
+          {/* Protected Wrapped Route */}
+          <Route 
+            path="/my-wrapped" 
+            element={
+              <WrappedProtectedRoute>
+                <MyWrapped />
+              </WrappedProtectedRoute>
+            } 
+          />
           
           {/* OAuth callbacks */}
           <Route path="/auth/google/callback" element={<GoogleCalendarCallback />} />

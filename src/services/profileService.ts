@@ -50,22 +50,42 @@ export class ProfileService {
   /**
    * Ensure a profile row exists for the given user. Creates it if missing.
    * Safe to call after OAuth sign-in flows.
+   * @param userId - The user's ID from Supabase Auth
+   * @param displayName - Optional display name for the user
+   * @param signupSource - Optional source tracking ('organic', 'linkedin_wrapped', 'linkedin_analyzer')
    */
   static async ensureProfile(
     userId: string,
-    displayName?: string | null
+    displayName?: string | null,
+    signupSource?: string | null
   ): Promise<ApiResponse<Profile>> {
     try {
       // Try to fetch first
       const existing = await this.fetchProfile(userId)
       if (existing.data) {
+        // If profile exists but signup_source is not set and we have one, update it
+        if (signupSource && !(existing.data as any).signup_source) {
+          await supabase
+            .from('profiles')
+            .update({ signup_source: signupSource })
+            .eq('user_id', userId);
+        }
         return existing
       }
 
-      // Insert minimal row
+      // Insert minimal row with optional signup_source
+      const insertData: any = { 
+        user_id: userId, 
+        display_name: displayName || null 
+      };
+      
+      if (signupSource) {
+        insertData.signup_source = signupSource;
+      }
+
       const { data, error } = await supabase
         .from('profiles')
-        .insert({ user_id: userId, display_name: displayName || null } as any)
+        .insert(insertData)
         .select()
         .single()
 
