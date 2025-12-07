@@ -74,3 +74,4 @@ export interface PostsWrappedData {
   profileImage?: string;
 }
 
+

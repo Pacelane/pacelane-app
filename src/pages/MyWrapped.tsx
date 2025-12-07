@@ -229,12 +229,18 @@ const MyWrapped: React.FC = () => {
     const hashtagCounts: Record<string, number> = {};
     const monthlyData: Record<string, { posts: number; engagement: number }> = {};
 
+    const countWords = (text: string | undefined) => {
+      if (!text) return 0;
+      return text.trim().split(/\s+/).filter(Boolean).length;
+    };
+
     yearPosts.forEach((post: any) => {
       const engagement = post.engagement || {};
       totalLikes += engagement.likes || 0;
       totalComments += engagement.comments || 0;
       totalShares += engagement.shares || 0;
       totalLength += post.content?.length || 0;
+      totalWords += countWords(post.content);
 
       // Extract hashtags
       const hashtags = post.content?.match(/#\w+/g) || [];
@@ -302,6 +308,7 @@ const MyWrapped: React.FC = () => {
     return {
       totalPosts,
       totalEngagement,
+      totalWords,
       averageEngagementPerPost: totalPosts > 0 ? Math.round(totalEngagement / totalPosts) : 0,
       topPosts,
       postingFrequency: {
@@ -400,6 +407,7 @@ const MyWrapped: React.FC = () => {
 
       if (data.success && data.data) {
         setWrappedData(data.data);
+        setHasScrapedData(true);
         
         // Update or create lead with converted_to_user_id
         if (data.leadId) {

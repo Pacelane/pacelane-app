@@ -71,6 +71,7 @@ interface ReactionsData {
 interface WrappedData {
   totalPosts: number;
   totalEngagement: number;
+  totalWords: number;
   averageEngagementPerPost: number;
   topPosts: LinkedInPost[];
   postingFrequency: {
@@ -249,6 +250,8 @@ function processReactionsData(reactions: LinkedInReaction[]): ReactionsData {
  */
 function processWrappedData(posts: LinkedInPost[], reactionsData?: ReactionsData): WrappedData {
   const currentYear = new Date().getFullYear();
+  const countWords = (text: string | undefined) =>
+    text ? text.trim().split(/\s+/).filter(Boolean).length : 0;
   
   console.log(`[processWrappedData] Total posts received: ${posts.length}`);
   
@@ -273,6 +276,7 @@ function processWrappedData(posts: LinkedInPost[], reactionsData?: ReactionsData
   let totalComments = 0;
   let totalShares = 0;
   let totalLength = 0;
+  let totalWords = 0;
   const hashtagCounts: Record<string, number> = {};
   const monthlyData: Record<string, { posts: number; engagement: number }> = {};
 
@@ -281,6 +285,7 @@ function processWrappedData(posts: LinkedInPost[], reactionsData?: ReactionsData
     totalComments += post.engagement?.comments || 0;
     totalShares += post.engagement?.shares || 0;
     totalLength += post.content?.length || 0;
+    totalWords += countWords(post.content);
 
     // Extract hashtags
     const hashtags = post.content?.match(/#\w+/g) || [];
@@ -366,6 +371,7 @@ function processWrappedData(posts: LinkedInPost[], reactionsData?: ReactionsData
   const result: WrappedData = {
     totalPosts,
     totalEngagement,
+    totalWords,
     averageEngagementPerPost: totalPosts > 0 ? Math.round(totalEngagement / totalPosts) : 0,
     topPosts,
     postingFrequency: {
@@ -951,7 +957,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true,
-        // leadId, // Commented out as reactions scraping is disabled
+        leadId,
         data: wrappedData,
         message: 'LinkedIn Wrapped generated successfully'
       }),

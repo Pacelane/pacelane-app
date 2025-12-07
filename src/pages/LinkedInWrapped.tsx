@@ -18,8 +18,7 @@ import Logo from '@/design-system/components/Logo';
 import Input from '@/design-system/components/Input';
 import Button from '@/design-system/components/Button';
 import SubtleLoadingSpinner from '@/design-system/components/SubtleLoadingSpinner';
-import { GoogleLogo } from '@phosphor-icons/react';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, LogIn, ArrowLeft } from 'lucide-react';
 
 
 const LinkedInWrapped: React.FC = () => {
@@ -315,7 +314,7 @@ const LinkedInWrapped: React.FC = () => {
                   label="Continuar com Google"
                   style="secondary"
                   size="lg"
-                  leadIcon={<GoogleLogo size={18} weight="bold" />}
+                  leadIcon={<LogIn size={18} />}
                   onClick={handleGoogleSignIn}
                   fullWidth={true}
                 />
@@ -346,22 +345,13 @@ const LinkedInWrapped: React.FC = () => {
                 </div>
 
                 {/* Email Sign Up Option */}
-                <button
-                  type="button"
+                <Button
+                  label="Continuar com email"
+                  style="ghost"
+                  size="md"
                   onClick={() => setShowEmailForm(true)}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    padding: 0,
-                    cursor: 'pointer',
-                    ...textStyles.sm.normal,
-                    color: colors.text.informative,
-                    textDecoration: 'underline',
-                    textAlign: 'center',
-                  }}
-                >
-                  Continuar com email
-                </button>
+                  fullWidth={true}
+                />
               </>
             ) : (
               <>
@@ -426,21 +416,13 @@ const LinkedInWrapped: React.FC = () => {
 
                 {/* Back to Google option */}
                 <div style={{ textAlign: 'center' }}>
-                  <button
-                    type="button"
+                  <Button
+                    label="Voltar para Google"
+                    style="ghost"
+                    size="sm"
+                    leadIcon={<ArrowLeft size={16} />}
                     onClick={() => setShowEmailForm(false)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      padding: 0,
-                      cursor: 'pointer',
-                      ...textStyles.sm.normal,
-                      color: colors.text.informative,
-                      textDecoration: 'none',
-                    }}
-                  >
-                    ← Voltar para Google
-                  </button>
+                  />
                 </div>
               </>
             )}
@@ -459,20 +441,12 @@ const LinkedInWrapped: React.FC = () => {
               margin: 0,
             }}>
               Já tem uma conta?{' '}
-              <button
-                type="button"
+              <Button
+                label="Fazer login"
+                style="ghost"
+                size="sm"
                 onClick={() => navigate('/signin?redirect=/my-wrapped')}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  padding: 0,
-                  cursor: 'pointer',
-                  color: colors.text.informative,
-                  textDecoration: 'underline',
-                }}
-              >
-                Fazer login
-              </button>
+              />
             </p>
           </div>
         </div>

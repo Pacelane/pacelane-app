@@ -27,23 +27,23 @@ export const PDFExportModal: React.FC<PDFExportModalProps> = ({
   userImage
 }) => {
   const [isGenerating, setIsGenerating] = useState(false);
-  const [selectedSlides, setSelectedSlides] = useState<string[]>(['intro', 'pace', 'reactions', 'friends', 'formats', 'summary', 'top-post', 'posting-habits', 'outro']);
+  const [selectedSlides, setSelectedSlides] = useState<string[]>([
+    'intro',
+    'pace',
+    'reactions',
+    'formats',
+    'podium',
+    'distance',
+  ]);
   const hiddenContainerRef = useRef<HTMLDivElement>(null);
 
   if (!isOpen) return null;
 
-  // Define available slides based on data
+  // Define available selectable slides (contracapa é fixa e não aparece aqui)
   const slides: SlideConfig[] = [
     { id: 'intro', type: 'intro', label: 'Capa', data: wrappedData },
     { id: 'pace', type: 'pace', label: 'Seu Pace', data: wrappedData },
     { id: 'reactions', type: 'reactions', label: 'Reações', data: wrappedData },
-    // Only show friends slide if we have top commenters data
-    ...(wrappedData.topCommenters && wrappedData.topCommenters.length > 0 ? [{
-      id: 'friends',
-      type: 'friends' as SlideType,
-      label: 'Amigos',
-      data: wrappedData
-    }] : []),
     // Formats slide - shows content type breakdown
     { 
       id: 'formats', 
@@ -51,24 +51,18 @@ export const PDFExportModal: React.FC<PDFExportModalProps> = ({
       label: 'Formatos', 
       data: wrappedData 
     },
-    { id: 'summary', type: 'summary', label: 'Resumo', data: wrappedData },
-    // Only show top post if available
-    ...(wrappedData.topPosts && wrappedData.topPosts.length > 0 ? [{
-      id: 'top-post',
-      type: 'top-post' as SlideType,
-      label: 'Top Post',
-      data: wrappedData.topPosts[0]
-    }] : []),
-    { 
-      id: 'posting-habits', 
-      type: 'posting-habits', 
-      label: 'Hábitos', 
-      data: {
-        postingFrequency: wrappedData.postingFrequency,
-        contentInsights: wrappedData.contentInsights
-      }
+    {
+      id: 'podium',
+      type: 'podium' as SlideType,
+      label: 'Pódio',
+      data: wrappedData
     },
-    { id: 'outro', type: 'outro', label: 'Encerramento' }
+    {
+      id: 'distance',
+      type: 'distance' as SlideType,
+      label: 'Distância',
+      data: wrappedData
+    },
   ];
 
   const toggleSlide = (id: string) => {
@@ -94,11 +88,13 @@ export const PDFExportModal: React.FC<PDFExportModalProps> = ({
       const container = hiddenContainerRef.current;
       if (!container) throw new Error('Container not found');
 
-      // Get selected slide configs in order
+      // Get selected slide configs in order (contracapa será adicionada ao final)
       const slidesToRender = slides.filter(s => selectedSlides.includes(s.id));
 
-      for (let i = 0; i < slidesToRender.length; i++) {
-        const slideConfig = slidesToRender[i];
+      const slidesWithTail = [...slidesToRender, { id: 'contracapa', type: 'contracapa' as SlideType, label: 'Contracapa' }];
+
+      for (let i = 0; i < slidesWithTail.length; i++) {
+        const slideConfig = slidesWithTail[i];
         const element = container.querySelector(`[data-slide-id="${slideConfig.id}"]`) as HTMLElement;
         
         if (element) {
@@ -334,10 +330,10 @@ export const PDFExportModal: React.FC<PDFExportModalProps> = ({
           // We don't set height here, let it flow, but each slide has fixed height
         }}
       >
-        {slides.map((slide) => {
+        {[...slides, { id: 'contracapa', type: 'contracapa' as SlideType, label: 'Contracapa' }].map((slide) => {
           // Calculate the index relative to selected slides for the footer "X / Y"
           const selectedIndex = selectedSlides.indexOf(slide.id);
-          const isSelected = selectedIndex !== -1;
+          const isSelected = slide.id === 'contracapa' ? true : selectedIndex !== -1;
           
           // Render all slides so they're ready when toggled
           // Performance impact is minimal since they're hidden off-screen
@@ -346,8 +342,14 @@ export const PDFExportModal: React.FC<PDFExportModalProps> = ({
               <CarouselSlide
                 type={slide.type}
                 data={slide.data}
-                index={isSelected ? selectedIndex : undefined}
-                totalSlides={selectedSlides.length}
+                index={
+                  slide.id === 'contracapa'
+                    ? selectedSlides.length
+                    : isSelected
+                    ? selectedIndex
+                    : undefined
+                }
+                totalSlides={selectedSlides.length + 1}
                 userName={userName}
                 userImage={userImage}
                 year={wrappedData?.yearInReview?.year || new Date().getFullYear()}

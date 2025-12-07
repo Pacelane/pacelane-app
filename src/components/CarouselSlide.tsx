@@ -4,13 +4,23 @@ import { Heart, MessageCircle, Share2, Calendar, Award, TrendingUp, Hash } from 
 import capaSvgRaw from '@/assets/capa.svg?raw';
 import paceSvgRaw from '@/assets/pace.svg?raw';
 import reacoesSvgRaw from '@/assets/reacoes.svg?raw';
-import amigosSvgRaw from '@/assets/amigos.svg?raw';
 import formatosSvgRaw from '@/assets/formatos.svg?raw';
+import distanciaSvgRaw from '@/assets/distancia.svg?raw';
+import podioSvgRaw from '@/assets/podio.svg?raw';
+import contracapaSvgRaw from '@/assets/contracapa.svg?raw';
+import { getDistanceRoute } from '@/utils/wrapped/routes';
 
 // Define types locally if not available globally yet, or import them.
 // For now, I'll define the props interface.
 
-export type SlideType = 'intro' | 'pace' | 'reactions' | 'friends' | 'formats' | 'summary' | 'top-post' | 'posting-habits' | 'outro';
+export type SlideType =
+  | 'intro'
+  | 'pace'
+  | 'reactions'
+  | 'formats'
+  | 'distance'
+  | 'podium'
+  | 'contracapa';
 
 interface CarouselSlideProps {
   type: SlideType;
@@ -72,126 +82,33 @@ export const CarouselSlide: React.FC<CarouselSlideProps> = ({ type, data, index,
       case 'reactions':
         return <ReactionsSlide data={data} />;
 
-      case 'friends':
-        return <FriendsSlide data={data} />;
-
       case 'formats':
         return <FormatsSlide data={data} />;
 
-      case 'summary':
-        return (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '60px' }}>
-            <h2 style={{ fontSize: '60px', fontWeight: 700, color: colors.text, marginBottom: '40px' }}>
-              O Ano em Números
-            </h2>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px' }}>
-              <StatBox icon={<Calendar size={60} />} value={data?.totalPosts || 0} label="Posts Publicados" />
-              <StatBox icon={<Heart size={60} />} value={data?.engagementStats?.totalLikes || 0} label="Curtidas" />
-              <StatBox icon={<MessageCircle size={60} />} value={data?.engagementStats?.totalComments || 0} label="Comentários" />
-              <StatBox icon={<Share2 size={60} />} value={data?.engagementStats?.totalShares || 0} label="Compartilhamentos" />
-            </div>
-          </div>
-        );
+      case 'distance':
+        return <DistanceSlide data={data} />;
 
-      case 'top-post':
-        return (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '40px' }}>
-              <Award size={60} color={colors.accent} fill={colors.accent} />
-              <h2 style={{ fontSize: '50px', fontWeight: 700, color: colors.text, margin: 0 }}>
-                Post Mais Curtido
-              </h2>
-            </div>
-            
-            <div style={{ 
-              backgroundColor: colors.background, 
-              borderRadius: '30px', 
-              padding: '60px',
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '40px'
-            }}>
-              <p style={{ fontSize: '36px', lineHeight: 1.5, color: colors.text, whiteSpace: 'pre-wrap', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 12, WebkitBoxOrient: 'vertical' }}>
-                {data?.content || 'Nenhum post disponível'}
-              </p>
-              
-              <div style={{ marginTop: 'auto', display: 'flex', gap: '40px', borderTop: '2px solid rgba(0,0,0,0.1)', paddingTop: '40px' }}>
-                <EngagementPill icon={<Heart size={40} />} value={data?.engagement?.likes || 0} label="Curtidas" />
-                <EngagementPill icon={<MessageCircle size={40} />} value={data?.engagement?.comments || 0} label="Comentários" />
-              </div>
-            </div>
-          </div>
-        );
+      case 'podium':
+        return <PodiumSlide data={data} />;
 
-      case 'posting-habits':
-        return (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-             <h2 style={{ fontSize: '60px', fontWeight: 700, color: colors.text, marginBottom: '60px' }}>
-              Hábitos de Postagem
-            </h2>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '60px' }}>
-              {data?.postingFrequency?.mostActiveMonth && (
-                <div style={{ padding: '40px', backgroundColor: '#E8F3FF', borderRadius: '20px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '30px', marginBottom: '20px' }}>
-                    <TrendingUp size={50} color={colors.primary} />
-                    <h3 style={{ fontSize: '40px', fontWeight: 600, margin: 0 }}>Mês Mais Ativo</h3>
-                  </div>
-                  <p style={{ fontSize: '50px', fontWeight: 800, color: colors.primary, margin: 0 }}>
-                    {data.postingFrequency.mostActiveMonth}
-                  </p>
-                </div>
-              )}
-
-              {data?.contentInsights?.mostUsedHashtags && data.contentInsights.mostUsedHashtags.length > 0 && (
-                <div style={{ padding: '40px', backgroundColor: '#FFF8E1', borderRadius: '20px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '30px', marginBottom: '20px' }}>
-                    <Hash size={50} color="#F59E0B" />
-                    <h3 style={{ fontSize: '40px', fontWeight: 600, margin: 0 }}>Top Hashtags</h3>
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px' }}>
-                    {data.contentInsights.mostUsedHashtags.slice(0, 3).map((tag: string, i: number) => (
-                      <span key={i} style={{ fontSize: '36px', color: '#F59E0B', fontWeight: 600 }}>
-                        #{tag}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        );
-
-      case 'outro':
-        return (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
-            <div style={{ width: '200px', height: '200px', borderRadius: '50%', overflow: 'hidden', marginBottom: '40px', border: `8px solid ${colors.primary}` }}>
-              {userImage ? (
-                <img src={userImage} alt={userName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              ) : (
-                <div style={{ width: '100%', height: '100%', backgroundColor: colors.background }} />
-              )}
-            </div>
-            <h2 style={{ fontSize: '60px', fontWeight: 800, color: colors.text, marginBottom: '40px' }}>
-              Obrigado por fazer parte da minha rede!
-            </h2>
-            <p style={{ fontSize: '40px', color: colors.textSecondary }}>
-              Que venha {(year || new Date().getFullYear()) + 1}! 🚀
-            </p>
-            <div style={{ marginTop: '80px', padding: '30px 60px', backgroundColor: colors.primary, borderRadius: '100px', color: 'white', fontSize: '36px', fontWeight: 600 }}>
-              Vamos conectar?
-            </div>
-          </div>
-        );
+      case 'contracapa':
+        return <ContracapaSlide />;
 
       default:
         return null;
     }
   };
 
-  // For intro, pace, reactions, friends, and formats slides, render without header/footer to match PDF template exactly
-  if (type === 'intro' || type === 'pace' || type === 'reactions' || type === 'friends' || type === 'formats') {
+  // For template slides, render without header/footer to match PDF template exactly
+  if (
+    type === 'intro' ||
+    type === 'pace' ||
+    type === 'reactions' ||
+    type === 'distance' ||
+    type === 'formats' ||
+    type === 'podium' ||
+    type === 'contracapa'
+  ) {
     const bgColor = type === 'intro' ? '#FFFFFF' : '#18181B';
     return (
       <div style={{
@@ -403,7 +320,12 @@ const PaceSlide: React.FC<{ data: any }> = ({ data }) => {
     const postsPerWeekNum = postsPerMonth > 0 
       ? (postsPerMonth / 4.33) // ~4.33 weeks per month
       : (totalPosts / 52);
-    const postsPerWeek = postsPerWeekNum.toFixed(1).replace('.', ',');
+    const postsPerWeek =
+      totalPosts === 0
+        ? '0'
+        : postsPerWeekNum < 1
+          ? '< 1'
+          : postsPerWeekNum.toFixed(1).replace('.', ',');
     
     // Get monthly breakdown from yearInReview
     const monthlyBreakdown = data?.yearInReview?.monthlyBreakdown || [];
@@ -426,7 +348,7 @@ const PaceSlide: React.FC<{ data: any }> = ({ data }) => {
     });
     
     // Convert streak months to approximate weeks
-    const streakWeeksNum = longestStreak * 4;
+    const streakWeeksNum = Math.max(0, Math.min(totalPosts, longestStreak * 4));
     const streakWeeks = String(streakWeeksNum).padStart(2, '0');
     
     // Calculate active weeks percentage based on active months
@@ -468,6 +390,184 @@ const PaceSlide: React.FC<{ data: any }> = ({ data }) => {
         boxSizing: 'border-box',
       }}
       dangerouslySetInnerHTML={{ __html: processedSvg }}
+    />
+  );
+};
+
+// Distance Slide Component - uses SVG template with placeholder replacement
+const DistanceSlide: React.FC<{ data: any }> = ({ data }) => {
+  const processedSvg = useMemo(() => {
+    const totalWords =
+      data?.totalWords ??
+      (Array.isArray(data?.posts)
+        ? data.posts.reduce((acc: number, post: any) => {
+            const content = post?.content || '';
+            const words = content.trim().split(/\s+/).filter(Boolean).length;
+            return acc + words;
+          }, 0)
+        : 0);
+
+    const route = getDistanceRoute(totalWords || 0);
+
+    let svg = distanciaSvgRaw;
+    svg = svg.replace(/\{\{total_words\}\}/g, route.totalWords.toLocaleString('pt-BR'));
+    svg = svg.replace(/\{\{from_code\}\}/g, route.from_code);
+    svg = svg.replace(/\{\{from_city\}\}/g, route.from_city);
+    svg = svg.replace(/\{\{to_code\}\}/g, route.to_code);
+    svg = svg.replace(/\{\{to_city\}\}/g, route.to_city);
+    return svg;
+  }, [data]);
+
+  return (
+    <div 
+      style={{ 
+        position: 'relative',
+        width: '1080px',
+        height: '1350px',
+        overflow: 'hidden',
+        margin: 0,
+        padding: 0,
+        boxSizing: 'border-box',
+      }}
+      dangerouslySetInnerHTML={{ __html: processedSvg }}
+    />
+  );
+};
+
+// Podium Slide Component - top 3 posts by reactions+comments (and shares as reaction)
+const PodiumSlide: React.FC<{ data: any }> = ({ data }) => {
+  const processedSvg = useMemo(() => {
+    const wrapLines = (text: string, maxLine = 32, maxChars = 120, maxLines = 3, minWords = 2) => {
+      if (!text) return ['Sem dados'];
+      const trimmed = text.trim();
+      const limited = trimmed.length > maxChars ? trimmed.slice(0, maxChars - 1) + '…' : trimmed;
+      const words = limited.split(/\s+/);
+      const lines: string[] = [];
+      let current = '';
+      words.forEach((w) => {
+        const candidate = current ? `${current} ${w}` : w;
+        if (candidate.length > maxLine) {
+          if (current) lines.push(current);
+          current = w;
+        } else {
+          current = candidate;
+        }
+      });
+      if (current) lines.push(current);
+      // Garantir mínimo de palavras por linha (evitar linha de 1 palavra estourando largura)
+      const adjusted = lines.map((line, idx) => {
+        const next = lines[idx + 1];
+        if (!next) return line;
+        const wordsInLine = line.split(/\s+/);
+        if (wordsInLine.length < minWords && next) {
+          return line + ' ' + next.split(/\s+/)[0];
+        }
+        return line;
+      });
+      const finalLines = adjusted.filter(Boolean);
+      if (finalLines.length > maxLines) {
+        const sliced = finalLines.slice(0, maxLines);
+        sliced[maxLines - 1] = sliced[maxLines - 1] + '…';
+        return sliced;
+      }
+      return finalLines;
+    };
+
+    const buildTspans = (lines: string[], x: number, y: number, dy = 18) => {
+      return lines
+        .map((line, idx) => {
+          if (idx === 0) {
+            return `<tspan x="${x}" y="${y}">${line}</tspan>`;
+          }
+          return `<tspan x="${x}" dy="${dy}">${line}</tspan>`;
+        })
+        .join('');
+    };
+
+    const posts = Array.isArray(data?.posts) ? data.posts : data?.topPosts || [];
+    const scored = posts
+      .map((p: any) => {
+        const likes = p?.engagement?.likes || 0;
+        const comments = p?.engagement?.comments || 0;
+        const shares = p?.engagement?.shares || 0;
+        const reactions = likes + shares;
+        const score = reactions + comments; // soma de reações e comentários
+        return {
+          content: p?.content || '',
+          reactions,
+          comments,
+          score,
+        };
+      })
+      .filter((p: any) => p.content && (p.reactions + p.comments) > 0)
+      .sort((a: any, b: any) => b.score - a.score)
+      .slice(0, 3);
+
+    const pad = (arr: any[], size: number) => {
+      const clone = [...arr];
+      while (clone.length < size) {
+        clone.push({ content: 'Sem dados', reactions: 0, comments: 0, score: 0 });
+      }
+      return clone;
+    };
+
+    const [p1, p2, p3] = pad(scored, 3);
+
+    let svg = podioSvgRaw;
+    svg = svg.replace(
+      /<tspan x="421\.012" y="397\.68">\{\{P1_TEXT\}\}<\/tspan>/,
+      buildTspans(wrapLines(p1.content), 421.012, 397.68)
+    );
+    svg = svg.replace(/\{\{P1_REACTIONS\}\}/g, (p1.reactions || 0).toLocaleString('pt-BR'));
+    svg = svg.replace(/\{\{P1_COMMENTS\}\}/g, `${(p1.comments || 0).toLocaleString('pt-BR')} Comentários`);
+
+    svg = svg.replace(
+      /<tspan x="112" y="519\.68">\{\{P2_TEXT\}\}<\/tspan>/,
+      buildTspans(wrapLines(p2.content), 112, 519.68)
+    );
+    svg = svg.replace(/\{\{P2_REACTIONS\}\}/g, (p2.reactions || 0).toLocaleString('pt-BR'));
+    svg = svg.replace(/\{\{P2_COMMENTS\}\}/g, `${(p2.comments || 0).toLocaleString('pt-BR')} Comentários`);
+
+    svg = svg.replace(
+      /<tspan x="728\.938" y="580\.68">\{\{P3_TEXT\}\}<\/tspan>/,
+      buildTspans(wrapLines(p3.content), 728.938, 580.68)
+    );
+    svg = svg.replace(/\{\{P3_REACTIONS\}\}/g, (p3.reactions || 0).toLocaleString('pt-BR'));
+    svg = svg.replace(/\{\{P3_COMMENTS\}\}/g, `${(p3.comments || 0).toLocaleString('pt-BR')} Comentários`);
+
+    return svg;
+  }, [data]);
+
+  return (
+    <div 
+      style={{ 
+        position: 'relative',
+        width: '1080px',
+        height: '1350px',
+        overflow: 'hidden',
+        margin: 0,
+        padding: 0,
+        boxSizing: 'border-box',
+      }}
+      dangerouslySetInnerHTML={{ __html: processedSvg }}
+    />
+  );
+};
+
+// Contracapa Slide Component - static
+const ContracapaSlide: React.FC = () => {
+  return (
+    <div
+      style={{
+        position: 'relative',
+        width: '1080px',
+        height: '1350px',
+        overflow: 'hidden',
+        margin: 0,
+        padding: 0,
+        boxSizing: 'border-box',
+      }}
+      dangerouslySetInnerHTML={{ __html: contracapaSvgRaw }}
     />
   );
 };
@@ -542,115 +642,6 @@ const ReactionsSlide: React.FC<{ data: any }> = ({ data }) => {
 
     return svg;
   }, [data]);
-
-  return (
-    <div 
-      style={{ 
-        position: 'relative',
-        width: '1080px',
-        height: '1350px',
-        overflow: 'hidden',
-        margin: 0,
-        padding: 0,
-        boxSizing: 'border-box',
-      }}
-      dangerouslySetInnerHTML={{ __html: processedSvg }}
-    />
-  );
-};
-
-// Friends Slide Component - shows top commenters/interactors
-// This shows users who interacted most with the user's posts
-const FriendsSlide: React.FC<{ data: any }> = ({ data }) => {
-  const [friendImages, setFriendImages] = useState<string[]>([
-    DEFAULT_PROFILE_IMAGE,
-    DEFAULT_PROFILE_IMAGE,
-    DEFAULT_PROFILE_IMAGE
-  ]);
-  const [isLoadingImages, setIsLoadingImages] = useState(true);
-
-  // Get top commenters/interactors from data
-  const topFriends = useMemo(() => {
-    // Try to get from topCommenters field (most likely location from scraping)
-    const commenters = data?.topCommenters || data?.topInteractors || [];
-    
-    // Take top 3
-    return commenters.slice(0, 3).map((friend: any) => ({
-      name: friend.name || friend.authorName || 'Amigo',
-      image: friend.profileImage || friend.authorProfileImage || friend.image || null,
-    }));
-  }, [data]);
-
-  // Load and convert friend images to base64
-  useEffect(() => {
-    const loadImages = async () => {
-      setIsLoadingImages(true);
-      
-      const imagePromises = [0, 1, 2].map(async (index) => {
-        const friend = topFriends[index];
-        if (friend?.image && !friend.image.startsWith('data:')) {
-          try {
-            const base64 = await imageUrlToBase64(friend.image);
-            return base64;
-          } catch {
-            return DEFAULT_PROFILE_IMAGE;
-          }
-        } else if (friend?.image) {
-          return friend.image;
-        }
-        return DEFAULT_PROFILE_IMAGE;
-      });
-
-      const loadedImages = await Promise.all(imagePromises);
-      setFriendImages(loadedImages);
-      setIsLoadingImages(false);
-    };
-
-    loadImages();
-  }, [topFriends]);
-
-  // Process SVG with placeholders
-  const processedSvg = useMemo(() => {
-    // Get friend names (with fallbacks)
-    const friend1Name = topFriends[0]?.name || 'Amigo 1';
-    const friend2Name = topFriends[1]?.name || 'Amigo 2';
-    const friend3Name = topFriends[2]?.name || 'Amigo 3';
-
-    // Replace placeholders in SVG
-    let svg = amigosSvgRaw;
-    svg = svg.replace(/\{\{FRIEND_1_NAME\}\}/g, friend1Name);
-    svg = svg.replace(/\{\{FRIEND_2_NAME\}\}/g, friend2Name);
-    svg = svg.replace(/\{\{FRIEND_3_NAME\}\}/g, friend3Name);
-    svg = svg.replace(/\{\{FRIEND_1_IMAGE\}\}/g, friendImages[0]);
-    svg = svg.replace(/\{\{FRIEND_2_IMAGE\}\}/g, friendImages[1]);
-    svg = svg.replace(/\{\{FRIEND_3_IMAGE\}\}/g, friendImages[2]);
-
-    return svg;
-  }, [topFriends, friendImages]);
-
-  if (isLoadingImages) {
-    return (
-      <div 
-        style={{ 
-          position: 'relative',
-          width: '1080px',
-          height: '1350px',
-          overflow: 'hidden',
-          margin: 0,
-          padding: 0,
-          boxSizing: 'border-box',
-          backgroundColor: '#18181B',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'white',
-          fontSize: '24px',
-        }}
-      >
-        Carregando...
-      </div>
-    );
-  }
 
   return (
     <div 
