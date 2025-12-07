@@ -102,8 +102,9 @@ const LinkedInWrapped: React.FC = () => {
       toast.success('Conta criada com sucesso!');
       
       // Update profile with signup_source
-      if (result.data?.user?.id) {
-        await ProfileService.updateProfile(result.data.user.id, {
+      const createdUserId = (result as any)?.data?.user?.id;
+      if (createdUserId) {
+        await ProfileService.updateProfile(createdUserId, {
           signup_source: 'linkedin_wrapped'
         } as any);
       }
@@ -213,11 +214,17 @@ const LinkedInWrapped: React.FC = () => {
   }
 
   // Styles
+  const geistFont = Array.isArray(typography.fontFamily?.inter)
+    ? typography.fontFamily.inter.join(', ')
+    : typography.fontFamily?.inter || 'Geist, sans-serif';
+
   const pageStyles: React.CSSProperties = {
     minHeight: '100vh',
-    backgroundColor: colors.bg.muted,
+    backgroundColor: 'var(--bg-default, #18181B)',
     display: 'flex',
     flexDirection: 'column',
+    fontFamily: geistFont,
+    color: '#FFFFFF',
   };
 
   const contentWrapperStyles: React.CSSProperties = {
@@ -229,32 +236,33 @@ const LinkedInWrapped: React.FC = () => {
     paddingLeft: spacing.spacing[24],
     paddingRight: spacing.spacing[24],
     boxSizing: 'border-box',
+    color: '#FFFFFF',
   };
 
   const cardStyles: React.CSSProperties = {
-    backgroundColor: colors.bg.card.default,
-    border: `1px solid ${colors.border.default}`,
+    backgroundColor: '#22232a',
+    border: '1px solid rgba(255,255,255,0.12)',
     borderRadius: cornerRadius.borderRadius.lg,
     boxShadow: getShadow('regular.card', colors, { withBorder: true }),
     padding: getResponsivePadding(isMobile, 'card'),
     marginBottom: spacing.spacing[24],
+    color: '#FFFFFF',
+    fontFamily: geistFont,
   };
 
   const titleStyle: React.CSSProperties = {
-    fontFamily: Array.isArray(typography.fontFamily['awesome-serif']) 
-      ? typography.fontFamily['awesome-serif'].join(', ') 
-      : typography.fontFamily['awesome-serif'],
-    fontSize: typography.desktop.size['3xl'],
+    fontFamily: geistFont,
+    fontSize: typography.desktop.size['4xl'],
     fontWeight: typography.desktop.weight.semibold,
     lineHeight: typography.desktop.lineHeight.leading7,
     letterSpacing: typography.desktop.letterSpacing.normal,
-    color: colors.text.default,
+    color: '#FFFFFF',
     margin: 0,
   };
 
   const subtitleStyle: React.CSSProperties = {
     ...textStyles.md.normal,
-    color: colors.text.muted,
+    color: 'rgba(255,255,255,0.78)',
     margin: 0,
     marginTop: spacing.spacing[8],
   };
@@ -288,17 +296,13 @@ const LinkedInWrapped: React.FC = () => {
         {/* Main Card */}
         <div style={cardStyles}>
           {/* Hero Section */}
-          <div style={{ textAlign: 'center', marginBottom: spacing.spacing[32] }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: spacing.spacing[8], marginBottom: spacing.spacing[8] }}>
-              <Sparkles size={28} color={colors.icon.default} />
-              <h1 style={{
-                ...titleStyle,
-                fontSize: typography.desktop.size['4xl'],
-              }}>
-                LinkedIn Wrapped 2024
-              </h1>
-              <Sparkles size={28} color={colors.icon.default} />
-            </div>
+          <div style={{ textAlign: 'center', marginBottom: spacing.spacing[32], color: '#FFFFFF' }}>
+            <h1 style={{
+              ...titleStyle,
+              fontSize: typography.desktop.size['4xl'],
+            }}>
+              LinkedIn Wrapped 2025
+            </h1>
             <p style={subtitleStyle}>
               Descubra sua retrospectiva do LinkedIn. Veja seus posts mais populares, 
               estatísticas de engajamento e insights de conteúdo do ano passado.
@@ -311,7 +315,7 @@ const LinkedInWrapped: React.FC = () => {
               <>
                 {/* Google Sign Up Button */}
                 <Button
-                  label="Continuar com Google"
+                  label="Cadastrar com Google"
                   style="secondary"
                   size="lg"
                   leadIcon={<LogIn size={18} />}
@@ -329,25 +333,25 @@ const LinkedInWrapped: React.FC = () => {
                   <div style={{
                     flex: 1,
                     height: 1,
-                    backgroundColor: colors.border.default,
+                    backgroundColor: 'rgba(255,255,255,0.14)',
                   }} />
                   <span style={{
                     ...textStyles.xs.normal,
-                    color: colors.text.muted,
+                    color: 'rgba(255,255,255,0.72)',
                   }}>
                     ou
                   </span>
                   <div style={{
                     flex: 1,
                     height: 1,
-                    backgroundColor: colors.border.default,
+                    backgroundColor: 'rgba(255,255,255,0.14)',
                   }} />
                 </div>
 
                 {/* Email Sign Up Option */}
                 <Button
-                  label="Continuar com email"
-                  style="ghost"
+                  label="Cadastrar com email"
+                  style="primary"
                   size="md"
                   onClick={() => setShowEmailForm(true)}
                   fullWidth={true}
@@ -433,17 +437,17 @@ const LinkedInWrapped: React.FC = () => {
             textAlign: 'center',
             marginTop: spacing.spacing[24],
             paddingTop: spacing.spacing[24],
-            borderTop: `1px solid ${colors.border.default}`,
+            borderTop: `1px solid rgba(255,255,255,0.12)`,
           }}>
             <p style={{
               ...textStyles.sm.normal,
-              color: colors.text.muted,
+              color: 'rgba(255,255,255,0.78)',
               margin: 0,
             }}>
               Já tem uma conta?{' '}
               <Button
                 label="Fazer login"
-                style="ghost"
+                style="primary"
                 size="sm"
                 onClick={() => navigate('/signin?redirect=/my-wrapped')}
               />
@@ -458,7 +462,8 @@ const LinkedInWrapped: React.FC = () => {
         }}>
           <p style={{
             ...textStyles.xs.normal,
-            color: colors.text.hint,
+            color: 'rgba(255,255,255,0.78)',
+            fontFamily: geistFont,
           }}>
             Esta é uma ferramenta gratuita do Pacelane. Seus dados são privados e armazenados com segurança.
           </p>
