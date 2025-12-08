@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/services/theme-context';
 import { useAuth } from '@/hooks/api/useAuth';
@@ -14,12 +14,14 @@ import { supabase } from '@/integrations/supabase/client';
 import logoDark from '@/assets/logo/logotype-dark.svg';
 import Button from '@/design-system/components/Button';
 import SubtleLoadingSpinner from '@/design-system/components/SubtleLoadingSpinner';
+import Input from '@/design-system/components/Input';
 import { ArrowRight } from 'lucide-react';
 import { PDFExportModal } from '@/components/PDFExportModal';
 import type { PostsWrappedData } from '@/types/wrapped';
 
 const MyWrapped: React.FC = () => {
-  const { colors } = useTheme();
+  const { colors, setTheme, themePreference } = useTheme();
+  const previousThemeRef = useRef(themePreference);
   const navigate = useNavigate();
   const { user, profile, signOut } = useAuth();
   const { toast } = useToast();
@@ -34,194 +36,241 @@ const MyWrapped: React.FC = () => {
   const [error, setError] = useState('');
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [linkedinError, setLinkedinError] = useState('');
+  const [leadFormName, setLeadFormName] = useState('');
+  const [leadFormLinkedinUrl, setLeadFormLinkedinUrl] = useState('');
+  const [leadFormError, setLeadFormError] = useState('');
+  const [isCreatingLead, setIsCreatingLead] = useState(false);
+
+  const successColor =
+    (colors as any)?.bg?.state?.success ||
+    (colors as any)?.text?.success ||
+    (colors as any)?.bg?.state?.primary;
+
+  // Forçar tema escuro nesta página e restaurar preferência ao sair
+  useEffect(() => {
+    if (themePreference !== 'dark') {
+      setTheme('dark');
+    }
+    return () => {
+      setTheme(previousThemeRef.current || 'system');
+    };
+  }, [setTheme, themePreference]);
+
+  useEffect(() => {
+    const inferredName =
+      (profile as any)?.display_name ||
+      (user as any)?.user_metadata?.full_name ||
+      user?.email ||
+      '';
+    setLeadFormName((prev) => prev || inferredName);
+  }, [profile, user]);
 
   // Check if user already has a wrapped
-  useEffect(() => {
-    const checkExistingWrapped = async () => {
-      if (!user) {
-        console.log('MyWrapped: No user, skipping check');
-        return;
-      }
+  const fetchExistingWrapped = useCallback(async () => {
+    if (!user) {
+      console.log('MyWrapped: No user, skipping check');
+      return;
+    }
 
-      console.log('MyWrapped: Checking for existing wrapped for user:', user.id);
-      setIsLoadingLead(true);
-      try {
-        // First, try to find lead with converted_to_user_id matching current user
-        const client = supabase as any;
-        let { data: lead, error: leadError } = await client
+    console.log('MyWrapped: Checking for existing wrapped for user:', user.id);
+    setIsLoadingLead(true);
+    try {
+      const client = supabase as any;
+      let { data: lead, error: leadError } = await client
+        .from('leads')
+        .select('*')
+        .eq('converted_to_user_id', user.id)
+        .eq('lead_source', 'linkedin_wrapped')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!lead && user.email) {
+        console.log('MyWrapped: No lead found by user_id, trying to find by email:', user.email);
+        const { data: leadByEmail, error: emailError } = await client
           .from('leads')
           .select('*')
-          .eq('converted_to_user_id', user.id)
+          .eq('email', user.email)
           .eq('lead_source', 'linkedin_wrapped')
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
 
-        // If no lead found by converted_to_user_id, try to find by email
-        // This handles cases where the lead was created before user signup
-        if (!lead && user.email) {
-          console.log('MyWrapped: No lead found by user_id, trying to find by email:', user.email);
-          const { data: leadByEmail, error: emailError } = await client
+        if (emailError) {
+          console.error('MyWrapped: Error fetching lead by email:', emailError);
+        } else if (leadByEmail) {
+          console.log('MyWrapped: Found lead by email, updating converted_to_user_id');
+          const { error: updateError } = await client
             .from('leads')
-            .select('*')
-            .eq('email', user.email)
-            .eq('lead_source', 'linkedin_wrapped')
-            .is('converted_to_user_id', null) // Only get leads not yet converted
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle();
+            .update({
+              converted_to_user_id: user.id,
+              converted_at: new Date().toISOString()
+            })
+            .eq('id', leadByEmail.id);
 
-          if (emailError) {
-            console.error('MyWrapped: Error fetching lead by email:', emailError);
-          } else if (leadByEmail) {
-            // Update the lead to link it to the current user
-            console.log('MyWrapped: Found lead by email, updating converted_to_user_id');
-            const { error: updateError } = await client
-              .from('leads')
-              .update({ 
-                converted_to_user_id: user.id,
-                converted_at: new Date().toISOString()
-              })
-              .eq('id', leadByEmail.id);
-
-            if (updateError) {
-              console.error('MyWrapped: Error updating lead:', updateError);
-            } else {
-              lead = leadByEmail;
-              lead.converted_to_user_id = user.id;
-              lead.converted_at = new Date().toISOString();
-            }
+          if (updateError) {
+            console.error('MyWrapped: Error updating lead:', updateError);
+          } else {
+            lead = leadByEmail;
+            lead.converted_to_user_id = user.id;
+            lead.converted_at = new Date().toISOString();
           }
         }
+      }
 
-        if (leadError) {
-          console.error('MyWrapped: Error fetching lead:', leadError);
-          setIsLoadingLead(false);
-          return;
-        }
+      if (leadError) {
+        console.error('MyWrapped: Error fetching lead:', leadError);
+        setIsLoadingLead(false);
+        return;
+      }
 
-        console.log('MyWrapped: Lead query result:', { 
-          hasLead: !!lead, 
-          leadId: lead?.id,
-          hasScrapedData: !!(lead?.scraped_data),
-          scrapedDataKeys: lead?.scraped_data ? Object.keys(lead.scraped_data) : []
-        });
+      console.log('MyWrapped: Lead query result:', {
+        hasLead: !!lead,
+        leadId: lead?.id,
+        hasScrapedData: !!(lead?.scraped_data),
+        scrapedDataKeys: lead?.scraped_data ? Object.keys(lead.scraped_data) : []
+      });
 
-        if (lead) {
-          setLeadId(lead.id);
-          // Check if we have scraped_data
-          if (lead.scraped_data) {
-            console.log('MyWrapped: Found scraped_data, processing...');
-            
-            // Parse scraped_data if it's a string
-            let parsedData: any = lead.scraped_data;
-            if (typeof lead.scraped_data === 'string') {
-              try {
-                parsedData = JSON.parse(lead.scraped_data);
-              } catch (e) {
-                console.error('MyWrapped: Error parsing scraped_data:', e);
-                setHasScrapedData(false);
-                return;
-              }
-            }
-            
-            // Check if parsed data has content
-            if (parsedData && (parsedData.posts || Object.keys(parsedData).length > 0)) {
-              console.log('MyWrapped: Valid scraped_data found, processing...');
-              setHasScrapedData(true);
-              
-              let wrappedDataFromLead: PostsWrappedData;
-              
-              // Check if data is already processed (has totalPosts, totalEngagement, etc.)
-              if (parsedData.totalPosts !== undefined && parsedData.totalEngagement !== undefined) {
-                // Data is already processed
-                console.log('MyWrapped: Data is already processed');
-                wrappedDataFromLead = parsedData as PostsWrappedData;
-              } else if (parsedData.posts && Array.isArray(parsedData.posts)) {
-                // Data is raw posts, need to process
-                console.log('MyWrapped: Data is raw posts, processing...');
-                wrappedDataFromLead = processPostsToWrappedData(parsedData.posts);
-              } else {
-                // Try to use as-is
-                wrappedDataFromLead = parsedData as PostsWrappedData;
-              }
-              
-              // Merge reactions_data if available
-              if (lead.reactions_data) {
-                let parsedReactions = lead.reactions_data;
-                if (typeof lead.reactions_data === 'string') {
-                  try {
-                    parsedReactions = JSON.parse(lead.reactions_data);
-                  } catch (e) {
-                    console.error('MyWrapped: Error parsing reactions_data:', e);
-                  }
-                }
-                wrappedDataFromLead.reactionsData = parsedReactions;
-              }
-              
-              setWrappedData(wrappedDataFromLead);
-              console.log('MyWrapped: Wrapped data set:', { 
-                hasData: !!wrappedDataFromLead,
-                keys: Object.keys(wrappedDataFromLead || {}),
-                hasTotalEngagement: !!wrappedDataFromLead.totalEngagement,
-                hasTotalPosts: !!wrappedDataFromLead.totalPosts
-              });
-            } else {
-              console.log('MyWrapped: scraped_data is empty or invalid');
+      if (lead) {
+        setLeadId(lead.id);
+        setLeadFormName((prev) => prev || lead.name || '');
+        setLeadFormLinkedinUrl(lead.linkedin_url || '');
+
+        if (lead.scraped_data) {
+          console.log('MyWrapped: Found scraped_data, processing...');
+
+          let parsedData: any = lead.scraped_data;
+          if (typeof lead.scraped_data === 'string') {
+            try {
+              parsedData = JSON.parse(lead.scraped_data);
+            } catch (e) {
+              console.error('MyWrapped: Error parsing scraped_data:', e);
               setHasScrapedData(false);
+              return;
             }
+          }
+
+          if (parsedData && (parsedData.posts || Object.keys(parsedData).length > 0)) {
+            console.log('MyWrapped: Valid scraped_data found, processing...');
+            setHasScrapedData(true);
+
+            let wrappedDataFromLead: PostsWrappedData;
+
+            if (parsedData.totalPosts !== undefined && parsedData.totalEngagement !== undefined) {
+              wrappedDataFromLead = parsedData as PostsWrappedData;
+            } else if (parsedData.posts && Array.isArray(parsedData.posts)) {
+              wrappedDataFromLead = processPostsToWrappedData(parsedData.posts);
+            } else {
+              wrappedDataFromLead = parsedData as PostsWrappedData;
+            }
+
+            if (lead.reactions_data) {
+              let parsedReactions = lead.reactions_data;
+              if (typeof lead.reactions_data === 'string') {
+                try {
+                  parsedReactions = JSON.parse(lead.reactions_data);
+                } catch (e) {
+                  console.error('MyWrapped: Error parsing reactions_data:', e);
+                }
+              }
+              (wrappedDataFromLead as any).reactionsData = parsedReactions;
+            }
+
+            setWrappedData(wrappedDataFromLead);
+            console.log('MyWrapped: Wrapped data set:', {
+              hasData: !!wrappedDataFromLead,
+              keys: Object.keys(wrappedDataFromLead || {}),
+              hasTotalEngagement: !!wrappedDataFromLead.totalEngagement,
+              hasTotalPosts: !!wrappedDataFromLead.totalPosts
+            });
           } else {
-            console.log('MyWrapped: No scraped_data found in lead');
+            console.log('MyWrapped: scraped_data is empty or invalid');
             setHasScrapedData(false);
           }
         } else {
-          console.log('MyWrapped: No lead found for user');
-
-          // Fallback: create placeholder lead for existing users without a lead record
-          if (user.email) {
-            const payload: any = {
-              email: user.email,
-              lead_source: 'linkedin_wrapped',
-            };
-            // Use converted_to_user_id if column exists, otherwise store under notes
-            try {
-              payload.converted_to_user_id = user.id;
-              payload.converted_at = new Date().toISOString();
-            } catch {
-              payload.notes = `LinkedIn Wrapped user ${user.id}`;
-            }
-
-            const { data: newLead, error: insertError } = await client
-              .from('leads')
-              .insert(payload)
-              .select('*')
-              .maybeSingle();
-
-            if (insertError) {
-              console.error('MyWrapped: Error creating placeholder lead:', insertError);
-            } else if (newLead) {
-              console.log('MyWrapped: Placeholder lead created for existing user', newLead.id);
-              setLeadId(newLead.id);
-            }
-          }
-
+          console.log('MyWrapped: No scraped_data found in lead');
           setHasScrapedData(false);
         }
-      } catch (err: any) {
-        console.error('MyWrapped: Error checking for existing wrapped:', err);
-      } finally {
-        setIsLoadingLead(false);
-        console.log('MyWrapped: Finished loading check', { 
-          isLoadingLead: false,
-          hasScrapedData,
-          hasWrappedData: !!wrappedData,
-          hasLeadId: !!leadId
-        });
+      } else {
+        console.log('MyWrapped: No lead found for user');
+        setLeadId(null);
+        setHasScrapedData(false);
+        setWrappedData(null);
       }
-    };
-
-    checkExistingWrapped();
+    } catch (err: any) {
+      console.error('MyWrapped: Error checking for existing wrapped:', err);
+    } finally {
+      setIsLoadingLead(false);
+      console.log('MyWrapped: Finished loading check', {
+        isLoadingLead: false
+      });
+    }
   }, [user]);
+
+  useEffect(() => {
+    fetchExistingWrapped();
+  }, [fetchExistingWrapped]);
+
+  const handleCreateLead = async () => {
+    if (!user?.email) {
+      toast.error('Faça login para criar seu lead do LinkedIn Wrapped.');
+      return;
+    }
+
+    const name = leadFormName.trim();
+    const linkedinUrl = leadFormLinkedinUrl.trim();
+
+    if (!name || !linkedinUrl) {
+      setLeadFormError('Preencha nome e URL do LinkedIn.');
+      return;
+    }
+
+    if (!linkedinUrl.includes('linkedin.com')) {
+      setLeadFormError('Use a URL completa do seu perfil do LinkedIn.');
+      return;
+    }
+
+    setLeadFormError('');
+    setIsCreatingLead(true);
+
+    try {
+      const client = supabase as any;
+
+      const { data: invokeData, error: invokeError } = await client.functions.invoke('scrape-lead-linkedin-posts', {
+        body: {
+          name,
+          email: user.email,
+          linkedinUrl,
+        },
+      });
+
+      if (invokeError) {
+        console.error('MyWrapped: Error invoking scraping function:', invokeError);
+        setLeadFormError('Falha ao iniciar o Wrapped. Tente novamente.');
+        return;
+      }
+
+      const createdLeadId = (invokeData as any)?.leadId;
+      if (createdLeadId) {
+        await client
+          .from('leads')
+          .update({
+            converted_to_user_id: user.id,
+            converted_at: new Date().toISOString(),
+          })
+          .eq('id', createdLeadId);
+        setLeadId(createdLeadId);
+      }
+
+      toast.success('Wrapped 2025 iniciado. Estamos buscando seus dados.');
+      await fetchExistingWrapped();
+    } catch (err: any) {
+      console.error('MyWrapped: Error starting wrapped generation:', err);
+      setLeadFormError('Falha ao iniciar o Wrapped. Tente novamente.');
+    } finally {
+      setIsCreatingLead(false);
+    }
+  };
 
   // Helper function to process raw posts into WrappedData
   const processPostsToWrappedData = (posts: any[]): PostsWrappedData => {
@@ -519,9 +568,9 @@ const MyWrapped: React.FC = () => {
               size="md"
               onClick={() => setIsExportModalOpen(true)}
               styleOverrides={{
-                backgroundColor: (colors as any).bg?.state?.success || (colors as any).text?.success || (colors as any).bg?.state?.primary,
+                backgroundColor: successColor,
                 color: colors.text.white?.default || '#FFFFFF',
-                borderColor: (colors as any).bg?.state?.success || (colors as any).text?.success || (colors as any).bg?.state?.primary,
+                borderColor: successColor,
               }}
             />
             <Button
@@ -587,17 +636,60 @@ const MyWrapped: React.FC = () => {
             renderWrappedResults()
           ) : (
             <>
-              <h1 style={titleStyle}>Você ainda não gerou seu Wrapped</h1>
+              <h1 style={titleStyle}>Gerar seu LinkedIn Wrapped</h1>
               <p style={subtitleStyle}>
-                Volte para a página de cadastro para gerar seu carrossel em PDF e compartilhar no LinkedIn.
+                Preencha seu nome e URL do LinkedIn para criarmos seu lead e gerar o carrossel.
               </p>
-              <div style={{ display: 'flex', gap: spacing.spacing[12], flexWrap: 'wrap', marginTop: spacing.spacing[24] }}>
-                <Button
-                  label="Ir para LinkedIn Wrapped"
-                  style="primary"
-                  size="md"
-                  onClick={() => navigate('/linkedin-wrapped')}
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.spacing[16], marginTop: spacing.spacing[24] }}>
+                <Input
+                  label="Nome"
+                  placeholder="Digite seu nome completo"
+                  value={leadFormName}
+                  onChange={(e) => setLeadFormName(e.target.value)}
+                  size="lg"
                 />
+                <Input
+                  label="URL do LinkedIn"
+                  placeholder="https://www.linkedin.com/in/seu-perfil"
+                  value={leadFormLinkedinUrl}
+                  onChange={(e) => setLeadFormLinkedinUrl(e.target.value)}
+                  size="lg"
+                  caption="Use a URL completa do seu perfil."
+                />
+
+                {leadFormError && (
+                  <div style={{
+                    padding: spacing.spacing[12],
+                    backgroundColor: 'rgba(255,255,255,0.06)',
+                    border: '1px solid rgba(255,255,255,0.12)',
+                    borderRadius: cornerRadius.borderRadius.md,
+                  }}>
+                    <p style={{ ...textStyles.sm.medium, color: '#FFC2C2', margin: 0 }}>
+                      {leadFormError}
+                    </p>
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: spacing.spacing[12], flexWrap: 'wrap', marginTop: spacing.spacing[8] }}>
+                  <Button
+                    label={isCreatingLead ? 'Gerando...' : 'Gerar Wrapped 2025'}
+                    style="primary"
+                    size="md"
+                    onClick={handleCreateLead}
+                    loading={isCreatingLead}
+                    disabled={isCreatingLead}
+                  />
+                  <Button
+                    label="Voltar para LinkedIn Wrapped"
+                    style="ghost"
+                    size="sm"
+                    onClick={() => navigate('/linkedin-wrapped')}
+                    styleOverrides={{
+                      color: colors.text.white?.default || '#FFFFFF',
+                    }}
+                  />
+                </div>
               </div>
             </>
           )}
