@@ -176,6 +176,28 @@ const MyWrapped: React.FC = () => {
           }
         } else {
           console.log('MyWrapped: No lead found for user');
+
+          // Fallback: create placeholder lead for existing users without a lead record
+          if (user.email) {
+            const { data: newLead, error: insertError } = await client
+              .from('leads')
+              .insert({
+                email: user.email,
+                converted_to_user_id: user.id,
+                converted_at: new Date().toISOString(),
+                lead_source: 'linkedin_wrapped',
+              })
+              .select('*')
+              .maybeSingle();
+
+            if (insertError) {
+              console.error('MyWrapped: Error creating placeholder lead:', insertError);
+            } else if (newLead) {
+              console.log('MyWrapped: Placeholder lead created for existing user', newLead.id);
+              setLeadId(newLead.id);
+            }
+          }
+
           setHasScrapedData(false);
         }
       } catch (err: any) {
