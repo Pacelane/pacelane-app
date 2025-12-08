@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
+import { useTheme } from '@/services/theme-context';
 import { Heart, MessageCircle, Share2, Calendar, Award, TrendingUp, Hash } from 'lucide-react';
 // Import SVGs as raw string for placeholder replacement
 import capaSvgRaw from '@/assets/capa.svg?raw';
@@ -7,6 +8,7 @@ import reacoesSvgRaw from '@/assets/reacoes.svg?raw';
 import formatosSvgRaw from '@/assets/formatos.svg?raw';
 import distanciaSvgRaw from '@/assets/distancia.svg?raw';
 import podioSvgRaw from '@/assets/podio.svg?raw';
+import analiseSvgRaw from '@/assets/analise.svg?raw';
 import contracapaSvgRaw from '@/assets/contracapa.svg?raw';
 import { getDistanceRoute } from '@/utils/wrapped/routes';
 
@@ -20,6 +22,7 @@ export type SlideType =
   | 'formats'
   | 'distance'
   | 'podium'
+  | 'analysis'
   | 'contracapa';
 
 interface CarouselSlideProps {
@@ -91,6 +94,9 @@ export const CarouselSlide: React.FC<CarouselSlideProps> = ({ type, data, index,
       case 'podium':
         return <PodiumSlide data={data} />;
 
+      case 'analysis':
+        return <AnalysisSlide data={data} />;
+
       case 'contracapa':
         return <ContracapaSlide />;
 
@@ -107,6 +113,7 @@ export const CarouselSlide: React.FC<CarouselSlideProps> = ({ type, data, index,
     type === 'distance' ||
     type === 'formats' ||
     type === 'podium' ||
+    type === 'analysis' ||
     type === 'contracapa'
   ) {
     const bgColor = type === 'intro' ? '#FFFFFF' : '#18181B';
@@ -437,7 +444,7 @@ const DistanceSlide: React.FC<{ data: any }> = ({ data }) => {
 // Podium Slide Component - top 3 posts by reactions+comments (and shares as reaction)
 const PodiumSlide: React.FC<{ data: any }> = ({ data }) => {
   const processedSvg = useMemo(() => {
-    const wrapLines = (text: string, maxLine = 32, maxChars = 120, maxLines = 3, minWords = 2) => {
+    const wrapLines = (text: string, maxLine = 28, maxChars = 110, maxLines = 4, minWords = 2) => {
       if (!text) return ['Sem dados'];
       const trimmed = text.trim();
       const limited = trimmed.length > maxChars ? trimmed.slice(0, maxChars - 1) + '…' : trimmed;
@@ -537,6 +544,152 @@ const PodiumSlide: React.FC<{ data: any }> = ({ data }) => {
 
     return svg;
   }, [data]);
+
+  return (
+    <div 
+      style={{ 
+        position: 'relative',
+        width: '1080px',
+        height: '1350px',
+        overflow: 'hidden',
+        margin: 0,
+        padding: 0,
+        boxSizing: 'border-box',
+      }}
+      dangerouslySetInnerHTML={{ __html: processedSvg }}
+    />
+  );
+};
+
+// Analysis Slide Component - classifies top posts via edge function
+const AnalysisSlide: React.FC<{ data: any }> = ({ data }) => {
+  const [result, setResult] = useState<{
+    categoryName: string;
+    summary: string;
+  } | null>(data?.topicClassification || null);
+  const [isLoading, setIsLoading] = useState(false);
+  const { colors } = useTheme();
+
+  useEffect(() => {
+    const fetchClassification = async () => {
+      if (result) return;
+      const topPosts = (data?.topPosts || []).slice(0, 5);
+      if (!topPosts.length) return;
+      setIsLoading(true);
+      try {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+        const response = await fetch(`${supabaseUrl}/functions/v1/classify-top-posts`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseAnonKey}`,
+          },
+          body: JSON.stringify({
+            posts: topPosts,
+          }),
+        });
+        const json = await response.json();
+        if (!response.ok || json.error) {
+          console.error('Analysis classification error:', json.error || response.statusText);
+          setIsLoading(false);
+          return;
+        }
+        setResult({
+          categoryName: json.categoryName,
+          summary: json.summary,
+        });
+      } catch (err) {
+        console.error('Analysis classification exception:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchClassification();
+  }, [data, result]);
+
+  const processedSvg = useMemo(() => {
+    if (!result) return analiseSvgRaw;
+    const title = result.categoryName || 'Tema';
+    const summary = result.summary || 'Análise do seu tema mais presente';
+
+    const wrapLines = (
+      text: string,
+      xCenter: number,
+      yStart: number,
+      dy: number,
+      maxLineChars: number,
+      maxLines: number,
+      idPrefix: string
+    ) => {
+      let content = text.trim();
+      const lines: string[] = [];
+      const words = content.split(/\s+/);
+      let current = '';
+      for (const w of words) {
+        if ((current + (current ? ' ' : '') + w).length <= maxLineChars) {
+          current = current ? `${current} ${w}` : w;
+        } else {
+          if (current) lines.push(current);
+          current = w;
+        }
+      }
+      if (current) lines.push(current);
+
+      const finalLines = lines.slice(0, maxLines);
+      if (lines.length > maxLines) {
+        const last = finalLines[finalLines.length - 1] || '';
+        finalLines[finalLines.length - 1] = `${last.slice(0, Math.max(0, maxLineChars - 3))}...`;
+      }
+
+      return finalLines
+        .map((line, idx) => {
+          return `<tspan x="${xCenter}" y="${yStart + idx * dy}" id="${idPrefix}_${idx}" text-anchor="middle">${line}</tspan>`;
+        })
+        .join('');
+    };
+
+    const cleanText = (value: string) =>
+      value
+        .replace(/["“”‘’]/g, '') // remove qualquer tipo de aspas
+        .trim();
+
+    const cleanedTitle = cleanText(title);
+    const cleanedSummary = cleanText(summary);
+
+    // Centered title and summary bounds (allow a bit more text in summary)
+    const titleWrapped = wrapLines(cleanedTitle, 540, 564.74, 90, 22, 2, 'ANALYSIS_TITLE');
+    const summaryWrapped = wrapLines(cleanedSummary, 540, 716.1, 26, 64, 4, 'ANALYSIS_SUMMARY');
+
+    let svg = analiseSvgRaw;
+    svg = svg.replace(/\{\{CATEGORY_NAME\}\}/g, titleWrapped);
+    svg = svg.replace(/\{\{SUMMARY\}\}/g, summaryWrapped);
+    return svg;
+  }, [result]);
+
+  if (isLoading || !result) {
+    return (
+      <div 
+        style={{ 
+          position: 'relative',
+          width: '1080px',
+          height: '1350px',
+          overflow: 'hidden',
+          margin: 0,
+          padding: 0,
+          boxSizing: 'border-box',
+          backgroundColor: colors.bg.muted,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: colors.text.default,
+          fontFamily: 'Geist, sans-serif',
+        }}
+      >
+        Carregando análise...
+      </div>
+    );
+  }
 
   return (
     <div 

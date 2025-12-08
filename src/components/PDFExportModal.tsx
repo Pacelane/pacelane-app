@@ -33,6 +33,7 @@ export const PDFExportModal: React.FC<PDFExportModalProps> = ({
     'reactions',
     'formats',
     'podium',
+    'analysis',
     'distance',
   ]);
   const hiddenContainerRef = useRef<HTMLDivElement>(null);
@@ -55,6 +56,12 @@ export const PDFExportModal: React.FC<PDFExportModalProps> = ({
       id: 'podium',
       type: 'podium' as SlideType,
       label: 'Pódio',
+      data: wrappedData
+    },
+    {
+      id: 'analysis',
+      type: 'analysis' as SlideType,
+      label: 'Análise',
       data: wrappedData
     },
     {

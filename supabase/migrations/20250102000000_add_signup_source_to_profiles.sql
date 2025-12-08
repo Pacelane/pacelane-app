@@ -8,3 +8,4 @@ ADD COLUMN IF NOT EXISTS signup_source text DEFAULT 'organic';
 COMMENT ON COLUMN public.profiles.signup_source IS 'Tracks the source of user signup: organic, linkedin_wrapped, or linkedin_analyzer';
 
 
+
