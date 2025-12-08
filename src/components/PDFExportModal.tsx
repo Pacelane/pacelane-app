@@ -2,7 +2,8 @@ import React, { useState, useRef } from 'react';
 import { X, Download, Check, Loader2 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { CarouselSlide, SlideType } from './CarouselSlide';
+import { useTheme } from '@/services/theme-context';
+import { CarouselSlide, SlideType } from '@/components/CarouselSlide';
 
 interface PDFExportModalProps {
   isOpen: boolean;
@@ -26,6 +27,7 @@ export const PDFExportModal: React.FC<PDFExportModalProps> = ({
   userName,
   userImage
 }) => {
+  const { colors } = useTheme();
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedSlides, setSelectedSlides] = useState<string[]>([
     'intro',
@@ -79,6 +81,11 @@ export const PDFExportModal: React.FC<PDFExportModalProps> = ({
         : [...prev, id]
     );
   };
+
+  const successColor =
+    (colors as any)?.bg?.state?.success ||
+    (colors as any)?.text?.success ||
+    (colors as any)?.bg?.state?.primary;
 
   const generatePDF = async () => {
     if (selectedSlides.length === 0) return;
@@ -187,8 +194,8 @@ export const PDFExportModal: React.FC<PDFExportModalProps> = ({
           alignItems: 'center'
         }}>
           <h2 style={{ fontSize: '24px', fontWeight: 600, margin: 0 }}>Exportar para PDF</h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '8px' }}>
-            <X size={24} />
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '8px', color: '#000' }}>
+            <X size={24} color="#000" />
           </button>
         </div>
 
@@ -218,7 +225,7 @@ export const PDFExportModal: React.FC<PDFExportModalProps> = ({
                     position: 'relative',
                     borderRadius: '12px',
                     overflow: 'hidden',
-                    border: `3px solid ${isSelected ? '#0A66C2' : 'transparent'}`,
+                    border: `3px solid ${isSelected ? successColor : 'transparent'}`,
                     transition: 'all 0.2s ease',
                     opacity: isSelected ? 1 : 0.6
                   }}
@@ -257,7 +264,7 @@ export const PDFExportModal: React.FC<PDFExportModalProps> = ({
                     width: '24px',
                     height: '24px',
                     borderRadius: '50%',
-                    backgroundColor: isSelected ? '#0A66C2' : 'rgba(0,0,0,0.3)',
+                    backgroundColor: isSelected ? successColor : 'rgba(0,0,0,0.3)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -288,7 +295,8 @@ export const PDFExportModal: React.FC<PDFExportModalProps> = ({
               backgroundColor: 'white',
               fontSize: '16px',
               fontWeight: 600,
-              cursor: 'pointer'
+              cursor: 'pointer',
+              color: '#000'
             }}
           >
             Cancelar
@@ -299,7 +307,7 @@ export const PDFExportModal: React.FC<PDFExportModalProps> = ({
             style={{
               padding: '12px 24px',
               borderRadius: '999px',
-              backgroundColor: '#0A66C2',
+              backgroundColor: successColor,
               color: 'white',
               fontSize: '16px',
               fontWeight: 600,

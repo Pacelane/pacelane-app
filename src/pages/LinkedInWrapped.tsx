@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { z } from 'zod';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/services/theme-context';
 import { useAuth } from '@/hooks/api/useAuth';
 import { useToast } from '@/design-system/components/Toast';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { signUpSchema, type SignUpFormData } from '@/api/schemas';
+import { signUpSchema } from '@/api/schemas';
 import { spacing } from '@/design-system/tokens/spacing';
 import { cornerRadius } from '@/design-system/tokens/corner-radius';
 import { typography } from '@/design-system/tokens/typography';
@@ -14,11 +15,22 @@ import { getShadow } from '@/design-system/tokens/shadows';
 import { getResponsivePadding } from '@/design-system/utils/responsive';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ProfileService } from '@/services/profileService';
+import { supabase } from '@/integrations/supabase/client';
 import Logo from '@/design-system/components/Logo';
 import Input from '@/design-system/components/Input';
 import Button from '@/design-system/components/Button';
 import SubtleLoadingSpinner from '@/design-system/components/SubtleLoadingSpinner';
 import { Sparkles, LogIn, ArrowLeft } from 'lucide-react';
+
+const linkedInSignUpSchema = signUpSchema.extend({
+  linkedinUrl: z.string()
+    .url({ message: 'Insira uma URL válida do LinkedIn' })
+    .refine((url) => url.includes('linkedin.com'), {
+      message: 'Use a URL completa do seu perfil do LinkedIn',
+    }),
+});
+
+type LinkedInWrappedSignUpFormData = z.infer<typeof linkedInSignUpSchema>;
 
 
 const LinkedInWrapped: React.FC = () => {
@@ -55,18 +67,19 @@ const LinkedInWrapped: React.FC = () => {
   }, [user, profile, navigate]);
 
   // Form setup
-  const form = useForm<SignUpFormData>({
-    resolver: zodResolver(signUpSchema),
+  const form = useForm<LinkedInWrappedSignUpFormData>({
+    resolver: zodResolver(linkedInSignUpSchema),
     mode: 'onSubmit',
     reValidateMode: 'onSubmit',
     defaultValues: {
       email: '',
       password: '',
       name: '',
+      linkedinUrl: '',
     },
   });
 
-  const onSubmit = async (data: SignUpFormData) => {
+  const onSubmit = async (data: LinkedInWrappedSignUpFormData) => {
     try {
       toast.info('Criando sua conta...');
       setIsProcessingAuth(true);
@@ -107,6 +120,26 @@ const LinkedInWrapped: React.FC = () => {
         await ProfileService.updateProfile(createdUserId, {
           signup_source: 'linkedin_wrapped'
         } as any);
+
+        try {
+          const client = supabase as any;
+          const { error: leadError } = await client
+            .functions
+            .invoke('scrape-lead-linkedin-posts', {
+              body: {
+                name: data.name.trim(),
+                email: data.email.trim(),
+                linkedinUrl: data.linkedinUrl.trim(),
+              },
+            });
+
+          if (leadError) {
+            toast.error('Conta criada, mas falhou ao iniciar seu Wrapped. Tente novamente em /my-wrapped.');
+          }
+        } catch (leadErr) {
+          console.error('Lead creation error:', leadErr);
+          toast.error('Conta criada, mas falhou ao iniciar seu Wrapped. Tente novamente em /my-wrapped.');
+        }
       }
       
       // Navigate to my-wrapped page
@@ -182,12 +215,14 @@ const LinkedInWrapped: React.FC = () => {
     const email = formValues.email?.trim();
     const password = formValues.password?.trim();
     const name = formValues.name?.trim();
+    const linkedinUrl = formValues.linkedinUrl?.trim();
 
-    if (!email || !password || !name) return false;
+    if (!email || !password || !name || !linkedinUrl) return false;
     if (password.length < 8) return false;
     if (!/[A-Z]/.test(password)) return false;
     if (!/[a-z]/.test(password)) return false;
     if (!/\d/.test(password)) return false;
+    if (!linkedinUrl.includes('linkedin.com')) return false;
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) return false;
@@ -262,7 +297,7 @@ const LinkedInWrapped: React.FC = () => {
 
   const subtitleStyle: React.CSSProperties = {
     ...textStyles.md.normal,
-    color: 'rgba(255,255,255,0.78)',
+    color: '#FFFFFF',
     margin: 0,
     marginTop: spacing.spacing[8],
   };
@@ -337,7 +372,7 @@ const LinkedInWrapped: React.FC = () => {
                   }} />
                   <span style={{
                     ...textStyles.xs.normal,
-                    color: 'rgba(255,255,255,0.72)',
+                    color: '#FFFFFF',
                   }}>
                     ou
                   </span>
@@ -374,6 +409,18 @@ const LinkedInWrapped: React.FC = () => {
                   />
 
                   <Input
+                    type="text"
+                    label="URL do LinkedIn"
+                    placeholder="https://www.linkedin.com/in/seu-perfil"
+                    value={form.watch('linkedinUrl') || ''}
+                    onChange={(e) => form.setValue('linkedinUrl', e.target.value)}
+                    required
+                    size="lg"
+                    failed={!!(form.formState.errors as any).linkedinUrl}
+                    caption={(form.formState.errors as any).linkedinUrl?.message}
+                  />
+
+                  <Input
                     type="email"
                     label="Endereço de e-mail"
                     placeholder="Digite seu e-mail"
@@ -399,7 +446,7 @@ const LinkedInWrapped: React.FC = () => {
                     />
                     <p style={{
                       ...textStyles.xs.normal,
-                      color: colors.text.muted,
+                      color: '#FFFFFF',
                       margin: 0,
                     }}>
                       Mínimo 8 caracteres, 1 maiúscula, 1 minúscula, 1 número
@@ -426,6 +473,9 @@ const LinkedInWrapped: React.FC = () => {
                     size="sm"
                     leadIcon={<ArrowLeft size={16} />}
                     onClick={() => setShowEmailForm(false)}
+                    styleOverrides={{
+                      color: '#FFFFFF',
+                    }}
                   />
                 </div>
               </>
@@ -441,7 +491,7 @@ const LinkedInWrapped: React.FC = () => {
           }}>
             <p style={{
               ...textStyles.sm.normal,
-              color: 'rgba(255,255,255,0.78)',
+              color: '#FFFFFF',
               margin: 0,
             }}>
               Já tem uma conta?{' '}
@@ -450,6 +500,9 @@ const LinkedInWrapped: React.FC = () => {
                 style="primary"
                 size="sm"
                 onClick={() => navigate('/signin?redirect=/my-wrapped')}
+                styleOverrides={{
+                  color: '#FFFFFF',
+                }}
               />
             </p>
           </div>
