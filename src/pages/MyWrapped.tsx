@@ -715,7 +715,12 @@ const MyWrapped: React.FC = () => {
           isOpen={isExportModalOpen}
           onClose={() => setIsExportModalOpen(false)}
           wrappedData={wrappedData}
-          userName={profile?.display_name || user?.email || 'User'}
+          userName={
+            leadFormName?.trim() ||
+            (profile as any)?.display_name ||
+            user?.email ||
+            'User'
+          }
           userImage={wrappedData.profileImage} 
         />
       )}
