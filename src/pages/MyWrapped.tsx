@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/services/theme-context';
 import { useAuth } from '@/hooks/api/useAuth';
@@ -47,7 +47,7 @@ const MyWrapped: React.FC = () => {
     (colors as any)?.bg?.state?.primary;
 
   // Forçar tema escuro nesta página e restaurar preferência ao sair
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (themePreference !== 'dark') {
       setTheme('dark');
     }
@@ -716,6 +716,8 @@ const MyWrapped: React.FC = () => {
           onClose={() => setIsExportModalOpen(false)}
           wrappedData={wrappedData}
           userName={
+            (wrappedData as any)?.profileName ||
+            (wrappedData as any)?.linkedinName ||
             leadFormName?.trim() ||
             (profile as any)?.display_name ||
             user?.email ||

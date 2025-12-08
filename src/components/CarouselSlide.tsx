@@ -5,7 +5,6 @@ import { Heart, MessageCircle, Share2, Calendar, Award, TrendingUp, Hash } from 
 import capaSvgRaw from '@/assets/capa.svg?raw';
 import paceSvgRaw from '@/assets/pace.svg?raw';
 import reacoesSvgRaw from '@/assets/reacoes.svg?raw';
-import formatosSvgRaw from '@/assets/formatos.svg?raw';
 import distanciaSvgRaw from '@/assets/distancia.svg?raw';
 import podioSvgRaw from '@/assets/podio.svg?raw';
 import analiseSvgRaw from '@/assets/analise.svg?raw';
@@ -19,7 +18,7 @@ export type SlideType =
   | 'intro'
   | 'pace'
   | 'reactions'
-  | 'formats'
+  | 'timeline'
   | 'distance'
   | 'podium'
   | 'analysis'
@@ -85,8 +84,8 @@ export const CarouselSlide: React.FC<CarouselSlideProps> = ({ type, data, index,
       case 'reactions':
         return <ReactionsSlide data={data} />;
 
-      case 'formats':
-        return <FormatsSlide data={data} />;
+      case 'timeline':
+        return <TimelineSlide data={data} />;
 
       case 'distance':
         return <DistanceSlide data={data} />;
@@ -111,7 +110,7 @@ export const CarouselSlide: React.FC<CarouselSlideProps> = ({ type, data, index,
     type === 'pace' ||
     type === 'reactions' ||
     type === 'distance' ||
-    type === 'formats' ||
+    type === 'timeline' ||
     type === 'podium' ||
     type === 'analysis' ||
     type === 'contracapa'
@@ -252,7 +251,12 @@ const IntroSlide: React.FC<{ data: any; userName?: string }> = ({ data, userName
   // Calculate and format values
   const processedSvg = useMemo(() => {
     // Calculate values from data
-    const displayName = userName || 'Usuário';
+    const displayName =
+      data?.profileName ||
+      data?.userName ||
+      data?.linkedinName ||
+      userName ||
+      'Usuário';
     const totalPosts = (data?.totalPosts || 0).toLocaleString('pt-BR');
     const totalReactions = (
       (data?.engagementStats?.totalLikes || 0) + 
@@ -812,142 +816,81 @@ const ReactionsSlide: React.FC<{ data: any }> = ({ data }) => {
   );
 };
 
-// Formats Slide Component - shows breakdown of content types (text, image, video, document)
-const FormatsSlide: React.FC<{ data: any }> = ({ data }) => {
+const TimelineSlide: React.FC<{ data: any }> = ({ data }) => {
   const processedSvg = useMemo(() => {
-    // Calculate content type breakdown from posts
-    const posts = data?.posts || [];
-    
-    // Initialize counters for each content type
-    const contentTypes = {
-      text: { posts: 0, comments: 0, reactions: 0 },
-      image: { posts: 0, comments: 0, reactions: 0 },
-      video: { posts: 0, comments: 0, reactions: 0 },
-      document: { posts: 0, comments: 0, reactions: 0 },
-    };
+    const monthsOrder = [
+      'janeiro',
+      'fevereiro',
+      'março',
+      'abril',
+      'maio',
+      'junho',
+      'julho',
+      'agosto',
+      'setembro',
+      'outubro',
+      'novembro',
+      'dezembro',
+    ];
 
-    // Analyze each post to determine content type
-    posts.forEach((post: any) => {
-      const engagement = post.engagement || {};
-      const likes = engagement.likes || 0;
-      const comments = engagement.comments || 0;
-      
-      // Determine content type based on post structure
-      // LinkedIn posts can have different types indicated by presence of media
-      let contentType: 'text' | 'image' | 'video' | 'document' = 'text';
-      
-      // Check if post has media indicators
-      if (post.media) {
-        if (post.media.type === 'video' || post.media.type === 'VIDEO') {
-          contentType = 'video';
-        } else if (post.media.type === 'image' || post.media.type === 'IMAGE') {
-          contentType = 'image';
-        } else if (post.media.type === 'document' || post.media.type === 'DOCUMENT') {
-          contentType = 'document';
-        }
-      } else if (post.hasImage || post.imageUrl) {
-        contentType = 'image';
-      } else if (post.hasVideo || post.videoUrl) {
-        contentType = 'video';
-      } else if (post.hasDocument || post.documentUrl) {
-        contentType = 'document';
-      }
-      
-      contentTypes[contentType].posts += 1;
-      contentTypes[contentType].comments += comments;
-      contentTypes[contentType].reactions += likes;
+    const monthsLabel = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    const monthlyBreakdown = Array.isArray(data?.yearInReview?.monthlyBreakdown)
+      ? data.yearInReview.monthlyBreakdown
+      : [];
+
+    const postsByMonth: Record<string, number> = {};
+    monthlyBreakdown.forEach((item: any) => {
+      const key = (item?.month || '').toString().toLowerCase();
+      postsByMonth[key] = item?.posts ?? 0;
     });
 
-    // If all posts are categorized as text (no media info available),
-    // we'll show some reasonable distribution based on typical LinkedIn patterns
-    // This is a fallback for when the scraper doesn't provide media type info
-    const totalPosts = posts.length;
-    if (totalPosts > 0 && contentTypes.text.posts === totalPosts) {
-      // Distribute based on typical LinkedIn patterns: ~70% text, ~20% image, ~5% video, ~5% document
-      const textCount = Math.ceil(totalPosts * 0.7);
-      const imageCount = Math.ceil(totalPosts * 0.2);
-      const videoCount = Math.ceil(totalPosts * 0.05);
-      const documentCount = totalPosts - textCount - imageCount - videoCount;
-      
-      // Calculate engagement proportionally
-      const totalLikes = data?.engagementStats?.totalLikes || 0;
-      const totalComments = data?.engagementStats?.totalComments || 0;
-      
-      contentTypes.text.posts = textCount;
-      contentTypes.text.comments = Math.round(totalComments * 0.6);
-      contentTypes.text.reactions = Math.round(totalLikes * 0.6);
-      
-      contentTypes.image.posts = imageCount > 0 ? imageCount : 0;
-      contentTypes.image.comments = Math.round(totalComments * 0.25);
-      contentTypes.image.reactions = Math.round(totalLikes * 0.25);
-      
-      contentTypes.video.posts = videoCount > 0 ? videoCount : 0;
-      contentTypes.video.comments = Math.round(totalComments * 0.1);
-      contentTypes.video.reactions = Math.round(totalLikes * 0.1);
-      
-      contentTypes.document.posts = documentCount > 0 ? documentCount : 0;
-      contentTypes.document.comments = Math.round(totalComments * 0.05);
-      contentTypes.document.reactions = Math.round(totalLikes * 0.05);
-    }
+    const monthData = monthsOrder.map((key, index) => {
+      const posts = postsByMonth[key] ?? 0;
+      return { key, label: monthsLabel[index], posts };
+    });
 
-    // Calculate bar widths proportionally (max width is 828px for full bar)
-    const maxBarWidth = 828;
-    const maxPosts = Math.max(
-      contentTypes.text.posts,
-      contentTypes.image.posts,
-      contentTypes.video.posts,
-      contentTypes.document.posts,
-      1 // Prevent division by zero
-    );
-    
-    const textBarWidth = Math.max(10, Math.round((contentTypes.text.posts / maxPosts) * maxBarWidth));
-    const imageBarWidth = Math.max(10, Math.round((contentTypes.image.posts / maxPosts) * maxBarWidth));
-    const videoBarWidth = Math.max(10, Math.round((contentTypes.video.posts / maxPosts) * maxBarWidth));
-    const documentBarWidth = Math.max(10, Math.round((contentTypes.document.posts / maxPosts) * maxBarWidth));
+    const maxPosts = Math.max(...monthData.map((m) => m.posts), 0);
+    const maxBarHeight = 663; // aligns with template tallest bar
+    const baselineY = 1162;
+    const barWidth = 59.3333;
+    const barStep = 75.3333; // distance between bar starts
+    const startX = 96;
+    const minBarHeight = 12; // keep visible even with 0 posts as requested
 
-    // Format numbers
-    const formatNumber = (num: number): string => {
-      if (num >= 1000) {
-        return new Intl.NumberFormat('pt-BR').format(num);
-      }
-      return num.toString();
-    };
+    const barsSvg = monthData
+      .map((month, idx) => {
+        const scaled =
+          maxPosts > 0 ? Math.round((month.posts / maxPosts) * maxBarHeight) : minBarHeight;
+        const height = Math.max(minBarHeight, scaled);
+        const y = baselineY - height;
+        const numberY = Math.max(220, y - 24); // prevent going off-canvas
+        const x = startX + idx * barStep;
+        const value = (month.posts || 0).toLocaleString('pt-BR');
 
-    // Replace placeholders
-    let svg = formatosSvgRaw;
-    
-    // Replace bar widths
-    svg = svg.replace('{{TEXT_BAR_WIDTH}}', textBarWidth.toString());
-    svg = svg.replace('{{IMAGE_BAR_WIDTH}}', imageBarWidth.toString());
-    svg = svg.replace('{{VIDEO_BAR_WIDTH}}', videoBarWidth.toString());
-    svg = svg.replace('{{DOCUMENT_BAR_WIDTH}}', documentBarWidth.toString());
-    
-    // Replace text stats
-    svg = svg.replace('{{TEXT_POSTS}}', formatNumber(contentTypes.text.posts));
-    svg = svg.replace('{{TEXT_COMMENTS}}', formatNumber(contentTypes.text.comments));
-    svg = svg.replace('{{TEXT_REACTIONS}}', formatNumber(contentTypes.text.reactions));
-    
-    // Replace image stats
-    svg = svg.replace('{{IMAGE_POSTS}}', formatNumber(contentTypes.image.posts));
-    svg = svg.replace('{{IMAGE_COMMENTS}}', formatNumber(contentTypes.image.comments));
-    svg = svg.replace('{{IMAGE_REACTIONS}}', formatNumber(contentTypes.image.reactions));
-    
-    // Replace video stats
-    svg = svg.replace('{{VIDEO_POSTS}}', formatNumber(contentTypes.video.posts));
-    svg = svg.replace('{{VIDEO_COMMENTS}}', formatNumber(contentTypes.video.comments));
-    svg = svg.replace('{{VIDEO_REACTIONS}}', formatNumber(contentTypes.video.reactions));
-    
-    // Replace document stats
-    svg = svg.replace('{{DOCUMENT_POSTS}}', formatNumber(contentTypes.document.posts));
-    svg = svg.replace('{{DOCUMENT_COMMENTS}}', formatNumber(contentTypes.document.comments));
-    svg = svg.replace('{{DOCUMENT_REACTIONS}}', formatNumber(contentTypes.document.reactions));
-    
+        return `
+          <text transform="translate(${x} ${numberY})" fill="white" style="white-space: pre" font-family="Geist" font-size="20" font-weight="bold" letter-spacing="-2px"><tspan x="17.3464" y="15.1">${value}</tspan></text>
+          <rect x="${x}" y="${y}" width="${barWidth}" height="${height}" fill="#53D2BE"/>
+          <text transform="translate(${x} 1194)" fill="white" style="white-space: pre" font-family="Geist" font-size="20" font-weight="bold" letter-spacing="-2px"><tspan x="12" y="15.1">${month.label}</tspan></text>
+        `;
+      })
+      .join('');
+
+    const svg = `
+      <svg width="1080" height="1350" viewBox="0 0 1080 1350" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="1080" height="1350" fill="#18181B"/>
+        <text fill="white" style="white-space: pre" font-family="Geist" font-size="70" font-weight="bold" letter-spacing="-2px"><tspan x="96" y="174.829">Sua evolução</tspan><tspan x="96" y="230.829">durante o ano</tspan></text>
+        <text fill="white" fill-opacity="0.7" style="white-space: pre" font-family="Geist" font-size="24" letter-spacing="0px"><tspan x="96" y="298.02">Quantos posts foram feitos por mês</tspan></text>
+        ${barsSvg}
+        <text fill="white" style="white-space: pre" font-family="Geist" font-size="24" font-weight="300" letter-spacing="0px"><tspan x="753" y="1285.1">pacelane.ai/wrapped</tspan></text>
+      </svg>
+    `;
+
     return svg;
   }, [data]);
 
   return (
-    <div 
-      style={{ 
+    <div
+      style={{
         position: 'relative',
         width: '1080px',
         height: '1350px',

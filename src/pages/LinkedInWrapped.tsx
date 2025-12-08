@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { z } from 'zod';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/services/theme-context';
@@ -34,13 +34,24 @@ type LinkedInWrappedSignUpFormData = z.infer<typeof linkedInSignUpSchema>;
 
 
 const LinkedInWrapped: React.FC = () => {
-  const { colors } = useTheme();
+  const { colors, setTheme, themePreference } = useTheme();
+  const previousThemeRef = useRef(themePreference);
   const navigate = useNavigate();
   const { user, profile, signUp, signInWithGoogle, signOut } = useAuth();
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [isProcessingAuth, setIsProcessingAuth] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
+
+  // Force dark theme to avoid flicker on mount/unmount
+  useLayoutEffect(() => {
+    if (themePreference !== 'dark') {
+      setTheme('dark');
+    }
+    return () => {
+      setTheme(previousThemeRef.current || 'system');
+    };
+  }, [setTheme, themePreference]);
 
   // Handle logout
   const handleLogout = async () => {
@@ -255,11 +266,11 @@ const LinkedInWrapped: React.FC = () => {
 
   const pageStyles: React.CSSProperties = {
     minHeight: '100vh',
-    backgroundColor: 'var(--bg-default, #18181B)',
+    backgroundColor: colors.bg.muted,
     display: 'flex',
     flexDirection: 'column',
     fontFamily: geistFont,
-    color: '#FFFFFF',
+    color: colors.text.default,
   };
 
   const contentWrapperStyles: React.CSSProperties = {
