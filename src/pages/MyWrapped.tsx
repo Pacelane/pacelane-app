@@ -599,28 +599,10 @@ const MyWrapped: React.FC = () => {
     );
   };
 
-  // Simple label to show which branch is rendering (helps on mobile with no console)
-  const renderStateLabel = () => {
-    const branch = isProcessing
-      ? 'processing'
-      : isLoadingLead
-        ? 'loading-lead'
-        : hasScrapedData && wrappedData
-          ? 'wrapped-ready'
-          : hasScrapedData && !wrappedData
-            ? 'wrapped-pending'
-            : 'form';
-    return (
-      <div style={{ marginBottom: spacing.spacing[12], color: safeTextSubtle, ...textStyles.xs.normal }}>
-        Estado: {branch} | leadId: {leadId || 'none'}
-      </div>
-    );
-  };
 
   return (
     <div style={pageStyles}>
       <div style={contentWrapperStyles}>
-        {renderStateLabel()}
         {/* Logo and Logout Button */}
         <div style={{ 
           marginBottom: spacing.spacing[32], 
