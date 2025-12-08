@@ -208,6 +208,10 @@ async function handleCallback(req: Request, supabase: any, requestBody?: any) {
     throw new Error('RECALL_API_KEY environment variable not set');
   }
 
+  // Get Recall.ai region (default to us-west-2)
+  const recallRegion = Deno.env.get('RECALL_REGION') || 'us-west-2';
+  const recallBaseUrl = `https://${recallRegion}.recall.ai`;
+
   const recallCalendarData = {
     oauth_client_id: clientId,
     oauth_client_secret: clientSecret,
@@ -216,7 +220,7 @@ async function handleCallback(req: Request, supabase: any, requestBody?: any) {
     platform: 'google_calendar'
   };
 
-  const recallResponse = await fetch('https://us-east-1.recall.ai/api/v2/calendars/', {
+  const recallResponse = await fetch(`${recallBaseUrl}/api/v2/calendars/`, {
     method: 'POST',
     headers: {
       'Authorization': `Token ${recallApiKey}`,
@@ -298,12 +302,16 @@ async function handleSyncEvents(req: Request, supabase: any) {
     throw new Error('RECALL_API_KEY environment variable not set');
   }
 
+  // Get Recall.ai region (default to us-west-2)
+  const recallRegion = Deno.env.get('RECALL_REGION') || 'us-west-2';
+  const recallBaseUrl = `https://${recallRegion}.recall.ai`;
+
   let totalEvents = 0;
 
   for (const userCalendar of calendars) {
     try {
       // Get events from Recall.ai
-      const eventsResponse = await fetch(`https://us-east-1.recall.ai/api/v2/calendars/${userCalendar.recall_calendar_id}/events/`, {
+      const eventsResponse = await fetch(`${recallBaseUrl}/api/v2/calendars/${userCalendar.recall_calendar_id}/events/`, {
         headers: {
           'Authorization': `Token ${recallApiKey}`,
           'Content-Type': 'application/json',
@@ -539,6 +547,10 @@ async function handleCreateCalendar(req: Request, supabase: any, requestBody?: a
     throw new Error('RECALL_API_KEY environment variable not set');
   }
 
+  // Get Recall.ai region (default to us-west-2)
+  const recallRegion = Deno.env.get('RECALL_REGION') || 'us-west-2';
+  const recallBaseUrl = `https://${recallRegion}.recall.ai`;
+
   const recallCalendarData = {
     oauth_client_id,
     oauth_client_secret,
@@ -547,7 +559,7 @@ async function handleCreateCalendar(req: Request, supabase: any, requestBody?: a
     platform
   };
 
-  const recallResponse = await fetch('https://us-east-1.recall.ai/api/v2/calendars/', {
+  const recallResponse = await fetch(`${recallBaseUrl}/api/v2/calendars/`, {
     method: 'POST',
     headers: {
       'Authorization': `Token ${recallApiKey}`,

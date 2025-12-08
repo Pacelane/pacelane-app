@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/design-system/components/Toast';
 import { useAuth } from '@/hooks/api/useAuth';
 import { useForm } from 'react-hook-form';
@@ -33,10 +33,15 @@ const SignIn = () => {
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [isProcessingAuth, setIsProcessingAuth] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, profile, signIn, signUp, signInWithGoogle } = useAuth();
   const { colors } = useTheme();
   const { toast } = useToast();
   const isMobile = useIsMobile();
+
+  // Get redirect parameter from URL
+  const searchParams = new URLSearchParams(location.search);
+  const redirectTo = searchParams.get('redirect') || null;
 
   // Use a single form instance with dynamic schema
   const form = useForm<SignInFormData | SignUpFormData>({
@@ -56,17 +61,26 @@ const SignIn = () => {
       console.log('SignIn: User and profile loaded', { 
         userId: user.id, 
         isOnboarded: (profile as any).is_onboarded,
-        profile: profile 
+        profile: profile,
+        redirectTo: redirectTo
       });
       
       // Reset processing state
       setIsProcessingAuth(false);
       
-      // Always redirect to onboarding welcome page - it will handle the onboarding check
+      // If there's a redirect parameter (e.g., from LinkedIn Wrapped), use it
+      if (redirectTo) {
+        console.log('SignIn: Redirecting to custom destination:', redirectTo);
+        navigate(redirectTo);
+        return;
+      }
+      
+      // Otherwise, follow normal flow - redirect to onboarding welcome page
+      // It will handle the onboarding check and redirect accordingly
       console.log('SignIn: Redirecting to onboarding welcome page for onboarding status check');
       navigate('/onboarding/welcome');
     }
-  }, [user, profile, navigate]);
+  }, [user, profile, navigate, redirectTo]);
 
   // Update form validation when switching modes
   useEffect(() => {
@@ -138,9 +152,14 @@ const SignIn = () => {
         
         toast.success('Account created successfully!');
         
-        // Navigate to onboarding flow
-        console.log('SignIn: New user created, redirecting to onboarding');
-        navigate('/onboarding/welcome');
+        // Navigate based on redirect parameter or default to onboarding
+        if (redirectTo) {
+          console.log('SignIn: New user created, redirecting to:', redirectTo);
+          navigate(redirectTo);
+        } else {
+          console.log('SignIn: New user created, redirecting to onboarding');
+          navigate('/onboarding/welcome');
+        }
         
       } else {
         // Show loading toast for sign in
@@ -214,16 +233,25 @@ const SignIn = () => {
       toast.info('Redirecting to Google...');
       setIsProcessingAuth(true);
       
-      const result = await signInWithGoogle();
+      // Pass redirect parameter to Google OAuth if present
+      const redirectUrl = redirectTo 
+        ? `${window.location.origin}${redirectTo}`
+        : `${window.location.origin}/onboarding/welcome`;
       
-      if (result.error) {
-        let errorMessage = result.error;
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: redirectUrl }
+      });
+      
+      if (error) {
+        let errorMessage = error.message || 'Falha ao fazer login com Google';
         
-        if (result.error.includes('popup_closed_by_user')) {
+        if (errorMessage.includes('popup_closed_by_user')) {
           errorMessage = 'Google sign-in was cancelled. Please try again.';
-        } else if (result.error.includes('access_denied')) {
+        } else if (errorMessage.includes('access_denied')) {
           errorMessage = 'Google sign-in access denied. Please try again.';
-        } else if (result.error.includes('network')) {
+        } else if (errorMessage.includes('network')) {
           errorMessage = 'Network error. Please check your connection and try again.';
         }
         
@@ -232,9 +260,8 @@ const SignIn = () => {
         return;
       }
       
-      // On success, let the useEffect handle the redirect based on onboarding status
-      // The useEffect will check profile.is_onboarded and redirect accordingly
-      console.log('SignIn: Google sign-in successful, waiting for profile to load for redirect decision');
+      // The redirect will happen automatically via OAuth flow
+      console.log('SignIn: Google sign-in initiated, redirecting...');
 
     } catch (error: any) {
       console.error('Google sign-in error:', error);

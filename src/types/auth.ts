@@ -28,6 +28,7 @@ export interface Profile {
   whatsapp_number?: string;           // WhatsApp number for notifications
   content_guides?: any;               // JSON data
   pacing_preferences?: any;           // JSON data
+  signup_source?: string;             // Source of signup: 'organic', 'linkedin_wrapped', 'linkedin_analyzer'
 }
 
 // What we get when a user signs in

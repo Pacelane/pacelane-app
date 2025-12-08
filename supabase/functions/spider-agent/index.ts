@@ -429,7 +429,7 @@ After reading the skill, generate the post content directly based on the WhatsAp
           'anthropic-beta': 'code-execution-2025-08-25,skills-2025-10-02,files-api-2025-04-14',
         },
         body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
+          model: 'claude-opus-4-5-20251101',
           max_tokens: 2000,
           system: systemPrompt,
           messages: [
@@ -509,7 +509,7 @@ After reading the skill, generate the post content directly based on the WhatsAp
           'anthropic-beta': 'code-execution-2025-08-25,skills-2025-10-02,files-api-2025-04-14',
         },
         body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
+          model: 'claude-opus-4-5-20251101',
           max_tokens: 2000,
           system: systemPrompt,
           messages: [
