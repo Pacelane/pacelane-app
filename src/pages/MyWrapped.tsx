@@ -7,7 +7,7 @@ import { spacing } from '@/design-system/tokens/spacing';
 import { cornerRadius } from '@/design-system/tokens/corner-radius';
 import { typography } from '@/design-system/tokens/typography';
 import { textStyles } from '@/design-system/styles/typography/typography-styles';
-import { getShadow } from '@/design-system/tokens/shadows';
+import { getShadow, shadows } from '@/design-system/tokens/shadows';
 import { getResponsivePadding } from '@/design-system/utils/responsive';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
@@ -26,6 +26,8 @@ const MyWrapped: React.FC = () => {
   const { user, profile, signOut } = useAuth();
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const showDebug = searchParams?.get('debug') === '1';
 
   // State
   const [isProcessing, setIsProcessing] = useState(false);
@@ -41,10 +43,19 @@ const MyWrapped: React.FC = () => {
   const [leadFormError, setLeadFormError] = useState('');
   const [isCreatingLead, setIsCreatingLead] = useState(false);
 
+  const safeBgDefault = colors?.bg?.default || '#18181B';
+  const safeBgMuted = colors?.bg?.muted || safeBgDefault;
+  const safeBgCard = colors?.bg?.card?.default || '#22232a';
+  const safeBorderDefault = colors?.border?.default || 'rgba(255,255,255,0.12)';
+  const safeTextDefault = colors?.text?.default || '#FFFFFF';
+  const safeTextSubtle = colors?.text?.subtle || 'rgba(255,255,255,0.78)';
+  const safeShadowCard = colors ? getShadow('regular.card', colors, { withBorder: true }) : shadows.regular.card;
+
   const successColor =
     (colors as any)?.bg?.state?.success ||
     (colors as any)?.text?.success ||
-    (colors as any)?.bg?.state?.primary;
+    (colors as any)?.bg?.state?.primary ||
+    safeBgDefault;
 
   // Forçar tema escuro nesta página e restaurar preferência ao sair
   useLayoutEffect(() => {
@@ -69,6 +80,7 @@ const MyWrapped: React.FC = () => {
   const fetchExistingWrapped = useCallback(async () => {
     if (!user) {
       console.log('MyWrapped: No user, skipping check');
+      setIsLoadingLead(false);
       return;
     }
 
@@ -431,10 +443,10 @@ const MyWrapped: React.FC = () => {
 
   const pageStyles: React.CSSProperties = {
     minHeight: '100vh',
-    backgroundColor: 'var(--bg-default, #18181B)',
+    backgroundColor: safeBgDefault,
     display: 'flex',
     flexDirection: 'column',
-    color: '#FFFFFF',
+    color: safeTextDefault,
     fontFamily: geistFont,
   };
 
@@ -447,17 +459,17 @@ const MyWrapped: React.FC = () => {
     paddingLeft: spacing.spacing[24],
     paddingRight: spacing.spacing[24],
     boxSizing: 'border-box',
-    color: '#FFFFFF',
+    color: safeTextDefault,
   };
 
   const cardStyles: React.CSSProperties = {
-    backgroundColor: '#22232a',
-    border: '1px solid rgba(255,255,255,0.12)',
+    backgroundColor: safeBgCard,
+    border: `1px solid ${safeBorderDefault}`,
     borderRadius: cornerRadius.borderRadius.lg,
-    boxShadow: getShadow('regular.card', colors, { withBorder: true }),
+    boxShadow: safeShadowCard,
     padding: getResponsivePadding(isMobile, 'card'),
     marginBottom: spacing.spacing[24],
-    color: '#FFFFFF',
+    color: safeTextDefault,
     fontFamily: geistFont,
   };
 
@@ -467,20 +479,20 @@ const MyWrapped: React.FC = () => {
     fontWeight: typography.desktop.weight.semibold,
     lineHeight: typography.desktop.lineHeight.leading7,
     letterSpacing: typography.desktop.letterSpacing.normal,
-    color: '#FFFFFF',
+    color: safeTextDefault,
     margin: 0,
   };
 
   const subtitleStyle: React.CSSProperties = {
     ...textStyles.md.normal,
-    color: 'rgba(255,255,255,0.78)',
+    color: safeTextSubtle,
     margin: 0,
     marginTop: spacing.spacing[8],
   };
 
   const listStyle: React.CSSProperties = {
     ...textStyles.md.normal,
-    color: 'rgba(255,255,255,0.82)',
+    color: safeTextDefault,
     margin: 0,
     paddingLeft: spacing.spacing[16],
     display: 'flex',
@@ -496,7 +508,7 @@ const MyWrapped: React.FC = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: colors.bg.muted,
+        backgroundColor: safeBgMuted,
       }}>
         <SubtleLoadingSpinner 
           title="Carregando seu Wrapped..."
@@ -514,7 +526,7 @@ const MyWrapped: React.FC = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: colors.bg.muted,
+        backgroundColor: safeBgMuted,
       }}>
         <SubtleLoadingSpinner 
           title="Gerando seu LinkedIn Wrapped..."
@@ -541,7 +553,7 @@ const MyWrapped: React.FC = () => {
         </div>
 
         <div style={{ ...cardStyles, padding: spacing.spacing[24], display: 'flex', flexDirection: 'column', gap: spacing.spacing[16] }}>
-          <h3 style={{ ...textStyles.lg.semibold, color: '#FFFFFF', margin: 0 }}>
+          <h3 style={{ ...textStyles.lg.semibold, color: safeTextDefault, margin: 0 }}>
             Como compartilhar
           </h3>
           <div style={listStyle}>
@@ -553,7 +565,7 @@ const MyWrapped: React.FC = () => {
             <div style={{
               padding: spacing.spacing[12],
               backgroundColor: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.12)',
+              border: `1px solid ${safeBorderDefault}`,
               borderRadius: cornerRadius.borderRadius.md,
             }}>
               <p style={{ ...textStyles.sm.medium, color: '#FFC2C2', margin: 0 }}>
@@ -569,7 +581,7 @@ const MyWrapped: React.FC = () => {
               onClick={() => setIsExportModalOpen(true)}
               styleOverrides={{
                 backgroundColor: successColor,
-                color: colors.text.white?.default || '#FFFFFF',
+                color: colors?.text?.white?.default || safeTextDefault,
                 borderColor: successColor,
               }}
             />
@@ -608,7 +620,7 @@ const MyWrapped: React.FC = () => {
                 size="sm"
                 onClick={handleLogout}
                 styleOverrides={{
-                  color: colors.text.white?.default || '#FFFFFF',
+                  color: colors?.text?.white?.default || safeTextDefault,
                 }}
               />
             </div>
@@ -662,7 +674,7 @@ const MyWrapped: React.FC = () => {
                   <div style={{
                     padding: spacing.spacing[12],
                     backgroundColor: 'rgba(255,255,255,0.06)',
-                    border: '1px solid rgba(255,255,255,0.12)',
+                    border: `1px solid ${safeBorderDefault}`,
                     borderRadius: cornerRadius.borderRadius.md,
                   }}>
                     <p style={{ ...textStyles.sm.medium, color: '#FFC2C2', margin: 0 }}>
@@ -686,7 +698,7 @@ const MyWrapped: React.FC = () => {
                     size="sm"
                     onClick={() => navigate('/linkedin-wrapped')}
                     styleOverrides={{
-                      color: colors.text.white?.default || '#FFFFFF',
+                      color: colors?.text?.white?.default || safeTextDefault,
                     }}
                   />
                 </div>
@@ -702,13 +714,42 @@ const MyWrapped: React.FC = () => {
         }}>
           <p style={{
             ...textStyles.xs.normal,
-            color: '#FFFFFF',
+            color: safeTextDefault,
             fontFamily: geistFont,
           }}>
             Esta é uma ferramenta gratuita do Pacelane. Seus dados são privados e armazenados com segurança.
           </p>
         </div>
       </div>
+
+      {showDebug && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: spacing.spacing[16],
+            right: spacing.spacing[16],
+            padding: spacing.spacing[12],
+            borderRadius: cornerRadius.borderRadius.md,
+            border: `1px solid ${safeBorderDefault}`,
+            backgroundColor: safeBgCard,
+            color: safeTextDefault,
+            boxShadow: safeShadowCard,
+            maxWidth: 280,
+            zIndex: 10,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: spacing.spacing[4],
+          }}
+        >
+          <span style={{ ...textStyles.xs.medium, color: safeTextDefault }}>Debug (mobile)</span>
+          <span style={{ ...textStyles.xs.normal, color: safeTextSubtle }}>hasUser: {user ? 'yes' : 'no'}</span>
+          <span style={{ ...textStyles.xs.normal, color: safeTextSubtle }}>hasProfile: {profile ? 'yes' : 'no'}</span>
+          <span style={{ ...textStyles.xs.normal, color: safeTextSubtle }}>themeReady: {colors?.bg?.default ? 'yes' : 'no'}</span>
+          <span style={{ ...textStyles.xs.normal, color: safeTextSubtle }}>isLoadingLead: {isLoadingLead ? 'yes' : 'no'}</span>
+          <span style={{ ...textStyles.xs.normal, color: safeTextSubtle }}>hasScrapedData: {hasScrapedData ? 'yes' : 'no'}</span>
+          <span style={{ ...textStyles.xs.normal, color: safeTextSubtle }}>isProcessing: {isProcessing ? 'yes' : 'no'}</span>
+        </div>
+      )}
 
       {wrappedData && (
         <PDFExportModal
