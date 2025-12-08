@@ -18,6 +18,7 @@ const WrappedProtectedRoute: React.FC<WrappedProtectedRouteProps> = ({ children 
   const { user, profile, loading } = useAuth();
   const location = useLocation();
   const { colors } = useTheme();
+  const safeBg = colors?.bg?.default || '#18181B';
 
   // Show loading state while checking authentication
   if (loading) {
@@ -27,7 +28,7 @@ const WrappedProtectedRoute: React.FC<WrappedProtectedRouteProps> = ({ children 
         alignItems: 'center',
         justifyContent: 'center',
         height: '100vh',
-        backgroundColor: colors.bg.default,
+        backgroundColor: safeBg,
         padding: spacing.spacing[24],
       }}>
         <SpinningBichaurinho title="Authenticating..." />
@@ -48,7 +49,7 @@ const WrappedProtectedRoute: React.FC<WrappedProtectedRouteProps> = ({ children 
         alignItems: 'center',
         justifyContent: 'center',
         height: '100vh',
-        backgroundColor: colors.bg.default,
+        backgroundColor: safeBg,
         padding: spacing.spacing[24],
       }}>
         <SpinningBichaurinho title="Loading your profile..." />

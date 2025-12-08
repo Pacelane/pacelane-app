@@ -157,9 +157,9 @@ const LinkedInWrapped: React.FC = () => {
         }
       }
       
-      // Navigate to my-wrapped page
-      console.log('LinkedInWrapped: New user created, redirecting to /my-wrapped');
-      navigate('/my-wrapped');
+      // Let auth listener hydrate user/profile, then redirect via effect
+      console.log('LinkedInWrapped: New user created, waiting for auth hydration before redirect');
+      setIsRedirecting(true);
       
     } catch (error: any) {
       console.error('Sign-up error:', error);
