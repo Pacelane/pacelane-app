@@ -71,7 +71,6 @@ const MyWrapped: React.FC = () => {
     const inferredName =
       (profile as any)?.display_name ||
       (user as any)?.user_metadata?.full_name ||
-      user?.email ||
       '';
     setLeadFormName((prev) => prev || inferredName);
   }, [profile, user]);
@@ -151,53 +150,55 @@ const MyWrapped: React.FC = () => {
         if (lead.scraped_data) {
           console.log('MyWrapped: Found scraped_data, processing...');
 
-          let parsedData: any = lead.scraped_data;
-          if (typeof lead.scraped_data === 'string') {
-            try {
+          try {
+            let parsedData: any = lead.scraped_data;
+            if (typeof lead.scraped_data === 'string') {
               parsedData = JSON.parse(lead.scraped_data);
-            } catch (e) {
-              console.error('MyWrapped: Error parsing scraped_data:', e);
-              setHasScrapedData(false);
-              return;
-            }
-          }
-
-          if (parsedData && (parsedData.posts || Object.keys(parsedData).length > 0)) {
-            console.log('MyWrapped: Valid scraped_data found, processing...');
-            setHasScrapedData(true);
-
-            let wrappedDataFromLead: PostsWrappedData;
-
-            if (parsedData.totalPosts !== undefined && parsedData.totalEngagement !== undefined) {
-              wrappedDataFromLead = parsedData as PostsWrappedData;
-            } else if (parsedData.posts && Array.isArray(parsedData.posts)) {
-              wrappedDataFromLead = processPostsToWrappedData(parsedData.posts);
-            } else {
-              wrappedDataFromLead = parsedData as PostsWrappedData;
             }
 
-            if (lead.reactions_data) {
-              let parsedReactions = lead.reactions_data;
-              if (typeof lead.reactions_data === 'string') {
-                try {
-                  parsedReactions = JSON.parse(lead.reactions_data);
-                } catch (e) {
-                  console.error('MyWrapped: Error parsing reactions_data:', e);
-                }
+            if (parsedData && (parsedData.posts || Object.keys(parsedData).length > 0)) {
+              console.log('MyWrapped: Valid scraped_data found, processing...');
+              setHasScrapedData(true);
+
+              let wrappedDataFromLead: PostsWrappedData;
+
+              if (parsedData.totalPosts !== undefined && parsedData.totalEngagement !== undefined) {
+                wrappedDataFromLead = parsedData as PostsWrappedData;
+              } else if (parsedData.posts && Array.isArray(parsedData.posts)) {
+                wrappedDataFromLead = processPostsToWrappedData(parsedData.posts);
+              } else {
+                wrappedDataFromLead = parsedData as PostsWrappedData;
               }
-              (wrappedDataFromLead as any).reactionsData = parsedReactions;
-            }
 
-            setWrappedData(wrappedDataFromLead);
-            console.log('MyWrapped: Wrapped data set:', {
-              hasData: !!wrappedDataFromLead,
-              keys: Object.keys(wrappedDataFromLead || {}),
-              hasTotalEngagement: !!wrappedDataFromLead.totalEngagement,
-              hasTotalPosts: !!wrappedDataFromLead.totalPosts
-            });
-          } else {
-            console.log('MyWrapped: scraped_data is empty or invalid');
+              if (lead.reactions_data) {
+                let parsedReactions = lead.reactions_data;
+                if (typeof lead.reactions_data === 'string') {
+                  try {
+                    parsedReactions = JSON.parse(lead.reactions_data);
+                  } catch (e) {
+                    console.error('MyWrapped: Error parsing reactions_data:', e);
+                  }
+                }
+                (wrappedDataFromLead as any).reactionsData = parsedReactions;
+              }
+
+              setWrappedData(wrappedDataFromLead);
+              console.log('MyWrapped: Wrapped data set:', {
+                hasData: !!wrappedDataFromLead,
+                keys: Object.keys(wrappedDataFromLead || {}),
+                hasTotalEngagement: !!wrappedDataFromLead.totalEngagement,
+                hasTotalPosts: !!wrappedDataFromLead.totalPosts
+              });
+            } else {
+              console.log('MyWrapped: scraped_data is empty or invalid');
+              setHasScrapedData(false);
+              setWrappedData(null);
+            }
+          } catch (e) {
+            console.error('MyWrapped: Error processing scraped_data:', e);
             setHasScrapedData(false);
+            setWrappedData(null);
+            setError('Não conseguimos processar seus dados do Wrapped. Toque em gerar novamente.');
           }
         } else {
           console.log('MyWrapped: No scraped_data found in lead');
@@ -598,9 +599,28 @@ const MyWrapped: React.FC = () => {
     );
   };
 
+  // Simple label to show which branch is rendering (helps on mobile with no console)
+  const renderStateLabel = () => {
+    const branch = isProcessing
+      ? 'processing'
+      : isLoadingLead
+        ? 'loading-lead'
+        : hasScrapedData && wrappedData
+          ? 'wrapped-ready'
+          : hasScrapedData && !wrappedData
+            ? 'wrapped-pending'
+            : 'form';
+    return (
+      <div style={{ marginBottom: spacing.spacing[12], color: safeTextSubtle, ...textStyles.xs.normal }}>
+        Estado: {branch} | leadId: {leadId || 'none'}
+      </div>
+    );
+  };
+
   return (
     <div style={pageStyles}>
       <div style={contentWrapperStyles}>
+        {renderStateLabel()}
         {/* Logo and Logout Button */}
         <div style={{ 
           marginBottom: spacing.spacing[32], 
@@ -630,7 +650,7 @@ const MyWrapped: React.FC = () => {
         {/* Main Card */}
         <div style={cardStyles}>
           {/* Show loading while checking for existing wrapped */}
-          {isLoadingLead || isProcessing ? (
+      {isLoadingLead || isProcessing ? (
             <div style={{
               display: 'flex',
               flexDirection: 'column',
@@ -643,10 +663,30 @@ const MyWrapped: React.FC = () => {
                 title={isProcessing ? "Gerando seu Wrapped..." : "Carregando seu Wrapped..."}
                 size={16}
               />
-            </div>
-          ) : (hasScrapedData && wrappedData) ? (
-            renderWrappedResults()
-          ) : (
+        </div>
+      ) : (hasScrapedData && wrappedData) ? (
+        renderWrappedResults()
+      ) : (hasScrapedData && !wrappedData) ? (
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: spacing.spacing[48],
+          gap: spacing.spacing[12],
+        }}>
+          <SubtleLoadingSpinner 
+            title="Carregando seu Wrapped..."
+            subtitle="Já temos seus dados, estamos preparando a visualização"
+            size={16}
+          />
+          {error && (
+            <p style={{ ...textStyles.xs.medium, color: '#FFC2C2', margin: 0 }}>
+              {error}
+            </p>
+          )}
+        </div>
+      ) : (
             <>
               <h1 style={titleStyle}>Gerar seu LinkedIn Wrapped</h1>
               <p style={subtitleStyle}>
@@ -757,12 +797,11 @@ const MyWrapped: React.FC = () => {
           onClose={() => setIsExportModalOpen(false)}
           wrappedData={wrappedData}
           userName={
+            leadFormName?.trim() ||
             (wrappedData as any)?.profileName ||
             (wrappedData as any)?.linkedinName ||
-            leadFormName?.trim() ||
             (profile as any)?.display_name ||
-            user?.email ||
-            'User'
+            'Usuário'
           }
           userImage={wrappedData.profileImage} 
         />
