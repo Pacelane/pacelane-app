@@ -1,9 +1,13 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { X, Download, Check, Loader2 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { useTheme } from '@/services/theme-context';
 import { CarouselSlide, SlideType } from '@/components/CarouselSlide';
+import Button from '@/design-system/components/Button';
+import { spacing } from '@/design-system/tokens/spacing';
+import { cornerRadius } from '@/design-system/tokens/corner-radius';
+import { textStyles } from '@/design-system/styles/typography/typography-styles';
 
 interface PDFExportModalProps {
   isOpen: boolean;
@@ -33,26 +37,104 @@ export const PDFExportModal: React.FC<PDFExportModalProps> = ({
     'intro',
     'pace',
     'reactions',
-    'formats',
+    'timeline',
     'podium',
     'analysis',
     'distance',
   ]);
   const hiddenContainerRef = useRef<HTMLDivElement>(null);
 
-  if (!isOpen) return null;
+  const previewData = useMemo(() => {
+    const sampleMonthly = [
+      { month: 'janeiro', posts: 6, totalEngagement: 120 },
+      { month: 'fevereiro', posts: 12, totalEngagement: 260 },
+      { month: 'março', posts: 4, totalEngagement: 80 },
+      { month: 'abril', posts: 10, totalEngagement: 210 },
+      { month: 'maio', posts: 7, totalEngagement: 140 },
+      { month: 'junho', posts: 18, totalEngagement: 420 },
+      { month: 'julho', posts: 12, totalEngagement: 260 },
+      { month: 'agosto', posts: 15, totalEngagement: 310 },
+      { month: 'setembro', posts: 5, totalEngagement: 90 },
+      { month: 'outubro', posts: 14, totalEngagement: 280 },
+      { month: 'novembro', posts: 8, totalEngagement: 150 },
+      { month: 'dezembro', posts: 2, totalEngagement: 40 },
+    ];
+
+    return {
+      totalPosts: 88,
+      totalEngagement: 2200,
+      engagementStats: {
+        totalLikes: 1500,
+        totalComments: 500,
+        totalShares: 200,
+      },
+      reactionsData: {
+        reactionTypes: {
+          like: 900,
+          celebrate: 180,
+          support: 90,
+          love: 220,
+          insight: 180,
+          funny: 30,
+        },
+      },
+      postingFrequency: {
+        postsPerMonth: 7.3,
+        mostActiveMonth: 'junho',
+        leastActiveMonth: 'dezembro',
+      },
+      contentInsights: {
+        averagePostLength: 1200,
+        mostUsedHashtags: ['#growth', '#startup', '#product', '#ai'],
+      },
+      topPosts: [
+        {
+          content: 'Como crescemos 3x em 6 meses usando conteúdo.',
+          engagement: { likes: 320, comments: 90, shares: 40 },
+        },
+        {
+          content: 'Template de planejamento semanal para times de produto.',
+          engagement: { likes: 260, comments: 70, shares: 20 },
+        },
+        {
+          content: 'Aprendizados de 30 dias publicando diariamente.',
+          engagement: { likes: 180, comments: 50, shares: 10 },
+        },
+      ],
+      yearInReview: {
+        year: new Date().getFullYear(),
+        monthlyBreakdown: sampleMonthly,
+      },
+      posts: [
+        {
+          content: 'Como crescemos 3x em 6 meses usando conteúdo.',
+          engagement: { likes: 320, comments: 90, shares: 40 },
+          publishedAt: `${new Date().getFullYear()}-06-15`,
+        },
+        {
+          content: 'Template de planejamento semanal para times de produto.',
+          engagement: { likes: 260, comments: 70, shares: 20 },
+          publishedAt: `${new Date().getFullYear()}-08-02`,
+        },
+      ],
+      totalWords: 82000,
+      topicClassification: {
+        categoryName: 'Conteúdo Estratégico',
+        summary: 'Você foca em lições práticas de crescimento e liderança de produto.',
+      },
+    };
+  }, []);
 
   // Define available selectable slides (contracapa é fixa e não aparece aqui)
   const slides: SlideConfig[] = [
     { id: 'intro', type: 'intro', label: 'Capa', data: wrappedData },
     { id: 'pace', type: 'pace', label: 'Seu Pace', data: wrappedData },
     { id: 'reactions', type: 'reactions', label: 'Reações', data: wrappedData },
-    // Formats slide - shows content type breakdown
-    { 
-      id: 'formats', 
-      type: 'formats' as SlideType, 
-      label: 'Formatos', 
-      data: wrappedData 
+    {
+      id: 'timeline',
+      type: 'timeline' as SlideType,
+      label: 'Linha do Tempo',
+      data: wrappedData
     },
     {
       id: 'podium',
@@ -73,6 +155,116 @@ export const PDFExportModal: React.FC<PDFExportModalProps> = ({
       data: wrappedData
     },
   ];
+
+  if (!isOpen) return null;
+
+  const SlidePreview: React.FC<{
+    slide: SlideConfig;
+    isSelected: boolean;
+    onToggle: () => void;
+    previewIndex: number;
+  }> = ({ slide, isSelected, onToggle, previewIndex }) => {
+    const cardRef = useRef<HTMLDivElement>(null);
+    const [scale, setScale] = useState(0.2);
+
+    useEffect(() => {
+      const updateScale = () => {
+        const el = cardRef.current;
+        if (!el) return;
+        const { clientWidth, clientHeight } = el;
+        const innerW = 1080;
+        const innerH = 1350;
+        const nextScale = Math.min(clientWidth / innerW, clientHeight / innerH);
+        if (Number.isFinite(nextScale) && nextScale > 0) {
+          setScale(nextScale);
+        }
+      };
+
+      updateScale();
+
+      const resizeObserver = typeof ResizeObserver !== 'undefined'
+        ? new ResizeObserver(updateScale)
+        : null;
+
+      if (resizeObserver && cardRef.current) {
+        resizeObserver.observe(cardRef.current);
+      } else {
+        window.addEventListener('resize', updateScale);
+      }
+
+      return () => {
+        if (resizeObserver && cardRef.current) {
+          resizeObserver.unobserve(cardRef.current);
+          resizeObserver.disconnect();
+        } else {
+          window.removeEventListener('resize', updateScale);
+        }
+      };
+    }, []);
+
+    return (
+      <div 
+        ref={cardRef}
+        onClick={onToggle}
+        style={{
+          cursor: 'pointer',
+          position: 'relative',
+          borderRadius: cornerRadius.borderRadius.lg,
+          overflow: 'hidden',
+          border: `3px solid ${isSelected ? successColor : colors.border.default}`,
+          transition: 'all 0.2s ease',
+          opacity: isSelected ? 1 : 0.75,
+          backgroundColor: colors.bg.card.subtle,
+        }}
+      >
+        <div style={{ 
+          width: '100%', 
+          paddingBottom: '125%', // 4:5 aspect ratio
+          position: 'relative',
+          backgroundColor: colors.bg.card.default,
+        }}>
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: 1080,
+              height: 1350,
+              transform: `scale(${scale})`,
+              transformOrigin: 'top left',
+              pointerEvents: 'none',
+            }}
+          >
+            <CarouselSlide
+              type={slide.type}
+              data={previewData}
+              index={previewIndex}
+              totalSlides={slides.length + 1}
+              userName={'Você'}
+              year={previewData?.yearInReview?.year}
+            />
+          </div>
+        </div>
+
+        {/* Checkbox Overlay */}
+        <div style={{
+          position: 'absolute',
+          top: '12px',
+          right: '12px',
+          width: '24px',
+          height: '24px',
+          borderRadius: '50%',
+          backgroundColor: isSelected ? successColor : colors.bg.state.soft,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          border: `2px solid ${colors.text.white?.default || '#FFFFFF'}`
+        }}>
+          {isSelected && <Check size={14} color={colors.text.white?.default || 'white'} />}
+        </div>
+      </div>
+    );
+  };
 
   const toggleSlide = (id: string) => {
     setSelectedSlides(prev => 
@@ -173,106 +365,64 @@ export const PDFExportModal: React.FC<PDFExportModalProps> = ({
       alignItems: 'center',
       justifyContent: 'center',
       zIndex: 1000,
-      padding: '20px'
+      padding: spacing.spacing[20],
     }}>
       <div style={{
-        backgroundColor: 'white',
-        borderRadius: '20px',
+        backgroundColor: colors.bg.card.default,
+        borderRadius: cornerRadius.borderRadius['2xl'],
         width: '100%',
-        maxWidth: '900px',
-        maxHeight: '90vh',
+        maxWidth: '980px',
+        maxHeight: '92vh',
         display: 'flex',
         flexDirection: 'column',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        border: `1px solid ${colors.border.default}`,
+        boxShadow: colors.bg.card?.default ? '0 20px 80px rgba(0,0,0,0.45)' : 'none',
       }}>
         {/* Header */}
         <div style={{
-          padding: '24px',
-          borderBottom: '1px solid #e5e7eb',
+          padding: spacing.spacing[24],
+          borderBottom: `1px solid ${colors.border.default}`,
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center'
         }}>
-          <h2 style={{ fontSize: '24px', fontWeight: 600, margin: 0 }}>Exportar para PDF</h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '8px', color: '#000' }}>
-            <X size={24} color="#000" />
-          </button>
+          <h2 style={{ ...textStyles.xl.semibold, color: colors.text.default, margin: 0 }}>Exportar para PDF</h2>
+          <Button
+            style="ghost"
+            variant="iconOnly"
+            size="sm"
+            leadIcon={<X size={18} />}
+            onClick={onClose}
+          />
         </div>
 
         {/* Content */}
         <div style={{
-          padding: '24px',
+          padding: spacing.spacing[24],
           overflowY: 'auto',
-          flex: 1
+          flex: 1,
+          backgroundColor: colors.bg.subtle,
         }}>
-          <p style={{ marginBottom: '24px', color: '#666' }}>
+          <p style={{ ...textStyles.sm.medium, marginBottom: spacing.spacing[16], color: colors.text.subtle }}>
             Selecione os slides que deseja incluir no seu carrossel PDF.
           </p>
 
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
-            gap: '24px'
+            gap: spacing.spacing[16]
           }}>
             {slides.map((slide, index) => {
               const isSelected = selectedSlides.includes(slide.id);
               return (
-                <div 
+                <SlidePreview
                   key={slide.id}
-                  onClick={() => toggleSlide(slide.id)}
-                  style={{
-                    cursor: 'pointer',
-                    position: 'relative',
-                    borderRadius: '12px',
-                    overflow: 'hidden',
-                    border: `3px solid ${isSelected ? successColor : 'transparent'}`,
-                    transition: 'all 0.2s ease',
-                    opacity: isSelected ? 1 : 0.6
-                  }}
-                >
-                  {/* Preview (scaled down) */}
-                  <div style={{ 
-                    width: '100%', 
-                    paddingBottom: '125%', // 4:5 aspect ratio
-                    position: 'relative',
-                    backgroundColor: '#f3f2ef'
-                  }}>
-                    <div style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      height: '100%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '14px',
-                      color: '#666',
-                      flexDirection: 'column',
-                      gap: '8px'
-                    }}>
-                      <span style={{ fontWeight: 600 }}>{slide.label}</span>
-                      {/* We could render a mini version here, but for complexity, just a placeholder or simplified view is safer for now */}
-                    </div>
-                  </div>
-
-                  {/* Checkbox Overlay */}
-                  <div style={{
-                    position: 'absolute',
-                    top: '12px',
-                    right: '12px',
-                    width: '24px',
-                    height: '24px',
-                    borderRadius: '50%',
-                    backgroundColor: isSelected ? successColor : 'rgba(0,0,0,0.3)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    border: '2px solid white'
-                  }}>
-                    {isSelected && <Check size={14} color="white" />}
-                  </div>
-                </div>
+                  slide={slide}
+                  isSelected={isSelected}
+                  onToggle={() => toggleSlide(slide.id)}
+                  previewIndex={index}
+                />
               );
             })}
           </div>
@@ -280,57 +430,33 @@ export const PDFExportModal: React.FC<PDFExportModalProps> = ({
 
         {/* Footer */}
         <div style={{
-          padding: '24px',
-          borderTop: '1px solid #e5e7eb',
+          padding: spacing.spacing[20],
+          borderTop: `1px solid ${colors.border.default}`,
           display: 'flex',
           justifyContent: 'flex-end',
-          gap: '12px'
+          gap: spacing.spacing[12]
         }}>
-          <button
+          <Button
+            label="Cancelar"
+            style="ghost"
+            size="md"
             onClick={onClose}
-            style={{
-              padding: '12px 24px',
-              borderRadius: '999px',
-              border: '1px solid #e5e7eb',
-              backgroundColor: 'white',
-              fontSize: '16px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              color: '#000'
-            }}
-          >
-            Cancelar
-          </button>
-          <button
+          />
+          <Button
+            label={isGenerating ? 'Gerando PDF...' : 'Baixar PDF'}
+            style="primary"
+            size="md"
+            leadIcon={<Download size={18} />}
             onClick={generatePDF}
+            loading={isGenerating}
             disabled={isGenerating || selectedSlides.length === 0}
-            style={{
-              padding: '12px 24px',
-              borderRadius: '999px',
+            styleOverrides={{
               backgroundColor: successColor,
-              color: 'white',
-              fontSize: '16px',
-              fontWeight: 600,
-              border: 'none',
-              cursor: isGenerating || selectedSlides.length === 0 ? 'not-allowed' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              opacity: isGenerating || selectedSlides.length === 0 ? 0.7 : 1
+              borderColor: successColor,
+              color: colors.text.white?.default || '#FFFFFF',
+              opacity: isGenerating || selectedSlides.length === 0 ? 0.7 : 1,
             }}
-          >
-            {isGenerating ? (
-              <>
-                <Loader2 size={20} className="animate-spin" />
-                Gerando PDF...
-              </>
-            ) : (
-              <>
-                <Download size={20} />
-                Baixar PDF
-              </>
-            )}
-          </button>
+          />
         </div>
       </div>
 
