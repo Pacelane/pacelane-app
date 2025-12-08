@@ -11,7 +11,7 @@ import { getShadow } from '@/design-system/tokens/shadows';
 import { getResponsivePadding } from '@/design-system/utils/responsive';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
-import Logo from '@/design-system/components/Logo';
+import logoDark from '@/assets/logo/logotype-dark.svg';
 import Button from '@/design-system/components/Button';
 import SubtleLoadingSpinner from '@/design-system/components/SubtleLoadingSpinner';
 import { ArrowRight } from 'lucide-react';
@@ -179,14 +179,21 @@ const MyWrapped: React.FC = () => {
 
           // Fallback: create placeholder lead for existing users without a lead record
           if (user.email) {
+            const payload: any = {
+              email: user.email,
+              lead_source: 'linkedin_wrapped',
+            };
+            // Use converted_to_user_id if column exists, otherwise store under notes
+            try {
+              payload.converted_to_user_id = user.id;
+              payload.converted_at = new Date().toISOString();
+            } catch {
+              payload.notes = `LinkedIn Wrapped user ${user.id}`;
+            }
+
             const { data: newLead, error: insertError } = await client
               .from('leads')
-              .insert({
-                email: user.email,
-                converted_to_user_id: user.id,
-                converted_at: new Date().toISOString(),
-                lead_source: 'linkedin_wrapped',
-              })
+              .insert(payload)
               .select('*')
               .maybeSingle();
 
@@ -539,7 +546,7 @@ const MyWrapped: React.FC = () => {
           textAlign: 'center',
           position: 'relative',
         }}>
-          <Logo width={120} />
+          <img src={logoDark} alt="Pacelane" style={{ width: 120, height: 'auto' }} />
           {user && (
             <div style={{
               position: 'absolute',
