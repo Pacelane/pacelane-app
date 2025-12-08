@@ -165,9 +165,29 @@ const MyWrapped: React.FC = () => {
               if (parsedData.totalPosts !== undefined && parsedData.totalEngagement !== undefined) {
                 wrappedDataFromLead = parsedData as PostsWrappedData;
               } else if (parsedData.posts && Array.isArray(parsedData.posts)) {
-                wrappedDataFromLead = processPostsToWrappedData(parsedData.posts);
+                wrappedDataFromLead = processPostsToWrappedData(
+                  parsedData.posts,
+                  leadFormLinkedinUrl || lead.linkedin_url
+                );
               } else {
                 wrappedDataFromLead = parsedData as PostsWrappedData;
+              }
+
+              // Populate profile image from multiple possible sources to avoid missing avatar
+              const profileImageFromParsed =
+                (parsedData as any)?.profileImage ||
+                (parsedData as any)?.profile_image ||
+                (parsedData as any)?.profile?.imageUrl ||
+                (parsedData as any)?.authorImage;
+              const profileImageFromMetadata =
+                (lead as any)?.metadata?.profile_image ||
+                (lead as any)?.metadata?.profileImage ||
+                (lead as any)?.metadata?.imageUrl;
+              if (!wrappedDataFromLead.profileImage) {
+                wrappedDataFromLead.profileImage =
+                  profileImageFromParsed ||
+                  profileImageFromMetadata ||
+                  wrappedDataFromLead.profileImage;
               }
 
               if (lead.reactions_data) {
@@ -286,17 +306,62 @@ const MyWrapped: React.FC = () => {
   };
 
   // Helper function to process raw posts into WrappedData
-  const processPostsToWrappedData = (posts: any[]): PostsWrappedData => {
+  const normalizeProfileUrl = (url?: string) => {
+    if (!url) return '';
+    try {
+      const parsed = new URL(url);
+      parsed.search = '';
+      parsed.hash = '';
+      const cleanedPath = parsed.pathname.replace(/\/$/, '');
+      return `${parsed.origin}${cleanedPath}`.toLowerCase();
+    } catch {
+      return url.trim().toLowerCase().split('?')[0].replace(/\/$/, '');
+    }
+  };
+
+  const processPostsToWrappedData = (posts: any[], targetProfileUrl?: string): PostsWrappedData => {
     const currentYear = new Date().getFullYear();
+    const normalizedTargetProfile = normalizeProfileUrl(targetProfileUrl);
+
+    const isSharedPost = (post: any) =>
+      post?.isShare === true ||
+      post?.isShared === true ||
+      post?.isReshare === true ||
+      post?.type === 'share' ||
+      post?.type === 'reshare' ||
+      !!post?.sharedPost ||
+      !!post?.shared_from ||
+      !!post?.reshared_from;
     
     // Filter posts from current year
-    const yearPosts = posts.filter((post: any) => {
-      if (post.publishedAt) {
-        const postYear = new Date(post.publishedAt).getFullYear();
-        return postYear === currentYear;
-      }
-      return false;
-    });
+    const yearPosts = posts
+      .filter((post: any) => {
+        if (post.publishedAt) {
+          const postYear = new Date(post.publishedAt).getFullYear();
+          return postYear === currentYear;
+        }
+        return false;
+      })
+      .filter((post: any) => !isSharedPost(post))
+      .filter((post: any) => {
+        if (!normalizedTargetProfile) return true;
+        const authorUrl = normalizeProfileUrl(post?.author?.profileUrl);
+        return authorUrl === normalizedTargetProfile;
+      });
+
+    // Fallback: if everything was filtered out due to author URL mismatch, keep non-shared posts from the year
+    const finalPosts =
+      yearPosts.length > 0
+        ? yearPosts
+        : posts
+            .filter((post: any) => {
+              if (post.publishedAt) {
+                const postYear = new Date(post.publishedAt).getFullYear();
+                return postYear === currentYear;
+              }
+              return false;
+            })
+            .filter((post: any) => !isSharedPost(post));
 
     // Calculate engagement stats
     let totalLikes = 0;
@@ -312,7 +377,7 @@ const MyWrapped: React.FC = () => {
       return text.trim().split(/\s+/).filter(Boolean).length;
     };
 
-    yearPosts.forEach((post: any) => {
+    finalPosts.forEach((post: any) => {
       const engagement = post.engagement || {};
       totalLikes += engagement.likes || 0;
       totalComments += engagement.comments || 0;
@@ -339,11 +404,11 @@ const MyWrapped: React.FC = () => {
       }
     });
 
-    const totalPosts = yearPosts.length;
+    const totalPosts = finalPosts.length;
     const totalEngagement = totalLikes + totalComments + totalShares;
 
     // Get top posts by engagement
-    const topPosts = [...yearPosts]
+    const topPosts = [...finalPosts]
       .sort((a, b) => {
         const engagementA = (a.engagement?.likes || 0) + (a.engagement?.comments || 0) + (a.engagement?.shares || 0);
         const engagementB = (b.engagement?.likes || 0) + (b.engagement?.comments || 0) + (b.engagement?.shares || 0);
@@ -380,8 +445,8 @@ const MyWrapped: React.FC = () => {
     const mostActiveMonth = sortedMonths[0]?.month;
     const leastActiveMonth = sortedMonths[sortedMonths.length - 1]?.month;
 
-    // Extract profile image from the first post if available
-    const profileImage = posts.length > 0 && posts[0].author ? posts[0].author.imageUrl : undefined;
+    // Extract profile image from the first valid post if available
+    const profileImage = finalPosts.length > 0 && finalPosts[0].author ? finalPosts[0].author.imageUrl : undefined;
 
     return {
       totalPosts,
@@ -562,6 +627,9 @@ const MyWrapped: React.FC = () => {
             <span>2. No LinkedIn, crie um post em “Documento” e faça upload do PDF.</span>
             <span>3. Escreva uma legenda curta e publique.</span>
           </div>
+          <p style={{ ...textStyles.xs.normal, color: safeTextSubtle, margin: 0 }}>
+            Usamos apenas posts públicos criados por você; compartilhamentos sem comentários não são considerados.
+          </p>
           {error && (
             <div style={{
               padding: spacing.spacing[12],
@@ -580,11 +648,6 @@ const MyWrapped: React.FC = () => {
               style="primary"
               size="md"
               onClick={() => setIsExportModalOpen(true)}
-              styleOverrides={{
-                backgroundColor: successColor,
-                color: colors?.text?.white?.default || safeTextDefault,
-                borderColor: successColor,
-              }}
             />
             <Button
               label="Conhecer o Pacelane"
@@ -599,28 +662,10 @@ const MyWrapped: React.FC = () => {
     );
   };
 
-  // Simple label to show which branch is rendering (helps on mobile with no console)
-  const renderStateLabel = () => {
-    const branch = isProcessing
-      ? 'processing'
-      : isLoadingLead
-        ? 'loading-lead'
-        : hasScrapedData && wrappedData
-          ? 'wrapped-ready'
-          : hasScrapedData && !wrappedData
-            ? 'wrapped-pending'
-            : 'form';
-    return (
-      <div style={{ marginBottom: spacing.spacing[12], color: safeTextSubtle, ...textStyles.xs.normal }}>
-        Estado: {branch} | leadId: {leadId || 'none'}
-      </div>
-    );
-  };
 
   return (
     <div style={pageStyles}>
       <div style={contentWrapperStyles}>
-        {renderStateLabel()}
         {/* Logo and Logout Button */}
         <div style={{ 
           marginBottom: spacing.spacing[32], 
@@ -639,9 +684,6 @@ const MyWrapped: React.FC = () => {
                 style="ghost"
                 size="sm"
                 onClick={handleLogout}
-                styleOverrides={{
-                  color: colors?.text?.white?.default || safeTextDefault,
-                }}
               />
             </div>
           )}
@@ -737,9 +779,6 @@ const MyWrapped: React.FC = () => {
                     style="ghost"
                     size="sm"
                     onClick={() => navigate('/linkedin-wrapped')}
-                    styleOverrides={{
-                      color: colors?.text?.white?.default || safeTextDefault,
-                    }}
                   />
                 </div>
               </div>

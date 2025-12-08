@@ -192,34 +192,46 @@ const DEFAULT_PROFILE_IMAGE = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDU0IiB
 // Helper function to convert image URL to base64 (to avoid CORS issues in PDF export)
 const imageUrlToBase64 = async (url: string): Promise<string> => {
   try {
-    // Create a canvas to draw the image
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    
-    return new Promise((resolve, reject) => {
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(img, 0, 0);
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-          resolve(dataUrl);
-        } else {
-          reject(new Error('Could not get canvas context'));
-        }
-      };
-      img.onerror = () => {
-        console.warn('Failed to load image, using default placeholder');
-        resolve(DEFAULT_PROFILE_IMAGE);
-      };
-      // Add timestamp to avoid cache issues
-      img.src = url + (url.includes('?') ? '&' : '?') + '_t=' + Date.now();
+    // First, try to fetch the image as a blob (works when CORS is allowed)
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) throw new Error('Image fetch failed');
+    const blob = await res.blob();
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
     });
+    return dataUrl;
   } catch (error) {
-    console.error('Error converting image to base64:', error);
-    return DEFAULT_PROFILE_IMAGE;
+    // Fallback: attempt canvas conversion; if it fails, return placeholder
+    try {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      return await new Promise((resolve, reject) => {
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+            resolve(dataUrl);
+          } else {
+            reject(new Error('Could not get canvas context'));
+          }
+        };
+        img.onerror = () => {
+          console.warn('Failed to load image, using default placeholder');
+          resolve(DEFAULT_PROFILE_IMAGE);
+        };
+        img.src = url + (url.includes('?') ? '&' : '?') + '_t=' + Date.now();
+      });
+    } catch (err) {
+      console.error('Error converting image to base64:', err);
+      return DEFAULT_PROFILE_IMAGE;
+    }
   }
 };
 
