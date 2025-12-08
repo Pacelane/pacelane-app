@@ -42,6 +42,7 @@ const LinkedInWrapped: React.FC = () => {
   const isMobile = useIsMobile();
   const [isProcessingAuth, setIsProcessingAuth] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   // Force dark theme to avoid flicker on mount/unmount
   useLayoutEffect(() => {
@@ -71,6 +72,7 @@ const LinkedInWrapped: React.FC = () => {
       // Small delay to allow logout button to be visible
       const timer = setTimeout(() => {
         console.log('LinkedInWrapped: User already authenticated, redirecting to /my-wrapped');
+        setIsRedirecting(true);
         navigate('/my-wrapped');
       }, 100);
       return () => clearTimeout(timer);
@@ -242,17 +244,17 @@ const LinkedInWrapped: React.FC = () => {
   })();
 
   // Show loading state while processing authentication
-  if (isProcessingAuth) {
+  if (isProcessingAuth || isRedirecting) {
     return (
       <div style={{
         minHeight: '100vh',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: colors.bg.muted,
+        backgroundColor: colors.bg.default,
       }}>
         <SubtleLoadingSpinner 
-          title="Criando sua conta..."
+          title={isRedirecting ? 'Redirecionando para seu Wrapped...' : 'Criando sua conta...'}
           size={16}
         />
       </div>
@@ -266,7 +268,7 @@ const LinkedInWrapped: React.FC = () => {
 
   const pageStyles: React.CSSProperties = {
     minHeight: '100vh',
-    backgroundColor: colors.bg.muted,
+    backgroundColor: colors.bg.default,
     display: 'flex',
     flexDirection: 'column',
     fontFamily: geistFont,
@@ -282,17 +284,17 @@ const LinkedInWrapped: React.FC = () => {
     paddingLeft: spacing.spacing[24],
     paddingRight: spacing.spacing[24],
     boxSizing: 'border-box',
-    color: '#FFFFFF',
+    color: colors.text.default,
   };
 
   const cardStyles: React.CSSProperties = {
-    backgroundColor: '#22232a',
-    border: '1px solid rgba(255,255,255,0.12)',
+    backgroundColor: colors.bg.card.default,
+    border: `1px solid ${colors.border.default}`,
     borderRadius: cornerRadius.borderRadius.lg,
     boxShadow: getShadow('regular.card', colors, { withBorder: true }),
     padding: getResponsivePadding(isMobile, 'card'),
     marginBottom: spacing.spacing[24],
-    color: '#FFFFFF',
+    color: colors.text.default,
     fontFamily: geistFont,
   };
 
@@ -302,13 +304,13 @@ const LinkedInWrapped: React.FC = () => {
     fontWeight: typography.desktop.weight.semibold,
     lineHeight: typography.desktop.lineHeight.leading7,
     letterSpacing: typography.desktop.letterSpacing.normal,
-    color: '#FFFFFF',
+    color: colors.text.default,
     margin: 0,
   };
 
   const subtitleStyle: React.CSSProperties = {
     ...textStyles.md.normal,
-    color: '#FFFFFF',
+    color: colors.text.subtle,
     margin: 0,
     marginTop: spacing.spacing[8],
   };
@@ -342,7 +344,7 @@ const LinkedInWrapped: React.FC = () => {
         {/* Main Card */}
         <div style={cardStyles}>
           {/* Hero Section */}
-          <div style={{ textAlign: 'center', marginBottom: spacing.spacing[32], color: '#FFFFFF' }}>
+          <div style={{ textAlign: 'center', marginBottom: spacing.spacing[32], color: colors.text.default }}>
             <h1 style={{
               ...titleStyle,
               fontSize: typography.desktop.size['4xl'],
@@ -379,18 +381,18 @@ const LinkedInWrapped: React.FC = () => {
                   <div style={{
                     flex: 1,
                     height: 1,
-                    backgroundColor: 'rgba(255,255,255,0.14)',
+                    backgroundColor: colors.border.default,
                   }} />
                   <span style={{
                     ...textStyles.xs.normal,
-                    color: '#FFFFFF',
+                    color: colors.text.default,
                   }}>
                     ou
                   </span>
                   <div style={{
                     flex: 1,
                     height: 1,
-                    backgroundColor: 'rgba(255,255,255,0.14)',
+                    backgroundColor: colors.border.default,
                   }} />
                 </div>
 
@@ -457,7 +459,7 @@ const LinkedInWrapped: React.FC = () => {
                     />
                     <p style={{
                       ...textStyles.xs.normal,
-                      color: '#FFFFFF',
+                      color: colors.text.subtle,
                       margin: 0,
                     }}>
                       Mínimo 8 caracteres, 1 maiúscula, 1 minúscula, 1 número
