@@ -13,7 +13,6 @@ import { textStyles } from '@/design-system/styles/typography/typography-styles'
 import { getShadow } from '@/design-system/tokens/shadows';
 import { getResponsivePadding } from '@/design-system/utils/responsive';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { ProfileService } from '@/services/profileService';
 import Logo from '@/design-system/components/Logo';
 import Input from '@/design-system/components/Input';
 import Button from '@/design-system/components/Button';
@@ -101,14 +100,6 @@ const LinkedInWrapped: React.FC = () => {
       
       toast.success('Conta criada com sucesso!');
       
-      // Update profile with signup_source
-      const createdUserId = (result as any)?.data?.user?.id;
-      if (createdUserId) {
-        await ProfileService.updateProfile(createdUserId, {
-          signup_source: 'linkedin_wrapped'
-        } as any);
-      }
-      
       // Navigate to my-wrapped page
       console.log('LinkedInWrapped: New user created, redirecting to /my-wrapped');
       navigate('/my-wrapped');
@@ -156,18 +147,6 @@ const LinkedInWrapped: React.FC = () => {
       setIsProcessingAuth(false);
     }
   };
-
-  // Update profile signup_source after Google OAuth
-  useEffect(() => {
-    const updateSignupSource = async () => {
-      if (user && profile && !(profile as any).signup_source) {
-        await ProfileService.updateProfile(user.id, {
-          signup_source: 'linkedin_wrapped'
-        } as any);
-      }
-    };
-    updateSignupSource();
-  }, [user, profile]);
 
   const handleFormSubmit = async () => {
     try {
