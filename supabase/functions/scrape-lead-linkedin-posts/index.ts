@@ -649,20 +649,62 @@ serve(async (req) => {
           const results = await datasetResponse.json();
           console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Page ${pageNumber} completed`);
           
-          // Check if results have the expected structure (apimaestro format)
-          if (results.data && results.data.posts) {
-            // New format: { success, message, data: { posts, pagination_token } }
-            pagePostsData = results.data.posts || [];
-            pagePaginationToken = results.data.pagination_token || null;
+          /**
+           * Normalize pagination + posts output.
+           * The actor may return:
+           *  - { success, data: { posts, pagination_token } }
+           *  - Array of those objects
+           *  - Array of post items directly
+           */
+          const collectedPosts: any[] = [];
+          let collectedPaginationToken: string | null = null;
+
+          const maybeSetToken = (token?: string | null) => {
+            if (token && !collectedPaginationToken) {
+              collectedPaginationToken = token;
+            }
+          };
+
+          const collectFromItem = (item: any) => {
+            if (!item) return;
+            // Item with data wrapper
+            if (item.data && Array.isArray(item.data.posts)) {
+              collectedPosts.push(...item.data.posts);
+              maybeSetToken(item.data.pagination_token);
+              return;
+            }
+            // Item with top-level posts/pagination_token
+            if (Array.isArray(item.posts)) {
+              collectedPosts.push(...item.posts);
+              maybeSetToken(item.pagination_token);
+              return;
+            }
+            // If the item itself looks like a post (has posted_at or stats), treat as single post entry
+            if (item.posted_at || item.stats) {
+              collectedPosts.push(item);
+              maybeSetToken(item.pagination_token);
+            }
+          };
+
+          if (results?.data && results.data.posts) {
+            collectFromItem(results);
           } else if (Array.isArray(results)) {
-            // Fallback: direct array
-            pagePostsData = results;
-            pagePaginationToken = null;
+            results.forEach((entry: any) => collectFromItem(entry));
           } else {
-            console.error(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Unexpected result format:`, JSON.stringify(results, null, 2));
-            pagePostsData = [];
-            pagePaginationToken = null;
+            collectFromItem(results);
           }
+
+          // As a fallback, try to read pagination_token from the first collected post if still not set
+          if (!collectedPaginationToken && collectedPosts.length > 0) {
+            const firstWithToken = collectedPosts.find((p: any) => p?.pagination_token);
+            if (firstWithToken?.pagination_token) {
+              collectedPaginationToken = firstWithToken.pagination_token;
+            }
+          }
+
+          pagePostsData = collectedPosts;
+          pagePaginationToken = collectedPaginationToken;
+          console.log(`[${new Date().toISOString()}] Lead LinkedIn Wrapped: Normalized page posts=${pagePostsData.length}, pagination_token=${pagePaginationToken ? 'yes' : 'no'}`);
           
           // Log first item structure for debugging
           if (pagePostsData.length > 0) {

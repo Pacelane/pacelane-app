@@ -34,9 +34,9 @@ type LinkedInWrappedSignUpFormData = z.infer<typeof linkedInSignUpSchema>;
 
 
 const LinkedInWrapped: React.FC = () => {
-  const { colors, setTheme, themePreference } = useTheme();
-  const previousThemeRef = useRef(themePreference);
-  const didForceThemeRef = useRef(false);
+  const { colors, setTheme } = useTheme();
+  const hasForcedDarkThemeRef = useRef(false);
+  const redirectStartedRef = useRef(false);
   const navigate = useNavigate();
   const { user, profile, signUp, signInWithGoogle, signOut } = useAuth();
   const { toast } = useToast();
@@ -45,16 +45,13 @@ const LinkedInWrapped: React.FC = () => {
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
 
-  // Force dark theme to avoid flicker on mount/unmount
+  // Force dark theme once to avoid flicker and keep consistent dark experience
   useLayoutEffect(() => {
-    if (!didForceThemeRef.current && themePreference !== 'dark') {
-      didForceThemeRef.current = true;
+    if (!hasForcedDarkThemeRef.current) {
+      hasForcedDarkThemeRef.current = true;
       setTheme('dark');
     }
-    return () => {
-      setTheme(previousThemeRef.current || 'system');
-    };
-  }, [setTheme, themePreference]);
+  }, [setTheme]);
 
   // Handle logout
   const handleLogout = async () => {
@@ -70,14 +67,11 @@ const LinkedInWrapped: React.FC = () => {
 
   // Redirect if already authenticated (but allow user to logout first)
   useEffect(() => {
-    if (user && profile) {
-      // Small delay to allow logout button to be visible
-      const timer = setTimeout(() => {
-        console.log('LinkedInWrapped: User already authenticated, redirecting to /my-wrapped');
-        setIsRedirecting(true);
-        navigate('/my-wrapped');
-      }, 100);
-      return () => clearTimeout(timer);
+    if (user && profile && !redirectStartedRef.current) {
+      redirectStartedRef.current = true;
+      console.log('LinkedInWrapped: User already authenticated, redirecting to /my-wrapped');
+      setIsRedirecting(true);
+      navigate('/my-wrapped');
     }
   }, [user, profile, navigate]);
 
@@ -136,25 +130,6 @@ const LinkedInWrapped: React.FC = () => {
           signup_source: 'linkedin_wrapped'
         } as any);
 
-        try {
-          const client = supabase as any;
-          const { error: leadError } = await client
-            .functions
-            .invoke('scrape-lead-linkedin-posts', {
-              body: {
-                name: data.name.trim(),
-                email: data.email.trim(),
-                linkedinUrl: data.linkedinUrl.trim(),
-              },
-            });
-
-          if (leadError) {
-            toast.error('Conta criada, mas falhou ao iniciar seu Wrapped. Tente novamente em /my-wrapped.');
-          }
-        } catch (leadErr) {
-          console.error('Lead creation error:', leadErr);
-          toast.error('Conta criada, mas falhou ao iniciar seu Wrapped. Tente novamente em /my-wrapped.');
-        }
       }
       
       // Let auth listener hydrate user/profile, then redirect via effect
